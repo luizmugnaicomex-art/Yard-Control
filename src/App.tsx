@@ -17,8 +17,11 @@ import {
   RefreshCw,
   Sun,
   Moon,
-  Globe
+  Globe,
+  Download
 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 // STYLES & DICTIONARY TYPES
 interface TranslationItem {
@@ -311,6 +314,7 @@ export default function App() {
   const [watermarkText, setWatermarkText] = useState("H2LUIZ-VI / luiz.vieira - 2026-05-21");
   const [showWatermark, setShowWatermark] = useState(true);
   const [theme, setTheme] = useState('light'); // 'light' ou 'dark'
+  const [pdfStatus, setPdfStatus] = useState<'idle' | 'rendering' | 'success' | 'error'>('idle');
   
   // ESTADOS DE INTERFACE E EDIÇÃO
   const [isEditMode, setIsEditMode] = useState(true);
@@ -400,6 +404,58 @@ export default function App() {
       setVessels(JSON.parse(JSON.stringify(ORIGINAL_VESSELS)));
       setChartLeft(JSON.parse(JSON.stringify(ORIGINAL_CHART_LEFT)));
       setChartRight(JSON.parse(JSON.stringify(ORIGINAL_CHART_RIGHT)));
+    }
+  };
+
+  // GERAR E EXPORTAR SLIDE COMO PDF DE ALTA QUALIDADE
+  const handleDownloadPDF = async () => {
+    const slideElement = document.getElementById('slide-capture-area');
+    if (!slideElement) return;
+
+    try {
+      setPdfStatus('rendering');
+      
+      // Salva escala atual e reseta para 1.0 para capturar o layout perfeitamente proporcional
+      const originalScale = slideScale;
+      setSlideScale(1.0);
+      
+      // Aguarda o React renderizar o slide em escala natural de 1.0 (200ms)
+      await new Promise((resolve) => setTimeout(resolve, 220));
+
+      const canvas = await html2canvas(slideElement, {
+        scale: 2.5, // Resolução de alta definição 2.5x para textos e detalhes vetoriais super nítidos
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: theme === 'dark' ? '#0f172a' : '#FAFCFF',
+        logging: false,
+      });
+
+      // Restaura escala original preferida do usuário no preview do editor
+      setSlideScale(originalScale);
+
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      const pdf = new jsPDF({
+        orientation: imgWidth > imgHeight ? 'l' : 'p',
+        unit: 'px',
+        format: [imgWidth, imgHeight],
+        hotfixes: ['px_scaling']
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      const today = new Date().toISOString().slice(0, 10);
+      const fileName = `BYD_Logistics_Dashboard_${today}.pdf`;
+      pdf.save(fileName);
+      
+      setPdfStatus('success');
+      setTimeout(() => setPdfStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setPdfStatus('error');
+      setTimeout(() => setPdfStatus('idle'), 4000);
     }
   };
 
@@ -576,6 +632,37 @@ export default function App() {
               Reset
             </button>
 
+            {/* Salvar PDF */}
+            <button
+              id="btn-download-pdf"
+              onClick={handleDownloadPDF}
+              disabled={pdfStatus === 'rendering'}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm border flex items-center gap-1.5 transition-all transform hover:-translate-y-0.5 ${
+                pdfStatus === 'rendering'
+                  ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                  : pdfStatus === 'success'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                  : pdfStatus === 'error'
+                  ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                  : 'bg-gradient-to-r from-red-50 to-rose-50 text-red-750 border-red-200 hover:from-red-100 hover:to-rose-100'
+              }`}
+            >
+              {pdfStatus === 'rendering' ? (
+                <RefreshCw className="w-4 h-4 animate-spin text-red-600" />
+              ) : (
+                <Download className="w-4 h-4 text-red-600" />
+              )}
+              <span>
+                {pdfStatus === 'rendering'
+                  ? (language === 'zh' ? '正在生成 PDF...' : 'Gerando PDF...')
+                  : pdfStatus === 'success'
+                  ? (language === 'zh' ? 'PDF 已下载' : 'PDF Exportado!')
+                  : pdfStatus === 'error'
+                  ? (language === 'zh' ? '错误' : 'Erro!')
+                  : (language === 'zh' ? '导出 PDF' : 'Salvar PDF')}
+              </span>
+            </button>
+
             {/* Modo Apresentação */}
             <button
               id="btn-presentation-mode"
@@ -589,16 +676,41 @@ export default function App() {
         </header>
       )}
 
-      {/* BOTÃO FLUTUANTE PARA RETORNAR DO MODO APRESENTAÇÃO */}
+      {/* BOTÕES FLUTUANTES NO MODO APRESENTAÇÃO */}
       {!isEditMode && (
-        <button
-          id="btn-back-to-editor"
-          onClick={() => setIsEditMode(true)}
-          className="fixed bottom-6 right-6 z-50 bg-[#1e293b] text-white hover:bg-slate-800 px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 font-semibold transition-all hover:scale-105 border border-slate-700 animate-bounce"
-        >
-          <Sliders className="w-5 h-5 text-emerald-400" />
-          <span>Voltar ao Editor</span>
-        </button>
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
+          {/* Exportar PDF Flutuante */}
+          <button
+            id="btn-presentation-pdf"
+            onClick={handleDownloadPDF}
+            disabled={pdfStatus === 'rendering'}
+            className={`px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 font-bold cursor-pointer transition-all hover:scale-105 border ${
+              pdfStatus === 'rendering'
+                ? 'bg-slate-800 text-slate-400 border-slate-700 cursor-not-allowed'
+                : 'bg-gradient-to-r from-rose-600 to-red-600 text-white hover:from-rose-700 hover:to-red-700 border-red-500 shadow-rose-300 dark:shadow-none'
+            }`}
+          >
+            {pdfStatus === 'rendering' ? (
+              <RefreshCw className="w-5 h-5 animate-spin" />
+            ) : (
+              <Download className="w-5 h-5" />
+            )}
+            <span>
+              {pdfStatus === 'rendering'
+                ? (language === 'zh' ? '正在生成 PDF...' : 'Gerando PDF...')
+                : (language === 'zh' ? '导出 PDF' : 'Exportar PDF')}
+            </span>
+          </button>
+
+          <button
+            id="btn-back-to-editor"
+            onClick={() => setIsEditMode(true)}
+            className="bg-[#1e293b] text-white hover:bg-slate-800 px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 font-semibold transition-all hover:scale-105 border border-slate-700"
+          >
+            <Sliders className="w-5 h-5 text-emerald-400" />
+            <span>Voltar ao Editor</span>
+          </button>
+        </div>
       )}
 
       {/* ÁREA PRINCIPAL DA INTERFACE */}
