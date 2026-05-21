@@ -1,0 +1,6 @@
+{
+  "name": "BYD Yard Control Dashboard",
+  "description": "Interactive operational and yard capacity control presentation builder with real-time calculations and bilingual (PT-BR / ZH-CN) support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
