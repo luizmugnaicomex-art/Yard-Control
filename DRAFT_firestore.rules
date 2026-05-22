@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reuseable global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && (
+        request.auth.token.email_verified == true || 
+        request.auth.token.firebase.sign_in_provider == 'google.com'
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validações de Entidades (Anti-Update-Gap / Strict Schema Match)
+
+    function isValidYard(data) {
+      return data.keys().hasAll(['name', 'type', 'capacity', 'cheio', 'vazio', 'porto', 'prontoColeta', 'delivered']) 
+        && data.keys().size() == 8
+        && data.name is string && data.name.size() <= 100
+        && data.type is string && (data.type == 'BONDED' || data.type == 'WAREHOUSE' || data.type == 'BUFFER')
+        && data.capacity is number && data.capacity >= 0
+        && data.cheio is number && data.cheio >= 0
+        && data.vazio is number && data.vazio >= 0
+        && data.porto is number && data.porto >= 0
+        && data.prontoColeta is number && data.prontoColeta >= 0
+        && data.delivered is number && data.delivered >= 0;
+    }
+
+    function isValidVessel(data) {
+      return data.keys().hasAll(['id', 'name', 'eta', 'cntrs']) 
+        && data.keys().size() == 4
+        // 'id' is a number in TypeScript, but when saved as property can be a string or number. Let's make it flexible or match string/number
+        && (data.id is string || data.id is number)
+        && data.name is string && data.name.size() <= 200
+        && data.eta is string && data.eta.size() <= 60
+        && data.cntrs is number && data.cntrs >= 0;
+    }
+
+    function isValidChartLeft(data) {
+      return data.keys().hasAll(['week', 'arrivals', 'backlog']) 
+        && data.keys().size() == 3
+        && data.week is string && data.week.size() <= 30
+        && data.arrivals is number && data.arrivals >= 0
+        && data.backlog is number && data.backlog >= 0;
+    }
+
+    function isValidChartRight(data) {
+      return data.keys().hasAll(['date', 'value', 'type']) 
+        && data.keys().size() == 3
+        && data.date is string && data.date.size() <= 30
+        && data.value is number && data.value >= 0
+        && data.type is string && data.type.size() <= 15;
+    }
+
+    function isValidConfig(data) {
+      return data.keys().hasAll(['language', 'slideTitlePT', 'slideTitleZH', 'watermarkText', 'showWatermark', 'theme', 'widescreenMode'])
+        && data.keys().size() <= 12 // Allow optional extras like lastUpdatedBy or subtitle overrides
+        && data.language is string && (data.language == 'pt' || data.language == 'zh' || data.language == 'bilingual')
+        && data.slideTitlePT is string && data.slideTitlePT.size() <= 400
+        && data.slideTitleZH is string && data.slideTitleZH.size() <= 400
+        && data.watermarkText is string && data.watermarkText.size() <= 300
+        && data.showWatermark is bool
+        && data.theme is string && (data.theme == 'light' || data.theme == 'dark')
+        && data.widescreenMode is bool;
+    }
+
+    // MATCH BLOCKS FOR ALL IDENTIFIED COLLECTIONS
+
+    match /yards/{yardId} {
+      allow read: if true;
+      allow create, update: if isEmailVerified() && isValidId(yardId) && isValidYard(incoming());
+      allow delete: if isEmailVerified() && isValidId(yardId);
+    }
+
+    match /vessels/{vesselId} {
+      allow read: if true;
+      allow create, update: if isEmailVerified() && isValidId(vesselId) && isValidVessel(incoming());
+      allow delete: if isEmailVerified() && isValidId(vesselId);
+    }
+
+    match /chartLeft/{itemId} {
+      allow read: if true;
+      allow create, update: if isEmailVerified() && isValidId(itemId) && isValidChartLeft(incoming());
+      allow delete: if isEmailVerified() && isValidId(itemId);
+    }
+
+    match /chartRight/{itemId} {
+      allow read: if true;
+      allow create, update: if isEmailVerified() && isValidId(itemId) && isValidChartRight(incoming());
+      allow delete: if isEmailVerified() && isValidId(itemId);
+    }
+
+    match /config/{configId} {
+      allow read: if true;
+      allow create, update: if isEmailVerified() && (configId == 'global') && isValidConfig(incoming());
+      allow delete: if false; // Prevents deletion of the system configuration document
+    }
+
+  }
+}

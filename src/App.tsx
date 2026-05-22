@@ -18,10 +18,37 @@ import {
   Sun,
   Moon,
   Globe,
-  Download
+  Download,
+  LogOut,
+  LogIn,
+  User as UserIcon,
+  Lock,
+  Unlock,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+
+// FIREBASE INTEGRATION
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { 
+  collection, 
+  doc, 
+  onSnapshot, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  writeBatch 
+} from 'firebase/firestore';
+import { 
+  db, 
+  auth, 
+  loginWithGoogle, 
+  logoutUser, 
+  OperationType, 
+  handleFirestoreError 
+} from './firebase';
 
 // STYLES & DICTIONARY TYPES
 interface TranslationItem {
@@ -164,12 +191,14 @@ export interface Vessel {
 }
 
 export interface ChartLeftItem {
+  docId?: string;
   week: string;
   arrivals: number;
   backlog: number;
 }
 
 export interface ChartRightItem {
+  docId?: string;
   date: string;
   value: number;
   type: string;
@@ -322,8 +351,20 @@ export default function App() {
   const [widescreenMode, setWidescreenMode] = useState(true); // Trava a proporção de 16:9 de PPT
   const [slideWidth, setSlideWidth] = useState<number>(1480); // Default set wider (1480px) to prevent wrapping
   const [slideScale, setSlideScale] = useState<number>(1.0); // Content scaling zoom slider
+  const [autoFit, setAutoFit] = useState<boolean>(true); // Auto-ajustar à tela para evitar corte de informações
   const [sidePanelWidth, setSidePanelWidth] = useState<number>(440); // Width of the side editor panel (Wild slider option)
   const [isDesktop, setIsDesktop] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [dbStatus, setDbStatus] = useState<'connecting' | 'online' | 'offline'>('connecting');
+
+  // NOVOS ESTADOS PARA ADICIONAR SEMANAS E DIAS DE ENTREGA
+  const [newWeekName, setNewWeekName] = useState('W30');
+  const [newWeekArrivals, setNewWeekArrivals] = useState<number>(1000);
+  const [newWeekBacklog, setNewWeekBacklog] = useState<number>(1000);
+
+  const [newDeliveryDate, setNewDeliveryDate] = useState('21/06');
+  const [newDeliveryValue, setNewDeliveryValue] = useState<number>(200);
+  const [newDeliveryType, setNewDeliveryType] = useState('A');
 
   useEffect(() => {
     const handleResize = () => {
@@ -333,6 +374,275 @@ export default function App() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // 1. ESCUTA O ESTADO DE AUTENTICAÇÃO DO FIREBASE
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (usr) => {
+      setUser(usr);
+      setDbStatus(usr ? 'online' : 'offline');
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. INICIALIZADORES SE O BANCO ESTIVER COMPLETAMENTE VAZIO
+  const initializeYardsInDb = async () => {
+    if (!auth.currentUser) return;
+    try {
+      const batch = writeBatch(db);
+      Object.entries(ORIGINAL_YARDS).forEach(([key, yard]) => {
+        batch.set(doc(db, 'yards', key), yard);
+      });
+      await batch.commit();
+    } catch (e) {
+      console.warn("Primeira inicialização de yards ignorada (sem permissão ou já feito):", e);
+    }
+  };
+
+  const initializeVesselsInDb = async () => {
+    if (!auth.currentUser) return;
+    try {
+      const batch = writeBatch(db);
+      ORIGINAL_VESSELS.forEach((vessel) => {
+        batch.set(doc(db, 'vessels', String(vessel.id)), {
+          id: String(vessel.id),
+          name: vessel.name,
+          eta: vessel.eta,
+          cntrs: vessel.cntrs
+        });
+      });
+      await batch.commit();
+    } catch (e) {
+      console.warn("Primeira inicialização de vessels ignorada:", e);
+    }
+  };
+
+  const initializeChartLeftInDb = async () => {
+    if (!auth.currentUser) return;
+    try {
+      const batch = writeBatch(db);
+      ORIGINAL_CHART_LEFT.forEach((item, index) => {
+        const id = String(index).padStart(3, '0');
+        batch.set(doc(db, 'chartLeft', id), item);
+      });
+      await batch.commit();
+    } catch (e) {
+      console.warn("Primeira inicialização de chartLeft ignorada:", e);
+    }
+  };
+
+  const initializeChartRightInDb = async () => {
+    if (!auth.currentUser) return;
+    try {
+      const batch = writeBatch(db);
+      ORIGINAL_CHART_RIGHT.forEach((item, index) => {
+        const id = String(index).padStart(3, '0');
+        batch.set(doc(db, 'chartRight', id), item);
+      });
+      await batch.commit();
+    } catch (e) {
+      console.warn("Primeira inicialização de chartRight ignorada:", e);
+    }
+  };
+
+  const initializeConfigInDb = async () => {
+    if (!auth.currentUser) return;
+    try {
+      await setDoc(doc(db, 'config', 'global'), {
+        language,
+        slideTitlePT,
+        slideTitleZH,
+        watermarkText,
+        showWatermark,
+        theme,
+        widescreenMode,
+        slideWidth
+      });
+    } catch (e) {
+      console.warn("Primeira inicialização de config ignorada:", e);
+    }
+  };
+
+  // 3. SINCRONIZADOR EM TEMPO REAL ON-SNAPSHOT DO FIRESTORE
+  useEffect(() => {
+    setDbStatus('connecting');
+    
+    // Yards
+    const unsubYards = onSnapshot(collection(db, 'yards'), (snapshot) => {
+      setDbStatus('online');
+      if (snapshot.empty) {
+        initializeYardsInDb();
+        return;
+      }
+      const newYards: YardsState = {};
+      snapshot.forEach((docSnap) => {
+        newYards[docSnap.id] = docSnap.data() as Yard;
+      });
+      setYards(newYards);
+    }, (err) => {
+      console.warn("Falha ao ler yards do Firestore; usando fallback local offline:", err);
+      setDbStatus('offline');
+    });
+
+    // Vessels
+    const unsubVessels = onSnapshot(collection(db, 'vessels'), (snapshot) => {
+      if (snapshot.empty) {
+        initializeVesselsInDb();
+        return;
+      }
+      const newVessels: Vessel[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        newVessels.push({
+          id: Number(docSnap.id) || Date.now(),
+          name: data.name,
+          eta: data.eta,
+          cntrs: Number(data.cntrs) || 0
+        });
+      });
+      newVessels.sort((a, b) => a.id - b.id);
+      setVessels(newVessels);
+    }, (err) => {
+      console.warn("Falha ao ler vessels do Firestore:", err);
+    });
+
+    // ChartLeft
+    const unsubChartLeft = onSnapshot(collection(db, 'chartLeft'), (snapshot) => {
+      if (snapshot.empty) {
+        initializeChartLeftInDb();
+        return;
+      }
+      const newChartLeft: ChartLeftItem[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        newChartLeft.push({
+          docId: docSnap.id,
+          week: data.week,
+          arrivals: Number(data.arrivals) || 0,
+          backlog: Number(data.backlog) || 0
+        });
+      });
+      newChartLeft.sort((a, b) => {
+        const numA = parseInt(a.week.replace('W', '')) || 0;
+        const numB = parseInt(b.week.replace('W', '')) || 0;
+        return numA - numB;
+      });
+      setChartLeft(newChartLeft);
+    }, (err) => {
+      console.warn("Falha ao ler chartLeft do Firestore:", err);
+    });
+
+    // ChartRight
+    const unsubChartRight = onSnapshot(collection(db, 'chartRight'), (snapshot) => {
+      if (snapshot.empty) {
+        initializeChartRightInDb();
+        return;
+      }
+      const newChartRight: { index: string, item: ChartRightItem }[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        newChartRight.push({
+          index: docSnap.id,
+          item: {
+            docId: docSnap.id,
+            date: data.date,
+            value: Number(data.value) || 0,
+            type: data.type
+          }
+        });
+      });
+      newChartRight.sort((a, b) => a.index.localeCompare(b.index));
+      setChartRight(newChartRight.map(x => x.item));
+    }, (err) => {
+      console.warn("Falha ao ler chartRight do Firestore:", err);
+    });
+
+    // Global Config
+    const unsubConfig = onSnapshot(doc(db, 'config', 'global'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data.language !== undefined) setLanguage(data.language);
+        if (data.slideTitlePT !== undefined) setSlideTitlePT(data.slideTitlePT);
+        if (data.slideTitleZH !== undefined) setSlideTitleZH(data.slideTitleZH);
+        if (data.watermarkText !== undefined) setWatermarkText(data.watermarkText);
+        if (data.showWatermark !== undefined) setShowWatermark(data.showWatermark);
+        if (data.theme !== undefined) setTheme(data.theme);
+        if (data.widescreenMode !== undefined) setWidescreenMode(data.widescreenMode);
+        if (data.slideWidth !== undefined) setSlideWidth(data.slideWidth);
+      } else {
+        initializeConfigInDb();
+      }
+    }, (err) => {
+      console.warn("Falha ao ler config global do Firestore:", err);
+    });
+
+    return () => {
+      unsubYards();
+      unsubVessels();
+      unsubChartLeft();
+      unsubChartRight();
+      unsubConfig();
+    };
+  }, [user]);
+
+  // FUNÇÃO AUXILIAR PARA ATUALIZAÇÃO DO CONFIG SINGLETON NO FIRESTORE
+  const updateGlobalDoc = async (field: string, value: any) => {
+    if (auth.currentUser) {
+      try {
+        await updateDoc(doc(db, 'config', 'global'), {
+          [field]: value
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, 'config/global');
+      }
+    }
+  };
+
+  // EFEITO DE AUTO-AJUSTE PARA REDIMENSIONAR O SLIDE SEM CORTAR INFORMAÇÕES
+  useEffect(() => {
+    if (!autoFit) return;
+
+    const scaleToFit = () => {
+      const container = document.getElementById('slide-viewport-container');
+      const slide = document.getElementById('slide-capture-area');
+      if (!container || !slide) return;
+
+      const paddingWidth = isEditMode ? 16 : 8;
+      const paddingHeight = isEditMode ? 16 : 8;
+      const maxW = container.clientWidth - paddingWidth;
+      const maxH = container.clientHeight - paddingHeight;
+
+      // A largura base do slide em pixels virturas
+      const baseWidth = widescreenMode ? slideWidth : 1380;
+      // Altura base proporcional para 16:9 widescreen, ou estimada de ~730px para Livre
+      const baseHeight = widescreenMode ? (slideWidth * 9 / 16) : 730;
+
+      const scaleX = maxW / baseWidth;
+      const scaleY = maxH / baseHeight;
+
+      let scale = widescreenMode ? Math.min(scaleX, scaleY) : scaleX;
+      // Garante uma faixa de escalonamento ultra flexível (de 0.45x até 1.15x)
+      scale = Math.min(Math.max(scale, 0.45), 1.15);
+
+      const roundedScale = Math.round(scale * 1000) / 1000;
+      setSlideScale(roundedScale);
+    };
+
+    scaleToFit();
+
+    const container = document.getElementById('slide-viewport-container');
+    if (!container) return;
+
+    const observer = new ResizeObserver(() => {
+      scaleToFit();
+    });
+    observer.observe(container);
+
+    window.addEventListener('resize', scaleToFit);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', scaleToFit);
+    };
+  }, [autoFit, widescreenMode, slideWidth, isEditMode, sidePanelWidth]);
 
   // Estado para novo Navio
   const [newVesselName, setNewVesselName] = useState('');
@@ -407,20 +717,101 @@ export default function App() {
     }
   };
 
+  // HELPER PARA CONVERSÃO DE CORES OKLCH / OKLAB PARA COR RESPEITADA PELO HTML2CANVAS
+  const convertColorToRgb = (colorStr: string): string => {
+    if (!colorStr) return colorStr;
+    if (!colorStr.includes('oklch') && !colorStr.includes('oklab') && !colorStr.includes('color(')) {
+      return colorStr;
+    }
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = colorStr;
+        const resolved = ctx.fillStyle;
+        if (resolved && !resolved.includes('oklch') && !resolved.includes('oklab')) {
+          return resolved;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    // Fallbacks baseados em padrões conhecidos caso falhe
+    if (colorStr.includes('303.9')) return 'rgb(168, 85, 247)'; // purple-500
+    if (colorStr.includes('0.5') || colorStr.includes('red')) return 'rgb(239, 68, 68)'; // red-500
+    return 'rgb(100, 116, 139)'; // Slate neutro padrão
+  };
+
+  const replaceOklchInString = (str: string): string => {
+    if (!str || (!str.includes('oklch') && !str.includes('oklab'))) return str;
+    return str.replace(/(oklch|oklab)\([^)]+\)/g, (match) => {
+      return convertColorToRgb(match);
+    });
+  };
+
   // GERAR E EXPORTAR SLIDE COMO PDF DE ALTA QUALIDADE
   const handleDownloadPDF = async () => {
     const slideElement = document.getElementById('slide-capture-area');
     if (!slideElement) return;
 
+    // Estado e restauração de getComputedStyle para evitar o erro do parser html2canvas com oklch/oklab (Tailwind v4)
+    const restoreFns: (() => void)[] = [];
+
+    const patchWindowGetComputedStyle = (win: any) => {
+      try {
+        const original = win.getComputedStyle;
+        win.getComputedStyle = function (elt: any, pseudoElt: any) {
+          const style = original.call(win, elt, pseudoElt);
+          return new Proxy(style, {
+            get(target, prop) {
+              const val = Reflect.get(target, prop);
+              if (typeof val === 'string') {
+                if (val.includes('oklch') || val.includes('oklab')) {
+                  return replaceOklchInString(val);
+                }
+                return val;
+              }
+              if (typeof val === 'function') {
+                if (prop === 'getPropertyValue') {
+                  return function(propertyName: string) {
+                    const originalVal = target.getPropertyValue(propertyName);
+                    if (originalVal && (originalVal.includes('oklch') || originalVal.includes('oklab'))) {
+                      return replaceOklchInString(originalVal);
+                    }
+                    return originalVal;
+                  };
+                }
+                return val.bind(target);
+              }
+              return val;
+            }
+          });
+        };
+        restoreFns.push(() => {
+          win.getComputedStyle = original;
+        });
+      } catch (err) {
+        console.warn('Could not patch getComputedStyle on:', win, err);
+      }
+    };
+
+    const originalScale = slideScale;
+    const originalAutoFit = autoFit;
+
     try {
       setPdfStatus('rendering');
       
       // Salva escala atual e reseta para 1.0 para capturar o layout perfeitamente proporcional
-      const originalScale = slideScale;
+      setAutoFit(false);
       setSlideScale(1.0);
       
       // Aguarda o React renderizar o slide em escala natural de 1.0 (200ms)
       await new Promise((resolve) => setTimeout(resolve, 220));
+
+      // Patcheia a janela principal
+      patchWindowGetComputedStyle(window);
 
       const canvas = await html2canvas(slideElement, {
         scale: 2.5, // Resolução de alta definição 2.5x para textos e detalhes vetoriais super nítidos
@@ -428,10 +819,14 @@ export default function App() {
         allowTaint: true,
         backgroundColor: theme === 'dark' ? '#0f172a' : '#FAFCFF',
         logging: false,
+        onclone: (clonedDoc) => {
+          // Patcheia a janela do iframe clonado
+          const clonedWin = clonedDoc.defaultView;
+          if (clonedWin) {
+            patchWindowGetComputedStyle(clonedWin);
+          }
+        }
       });
-
-      // Restaura escala original preferida do usuário no preview do editor
-      setSlideScale(originalScale);
 
       const imgData = canvas.toDataURL('image/png', 1.0);
       const imgWidth = canvas.width;
@@ -456,18 +851,22 @@ export default function App() {
       console.error('Error generating PDF:', error);
       setPdfStatus('error');
       setTimeout(() => setPdfStatus('idle'), 4000);
+    } finally {
+      // Sempre restaura o getComputedStyle original para evitar vazamentos de proxies
+      restoreFns.forEach(restore => restore());
+      setSlideScale(originalScale);
+      setAutoFit(originalAutoFit);
     }
   };
 
-  // HANDLERS DE EDIÇÃO DE PÁTIOS
-  const handleYardChange = (key: string, field: keyof Yard, value: string) => {
+  // HANDLERS DE EDIÇÃO DE PÁTIOS COM SINCRONIZAÇÃO EM TEMPO REAL ONLINE
+  const handleYardChange = async (key: string, field: keyof Yard, value: string) => {
+    const numericValue = Number(value);
+    const finalVal = isNaN(numericValue) ? 0 : (numericValue >= 0 ? numericValue : 0);
+    
     setYards(prev => {
       const updated = { ...prev };
-      const numericValue = Number(value);
-      const finalVal = isNaN(numericValue) ? 0 : (numericValue >= 0 ? numericValue : 0);
-      
       if (updated[key]) {
-        // We only edit numeric fields through UI inputs here
         updated[key] = {
           ...updated[key],
           [field]: finalVal
@@ -475,6 +874,16 @@ export default function App() {
       }
       return updated;
     });
+
+    if (auth.currentUser) {
+      try {
+        await updateDoc(doc(db, 'yards', key), {
+          [field]: finalVal
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `yards/${key}`);
+      }
+    }
   };
 
   // CÁLCULO DE OCUPAÇÃO DE PÁTIO
@@ -485,31 +894,55 @@ export default function App() {
   };
 
   // EXCLUIR NAVIO
-  const deleteVessel = (id: number) => {
+  const deleteVessel = async (id: number) => {
     setVessels(vessels.filter(v => v.id !== id));
+
+    if (auth.currentUser) {
+      try {
+        await deleteDoc(doc(db, 'vessels', String(id)));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `vessels/${id}`);
+      }
+    }
   };
 
   // ADICIONAR NAVIO
-  const addVessel = (e: React.FormEvent) => {
+  const addVessel = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newVesselName || !newVesselEta) return;
+    const newId = Date.now();
     const newV: Vessel = {
-      id: Date.now(),
+      id: newId,
       name: newVesselName.toUpperCase(),
       eta: newVesselEta,
       cntrs: Number(newVesselCntrs) || 0
     };
+    
     setVessels([...vessels, newV]);
     setNewVesselName('');
     setNewVesselEta('');
     setNewVesselCntrs(1000);
+
+    if (auth.currentUser) {
+      try {
+        await setDoc(doc(db, 'vessels', String(newId)), {
+          id: String(newId),
+          name: newV.name,
+          eta: newV.eta,
+          cntrs: newV.cntrs
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `vessels/${newId}`);
+      }
+    }
   };
 
   // ALTERAR DADO ESPECÍFICO DO GRÁFICO DA ESQUERDA (Backlog/ETA)
-  const handleChartLeftChange = (index: number, field: keyof ChartLeftItem, value: string) => {
-    const updated = [...chartLeft];
+  const handleChartLeftChange = async (index: number, field: keyof ChartLeftItem, value: string) => {
     const numValue = Number(value);
     const finalVal = isNaN(numValue) ? 0 : numValue;
+    
+    const updated = [...chartLeft];
     if (updated[index] && (field === 'backlog' || field === 'arrivals')) {
       updated[index] = {
         ...updated[index],
@@ -517,14 +950,175 @@ export default function App() {
       } as ChartLeftItem;
     }
     setChartLeft(updated);
+
+    if (auth.currentUser) {
+      const docId = String(index).padStart(3, '0');
+      try {
+        await updateDoc(doc(db, 'chartLeft', docId), {
+          [field]: finalVal
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `chartLeft/${docId}`);
+      }
+    }
   };
 
   // MULTIPLICADOR EM MASSA DOS GRÁFICOS (Para simulações rápidas de estresse)
-  const applyMultiplierToBacklog = (multiplier: number) => {
-    setChartLeft(prev => prev.map(item => ({
+  const applyMultiplierToBacklog = async (multiplier: number) => {
+    const updated = chartLeft.map(item => ({
       ...item,
       backlog: Math.round(item.backlog * multiplier)
-    })));
+    }));
+    setChartLeft(updated);
+
+    if (auth.currentUser) {
+      try {
+        const batch = writeBatch(db);
+        updated.forEach((item, index) => {
+          const docId = String(index).padStart(3, '0');
+          batch.update(doc(db, 'chartLeft', docId), { backlog: item.backlog });
+        });
+        await batch.commit();
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `chartLeft/batch-multiplier`);
+      }
+    }
+  };
+
+  // ALTERAR DADO ESPECÍFICO DO GRÁFICO DA DIREITA (Entregas Diárias / Dates)
+  const handleChartRightChange = async (index: number, field: keyof ChartRightItem, value: string) => {
+    const updated = [...chartRight];
+    if (!updated[index]) return;
+
+    if (field === 'value') {
+      const numVal = Number(value);
+      updated[index].value = isNaN(numVal) ? 0 : numVal;
+    } else if (field === 'date' || field === 'type') {
+      updated[index][field] = value;
+    }
+    
+    setChartRight(updated);
+
+    if (auth.currentUser) {
+      const item = updated[index];
+      const docId = item.docId || String(index).padStart(3, '0');
+      try {
+        await updateDoc(doc(db, 'chartRight', docId), {
+          [field]: field === 'value' ? (isNaN(Number(value)) ? 0 : Number(value)) : value
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `chartRight/${docId}`);
+      }
+    }
+  };
+
+  // Adicionar Semana para Gráfico da Esquerda (ChartLeft)
+  const handleAddChartLeft = async (week: string, arrivals: number, backlog: number) => {
+    if (!week) return;
+    
+    let nextIndex = chartLeft.length;
+    chartLeft.forEach(item => {
+      if (item.docId && !isNaN(Number(item.docId))) {
+        nextIndex = Math.max(nextIndex, Number(item.docId) + 1);
+      }
+    });
+    const docId = String(nextIndex).padStart(3, '0');
+
+    const newItem: ChartLeftItem = {
+      docId,
+      week,
+      arrivals,
+      backlog
+    };
+
+    setChartLeft(prev => {
+      const updated = [...prev, newItem];
+      return updated.sort((a, b) => {
+        const numA = parseInt(a.week.replace('W', '')) || 0;
+        const numB = parseInt(b.week.replace('W', '')) || 0;
+        return numA - numB;
+      });
+    });
+
+    if (auth.currentUser) {
+      try {
+        await setDoc(doc(db, 'chartLeft', docId), {
+          week,
+          arrivals,
+          backlog
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `chartLeft/${docId}`);
+      }
+    }
+  };
+
+  // Remover Semana do Gráfico da Esquerda (ChartLeft)
+  const handleDeleteChartLeft = async (index: number) => {
+    const item = chartLeft[index];
+    if (!item) return;
+
+    setChartLeft(prev => prev.filter((_, i) => i !== index));
+
+    if (auth.currentUser) {
+      const docId = item.docId || String(index).padStart(3, '0');
+      try {
+        await deleteDoc(doc(db, 'chartLeft', docId));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `chartLeft/${docId}`);
+      }
+    }
+  };
+
+  // Adicionar Entrega Diária para Gráfico da Direita (ChartRight)
+  const handleAddChartRight = async (date: string, value: number, type: string) => {
+    if (!date) return;
+
+    let nextIndex = chartRight.length;
+    chartRight.forEach(item => {
+      if (item.docId && !isNaN(Number(item.docId))) {
+        nextIndex = Math.max(nextIndex, Number(item.docId) + 1);
+      }
+    });
+    const docId = String(nextIndex).padStart(3, '0');
+
+    const newItem: ChartRightItem = {
+      docId,
+      date,
+      value,
+      type
+    };
+
+    setChartRight(prev => [...prev, newItem]);
+
+    if (auth.currentUser) {
+      try {
+        await setDoc(doc(db, 'chartRight', docId), {
+          date,
+          value,
+          type
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `chartRight/${docId}`);
+      }
+    }
+  };
+
+  // Remover Entrega Diária do Gráfico da Direita (ChartRight)
+  const handleDeleteChartRight = async (index: number) => {
+    const item = chartRight[index];
+    if (!item) return;
+
+    setChartRight(prev => prev.filter((_, i) => i !== index));
+
+    if (auth.currentUser) {
+      const docId = item.docId || String(index).padStart(3, '0');
+      try {
+        await deleteDoc(doc(db, 'chartRight', docId));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `chartRight/${docId}`);
+      }
+    }
   };
 
   // Retorna título dinâmico conforme a seleção de linguagem
@@ -569,11 +1163,56 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Status do Banco e Login do Google */}
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs mr-1 select-none">
+              <span className="flex items-center gap-1">
+                {dbStatus === 'online' ? (
+                  <Wifi className="w-3.5 h-3.5 text-emerald-500" title="Banco Online Sincronizado" />
+                ) : dbStatus === 'connecting' ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-500" title="Conectando..." />
+                ) : (
+                  <WifiOff className="w-3.5 h-3.5 text-rose-400" title="Usando fallback Offline local" />
+                )}
+                <span className="text-[10px] font-mono font-bold uppercase text-slate-500">
+                  {dbStatus === 'online' ? 'Online' : dbStatus === 'connecting' ? 'Sinc' : 'Offline'}
+                </span>
+              </span>
+
+              <div className="h-4 w-px bg-slate-200 mx-1"></div>
+
+              {user ? (
+                <div id="firebase-logged-in-container" className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-bold">
+                    <UserIcon className="w-3 h-3 text-emerald-600" />
+                    <span>{user.displayName || user.email?.split('@')[0]}</span>
+                  </div>
+                  <button
+                    id="btn-google-signout"
+                    onClick={logoutUser}
+                    className="p-1 text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+                    title="Desconectar do Firebase"
+                  >
+                    <LogOut className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  id="btn-google-signin"
+                  onClick={loginWithGoogle}
+                  className="flex items-center gap-1 text-[10px] bg-white border border-gray-200 hover:border-red-400 text-gray-700 font-extrabold px-2 py-0.5 rounded cursor-pointer transition-colors shadow-sm"
+                  title="Faça login com sua conta do Google para editar os dados online em tempo real!"
+                >
+                  <Lock className="w-3 h-3 text-red-500" />
+                  <span>Conectar Firebase</span>
+                </button>
+              )}
+            </div>
+
             {/* Seletor de Idiomas */}
             <div className="bg-gray-100 p-1 rounded-lg flex items-center gap-1 border border-gray-200">
               <button 
                 id="btn-lang-pt"
-                onClick={() => setLanguage('pt')}
+                onClick={() => { setLanguage('pt'); updateGlobalDoc('language', 'pt'); }}
                 className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'pt' ? 'bg-white shadow text-blue-700' : 'text-gray-500 hover:text-gray-800'}`}
                 title="Português"
               >
@@ -581,7 +1220,7 @@ export default function App() {
               </button>
               <button 
                 id="btn-lang-zh"
-                onClick={() => setLanguage('zh')}
+                onClick={() => { setLanguage('zh'); updateGlobalDoc('language', 'zh'); }}
                 className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'zh' ? 'bg-white shadow text-red-600' : 'text-gray-500 hover:text-gray-800'}`}
                 title="Mandarim (中文)"
               >
@@ -589,7 +1228,7 @@ export default function App() {
               </button>
               <button 
                 id="btn-lang-bilingual"
-                onClick={() => setLanguage('bilingual')}
+                onClick={() => { setLanguage('bilingual'); updateGlobalDoc('language', 'bilingual'); }}
                 className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'bilingual' ? 'bg-white shadow text-emerald-700' : 'text-gray-500 hover:text-gray-800'}`}
                 title="Bilíngue (Lado a Lado)"
               >
@@ -600,7 +1239,7 @@ export default function App() {
             {/* Alternar Proporção */}
             <button
               id="btn-toggle-widescreen"
-              onClick={() => setWidescreenMode(!widescreenMode)}
+              onClick={() => { const val = !widescreenMode; setWidescreenMode(val); updateGlobalDoc('widescreenMode', val); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
                 widescreenMode 
                   ? 'bg-blue-50 text-blue-700 border border-blue-200' 
@@ -615,7 +1254,7 @@ export default function App() {
             {/* Alternador de Tema do slide */}
             <button
               id="btn-toggle-theme"
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              onClick={() => { const val = theme === 'light' ? 'dark' : 'light'; setTheme(val); updateGlobalDoc('theme', val); }}
               className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-all"
               title="Alternar Tema do Slide"
             >
@@ -717,13 +1356,14 @@ export default function App() {
       <main id="main-content-area" className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         
         {/* VIEWPORT DO SLIDE (ESQUERDA) */}
-        <div id="slide-viewport-container" className="flex-1 p-4 flex flex-col items-center justify-center overflow-y-auto">
+        <div id="slide-viewport-container" className="flex-1 px-2 py-1 flex flex-col items-center justify-start overflow-y-auto">
           
           {/* CONTAINER DO SLIDE (COMPARTIMENTO DE TELA PPT) */}
           <div 
             id="slide-capture-area" 
             className={`
-              w-full shadow-2xl rounded-2xl p-6 transition-all relative border overflow-hidden
+              w-full shadow-2xl rounded-2xl transition-all relative border overflow-hidden
+              ${widescreenMode ? 'p-3.5' : 'p-6'}
               ${theme === 'dark' ? 'bg-[#0f172a] border-slate-800' : 'bg-[#FAFCFF] border-slate-100'}
             `}
             style={{
@@ -743,7 +1383,7 @@ export default function App() {
               className="flex flex-col justify-between"
             >
               {/* CABEÇALHO DO SLIDE */}
-              <div id="slide-header" className="flex justify-between items-start mb-4 border-b pb-3 border-dashed border-gray-200 dark:border-gray-800">
+              <div id="slide-header" className={`flex justify-between items-start border-b border-dashed border-gray-200 dark:border-gray-800 ${widescreenMode ? 'mb-2 pb-1.5' : 'mb-4 pb-3'}`}>
                 <div className="w-4/5">
                   <div className="flex items-center gap-2 text-[10px] font-bold text-red-600 dark:text-red-400 mb-1 tracking-widest uppercase">
                     <span>{language === 'bilingual' ? `${TRANSLATIONS.systemTitle.pt} | ${TRANSLATIONS.systemTitle.zh}` : t('systemTitle')}</span>
@@ -769,32 +1409,32 @@ export default function App() {
               <div id="slide-dashboard-grid" className={`grid grid-cols-12 gap-3 ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px]'}`}>
                 
                 {/* COLUNA ESQUERDA: PÁTIOS */}
-                <div className="col-span-12 lg:col-span-8 flex flex-col gap-2.5">
+                <div className={`col-span-12 lg:col-span-8 flex flex-col ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
                   
                   {/* LINHA 1 DE PÁTIOS (TECON & INTERMARITIMA) */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <YardCard yard={yards.tecon} ocupacao={getYardOcupacao(yards.tecon)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} />
-                    <YardCard yard={yards.intermaritima} ocupacao={getYardOcupacao(yards.intermaritima)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} />
+                  <div className={`grid grid-cols-2 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                    <YardCard yard={yards.tecon} ocupacao={getYardOcupacao(yards.tecon)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
+                    <YardCard yard={yards.intermaritima} ocupacao={getYardOcupacao(yards.intermaritima)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
                   </div>
 
                   {/* LINHA 2 DE PÁTIOS (TPC & CLIA EMPORIO) */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <YardCard yard={yards.tpc} ocupacao={getYardOcupacao(yards.tpc)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} />
-                    <YardCard yard={yards.clia} ocupacao={getYardOcupacao(yards.clia)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} />
+                  <div className={`grid grid-cols-2 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                    <YardCard yard={yards.tpc} ocupacao={getYardOcupacao(yards.tpc)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
+                    <YardCard yard={yards.clia} ocupacao={getYardOcupacao(yards.clia)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
                   </div>
 
                   {/* LINHA 3 DE PÁTIOS (CDEX, PONTUAL & BUFFER) */}
-                  <div className="grid grid-cols-3 gap-2.5">
-                    <YardCard yard={yards.ag} ocupacao={getYardOcupacao(yards.ag)} isEdit={isEditMode} theme={theme} isSmall t={t} language={language} renderLabel={renderLabel} />
-                    <YardCard yard={yards.cts} ocupacao={getYardOcupacao(yards.cts)} isEdit={isEditMode} theme={theme} isSmall t={t} language={language} renderLabel={renderLabel} />
-                    <YardCard yard={yards.buffer} ocupacao={getYardOcupacao(yards.buffer)} isEdit={isEditMode} theme={theme} isSmall t={t} language={language} renderLabel={renderLabel} />
+                  <div className={`grid grid-cols-3 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                    <YardCard yard={yards.ag} ocupacao={getYardOcupacao(yards.ag)} isEdit={isEditMode} theme={theme} isSmall t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
+                    <YardCard yard={yards.cts} ocupacao={getYardOcupacao(yards.cts)} isEdit={isEditMode} theme={theme} isSmall t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
+                    <YardCard yard={yards.buffer} ocupacao={getYardOcupacao(yards.buffer)} isEdit={isEditMode} theme={theme} isSmall t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
                   </div>
 
                 </div>
 
                 {/* COLUNA DIREITA: TABELA DE NAVIOS / ESCALA */}
                 <div className="col-span-12 lg:col-span-4 flex flex-col h-full">
-                  <div className={`p-3.5 rounded-xl flex-1 border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
+                  <div className={`p-2.5 rounded-xl flex-1 border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
                     <div>
                       <div className="flex items-center justify-between border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
                         <h3 className="font-extrabold text-xs flex items-center gap-2 text-[#2563eb] tracking-tight">
@@ -815,9 +1455,9 @@ export default function App() {
                           <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
                             {vessels.map((vessel) => (
                               <tr key={vessel.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
-                                <td className="py-2.5 font-extrabold text-gray-800 dark:text-gray-200 text-xs tracking-tight">{vessel.name}</td>
-                                <td className="py-2.5 text-center text-gray-600 dark:text-gray-400 font-mono font-medium">{vessel.eta}</td>
-                                <td className="py-2.5 text-right font-black text-blue-600 dark:text-blue-400 text-xs">{vessel.cntrs.toLocaleString()}</td>
+                                <td className={`font-extrabold text-gray-800 dark:text-gray-200 text-xs tracking-tight ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.name}</td>
+                                <td className={`text-center text-gray-600 dark:text-gray-400 font-mono font-medium ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.eta}</td>
+                                <td className={`text-right font-black text-blue-600 dark:text-blue-400 text-xs ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.cntrs.toLocaleString()}</td>
                               </tr>
                             ))}
                             {vessels.length === 0 && (
@@ -845,7 +1485,7 @@ export default function App() {
                 <div className="col-span-12 grid grid-cols-1 lg:grid-cols-2 gap-3.5 mt-1">
                   
                   {/* GRÁFICO 1: BACKLOG E CAPACIDADE */}
-                  <div className={`p-2.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between h-[160px]`}>
+                  <div className={`p-2 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between ${widescreenMode ? 'h-[200px]' : 'h-[220px]'}`}>
                     <div className="flex justify-between items-center mb-0.5">
                       <h4 className="text-[10px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                         <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> {getChartLeftTitle()}
@@ -929,7 +1569,7 @@ export default function App() {
                   </div>
 
                   {/* GRÁFICO 2: ENTRADAS DIÁRIAS */}
-                  <div className={`p-2.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between h-[160px]`}>
+                  <div className={`p-2 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between ${widescreenMode ? 'h-[200px]' : 'h-[220px]'}`}>
                     <div className="flex justify-between items-center mb-0.5">
                       <h4 className="text-[10px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                         <Database className="w-3.5 h-3.5 text-cyan-500" /> {getChartRightTitle()}
@@ -1197,11 +1837,11 @@ export default function App() {
                       <div key={v.id} className="p-2 border border-gray-100 rounded flex justify-between items-center text-xs bg-white">
                         <div>
                           <p className="font-extrabold text-gray-800">{v.name}</p>
-                          <p className="text-[10px] text-gray-400">ETA: {v.eta} | Qtd: {v.cntrs}</p>
+                          <p className="text-[10px] text-gray-400 font-mono">ETA: {v.eta} | Qtd: {v.cntrs}</p>
                         </div>
                         <button 
                           onClick={() => deleteVessel(v.id)}
-                          className="p-1 text-red-500 hover:bg-red-50 rounded cursor-pointer animate-pulse"
+                          className="p-1 text-red-500 hover:bg-red-50 rounded cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1214,7 +1854,9 @@ export default function App() {
               {/* TAB: GRÁFICOS */}
               {activeTab === 'charts' && (
                 <div className="space-y-4 text-slate-800">
-                  <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100 space-y-2">
+                  
+                  {/* COEFICIENTE DE BACKLOG */}
+                  <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-105 space-y-2">
                     <p className="text-[11px] text-yellow-850 font-medium flex flex-col gap-1">
                       {language === 'zh' ? (
                         <span>通过调整下方的积压系数，模拟物流危机或快速消箱。</span>
@@ -1230,39 +1872,242 @@ export default function App() {
                     <div className="grid grid-cols-2 gap-1.5">
                       <button 
                         onClick={() => applyMultiplierToBacklog(1.3)} 
-                        className="py-1 bg-red-100 text-red-700 font-bold rounded text-[10px] hover:bg-red-200 transition-all cursor-pointer"
+                        className="py-1 bg-red-100 text-red-700 font-bold rounded text-[10px] hover:bg-red-200 transition-all cursor-pointer font-sans"
                       >
                         Aumento / 增加 +30%
                       </button>
                       <button 
                         onClick={() => applyMultiplierToBacklog(0.7)} 
-                        className="py-1 bg-green-100 text-green-700 font-bold rounded text-[10px] hover:bg-green-200 transition-all cursor-pointer"
+                        className="py-1 bg-green-100 text-green-700 font-bold rounded text-[10px] hover:bg-green-200 transition-all cursor-pointer font-sans"
                       >
                         Redução / 减少 -30%
                       </button>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <span className="text-xs font-bold text-gray-700 block">Editar Picos Semanais / 编辑每周积压 (Backlog):</span>
-                    {chartLeft.filter((_, idx) => [17, 18, 19, 20, 21, 22, 23, 24].includes(idx)).map((item, idx) => {
-                      const realIndex = chartLeft.findIndex(i => i.week === item.week);
-                      return (
-                        <div key={`edit-left-${idx}`} className="flex gap-2 items-center justify-between text-xs border-b pb-1.5 border-gray-100">
-                          <span className="font-black text-gray-600">{item.week}</span>
-                          <div className="flex gap-1 items-center">
-                            <span className="text-[10px] text-gray-400">Backlog:</span>
-                            <input 
-                              type="number"
-                              value={item.backlog}
-                              onChange={(e) => handleChartLeftChange(realIndex, 'backlog', e.target.value)}
-                              className="w-16 text-center border rounded p-0.5 font-bold text-slate-800"
-                            />
-                          </div>
+                  {/* SEÇÃO CHART LEFT: SEMANAS / BACKLOG */}
+                  <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50 space-y-3.5">
+                    <div className="flex items-center gap-1.5 border-b pb-1.5 border-slate-200">
+                      <TrendingUp className="w-4 h-4 text-emerald-500" />
+                      <span className="text-xs font-black text-slate-850 uppercase">
+                        {language === 'zh' ? '每周积压与到港管理 (图表1)' : language === 'pt' ? 'Gerenciar semanas e backlog (Gráfico 1)' : 'Semanas & Backlog (Gráfico 1)'}
+                      </span>
+                    </div>
+
+                    {/* Cadastrar Nova Semana Formulário */}
+                    <form 
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleAddChartLeft(newWeekName, newWeekArrivals, newWeekBacklog);
+                        // Auto-increment standard W numbers
+                        const match = newWeekName.match(/^W(\d+)$/);
+                        if (match) {
+                          const nextNum = parseInt(match[1]) + 1;
+                          setNewWeekName(`W${nextNum}`);
+                        }
+                      }}
+                      className="bg-white p-2.5 rounded-lg border border-slate-200 space-y-2 text-[11px]"
+                    >
+                      <div className="font-extrabold text-[#111827] mb-1">
+                        {language === 'zh' ? '➕ 添加新周数据' : '➕ Cadastrar nova semana'}
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <div className="space-y-0.5">
+                          <label className="text-[9px] text-gray-400 font-bold uppercase block">Semana / 周</label>
+                          <input 
+                            type="text"
+                            value={newWeekName}
+                            onChange={(e) => setNewWeekName(e.target.value)}
+                            required
+                            placeholder="W30"
+                            className="w-full text-center border rounded p-1 font-bold text-slate-805 bg-white text-slate-850 focus:ring-1 focus:ring-slate-400 outline-none"
+                          />
                         </div>
-                      );
-                    })}
+                        <div className="space-y-0.5">
+                          <label className="text-[9px] text-gray-400 font-bold uppercase block">ATA / 到港</label>
+                          <input 
+                            type="number"
+                            value={newWeekArrivals}
+                            onChange={(e) => setNewWeekArrivals(Math.max(0, Number(e.target.value)))}
+                            required
+                            className="w-full text-center border rounded p-1 font-bold text-slate-805 bg-white text-slate-850 focus:ring-1 focus:ring-slate-400 outline-none"
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <label className="text-[9px] text-gray-400 font-bold uppercase block">Backlog / 积压</label>
+                          <input 
+                            type="number"
+                            value={newWeekBacklog}
+                            onChange={(e) => setNewWeekBacklog(Math.max(0, Number(e.target.value)))}
+                            required
+                            className="w-full text-center border rounded p-1 font-bold text-slate-805 bg-white text-slate-850 focus:ring-1 focus:ring-slate-400 outline-none"
+                          />
+                        </div>
+                      </div>
+                      <button 
+                        type="submit"
+                        className="w-full py-1 bg-slate-800 hover:bg-slate-900 text-white rounded font-bold text-[10px] uppercase transition-all cursor-pointer flex items-center justify-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> {language === 'zh' ? '添加周数据' : 'Adicionar Semana'}
+                      </button>
+                    </form>
+
+                    {/* Lista Sincronizada de Semanas */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider block">
+                        {language === 'zh' ? '📚 已配置周列表 (可滚动/可编辑)' : '📚 Semanas Configuradas (Lista Editável/Rolável):'}
+                      </span>
+                      <div className="max-h-56 overflow-y-auto pr-1 border border-slate-200 rounded-lg p-1.5 bg-white space-y-1.5 shadow-inner">
+                        {chartLeft.map((item, idx) => (
+                          <div key={`edit-left-${idx}`} className="p-1.5 border border-slate-100 rounded bg-slate-50/50 flex flex-col gap-1 text-[11px]">
+                            <div className="flex justify-between items-center bg-slate-200/50 px-1.5 py-0.5 rounded">
+                              <span className="font-extrabold text-slate-800 font-mono">{item.week}</span>
+                              <button 
+                                type="button" 
+                                onClick={() => handleDeleteChartLeft(idx)}
+                                className="p-0.5 hover:bg-red-50 text-red-500 rounded transition-all cursor-pointer"
+                                title="Deletar semana"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-[9px] text-gray-400 font-bold uppercase">ATA:</span>
+                                <input 
+                                  type="number"
+                                  value={item.arrivals}
+                                  onChange={(e) => handleChartLeftChange(idx, 'arrivals', e.target.value)}
+                                  className="w-16 text-center border rounded font-mono p-0.5 text-slate-800 bg-white font-bold"
+                                />
+                              </div>
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-[9px] text-gray-400 font-bold uppercase">Backlog:</span>
+                                <input 
+                                  type="number"
+                                  value={item.backlog}
+                                  onChange={(e) => handleChartLeftChange(idx, 'backlog', e.target.value)}
+                                  className="w-16 text-center border rounded font-mono p-0.5 text-slate-800 bg-white font-bold"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
+
+                  {/* SEÇÃO CHART RIGHT: ENTREGAS DIÁRIAS */}
+                  <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50 space-y-3.5">
+                    <div className="flex items-center gap-1.5 border-b pb-1.5 border-slate-200">
+                      <Database className="w-4 h-4 text-cyan-500" />
+                      <span className="text-xs font-black text-slate-850 uppercase">
+                        {language === 'zh' ? '每日出境交付数据配置 (图表2)' : language === 'pt' ? 'Configurar Entregas Diárias (Gráfico 2)' : 'Entregas Diárias (Gráfico 2)'}
+                      </span>
+                    </div>
+
+                    {/* Cadastrar Nova Entrega Formulário */}
+                    <form 
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleAddChartRight(newDeliveryDate, newDeliveryValue, newDeliveryType);
+                      }}
+                      className="bg-white p-2.5 rounded-lg border border-slate-200 space-y-2 text-[11px]"
+                    >
+                      <div className="font-extrabold text-[#111827] mb-1">
+                        {language === 'zh' ? '➕ 添加每日交付数据' : '➕ Cadastrar nova entrega'}
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <div className="space-y-0.5">
+                          <label className="text-[9px] text-gray-400 font-bold uppercase block">{language === 'zh' ? '日期' : 'Data Ex.'}</label>
+                          <input 
+                            type="text"
+                            value={newDeliveryDate}
+                            onChange={(e) => setNewDeliveryDate(e.target.value)}
+                            required
+                            placeholder="21/05"
+                            className="w-full text-center border rounded p-1 font-bold text-slate-805 bg-white text-slate-850 focus:ring-1 focus:ring-slate-400 outline-none"
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <label className="text-[9px] text-gray-400 font-bold uppercase block">{language === 'zh' ? '交付值' : 'Qtd / Valor'}</label>
+                          <input 
+                            type="number"
+                            value={newDeliveryValue}
+                            onChange={(e) => setNewDeliveryValue(Math.max(0, Number(e.target.value)))}
+                            required
+                            className="w-full text-center border rounded p-1 font-bold text-slate-805 bg-white text-slate-850 focus:ring-1 focus:ring-slate-400 outline-none"
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <label className="text-[9px] text-gray-400 font-bold uppercase block">{language === 'zh' ? '类型' : 'Tipo'}</label>
+                          <select 
+                            value={newDeliveryType}
+                            onChange={(e) => setNewDeliveryType(e.target.value)}
+                            className="w-full text-center border rounded p-1 font-bold text-slate-805 bg-white text-slate-850 focus:ring-1 focus:ring-slate-400 outline-none"
+                          >
+                            <option value="A">Tipo A (Stable)</option>
+                            <option value="B">Tipo B (High)</option>
+                            <option value="C">Tipo C (Normal)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <button 
+                        type="submit"
+                        className="w-full py-1 bg-slate-800 hover:bg-slate-900 text-white rounded font-bold text-[10px] uppercase transition-all cursor-pointer flex items-center justify-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> {language === 'zh' ? '添加交付数据' : 'Adicionar Entrega'}
+                      </button>
+                    </form>
+
+                    {/* Lista Sincronizada de Entregas Diárias */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider block">
+                        {language === 'zh' ? '📚 已配置交付列表 (可滚动/可编辑)' : '📚 Entregas Cadastradas (Lista Editável/Rolável):'}
+                      </span>
+                      <div className="max-h-56 overflow-y-auto pr-1 border border-slate-200 rounded-lg p-1.5 bg-white space-y-1.5 shadow-inner">
+                        {chartRight.map((item, idx) => (
+                          <div key={`edit-right-${idx}`} className="p-1.5 border border-slate-100 rounded bg-slate-50/50 flex flex-col gap-1 text-[11px]">
+                            <div className="flex justify-between items-center bg-slate-200/50 px-1.5 py-0.5 rounded">
+                              <span className="font-extrabold text-indigo-900 font-mono">{item.date}</span>
+                              <button 
+                                type="button" 
+                                onClick={() => handleDeleteChartRight(idx)}
+                                className="p-0.5 hover:bg-red-50 text-red-500 rounded transition-all cursor-pointer"
+                                title="Deletar entrega"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'zh' ? '数量:' : 'Valor:'}</span>
+                                <input 
+                                  type="number"
+                                  value={item.value}
+                                  onChange={(e) => handleChartRightChange(idx, 'value', e.target.value)}
+                                  className="w-16 text-center border rounded font-mono p-0.5 text-slate-800 bg-white font-bold"
+                                />
+                              </div>
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'zh' ? '类型:' : 'Tipo:'}</span>
+                                <select 
+                                  value={item.type}
+                                  onChange={(e) => handleChartRightChange(idx, 'type', e.target.value)}
+                                  className="w-16 border rounded font-mono p-0.5 text-slate-850 bg-white font-bold text-center"
+                                >
+                                  <option value="A">A</option>
+                                  <option value="B">B</option>
+                                  <option value="C">C</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               )}
 
@@ -1274,7 +2119,11 @@ export default function App() {
                     <input 
                       type="text" 
                       value={slideTitlePT}
-                      onChange={(e) => setSlideTitlePT(e.target.value.toUpperCase())}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase();
+                        setSlideTitlePT(val);
+                        updateGlobalDoc('slideTitlePT', val);
+                      }}
                       className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white text-slate-800 focus:ring-1 focus:ring-red-500 outline-none"
                     />
                   </div>
@@ -1284,7 +2133,11 @@ export default function App() {
                     <input 
                       type="text" 
                       value={slideTitleZH}
-                      onChange={(e) => setSlideTitleZH(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSlideTitleZH(val);
+                        updateGlobalDoc('slideTitleZH', val);
+                      }}
                       className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white text-slate-800 focus:ring-1 focus:ring-red-500 outline-none"
                     />
                   </div>
@@ -1300,7 +2153,11 @@ export default function App() {
                       min="1200" 
                       max="1750" 
                       value={slideWidth}
-                      onChange={(e) => setSlideWidth(Number(e.target.value))}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setSlideWidth(val);
+                        updateGlobalDoc('slideWidth', val);
+                      }}
                       className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600 mt-1"
                     />
                     <span className="text-[9.5px] text-gray-400 block leading-tight">Escolha dimensões maiores para dar mais espaço e evitar cortes de layout.</span>
@@ -1320,25 +2177,48 @@ export default function App() {
                       onChange={(e) => setSidePanelWidth(Number(e.target.value))}
                       className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 mt-1"
                     />
-                    <span className="text-[9.5px] text-gray-400 block leading-tight">Aumente para dar mais espaço à área de edição e evitar cortes ou quebras de linhas nas tabelas de dados. / 加宽侧框，防止编辑数据被折叠遮挡。</span>
+                    <span className="text-[9.5px] text-gray-400 block leading-tight">Aumente para dar mais espaço à área de edição e evitar cortes ou quebras de linhas nas tabelas de dados. / 加宽侧框，防止编辑 data 被折叠遮挡。</span>
+                  </div>
+
+                   {/* CONFIGURAÇÃO DE AJUSTE AUTOMÁTICO DO CONTEÚDO */}
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between p-2.5 border border-emerald-100 rounded-lg bg-emerald-50/40 dark:bg-emerald-950/10 dark:border-emerald-900/30">
+                      <div className="flex flex-col pr-2">
+                        <span className="text-xs text-emerald-800 dark:text-emerald-450 font-bold">Auto-Ajustar à Tela / 自动自适应</span>
+                        <span className="text-[9.5px] text-gray-400 dark:text-gray-500 leading-tight">Redimensiona o slide de forma automática para evitar cortes na tela.</span>
+                      </div>
+                      <input 
+                        type="checkbox" 
+                        checked={autoFit}
+                        onChange={(e) => setAutoFit(e.target.checked)}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 h-4.5 w-4.5 cursor-pointer accent-emerald-600"
+                      />
+                    </div>
                   </div>
 
                   {/* SLIDE CONTENT SCALE CONTROL (SLIDER) */}
                   <div className="space-y-1 pt-1">
                     <div className="flex justify-between items-center">
                       <label className="text-[10px] text-gray-500 font-bold uppercase block">Zoom do Conteúdo / 内容缩放</label>
-                      <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-md">{Math.round(slideScale * 100)}%</span>
+                      <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${autoFit ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30' : 'text-blue-600 bg-blue-50 dark:bg-blue-950/20'}`}>
+                        {Math.round(slideScale * 100)}% {autoFit && "(Auto)"}
+                      </span>
                     </div>
                     <input 
                       type="range" 
-                      min="0.8" 
+                      min="0.45" 
                       max="1.2" 
-                      step="0.05"
+                      step="0.01"
                       value={slideScale}
+                      disabled={autoFit}
                       onChange={(e) => setSlideScale(Number(e.target.value))}
-                      className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600 mt-1"
+                      className={`w-full h-1.5 rounded-lg appearance-none mt-1 ${autoFit ? 'bg-gray-100 dark:bg-slate-800 cursor-not-allowed accent-gray-400' : 'bg-gray-200 cursor-pointer accent-red-600'}`}
                     />
-                    <span className="text-[9.5px] text-gray-400 block leading-tight">Garante que todas as informações se encaixem perfeitamente sem cortes nas bordas.</span>
+                    <span className="text-[9.5px] text-gray-400 block leading-tight">
+                      {autoFit 
+                        ? "Desative o Auto-Ajustar acima para alterar a escala de zoom manualmente."
+                        : "Arraste para ajustar horizontal ou verticalmente a escala de zoom do painel."}
+                    </span>
                   </div>
 
                   <div className="space-y-1">
@@ -1346,7 +2226,11 @@ export default function App() {
                     <input 
                       type="text" 
                       value={watermarkText}
-                      onChange={(e) => setWatermarkText(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setWatermarkText(val);
+                        updateGlobalDoc('watermarkText', val);
+                      }}
                       className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white text-slate-800 focus:ring-1 focus:ring-red-500 outline-none"
                     />
                   </div>
@@ -1356,7 +2240,11 @@ export default function App() {
                     <input 
                       type="checkbox" 
                       checked={showWatermark}
-                      onChange={(e) => setShowWatermark(e.target.checked)}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        setShowWatermark(val);
+                        updateGlobalDoc('showWatermark', val);
+                      }}
                       className="rounded text-emerald-500 focus:ring-emerald-500 h-4 w-4 cursor-pointer"
                     />
                   </div>
@@ -1392,9 +2280,10 @@ interface YardCardProps {
   t: (key: string) => string;
   language: string;
   renderLabel: (key: string, colorClass?: string) => React.ReactNode;
+  widescreenMode?: boolean;
 }
 
-function YardCard({ yard, ocupacao, isEdit, isSmall = false, theme, t, language, renderLabel }: YardCardProps) {
+function YardCard({ yard, ocupacao, isEdit, isSmall = false, theme, t, language, renderLabel, widescreenMode = false }: YardCardProps) {
   const isEstouro = ocupacao > 100;
 
   let themeColor = "bg-blue-600 text-white"; 
@@ -1405,7 +2294,9 @@ function YardCard({ yard, ocupacao, isEdit, isSmall = false, theme, t, language,
   }
 
   return (
-    <div className={`p-2.5 rounded-lg border relative transition-all ${
+    <div className={`rounded-lg border relative transition-all ${
+      widescreenMode ? (isSmall ? 'p-1.5' : 'p-2') : 'p-2.5'
+    } ${
       theme === 'dark' 
         ? 'bg-[#1e293b] border-slate-800 text-white' 
         : 'bg-white border-slate-100 shadow-sm'
@@ -1413,19 +2304,23 @@ function YardCard({ yard, ocupacao, isEdit, isSmall = false, theme, t, language,
     >
       
       {/* Topo do Card */}
-      <div className="flex justify-between items-start mb-1">
+      <div className={`flex justify-between items-start ${widescreenMode ? 'mb-0.5' : 'mb-1'}`}>
         <div>
-          <h4 className="font-extrabold text-[12.5px] tracking-tight text-gray-900 dark:text-white uppercase leading-none">{yard.name}</h4>
+          <h4 className={`font-extrabold tracking-tight text-gray-900 dark:text-white uppercase leading-none ${
+            widescreenMode ? 'text-[11px]' : 'text-[12.5px]'
+          }`}>{yard.name}</h4>
           <div className="block mt-0.5">{renderLabel('activeSupplier', "text-gray-400 dark:text-gray-500 text-[8px]")}</div>
         </div>
-        <span className={`text-[8.5px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${themeColor}`}>
+        <span className={`font-black rounded uppercase tracking-wider ${
+          widescreenMode ? 'text-[7.5px] px-1 py-0.5' : 'text-[8.5px] px-1.5 py-0.5'
+        } ${themeColor}`}>
           {yard.type}
         </span>
       </div>
 
       {/* Barra de Progresso / Ocupação */}
-      <div className="mt-1">
-        <div className="flex justify-between text-[10px] font-bold mb-0.5">
+      <div className={widescreenMode ? 'mt-0.5' : 'mt-1'}>
+        <div className={`flex justify-between font-bold mb-0.5 ${widescreenMode ? 'text-[8.5px]' : 'text-[10px]'}`}>
           <span className="text-gray-400">{renderLabel('usedCapacity', "text-gray-400 dark:text-gray-500")}</span>
           <span className={isEstouro ? 'text-red-500 font-black' : 'text-[#10b981] font-black'}>
             {ocupacao}% {isEstouro && (
@@ -1444,23 +2339,33 @@ function YardCard({ yard, ocupacao, isEdit, isSmall = false, theme, t, language,
       </div>
 
       {/* Dados Numéricos Centrais */}
-      <div className="grid grid-cols-3 gap-0.5 mt-1.5 bg-gray-50/50 dark:bg-slate-800/40 p-1 rounded-md text-center">
+      <div className={`grid grid-cols-3 gap-0.5 bg-gray-50/50 dark:bg-slate-800/40 rounded-md text-center ${
+        widescreenMode ? 'mt-1 p-0.5' : 'mt-1.5 p-1'
+      }`}>
         <div className="flex flex-col justify-between py-0.5">
           <span className="block leading-none">{renderLabel('totalCap', "text-gray-400 dark:text-gray-500")}</span>
-          <span className="text-[11.5px] font-extrabold text-gray-700 dark:text-gray-200 block mt-0.5 leading-none font-mono">{yard.capacity.toLocaleString()}</span>
+          <span className={`font-extrabold text-gray-700 dark:text-gray-200 block mt-0.5 leading-none font-mono ${
+            widescreenMode ? 'text-[10px]' : 'text-[11.5px]'
+          }`}>{yard.capacity.toLocaleString()}</span>
         </div>
         <div className="flex flex-col justify-between py-0.5 border-l border-r border-gray-100 dark:border-slate-800/60">
           <span className="block leading-none">{renderLabel('full', "text-blue-500 dark:text-blue-400")}</span>
-          <span className="text-[11.5px] font-extrabold text-blue-600 dark:text-blue-400 block mt-0.5 leading-none font-mono">{yard.cheio.toLocaleString()}</span>
+          <span className={`font-extrabold text-blue-600 dark:text-blue-400 block mt-0.5 leading-none font-mono ${
+            widescreenMode ? 'text-[10px]' : 'text-[11.5px]'
+          }`}>{yard.cheio.toLocaleString()}</span>
         </div>
         <div className="flex flex-col justify-between py-0.5">
           <span className="block leading-none">{renderLabel('empty', "text-slate-400 dark:text-slate-500")}</span>
-          <span className="text-[11.5px] font-extrabold text-slate-500 dark:text-slate-400 block mt-0.5 leading-none font-mono">{yard.vazio.toLocaleString()}</span>
+          <span className={`font-extrabold text-slate-500 dark:text-slate-400 block mt-0.5 leading-none font-mono ${
+            widescreenMode ? 'text-[10px]' : 'text-[11.5px]'
+          }`}>{yard.vazio.toLocaleString()}</span>
         </div>
       </div>
 
       {/* Sub-informações adicionais da parte de baixo */}
-      <div className="grid grid-cols-3 gap-0.5 mt-1 text-[9px] text-gray-400 font-bold uppercase pt-0.5 leading-tight">
+      <div className={`grid grid-cols-3 gap-0.5 font-bold uppercase pt-0.5 leading-tight ${
+        widescreenMode ? 'mt-0.5 text-[8.2px]' : 'mt-1 text-[9px]'
+      } text-gray-400`}>
         <div className="text-left truncate">
           <span className="text-gray-400">{language === 'bilingual' ? '港口/Porto' : (language === 'zh' ? '港口' : 'Porto')}:</span> <span className="text-gray-700 dark:text-gray-200 font-extrabold leading-none">{yard.porto}</span>
         </div>

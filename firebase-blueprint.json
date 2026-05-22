@@ -1,0 +1,97 @@
+{
+  "entities": {
+    "YardDefinition": {
+      "title": "Yard State",
+      "description": "Represents the active capacity and operational metrics of a single terminal or yard.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the yard" },
+        "type": { "type": "string", "description": "Type of the yard: BONDED, WAREHOUSE, etc." },
+        "capacity": { "type": "number", "description": "Total container limit size" },
+        "cheio": { "type": "number", "description": "Full container count" },
+        "vazio": { "type": "number", "description": "Empty container count" },
+        "porto": { "type": "number", "description": "Port container count" },
+        "prontoColeta": { "type": "number", "description": "Quantity ready for pickup" },
+        "delivered": { "type": "number", "description": "Delivered count" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last modified time" }
+      },
+      "required": ["name", "type", "capacity", "cheio", "vazio", "porto", "prontoColeta", "delivered"]
+    },
+    "VesselDefinition": {
+      "title": "Vessel State",
+      "description": "Represents a container vessel docking plan element with expected time of arrival and capacity.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Vessel unique indentifier" },
+        "name": { "type": "string", "description": "Name of the vessel" },
+        "eta": { "type": "string", "description": "Estimated time of arrival (DD/MM/YYYY style)" },
+        "cntrs": { "type": "number", "description": "Container container count to load/unload" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Created time" }
+      },
+      "required": ["id", "name", "eta", "cntrs"]
+    },
+    "ChartLeftDefinition": {
+      "title": "Chart Left Data Item",
+      "description": "Data item representing weekly arrivals compared to backlogs.",
+      "type": "object",
+      "properties": {
+        "week": { "type": "string", "description": "Week number/label (e.g., W1)" },
+        "arrivals": { "type": "number", "description": "Arrival container quantity" },
+        "backlog": { "type": "number", "description": "Backlog volume" }
+      },
+      "required": ["week", "arrivals", "backlog"]
+    },
+    "ChartRightDefinition": {
+      "title": "Chart Right Data Item",
+      "description": "Data item representing daily container entry logs.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "description": "Date label (DD/MM)" },
+        "value": { "type": "number", "description": "Quantity processed" },
+        "type": { "type": "string", "description": "Category or grouping type (A, B, or C)" }
+      },
+      "required": ["date", "value", "type"]
+    },
+    "ConfigDefinition": {
+      "title": "Global Slide Configuration",
+      "description": "Stores state variables to synchronize the dashboard aesthetic preferences, titles, and layout across refreshes.",
+      "type": "object",
+      "properties": {
+        "language": { "type": "string", "enum": ["pt", "zh", "bilingual"], "description": "Bilingual or native view language selection" },
+        "slideTitlePT": { "type": "string", "description": "PT slide header text" },
+        "slideTitleZH": { "type": "string", "description": "CN slide header text" },
+        "slideSubtitlePT": { "type": "string", "description": "PT subtitle tracking details" },
+        "slideSubtitleZH": { "type": "string", "description": "CN subtitle tracking details" },
+        "watermarkText": { "type": "string", "description": "Corporate watermark label text" },
+        "showWatermark": { "type": "boolean", "description": "Whether security watermark is rendered" },
+        "theme": { "type": "string", "enum": ["light", "dark"], "description": "Active UI background color scheme" },
+        "widescreenMode": { "type": "boolean", "description": "Locks the grid structure to native 16:9 widescreen layout" },
+        "slideWidth": { "type": "number", "description": "Virtual absolute slide width size in pixels" },
+        "lastUpdatedBy": { "type": "string", "description": "User UID who made the latest change" }
+      },
+      "required": ["language", "slideTitlePT", "slideTitleZH", "watermarkText", "showWatermark", "theme", "widescreenMode"]
+    }
+  },
+  "firestore": {
+    "/yards/{yardId}": {
+      "schema": "YardDefinition",
+      "description": "Database instances representing individual yards (tecon, intermaritima, etc.)."
+    },
+    "/vessels/{vesselId}": {
+      "schema": "VesselDefinition",
+      "description": "Database items representing active docked vessels."
+    },
+    "/chartLeft/{itemId}": {
+      "schema": "ChartLeftDefinition",
+      "description": "Database records tracking backlog forecast vs capacity metrics week over week."
+    },
+    "/chartRight/{itemId}": {
+      "schema": "ChartRightDefinition",
+      "description": "Database records tracking daily container incoming metrics."
+    },
+    "/config/global": {
+      "schema": "ConfigDefinition",
+      "description": "Singleton configuration holding slide layout variables, custom watermarks, and headers."
+    }
+  }
+}
