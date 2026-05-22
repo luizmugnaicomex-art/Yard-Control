@@ -389,14 +389,12 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (usr) => {
       setUser(usr);
-      setDbStatus(usr ? 'online' : 'offline');
     });
     return () => unsubscribe();
   }, []);
 
   // 2. INICIALIZADORES SE O BANCO ESTIVER COMPLETAMENTE VAZIO
   const initializeYardsInDb = async () => {
-    if (!auth.currentUser) return;
     try {
       const batch = writeBatch(db);
       Object.entries(ORIGINAL_YARDS).forEach(([key, yard]) => {
@@ -409,7 +407,6 @@ export default function App() {
   };
 
   const initializeVesselsInDb = async () => {
-    if (!auth.currentUser) return;
     try {
       const batch = writeBatch(db);
       ORIGINAL_VESSELS.forEach((vessel) => {
@@ -427,7 +424,6 @@ export default function App() {
   };
 
   const initializeChartLeftInDb = async () => {
-    if (!auth.currentUser) return;
     try {
       const batch = writeBatch(db);
       ORIGINAL_CHART_LEFT.forEach((item, index) => {
@@ -441,7 +437,6 @@ export default function App() {
   };
 
   const initializeChartRightInDb = async () => {
-    if (!auth.currentUser) return;
     try {
       const batch = writeBatch(db);
       ORIGINAL_CHART_RIGHT.forEach((item, index) => {
@@ -455,7 +450,6 @@ export default function App() {
   };
 
   const initializeConfigInDb = async () => {
-    if (!auth.currentUser) return;
     try {
       await setDoc(doc(db, 'config', 'global'), {
         language,
@@ -606,14 +600,12 @@ export default function App() {
 
   // FUNÇÃO AUXILIAR PARA ATUALIZAÇÃO DO CONFIG SINGLETON NO FIRESTORE
   const updateGlobalDoc = async (field: string, value: any) => {
-    if (auth.currentUser) {
-      try {
-        await updateDoc(doc(db, 'config', 'global'), {
-          [field]: value
-        });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, 'config/global');
-      }
+    try {
+      await updateDoc(doc(db, 'config', 'global'), {
+        [field]: value
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'config/global');
     }
   };
 
@@ -1048,14 +1040,12 @@ export default function App() {
       return updated;
     });
 
-    if (auth.currentUser) {
-      try {
-        await updateDoc(doc(db, 'yards', key), {
-          [field]: finalVal
-        });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, `yards/${key}`);
-      }
+    try {
+      await updateDoc(doc(db, 'yards', key), {
+        [field]: finalVal
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `yards/${key}`);
     }
   };
 
@@ -1070,12 +1060,10 @@ export default function App() {
   const deleteVessel = async (id: number) => {
     setVessels(vessels.filter(v => v.id !== id));
 
-    if (auth.currentUser) {
-      try {
-        await deleteDoc(doc(db, 'vessels', String(id)));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, `vessels/${id}`);
-      }
+    try {
+      await deleteDoc(doc(db, 'vessels', String(id)));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `vessels/${id}`);
     }
   };
 
@@ -1096,17 +1084,15 @@ export default function App() {
     setNewVesselEta('');
     setNewVesselCntrs(1000);
 
-    if (auth.currentUser) {
-      try {
-        await setDoc(doc(db, 'vessels', String(newId)), {
-          id: String(newId),
-          name: newV.name,
-          eta: newV.eta,
-          cntrs: newV.cntrs
-        });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.CREATE, `vessels/${newId}`);
-      }
+    try {
+      await setDoc(doc(db, 'vessels', String(newId)), {
+        id: String(newId),
+        name: newV.name,
+        eta: newV.eta,
+        cntrs: newV.cntrs
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `vessels/${newId}`);
     }
   };
 
@@ -1124,15 +1110,13 @@ export default function App() {
     }
     setChartLeft(updated);
 
-    if (auth.currentUser) {
-      const docId = String(index).padStart(3, '0');
-      try {
-        await updateDoc(doc(db, 'chartLeft', docId), {
-          [field]: finalVal
-        });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, `chartLeft/${docId}`);
-      }
+    const docId = String(index).padStart(3, '0');
+    try {
+      await updateDoc(doc(db, 'chartLeft', docId), {
+        [field]: finalVal
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `chartLeft/${docId}`);
     }
   };
 
@@ -1144,17 +1128,15 @@ export default function App() {
     }));
     setChartLeft(updated);
 
-    if (auth.currentUser) {
-      try {
-        const batch = writeBatch(db);
-        updated.forEach((item, index) => {
-          const docId = String(index).padStart(3, '0');
-          batch.update(doc(db, 'chartLeft', docId), { backlog: item.backlog });
-        });
-        await batch.commit();
-      } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, `chartLeft/batch-multiplier`);
-      }
+    try {
+      const batch = writeBatch(db);
+      updated.forEach((item, index) => {
+        const docId = String(index).padStart(3, '0');
+        batch.update(doc(db, 'chartLeft', docId), { backlog: item.backlog });
+      });
+      await batch.commit();
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `chartLeft/batch-multiplier`);
     }
   };
 
@@ -1172,16 +1154,14 @@ export default function App() {
     
     setChartRight(updated);
 
-    if (auth.currentUser) {
-      const item = updated[index];
-      const docId = item.docId || String(index).padStart(3, '0');
-      try {
-        await updateDoc(doc(db, 'chartRight', docId), {
-          [field]: field === 'value' ? (isNaN(Number(value)) ? 0 : Number(value)) : value
-        });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, `chartRight/${docId}`);
-      }
+    const item = updated[index];
+    const docId = item.docId || String(index).padStart(3, '0');
+    try {
+      await updateDoc(doc(db, 'chartRight', docId), {
+        [field]: field === 'value' ? (isNaN(Number(value)) ? 0 : Number(value)) : value
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `chartRight/${docId}`);
     }
   };
 
@@ -1213,16 +1193,14 @@ export default function App() {
       });
     });
 
-    if (auth.currentUser) {
-      try {
-        await setDoc(doc(db, 'chartLeft', docId), {
-          week,
-          arrivals,
-          backlog
-        });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.CREATE, `chartLeft/${docId}`);
-      }
+    try {
+      await setDoc(doc(db, 'chartLeft', docId), {
+        week,
+        arrivals,
+        backlog
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `chartLeft/${docId}`);
     }
   };
 
@@ -1233,13 +1211,11 @@ export default function App() {
 
     setChartLeft(prev => prev.filter((_, i) => i !== index));
 
-    if (auth.currentUser) {
-      const docId = item.docId || String(index).padStart(3, '0');
-      try {
-        await deleteDoc(doc(db, 'chartLeft', docId));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, `chartLeft/${docId}`);
-      }
+    const docId = item.docId || String(index).padStart(3, '0');
+    try {
+      await deleteDoc(doc(db, 'chartLeft', docId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `chartLeft/${docId}`);
     }
   };
 
@@ -1264,16 +1240,14 @@ export default function App() {
 
     setChartRight(prev => [...prev, newItem]);
 
-    if (auth.currentUser) {
-      try {
-        await setDoc(doc(db, 'chartRight', docId), {
-          date,
-          value,
-          type
-        });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.CREATE, `chartRight/${docId}`);
-      }
+    try {
+      await setDoc(doc(db, 'chartRight', docId), {
+        date,
+        value,
+        type
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `chartRight/${docId}`);
     }
   };
 
@@ -1284,13 +1258,11 @@ export default function App() {
 
     setChartRight(prev => prev.filter((_, i) => i !== index));
 
-    if (auth.currentUser) {
-      const docId = item.docId || String(index).padStart(3, '0');
-      try {
-        await deleteDoc(doc(db, 'chartRight', docId));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, `chartRight/${docId}`);
-      }
+    const docId = item.docId || String(index).padStart(3, '0');
+    try {
+      await deleteDoc(doc(db, 'chartRight', docId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `chartRight/${docId}`);
     }
   };
 
@@ -1879,8 +1851,18 @@ export default function App() {
                                   fill={barColor} 
                                   rx="0.5"
                                 />
-                                {item.value > 210 && i % 4 === 0 && (
-                                  <text x={x} y={y - 3} fill={theme === 'dark' ? '#cbd5e1' : '#1e293b'} fontSize="6" fontWeight="black" textAnchor="middle" className="font-mono">{item.value}</text>
+                                {item.value > 0 && (
+                                  <text 
+                                    x={x} 
+                                    y={y - 3} 
+                                    fill={theme === 'dark' ? '#cbd5e1' : '#1e293b'} 
+                                    fontSize="5" 
+                                    fontWeight="black" 
+                                    textAnchor="middle" 
+                                    className="font-mono"
+                                  >
+                                    {item.value}
+                                  </text>
                                 )}
                               </g>
                             );
@@ -2202,8 +2184,18 @@ export default function App() {
                                   fill={barColor} 
                                   rx="0.5"
                                 />
-                                {item.value > 210 && i % 4 === 0 && (
-                                  <text x={x} y={y - 3} fill={theme === 'dark' ? '#cbd5e1' : '#1e293b'} fontSize="6.5" fontWeight="black" textAnchor="middle" className="font-mono">{item.value}</text>
+                                {item.value > 0 && (
+                                  <text 
+                                    x={x} 
+                                    y={y - 3} 
+                                    fill={theme === 'dark' ? '#cbd5e1' : '#1e293b'} 
+                                    fontSize="5.5" 
+                                    fontWeight="black" 
+                                    textAnchor="middle" 
+                                    className="font-mono"
+                                  >
+                                    {item.value}
+                                  </text>
                                 )}
                               </g>
                             );

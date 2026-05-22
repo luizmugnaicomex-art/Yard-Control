@@ -74,7 +74,7 @@ service cloud.firestore {
 
     function isValidConfig(data) {
       return data.keys().hasAll(['language', 'slideTitlePT', 'slideTitleZH', 'watermarkText', 'showWatermark', 'theme', 'widescreenMode', 'slideWidth'])
-        && data.keys().size() <= 12
+        && data.keys().size() <= 20
         && data.language is string && (data.language == 'pt' || data.language == 'zh' || data.language == 'bilingual')
         && data.slideTitlePT is string && data.slideTitlePT.size() <= 400
         && data.slideTitleZH is string && data.slideTitleZH.size() <= 400
@@ -82,39 +82,44 @@ service cloud.firestore {
         && data.showWatermark is bool
         && data.theme is string && (data.theme == 'light' || data.theme == 'dark')
         && data.widescreenMode is bool
-        && data.slideWidth is number && data.slideWidth >= 1000 && data.slideWidth <= 2000;
+        && data.slideWidth is number && data.slideWidth >= 1000 && data.slideWidth <= 2000
+        && (!data.keys().contains('yardsComment') || data.yardsComment is string)
+        && (!data.keys().contains('vesselNote1') || data.vesselNote1 is string)
+        && (!data.keys().contains('vesselNote2') || data.vesselNote2 is string)
+        && (!data.keys().contains('chartNote1') || data.chartNote1 is string)
+        && (!data.keys().contains('chartNote2') || data.chartNote2 is string);
     }
 
     // MATCH BLOCKS FOR ALL IDENTIFIED COLLECTIONS
 
     match /yards/{yardId} {
       allow read: if true;
-      allow create, update: if isEmailVerified() && isValidId(yardId) && isValidYard(incoming());
-      allow delete: if isEmailVerified() && isValidId(yardId);
+      allow create, update: if isValidId(yardId) && isValidYard(incoming());
+      allow delete: if isValidId(yardId);
     }
 
     match /vessels/{vesselId} {
       allow read: if true;
-      allow create, update: if isEmailVerified() && isValidId(vesselId) && isValidVessel(incoming());
-      allow delete: if isEmailVerified() && isValidId(vesselId);
+      allow create, update: if isValidId(vesselId) && isValidVessel(incoming());
+      allow delete: if isValidId(vesselId);
     }
 
     match /chartLeft/{itemId} {
       allow read: if true;
-      allow create, update: if isEmailVerified() && isValidId(itemId) && isValidChartLeft(incoming());
-      allow delete: if isEmailVerified() && isValidId(itemId);
+      allow create, update: if isValidId(itemId) && isValidChartLeft(incoming());
+      allow delete: if isValidId(itemId);
     }
 
     match /chartRight/{itemId} {
       allow read: if true;
-      allow create, update: if isEmailVerified() && isValidId(itemId) && isValidChartRight(incoming());
-      allow delete: if isEmailVerified() && isValidId(itemId);
+      allow create, update: if isValidId(itemId) && isValidChartRight(incoming());
+      allow delete: if isValidId(itemId);
     }
 
     // Configuration documents
     match /config/{configId} {
       allow read: if true;
-      allow create, update: if isEmailVerified() && (configId == 'global') && isValidConfig(incoming());
+      allow create, update: if (configId == 'global') && isValidConfig(incoming());
       allow delete: if false; // Singleton protection
     }
 
