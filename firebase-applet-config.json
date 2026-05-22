@@ -1,10 +1,9 @@
 {
-  "projectId": "gen-lang-client-0619490827",
-  "appId": "1:77587856600:web:fcc46a8bc8f7dd93102bad",
-  "apiKey": "AIzaSyCVbFVzAxjc_1a2sX7hhPbfIwGw6Ld8Mns",
-  "authDomain": "gen-lang-client-0619490827.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-226ccf30-30a2-45a8-af0a-713e0e49ea17",
-  "storageBucket": "gen-lang-client-0619490827.firebasestorage.app",
-  "messagingSenderId": "77587856600",
-  "measurementId": ""
+  "apiKey": "AIzaSyCpx5TqiIiMo3ZstRpm11y_KlnTy1GF93M",
+  "authDomain": "yard-control-beta.firebaseapp.com",
+  "projectId": "yard-control-beta",
+  "storageBucket": "yard-control-beta.firebasestorage.app",
+  "messagingSenderId": "31753679201",
+  "appId": "1:31753679201:web:40132fdc3a40b231b65520",
+  "measurementId": "G-ZYPLVMPSDW"
 }
