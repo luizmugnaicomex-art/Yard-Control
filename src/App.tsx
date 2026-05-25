@@ -329,6 +329,8 @@ const ORIGINAL_CHART_RIGHT: ChartRightItem[] = [
 export default function App() {
   // ESTADOS PRINCIPAIS
   const [yards, setYards] = useState<YardsState>(() => JSON.parse(JSON.stringify(ORIGINAL_YARDS)));
+  const bondedYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type === 'BONDED');
+  const nonBondedYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type !== 'BONDED');
   const [vessels, setVessels] = useState<Vessel[]>(() => JSON.parse(JSON.stringify(ORIGINAL_VESSELS)));
   const [chartLeft, setChartLeft] = useState<ChartLeftItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_LEFT)));
   const [chartRight, setChartRight] = useState<ChartRightItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_RIGHT)));
@@ -678,6 +680,16 @@ export default function App() {
   const [newVesselName, setNewVesselName] = useState('');
   const [newVesselEta, setNewVesselEta] = useState('');
   const [newVesselCntrs, setNewVesselCntrs] = useState(1000);
+
+  // Estado para novo Pátio / Warehouse
+  const [newYardName, setNewYardName] = useState('');
+  const [newYardType, setNewYardType] = useState<string>('WAREHOUSE');
+  const [newYardCapacity, setNewYardCapacity] = useState<number>(1000);
+  const [newYardCheio, setNewYardCheio] = useState<number>(0);
+  const [newYardVazio, setNewYardVazio] = useState<number>(0);
+  const [newYardPorto, setNewYardPorto] = useState<number>(0);
+  const [newYardProntoColeta, setNewYardProntoColeta] = useState<number>(0);
+  const [newYardDelivered, setNewYardDelivered] = useState<number>(0);
 
   // FUNÇÃO DE TRADUÇÃO DINÂMICA
   const t = (key: string): string => {
@@ -1093,6 +1105,63 @@ export default function App() {
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `vessels/${newId}`);
+    }
+  };
+
+  // ADICIONAR NOVO PÁTIO / WAREHOUSE
+  const addYard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newYardName.trim()) return;
+
+    // Generate safe document ID
+    const docId = newYardName.toLowerCase().trim().replace(/[^a-z0-9_\-]/g, '_');
+    if (!docId) return;
+
+    const newY: Yard = {
+      name: newYardName.trim().toUpperCase(),
+      type: newYardType,
+      capacity: Number(newYardCapacity) || 0,
+      cheio: Number(newYardCheio) || 0,
+      vazio: Number(newYardVazio) || 0,
+      porto: Number(newYardPorto) || 0,
+      prontoColeta: Number(newYardProntoColeta) || 0,
+      delivered: Number(newYardDelivered) || 0
+    };
+
+    setYards(prev => ({
+      ...prev,
+      [docId]: newY
+    }));
+
+    setNewYardName('');
+    setNewYardCapacity(1000);
+    setNewYardCheio(0);
+    setNewYardVazio(0);
+    setNewYardPorto(0);
+    setNewYardProntoColeta(0);
+    setNewYardDelivered(0);
+
+    try {
+      await setDoc(doc(db, 'yards', docId), newY);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `yards/${docId}`);
+    }
+  };
+
+  // EXCLUIR PÁTIO / WAREHOUSE
+  const deleteYard = async (key: string) => {
+    if (!window.confirm("Deseja realmente excluir este pátio/warehouse? / 确定要删除该堆场吗？")) return;
+
+    setYards(prev => {
+      const copy = { ...prev };
+      delete copy[key];
+      return copy;
+    });
+
+    try {
+      await deleteDoc(doc(db, 'yards', key));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `yards/${key}`);
     }
   };
 
@@ -1646,27 +1715,47 @@ export default function App() {
               {currentSlide === 0 ? (
                 <div id="slide-dashboard-grid" className={`grid grid-cols-12 gap-3 ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px]'}`}>
                   
-                  {/* COLUNA ESQUERDA: PÁTIOS */}
+                  {/* COLUNA ESQUERDA: PÁTIOS DINÂMICOS */}
                   <div className={`col-span-12 lg:col-span-8 flex flex-col ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
                     
-                    {/* LINHA 1 DE PÁTIOS (TECON & INTERMARITIMA) */}
-                    <div className={`grid grid-cols-2 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
-                      <YardCard yard={yards.tecon} ocupacao={getYardOcupacao(yards.tecon)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                      <YardCard yard={yards.intermaritima} ocupacao={getYardOcupacao(yards.intermaritima)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                    </div>
+                    {/* PALHETA DE RENDERING DE PATIOS ALFANDEGADOS (BONDED) */}
+                    {bondedYards.length > 0 && (
+                      <div className={`grid grid-cols-2 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                        {bondedYards.map(([key, yard]) => (
+                          <YardCard 
+                            key={key} 
+                            yard={yard} 
+                            ocupacao={getYardOcupacao(yard)} 
+                            isEdit={isEditMode} 
+                            theme={theme} 
+                            t={t} 
+                            language={language} 
+                            renderLabel={renderLabel} 
+                            widescreenMode={widescreenMode} 
+                          />
+                        ))}
+                      </div>
+                    )}
 
-                    {/* LINHA 2 DE PÁTIOS (TPC & CLIA EMPORIO) */}
-                    <div className={`grid grid-cols-2 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
-                      <YardCard yard={yards.tpc} ocupacao={getYardOcupacao(yards.tpc)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                      <YardCard yard={yards.clia} ocupacao={getYardOcupacao(yards.clia)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                    </div>
-
-                    {/* LINHA 3 DE PÁTIOS (CDEX, PONTUAL & BUFFER) */}
-                    <div className={`grid grid-cols-3 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
-                      <YardCard yard={yards.ag} ocupacao={getYardOcupacao(yards.ag)} isEdit={isEditMode} theme={theme} isSmall t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                      <YardCard yard={yards.cts} ocupacao={getYardOcupacao(yards.cts)} isEdit={isEditMode} theme={theme} isSmall t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                      <YardCard yard={yards.buffer} ocupacao={getYardOcupacao(yards.buffer)} isEdit={isEditMode} theme={theme} isSmall t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                    </div>
+                    {/* PALHETA DE RENDERING DE RECINTOS NACIONAIS & CD (WAREHOUSE / BUFFER) */}
+                    {nonBondedYards.length > 0 && (
+                      <div className={`grid grid-cols-3 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                        {nonBondedYards.map(([key, yard]) => (
+                          <YardCard 
+                            key={key} 
+                            yard={yard} 
+                            ocupacao={getYardOcupacao(yard)} 
+                            isEdit={isEditMode} 
+                            theme={theme} 
+                            isSmall 
+                            t={t} 
+                            language={language} 
+                            renderLabel={renderLabel} 
+                            widescreenMode={widescreenMode} 
+                          />
+                        ))}
+                      </div>
+                    )}
 
                   </div>
 
@@ -1889,20 +1978,42 @@ export default function App() {
                 <div id="slide-dashboard-grid-yards" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
                   
                   {/* Cards de Pátio expandidos horizontalmente */}
-                  <div className="flex flex-col gap-2.5">
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <YardCard yard={yards.tecon} ocupacao={getYardOcupacao(yards.tecon)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                      <YardCard yard={yards.intermaritima} ocupacao={getYardOcupacao(yards.intermaritima)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <YardCard yard={yards.tpc} ocupacao={getYardOcupacao(yards.tpc)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                      <YardCard yard={yards.clia} ocupacao={getYardOcupacao(yards.clia)} isEdit={isEditMode} theme={theme} t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                    </div>
-                    <div className="grid grid-cols-3 gap-2.5">
-                      <YardCard yard={yards.ag} ocupacao={getYardOcupacao(yards.ag)} isEdit={isEditMode} theme={theme} isSmall t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                      <YardCard yard={yards.cts} ocupacao={getYardOcupacao(yards.cts)} isEdit={isEditMode} theme={theme} isSmall t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                      <YardCard yard={yards.buffer} ocupacao={getYardOcupacao(yards.buffer)} isEdit={isEditMode} theme={theme} isSmall t={t} language={language} renderLabel={renderLabel} widescreenMode={widescreenMode} />
-                    </div>
+                  <div className={`flex flex-col ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                    {bondedYards.length > 0 && (
+                      <div className={`grid grid-cols-2 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                        {bondedYards.map(([key, yard]) => (
+                          <YardCard 
+                            key={key} 
+                            yard={yard} 
+                            ocupacao={getYardOcupacao(yard)} 
+                            isEdit={isEditMode} 
+                            theme={theme} 
+                            t={t} 
+                            language={language} 
+                            renderLabel={renderLabel} 
+                            widescreenMode={widescreenMode} 
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {nonBondedYards.length > 0 && (
+                      <div className={`grid grid-cols-3 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                        {nonBondedYards.map(([key, yard]) => (
+                          <YardCard 
+                            key={key} 
+                            yard={yard} 
+                            ocupacao={getYardOcupacao(yard)} 
+                            isEdit={isEditMode} 
+                            theme={theme} 
+                            isSmall 
+                            t={t} 
+                            language={language} 
+                            renderLabel={renderLabel} 
+                            widescreenMode={widescreenMode} 
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Campo de Escrita Livre para Pátios */}
@@ -2339,7 +2450,7 @@ export default function App() {
               {/* TAB: PÁTIOS */}
               {activeTab === 'yards' && (
                 <div className="space-y-4">
-                  <div className="bg-red-50 p-3 rounded-lg border border-red-100 mb-2">
+                  <div className="bg-red-50 p-3 rounded-lg border border-red-100">
                     <p className="text-[11px] text-red-800 font-medium flex flex-col gap-1.5">
                       {language === 'zh' ? (
                         <span>请在下方配置您的实际堆场数据。系统会自动重新计算占用比例并触发超负荷“爆仓”警报！</span>
@@ -2354,11 +2465,132 @@ export default function App() {
                     </p>
                   </div>
 
+                  {/* FORMULÁRIO PARA ADICIONAR NOVO PÁTIO/WAREHOUSE */}
+                  <form onSubmit={addYard} className="p-3 border border-dashed border-red-200 rounded-lg bg-red-50/20 space-y-2">
+                    <span className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase block flex items-center gap-1">
+                      <Plus className="w-3.5 h-3.5" /> 
+                      {language === 'bilingual' ? 'Novo Pátio ou CD / 新建堆场或仓库' : language === 'zh' ? '新建堆场或仓库' : 'Novo Pátio ou CD'}
+                    </span>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <input 
+                          type="text" 
+                          placeholder="NOME / 名称"
+                          value={newYardName}
+                          onChange={(e) => setNewYardName(e.target.value)}
+                          className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white uppercase text-slate-800"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <select 
+                          value={newYardType}
+                          onChange={(e) => setNewYardType(e.target.value)}
+                          className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white text-slate-850 uppercase"
+                        >
+                          <option value="BONDED">BONDED / 关内</option>
+                          <option value="WAREHOUSE">CD & WAREHOUSE / 仓库</option>
+                          <option value="BUFFER">BUFFER / 缓冲区</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-slate-800">
+                      <div>
+                        <label className="text-[8px] text-gray-400 font-bold uppercase block">Capacity / 容积</label>
+                        <input 
+                          type="number" 
+                          placeholder="2000"
+                          value={newYardCapacity}
+                          onChange={(e) => setNewYardCapacity(Number(e.target.value) || 0)}
+                          className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                          min="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[8px] text-blue-500 font-bold uppercase block">Cheio / 重箱</label>
+                        <input 
+                          type="number" 
+                          placeholder="500"
+                          value={newYardCheio}
+                          onChange={(e) => setNewYardCheio(Number(e.target.value) || 0)}
+                          className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                          min="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[8px] text-slate-400 font-bold uppercase block">Vazio / 空箱</label>
+                        <input 
+                          type="number" 
+                          placeholder="100"
+                          value={newYardVazio}
+                          onChange={(e) => setNewYardVazio(Number(e.target.value) || 0)}
+                          className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-slate-800">
+                      <div>
+                        <label className="text-[8px] text-gray-400 font-bold uppercase block">Porto / 港口</label>
+                        <input 
+                          type="number" 
+                          placeholder="50"
+                          value={newYardPorto}
+                          onChange={(e) => setNewYardPorto(Number(e.target.value) || 0)}
+                          className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                          min="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[8px] text-blue-500 font-bold uppercase block">Coleta / 待提</label>
+                        <input 
+                          type="number" 
+                          placeholder="120"
+                          value={newYardProntoColeta}
+                          onChange={(e) => setNewYardProntoColeta(Number(e.target.value) || 0)}
+                          className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                          min="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[8px] text-emerald-500 font-bold uppercase block">Deliv / 交付</label>
+                        <input 
+                          type="number" 
+                          placeholder="80"
+                          value={newYardDelivered}
+                          onChange={(e) => setNewYardDelivered(Number(e.target.value) || 0)}
+                          className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+
+                    <button 
+                      type="submit"
+                      className="w-full bg-[#ef4444] hover:bg-red-700 text-white font-extrabold text-[10px] py-1.5 rounded uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      {language === 'zh' ? '添加堆场' : language === 'pt' ? 'Adicionar Pátio' : 'Adicionar Pátio / 添加'}
+                    </button>
+                  </form>
+
                   {(Object.entries(yards) as [string, Yard][]).map(([key, yard]) => (
                     <div key={key} className="p-3 border border-gray-100 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-all space-y-3">
                       <div className="flex justify-between items-center">
-                        <span className="font-extrabold text-xs text-gray-800">{yard.name}</span>
-                        <span className="text-[10px] bg-slate-200 text-slate-800 font-bold px-2 py-0.5 rounded uppercase">{yard.type}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-extrabold text-xs text-gray-800">{yard.name}</span>
+                          <span className="text-[10px] bg-slate-200 text-slate-800 font-bold px-2 py-0.5 rounded uppercase">{yard.type}</span>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => deleteYard(key)}
+                          title="Excluir Pátio / 删除堆场"
+                          className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-2 text-slate-800">
@@ -2914,6 +3146,7 @@ export default function App() {
 
 // SUBCOMPONENTE DE CARD DE PÁTIO (BILINGUE)
 interface YardCardProps {
+  key?: React.Key;
   yard: Yard;
   ocupacao: number;
   isEdit: boolean;
