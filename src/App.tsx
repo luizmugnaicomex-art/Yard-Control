@@ -27,7 +27,9 @@ import {
   Wifi,
   WifiOff,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -190,6 +192,7 @@ export interface Vessel {
   name: string;
   eta: string;
   cntrs: number;
+  order?: number;
 }
 
 export interface ChartLeftItem {
@@ -330,7 +333,8 @@ export default function App() {
   // ESTADOS PRINCIPAIS
   const [yards, setYards] = useState<YardsState>(() => JSON.parse(JSON.stringify(ORIGINAL_YARDS)));
   const bondedYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type === 'BONDED');
-  const nonBondedYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type !== 'BONDED');
+  const warehouseYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type === 'WAREHOUSE');
+  const bufferYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type !== 'BONDED' && y.type !== 'WAREHOUSE');
   const [vessels, setVessels] = useState<Vessel[]>(() => JSON.parse(JSON.stringify(ORIGINAL_VESSELS)));
   const [chartLeft, setChartLeft] = useState<ChartLeftItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_LEFT)));
   const [chartRight, setChartRight] = useState<ChartRightItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_RIGHT)));
@@ -507,10 +511,15 @@ export default function App() {
           id: Number(docSnap.id) || Date.now(),
           name: data.name,
           eta: data.eta,
-          cntrs: Number(data.cntrs) || 0
+          cntrs: Number(data.cntrs) || 0,
+          order: data.order !== undefined ? Number(data.order) : undefined
         });
       });
-      newVessels.sort((a, b) => a.id - b.id);
+      newVessels.sort((a, b) => {
+        const orderA = a.order !== undefined ? a.order : a.id;
+        const orderB = b.order !== undefined ? b.order : b.id;
+        return orderA - orderB;
+      });
       setVessels(newVessels);
     }, (err) => {
       console.warn("Falha ao ler vessels do Firestore:", err);
@@ -1088,7 +1097,8 @@ export default function App() {
       id: newId,
       name: newVesselName.toUpperCase(),
       eta: newVesselEta,
-      cntrs: Number(newVesselCntrs) || 0
+      cntrs: Number(newVesselCntrs) || 0,
+      order: vessels.length
     };
     
     setVessels([...vessels, newV]);
@@ -1101,10 +1111,91 @@ export default function App() {
         id: String(newId),
         name: newV.name,
         eta: newV.eta,
-        cntrs: newV.cntrs
+        cntrs: newV.cntrs,
+        order: newV.order
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `vessels/${newId}`);
+    }
+  };
+
+  // SHIFT / MOVER NAVIO NA FILA (MANUAL)
+  const shiftVessel = async (id: number, direction: 'up' | 'down') => {
+    const sorted = [...vessels];
+    const index = sorted.findIndex(v => v.id === id);
+    if (index === -1) return;
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === sorted.length - 1) return;
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    const temp = sorted[index];
+    sorted[index] = sorted[targetIndex];
+    sorted[targetIndex] = temp;
+
+    // Atualiza campo 'order' sequencialmente de 0 a n
+    const updatedVessels = sorted.map((v, idx) => ({
+      ...v,
+      order: idx
+    }));
+
+    setVessels(updatedVessels);
+
+    try {
+      const batch = writeBatch(db);
+      updatedVessels.forEach(v => {
+        batch.set(doc(db, 'vessels', String(v.id)), {
+          id: String(v.id),
+          name: v.name,
+          eta: v.eta,
+          cntrs: v.cntrs,
+          order: v.order
+        });
+      });
+      await batch.commit();
+    } catch (e) {
+      console.warn("Erro ao salvar ordem dos navios:", e);
+    }
+  };
+
+  // PARSER DE DATAS PARA ETA (DD/MM/YYYY ou DD/MM)
+  const parseVesselEta = (etaStr: string): Date => {
+    const parts = etaStr.replace(/[^0-9/]/g, '').split('/');
+    const day = parseInt(parts[0]) || 1;
+    const month = parseInt(parts[1]) || 1;
+    let year = parseInt(parts[2]) || 2026;
+    if (year < 100) year += 2000;
+    return new Date(year, month - 1, day);
+  };
+
+  // ORDENAR AUTOMATICAMENTE POR DATA DE ETA
+  const autoSortVesselsByDate = async () => {
+    const sorted = [...vessels].sort((a, b) => {
+      const dateA = parseVesselEta(a.eta);
+      const dateB = parseVesselEta(b.eta);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    const updatedVessels = sorted.map((v, idx) => ({
+      ...v,
+      order: idx
+    }));
+
+    setVessels(updatedVessels);
+
+    try {
+      const batch = writeBatch(db);
+      updatedVessels.forEach(v => {
+        batch.set(doc(db, 'vessels', String(v.id)), {
+          id: String(v.id),
+          name: v.name,
+          eta: v.eta,
+          cntrs: v.cntrs,
+          order: v.order
+        });
+      });
+      await batch.commit();
+    } catch (e) {
+      console.warn("Erro ao ordenar navios automaticamente:", e);
     }
   };
 
@@ -1737,10 +1828,30 @@ export default function App() {
                       </div>
                     )}
 
-                    {/* PALHETA DE RENDERING DE RECINTOS NACIONAIS & CD (WAREHOUSE / BUFFER) */}
-                    {nonBondedYards.length > 0 && (
+                    {/* PALHETA DE RENDERING DE RECINTOS NACIONAIS & CD (WAREHOUSE) */}
+                    {warehouseYards.length > 0 && (
                       <div className={`grid grid-cols-3 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
-                        {nonBondedYards.map(([key, yard]) => (
+                        {warehouseYards.map(([key, yard]) => (
+                          <YardCard 
+                            key={key} 
+                            yard={yard} 
+                            ocupacao={getYardOcupacao(yard)} 
+                            isEdit={isEditMode} 
+                            theme={theme} 
+                            isSmall 
+                            t={t} 
+                            language={language} 
+                            renderLabel={renderLabel} 
+                            widescreenMode={widescreenMode} 
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* PALHETA DE RENDERING DE BUFFERS */}
+                    {bufferYards.length > 0 && (
+                      <div className={`grid grid-cols-3 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                        {bufferYards.map(([key, yard]) => (
                           <YardCard 
                             key={key} 
                             yard={yard} 
@@ -1996,9 +2107,27 @@ export default function App() {
                         ))}
                       </div>
                     )}
-                    {nonBondedYards.length > 0 && (
+                    {warehouseYards.length > 0 && (
                       <div className={`grid grid-cols-3 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
-                        {nonBondedYards.map(([key, yard]) => (
+                        {warehouseYards.map(([key, yard]) => (
+                          <YardCard 
+                            key={key} 
+                            yard={yard} 
+                            ocupacao={getYardOcupacao(yard)} 
+                            isEdit={isEditMode} 
+                            theme={theme} 
+                            isSmall 
+                            t={t} 
+                            language={language} 
+                            renderLabel={renderLabel} 
+                            widescreenMode={widescreenMode} 
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {bufferYards.length > 0 && (
+                      <div className={`grid grid-cols-3 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                        {bufferYards.map(([key, yard]) => (
                           <YardCard 
                             key={key} 
                             yard={yard} 
@@ -2706,19 +2835,54 @@ export default function App() {
                   </form>
 
                   <div className="space-y-2">
-                    <span className="text-xs font-bold text-gray-700 block">Lista Cadastrada / 计划列表:</span>
+                    <div className="flex justify-between items-center pb-1">
+                      <span className="text-xs font-bold text-gray-700">Lista Cadastrada / 计划列表:</span>
+                      <button
+                        type="button"
+                        onClick={autoSortVesselsByDate}
+                        className="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-extrabold px-2 py-1 rounded transition-all cursor-pointer flex items-center gap-1 uppercase"
+                        title="Ordena os navios automaticamente com base na data do ETA / 基于预计到港日期自动排序"
+                      >
+                        <Sparkles className="w-3 h-3 text-[#d97706] animate-pulse" />
+                        {language === 'zh' ? '按预计日期排序' : language === 'pt' ? 'Ordenar por Data' : 'Ordenar p/ Data / 自动排序'}
+                      </button>
+                    </div>
+
                     {vessels.map(v => (
                       <div key={v.id} className="p-2 border border-gray-100 rounded flex justify-between items-center text-xs bg-white">
-                        <div>
+                        <div className="flex-1">
                           <p className="font-extrabold text-gray-800">{v.name}</p>
                           <p className="text-[10px] text-gray-400 font-mono">ETA: {v.eta} | Qtd: {v.cntrs}</p>
                         </div>
-                        <button 
-                          onClick={() => deleteVessel(v.id)}
-                          className="p-1 text-red-500 hover:bg-red-50 rounded cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          {/* Botões de Direção (Up/Down) */}
+                          <button
+                            type="button"
+                            onClick={() => shiftVessel(v.id, 'up')}
+                            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded cursor-pointer transition-colors"
+                            title="Mover para cima / 上移"
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => shiftVessel(v.id, 'down')}
+                            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded cursor-pointer transition-colors"
+                            title="Mover para baixo / 下移"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </button>
+
+                          {/* Botão de Excluir */}
+                          <button 
+                            type="button"
+                            onClick={() => deleteVessel(v.id)}
+                            className="p-1 text-red-500 hover:bg-red-50 rounded cursor-pointer transition-colors"
+                            title="Excluir Navio / 删除"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
