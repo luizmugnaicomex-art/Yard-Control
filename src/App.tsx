@@ -335,6 +335,7 @@ export default function App() {
   const bondedYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type === 'BONDED');
   const warehouseYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type === 'WAREHOUSE');
   const bufferYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type !== 'BONDED' && y.type !== 'WAREHOUSE');
+  const nonBondedYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type !== 'BONDED');
   const [vessels, setVessels] = useState<Vessel[]>(() => JSON.parse(JSON.stringify(ORIGINAL_VESSELS)));
   const [chartLeft, setChartLeft] = useState<ChartLeftItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_LEFT)));
   const [chartRight, setChartRight] = useState<ChartRightItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_RIGHT)));
@@ -364,7 +365,7 @@ export default function App() {
   // ESTADOS DE INTERFACE E EDIÇÃO
   const [isEditMode, setIsEditMode] = useState(true);
   const [activeTab, setActiveTab] = useState('yards'); // yards | vessels | charts | config
-  const [widescreenMode, setWidescreenMode] = useState(true); // Trava a proporção de 16:9 de PPT
+  const [widescreenMode, setWidescreenMode] = useState(false); // Trava a proporção de 16:9 de PPT
   const [slideWidth, setSlideWidth] = useState<number>(1480); // Default set wider (1480px) to prevent wrapping
   const [slideScale, setSlideScale] = useState<number>(1.0); // Content scaling zoom slider
   const [autoFit, setAutoFit] = useState<boolean>(true); // Auto-ajustar à tela para evitar corte de informações
@@ -1804,283 +1805,419 @@ export default function App() {
 
               {/* CONTEÚDO CONDICIONAL CONFORME O SLIDE ATIVO */}
               {currentSlide === 0 ? (
-                <div id="slide-dashboard-grid" className={`grid grid-cols-12 gap-3 ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px]'}`}>
+                <div id="website-dashboard-container" className="flex flex-col gap-6 w-full">
                   
-                  {/* COLUNA ESQUERDA: PÁTIOS DINÂMICOS */}
-                  <div className={`col-span-12 lg:col-span-8 flex flex-col ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                  {/* DESIGN REFRESH: 3x3 YARDS & VESSELS MATRIX */}
+                  {(() => {
+                    const yardClia = (Object.entries(yards) as [string, Yard][]).find(([key, y]) => key === 'clia' || (y && y.name.toUpperCase().includes('CLIA')));
+                    const yardInter = (Object.entries(yards) as [string, Yard][]).find(([key, y]) => key === 'intermaritima' || (y && y.name.toUpperCase().includes('INTERMARITIMA')));
+                    const yardBuffer = (Object.entries(yards) as [string, Yard][]).find(([_, y]) => y && y.type === 'BUFFER') || (Object.entries(yards) as [string, Yard][]).find(([key]) => key === 'buffer');
                     
-                    {/* PALHETA DE RENDERING DE PATIOS ALFANDEGADOS (BONDED) */}
-                    {bondedYards.length > 0 && (
-                      <div className={`grid grid-cols-2 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
-                        {bondedYards.map(([key, yard]) => (
-                          <YardCard 
-                            key={key} 
-                            yard={yard} 
-                            ocupacao={getYardOcupacao(yard)} 
-                            isEdit={isEditMode} 
-                            theme={theme} 
-                            t={t} 
-                            language={language} 
-                            renderLabel={renderLabel} 
-                            widescreenMode={widescreenMode} 
-                          />
-                        ))}
-                      </div>
-                    )}
+                    const yardTecon = (Object.entries(yards) as [string, Yard][]).find(([key, y]) => key === 'tecon' || (y && y.name.toUpperCase().includes('TECON')));
+                    const yardTpc = (Object.entries(yards) as [string, Yard][]).find(([key, y]) => key === 'tpc' || (y && y.name.toUpperCase().includes('TPC')));
+                    
+                    const warehouses = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type === 'WAREHOUSE');
+                    const yardAg = warehouses.find(([key, y]) => key === 'ag' || (y && y.name.toUpperCase().includes('AG'))) || warehouses[0];
+                    const yardCts = warehouses.find(([key, y]) => key === 'cts' || (y && y.name.toUpperCase().includes('CTS')) || (y && y.name.toUpperCase().includes('PONTUAL'))) || warehouses[1];
+                    const yardMultilog = warehouses.find(([key, y]) => key === 'multilog' || (y && y.name.toUpperCase().includes('MULTILOG'))) || warehouses[2];
 
-                    {/* PALHETA DE RENDERING DE RECINTOS NACIONAIS & CD (WAREHOUSE) */}
-                    {warehouseYards.length > 0 && (
-                      <div className={`grid grid-cols-3 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
-                        {warehouseYards.map(([key, yard]) => (
-                          <YardCard 
-                            key={key} 
-                            yard={yard} 
-                            ocupacao={getYardOcupacao(yard)} 
-                            isEdit={isEditMode} 
-                            theme={theme} 
-                            isSmall 
-                            t={t} 
-                            language={language} 
-                            renderLabel={renderLabel} 
-                            widescreenMode={widescreenMode} 
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    {/* PALHETA DE RENDERING DE BUFFERS */}
-                    {bufferYards.length > 0 && (
-                      <div className={`grid grid-cols-3 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
-                        {bufferYards.map(([key, yard]) => (
-                          <YardCard 
-                            key={key} 
-                            yard={yard} 
-                            ocupacao={getYardOcupacao(yard)} 
-                            isEdit={isEditMode} 
-                            theme={theme} 
-                            isSmall 
-                            t={t} 
-                            language={language} 
-                            renderLabel={renderLabel} 
-                            widescreenMode={widescreenMode} 
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                  </div>
-
-                  {/* COLUNA DIREITA: TABELA DE NAVIOS / ESCALA */}
-                  <div className="col-span-12 lg:col-span-4 flex flex-col h-full">
-                    <div className={`p-2.5 rounded-xl flex-1 border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
-                      <div>
-                        <div className="flex items-center justify-between border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
-                          <h3 className="font-extrabold text-xs flex items-center gap-2 text-[#2563eb] tracking-tight">
-                            <Ship className="w-4 h-4" /> {language === 'bilingual' ? '活跃船舶靠泊计划 (ETA)' : t('vesselSchedule')}
+                    return (
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-2 border-b pb-1.5 border-gray-200 dark:border-slate-800">
+                          <Database className="w-4 h-4 text-red-500 animate-pulse" />
+                          <h3 className="font-extrabold text-[12px] text-gray-800 dark:text-gray-100 uppercase tracking-widest">
+                            {language === 'bilingual' ? 'Grade Operacional de Monitoramento / 堆场动态与船舶总览' : 'Grade Operacional de Monitoramento'}
                           </h3>
-                          <span className="text-[9px] bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 font-bold px-1.5 py-0.5 rounded-full">{t('projected')}</span>
                         </div>
 
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left text-xs">
-                            <thead>
-                              <tr className="border-b border-gray-100 dark:border-slate-800 text-gray-400 font-bold uppercase text-[9.5px] tracking-wider">
-                                <th className="py-1.5">{getColHeader('vessel')}</th>
-                                <th className="py-1.5 text-center">{getColHeader('eta')}</th>
-                                <th className="py-1.5 text-right">{getColHeader('cntrs')}</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
-                              {vessels.map((vessel) => (
-                                <tr key={vessel.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
-                                  <td className={`font-extrabold text-gray-800 dark:text-gray-200 text-xs tracking-tight ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.name}</td>
-                                  <td className={`text-center text-gray-650 dark:text-gray-400 font-mono font-medium ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.eta}</td>
-                                  <td className={`text-right font-black text-blue-600 dark:text-blue-400 text-xs ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.cntrs.toLocaleString()}</td>
-                                </tr>
-                              ))}
-                              {vessels.length === 0 && (
-                                <tr>
-                                  <td colSpan={3} className="text-center py-6 text-gray-400">{t('noVessels')}</td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {/* ROW 1 CARD 1: CLIA EMPORIO */}
+                          {yardClia && (
+                            <YardCard 
+                              yard={yardClia[1]} 
+                              ocupacao={getYardOcupacao(yardClia[1])} 
+                              isEdit={isEditMode} 
+                              theme={theme} 
+                              t={t} 
+                              language={language} 
+                              renderLabel={renderLabel} 
+                              widescreenMode={widescreenMode} 
+                            />
+                          )}
+
+                          {/* ROW 1 CARD 2: INTERMARITIMA */}
+                          {yardInter && (
+                            <YardCard 
+                              yard={yardInter[1]} 
+                              ocupacao={getYardOcupacao(yardInter[1])} 
+                              isEdit={isEditMode} 
+                              theme={theme} 
+                              t={t} 
+                              language={language} 
+                              renderLabel={renderLabel} 
+                              widescreenMode={widescreenMode} 
+                            />
+                          )}
+
+                          {/* ROW 1 CARD 3: BYD BUFFER */}
+                          {yardBuffer && (
+                            <YardCard 
+                              yard={yardBuffer[1]} 
+                              ocupacao={getYardOcupacao(yardBuffer[1])} 
+                              isEdit={isEditMode} 
+                              theme={theme} 
+                              t={t} 
+                              language={language} 
+                              renderLabel={renderLabel} 
+                              widescreenMode={widescreenMode} 
+                            />
+                          )}
+
+                          {/* ROW 2 CARD 1: TECON */}
+                          {yardTecon && (
+                            <YardCard 
+                              yard={yardTecon[1]} 
+                              ocupacao={getYardOcupacao(yardTecon[1])} 
+                              isEdit={isEditMode} 
+                              theme={theme} 
+                              t={t} 
+                              language={language} 
+                              renderLabel={renderLabel} 
+                              widescreenMode={widescreenMode} 
+                            />
+                          )}
+
+                          {/* ROW 2 CARD 2: TPC */}
+                          {yardTpc && (
+                            <YardCard 
+                              yard={yardTpc[1]} 
+                              ocupacao={getYardOcupacao(yardTpc[1])} 
+                              isEdit={isEditMode} 
+                              theme={theme} 
+                              t={t} 
+                              language={language} 
+                              renderLabel={renderLabel} 
+                              widescreenMode={widescreenMode} 
+                            />
+                          )}
+
+                          {/* ROW 2 CARD 3: ESCALA DE NAVIOS */}
+                          <div className="flex flex-col h-full min-h-[220px]">
+                            <div className={`p-3 rounded-xl flex-1 border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
+                              <div>
+                                <div className="flex items-center justify-between border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
+                                  <h3 className="font-extrabold text-xs flex items-center gap-2 text-[#2563eb] tracking-tight">
+                                    <Ship className="w-4 h-4" /> {language === 'bilingual' ? '活跃船舶靠泊计划 (ETA)' : t('vesselSchedule')}
+                                  </h3>
+                                  <span className="text-[9px] bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 font-bold px-1.5 py-0.5 rounded-full">{t('projected')}</span>
+                                </div>
+
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-left text-xs">
+                                    <thead>
+                                      <tr className="border-b border-gray-100 dark:border-slate-800 text-gray-400 font-bold uppercase text-[9.5px] tracking-wider">
+                                        <th className="py-1.5">{getColHeader('vessel')}</th>
+                                        <th className="py-1.5 text-center">{getColHeader('eta')}</th>
+                                        <th className="py-1.5 text-right">{getColHeader('cntrs')}</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
+                                      {vessels.map((vessel) => (
+                                        <tr key={vessel.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
+                                          <td className={`font-extrabold text-gray-800 dark:text-gray-200 text-xs tracking-tight ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.name}</td>
+                                          <td className={`text-center text-gray-650 dark:text-gray-400 font-mono font-medium ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.eta}</td>
+                                          <td className={`text-right font-black text-blue-600 dark:text-blue-400 text-xs ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.cntrs.toLocaleString()}</td>
+                                        </tr>
+                                      ))}
+                                      {vessels.length === 0 && (
+                                        <tr>
+                                          <td colSpan={3} className="text-center py-6 text-gray-400">{t('noVessels')}</td>
+                                        </tr>
+                                      )}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+
+                              <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 flex justify-between items-center">
+                                <span className="font-bold uppercase tracking-tight text-[9.5px]">
+                                  {language === 'bilingual' ? '集装箱总数 / Total Containers:' : t('totalContainers') + ':'}
+                                </span>
+                                <span className="font-extrabold text-xs text-gray-700 dark:text-gray-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono">
+                                  {vessels.reduce((acc, curr) => acc + curr.cntrs, 0).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* ROW 3 CARD 1: AG - INTER CDEX */}
+                          {yardAg && (
+                            <YardCard 
+                              yard={yardAg[1]} 
+                              ocupacao={getYardOcupacao(yardAg[1])} 
+                              isEdit={isEditMode} 
+                              theme={theme} 
+                              t={t} 
+                              language={language} 
+                              renderLabel={renderLabel} 
+                              widescreenMode={widescreenMode} 
+                            />
+                          )}
+
+                          {/* ROW 3 CARD 2: CTS - PONTUAL */}
+                          {yardCts && (
+                            <YardCard 
+                              yard={yardCts[1]} 
+                              ocupacao={getYardOcupacao(yardCts[1])} 
+                              isEdit={isEditMode} 
+                              theme={theme} 
+                              t={t} 
+                              language={language} 
+                              renderLabel={renderLabel} 
+                              widescreenMode={widescreenMode} 
+                            />
+                          )}
+
+                          {/* ROW 3 CARD 3: MULTILOG */}
+                          {yardMultilog && (
+                            <YardCard 
+                              yard={yardMultilog[1]} 
+                              ocupacao={getYardOcupacao(yardMultilog[1])} 
+                              isEdit={isEditMode} 
+                              theme={theme} 
+                              t={t} 
+                              language={language} 
+                              renderLabel={renderLabel} 
+                              widescreenMode={widescreenMode} 
+                            />
+                          )}
+
                         </div>
                       </div>
+                    );
+                  })()}
 
-                      <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 flex justify-between items-center">
-                        <span className="font-bold uppercase tracking-tight text-[9.5px]">
-                          {language === 'bilingual' ? '集装箱总数 / Total Containers:' : t('totalContainers') + ':'}
-                        </span>
-                        <span className="font-extrabold text-xs text-gray-700 dark:text-gray-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono">
-                          {vessels.reduce((acc, curr) => acc + curr.cntrs, 0).toLocaleString()}
-                        </span>
-                      </div>
+                  {/* SEÇÃO 2: GRÁFICOS ANALÍTICOS (DISTRIBUÍDOS SEPARADAMENTE NO FIM DO SITE SEM CORTAR!) */}
+                  <div className="flex flex-col gap-4 mt-4">
+                    <div className="flex items-center gap-2 border-b pb-1.5 border-gray-200 dark:border-slate-800">
+                      <TrendingUp className="w-4 h-4 text-[#ef4444] animate-pulse" />
+                      <h3 className="font-extrabold text-[12px] text-gray-800 dark:text-gray-100 uppercase tracking-widest">
+                        {language === 'bilingual' ? 'Análise e Capacidades Gráficas / 运营数据与预测趋势图表' : 'Análise e Capacidades Gráficas'}
+                      </h3>
                     </div>
-                  </div>
 
-                  {/* SEÇÃO INFERIOR: GRÁFICOS LADO A LADO */}
-                  <div className="col-span-12 grid grid-cols-1 lg:grid-cols-2 gap-3.5 mt-1">
-                    
-                    {/* GRÁFICO 1: BACKLOG E CAPACIDADE */}
-                    <div className={`p-2 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between ${widescreenMode ? 'h-[200px]' : 'h-[220px]'}`}>
-                      <div className="flex justify-between items-center mb-0.5">
-                        <h4 className="text-[10px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                          <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> {getChartLeftTitle()}
-                        </h4>
-                        <div className="flex gap-2 text-[8px] sm:text-[9px] font-bold">
-                          <span className="flex items-center gap-1 text-slate-800 dark:text-slate-200"><span className="w-1.5 h-1.5 bg-slate-800 dark:bg-slate-400 inline-block rounded-sm"></span>{language === 'bilingual' ? '到港 / ATA' : 'ATA'}</span>
-                          <span className="flex items-center gap-1 text-emerald-500">
-                            <span className="w-1.5 h-0.5 border-t border-emerald-500 border-dashed inline-block"></span>
-                            {language === 'pt' ? 'Capacidade (210/dia)' : (language === 'zh' ? '交付能力 (210/天)' : '交付 / Capacidade (210/d)')}
-                          </span>
-                          <span className="flex items-center gap-1 text-red-500">
-                            <span className="w-1.5 h-1.5 bg-red-500 inline-block rounded-full"></span>
-                            {language === 'pt' ? 'Backlog' : (language === 'zh' ? '预测积压' : '积压 / Backlog')}
-                          </span>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Gráfico 1 Expandido */}
+                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-[260px]`}>
+                        <div className="flex justify-between items-center mb-1">
+                          <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                            <TrendingUp className="w-4 h-4 text-emerald-500" /> {getChartLeftTitle()}
+                          </h4>
+                          <div className="flex gap-2 text-[9px] font-bold">
+                            <span className="flex items-center gap-1 text-slate-800 dark:text-slate-205"><span className="w-1.5 h-1.5 bg-slate-800 dark:bg-slate-400 inline-block rounded-sm"></span>{language === 'bilingual' ? '到港 / ATA' : 'ATA'}</span>
+                            <span className="flex items-center gap-1 text-emerald-500">
+                              <span className="w-1.5 h-0.5 border-t border-emerald-500 border-dashed inline-block"></span>
+                              {language === 'pt' ? 'Capacidade (210/dia)' : (language === 'zh' ? '交付能力 (210/天)' : '交付 / Capacidade (210/d)')}
+                            </span>
+                            <span className="flex items-center gap-1 text-red-500">
+                              <span className="w-1.5 h-1.5 bg-red-500 inline-block rounded-full"></span>
+                              {language === 'pt' ? 'Backlog' : (language === 'zh' ? '预测积压' : '积压 / Backlog')}
+                            </span>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="relative flex-1 w-full pt-1">
-                        <svg className="w-full h-full" viewBox="0 0 600 120" preserveAspectRatio="none">
-                          <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                          <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                          <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                          
-                          <line x1="30" y1="80" x2="580" y2="80" stroke="#10b981" strokeWidth="1" strokeDasharray="4 4" />
+                        <div className="relative flex-1 w-full pt-1.5">
+                          <svg className="w-full h-full" viewBox="0 0 600 120" preserveAspectRatio="none">
+                            <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                            <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                            <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                            <line x1="30" y1="80" x2="580" y2="80" stroke="#10b981" strokeWidth="1" strokeDasharray="4 4" />
 
-                          {chartLeft.map((item, i) => {
-                            const x = 35 + i * (540 / (chartLeft.length - 1));
-                            const barHeight = (item.arrivals / 6000) * 85;
-                            const y = 100 - barHeight;
-                            return (
-                              <rect 
-                                key={i}
-                                x={x - 2.5} 
-                                y={y} 
-                                width="5" 
-                                height={barHeight} 
-                                fill={theme === 'dark' ? '#475569' : '#1e293b'} 
-                                rx="0.5"
-                              />
-                            );
-                          })}
-
-                          <path
-                            d={chartLeft.reduce((acc, item, i) => {
+                            {chartLeft.map((item, i) => {
                               const x = 35 + i * (540 / (chartLeft.length - 1));
-                              const y = 100 - (item.backlog / 6000) * 85;
-                              return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-                            }, '')}
-                            fill="none"
-                            stroke="#ef4444"
-                            strokeWidth="1.5"
-                          />
-
-                          {chartLeft.map((item, i) => {
-                            const x = 35 + i * (540 / (chartLeft.length - 1));
-                            const y = 100 - (item.backlog / 6000) * 85;
-                            
-                            const picosDesejados = ['W1', 'W2', 'W18', 'W21', 'W22', 'W23', 'W24', 'W25', 'W26', 'W27', 'W28'];
-                            if (picosDesejados.includes(item.week) && item.backlog > 0) {
+                              const barHeight = (item.arrivals / 6000) * 85;
+                              const y = 100 - barHeight;
                               return (
-                                <g key={`cl-${i}`}>
-                                  <circle cx={x} cy={y} r="2.5" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
-                                  <text x={x} y={y - 4} fill="#ef4444" fontSize="6.5" fontWeight="black" textAnchor="middle" className="font-mono">{item.backlog}</text>
-                                </g>
-                              );
-                            }
-                            return null;
-                          })}
-
-                          {chartLeft.map((item, i) => {
-                            if (i % 2 === 0 || i === chartLeft.length - 1) {
-                              const x = 35 + i * (540 / (chartLeft.length - 1));
-                              return (
-                                <text key={`cl-lbl-${i}`} x={x} y="112" fill="#94a3b8" fontSize="6.5" textAnchor="middle" fontWeight="bold" className="font-mono">{item.week}</text>
-                              );
-                            }
-                            return null;
-                          })}
-                        </svg>
-                      </div>
-                    </div>
-
-                    {/* GRÁFICO 2: ENTRADAS DIÁRIAS */}
-                    <div className={`p-2 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between ${widescreenMode ? 'h-[200px]' : 'h-[220px]'}`}>
-                      <div className="flex justify-between items-center mb-0.5">
-                        <h4 className="text-[10px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                          <Database className="w-3.5 h-3.5 text-cyan-500" /> {getChartRightTitle()}
-                        </h4>
-                        <div className="flex gap-1.5 text-[8px] sm:text-[9px] font-bold">
-                          <span className="flex items-center gap-1 text-emerald-500"><span className="w-1.5 h-1.5 bg-[#059669] inline-block rounded-sm"></span>{language === 'bilingual' ? '高效 / High' : t('opHigh')}</span>
-                          <span className="flex items-center gap-1 text-indigo-500"><span className="w-1.5 h-1.5 bg-[#6366f1] inline-block rounded-sm"></span>{language === 'bilingual' ? '稳定 / Stable' : t('opStable')}</span>
-                          <span className="flex items-center gap-1 text-[#f59e0b]"><span className="w-1.5 h-0.5 border-t border-[#f59e0b] border-dashed inline-block"></span>{language === 'bilingual' ? '目标 / Gc (140)' : t('metaGc')}</span>
-                        </div>
-                      </div>
-
-                      <div className="relative flex-1 w-full pt-1">
-                        <svg className="w-full h-full" viewBox="0 0 600 120" preserveAspectRatio="none">
-                          <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                          <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                          <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-
-                          <line x1="30" y1="67" x2="580" y2="67" stroke="#f59e0b" strokeWidth="1" strokeDasharray="4 4" />
-                          <text x="582" y="70" fill="#f59e0b" fontSize="6.5" fontWeight="bold">Gc</text>
-
-                          {chartRight.map((item, i) => {
-                            const x = 32 + i * (540 / (chartRight.length - 1));
-                            const barHeight = (item.value / 320) * 85;
-                            const y = 100 - barHeight;
-                            
-                            let barColor = "#059669"; 
-                            if (item.value < 140) {
-                              barColor = "#6366f1"; 
-                            }
-                            if (i % 3 === 0 && item.value > 180) {
-                              barColor = "#10b981"; 
-                            }
-
-                            return (
-                              <g key={`cr-${i}`}>
                                 <rect 
-                                  x={x - 1.5} 
+                                  key={i}
+                                  x={x - 3} 
                                   y={y} 
-                                  width="3" 
+                                  width="6" 
                                   height={barHeight} 
-                                  fill={barColor} 
+                                  fill={theme === 'dark' ? '#475569' : '#1e293b'} 
                                   rx="0.5"
                                 />
-                                {item.value > 0 && (
-                                  <text 
-                                    x={x} 
-                                    y={y - 3} 
-                                    fill={theme === 'dark' ? '#cbd5e1' : '#1e293b'} 
-                                    fontSize="5" 
-                                    fontWeight="black" 
-                                    textAnchor="middle" 
-                                    className="font-mono"
-                                  >
-                                    {item.value}
-                                  </text>
-                                )}
-                              </g>
-                            );
-                          })}
-
-                          {chartRight.map((item, i) => {
-                            if (i % 11 === 0 || i === chartRight.length - 1) {
-                              const x = 32 + i * (540 / (chartRight.length - 1));
-                              return (
-                                <text key={`cr-lbl-${i}`} x={x} y="112" fill="#94a3b8" fontSize="6" textAnchor="middle" fontWeight="bold">{item.date}</text>
                               );
-                            }
-                            return null;
-                          })}
-                        </svg>
+                            })}
+
+                            <path
+                              d={chartLeft.reduce((acc, item, i) => {
+                                const x = 35 + i * (540 / (chartLeft.length - 1));
+                                const y = 100 - (item.backlog / 6000) * 85;
+                                return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                              }, '')}
+                              fill="none"
+                              stroke="#ef4444"
+                              strokeWidth="1.5"
+                            />
+
+                            {chartLeft.map((item, i) => {
+                              const x = 35 + i * (540 / (chartLeft.length - 1));
+                              const y = 100 - (item.backlog / 6000) * 85;
+                              const picosDesejados = ['W1', 'W2', 'W18', 'W19', 'W21', 'W22', 'W23', 'W24', 'W25', 'W26', 'W27', 'W28'];
+                              if (picosDesejados.includes(item.week) && item.backlog > 0) {
+                                return (
+                                  <g key={`cl-${i}`}>
+                                    <circle cx={x} cy={y} r="3" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
+                                    <text x={x} y={y - 4} fill="#ef4444" fontSize="7" fontWeight="black" textAnchor="middle" className="font-mono">{item.backlog}</text>
+                                  </g>
+                                );
+                              }
+                              return null;
+                            })}
+
+                            {chartLeft.map((item, i) => {
+                              if (i % 2 === 0 || i === chartLeft.length - 1) {
+                                const x = 35 + i * (540 / (chartLeft.length - 1));
+                                return (
+                                  <text key={`cl-lbl-${i}`} x={x} y="112" fill="#94a3b8" fontSize="7" textAnchor="middle" fontWeight="bold" className="font-mono">{item.week}</text>
+                                );
+                              }
+                              return null;
+                            })}
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Gráfico 2 Expandido */}
+                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-[260px]`}>
+                        <div className="flex justify-between items-center mb-1">
+                          <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                            <Database className="w-4 h-4 text-cyan-500" /> {getChartRightTitle()}
+                          </h4>
+                          <div className="flex gap-2 text-[9px] font-bold">
+                            <span className="flex items-center gap-1 text-emerald-500"><span className="w-1.5 h-1.5 bg-[#059669] inline-block rounded-sm"></span>{language === 'bilingual' ? '高效 / High' : t('opHigh')}</span>
+                            <span className="flex items-center gap-1 text-indigo-500"><span className="w-1.5 h-1.5 bg-[#6366f1] inline-block rounded-sm"></span>{language === 'bilingual' ? '稳定 / Stable' : t('opStable')}</span>
+                            <span className="flex items-center gap-1 text-[#f59e0b]"><span className="w-1.5 h-0.5 border-t border-[#f59e0b] border-dashed inline-block"></span>{language === 'bilingual' ? '目标 / Gc (140)' : t('metaGc')}</span>
+                          </div>
+                        </div>
+
+                        <div className="relative flex-1 w-full pt-1.5">
+                          <svg className="w-full h-full" viewBox="0 0 600 120" preserveAspectRatio="none">
+                            <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                            <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                            <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                            <line x1="30" y1="67" x2="580" y2="67" stroke="#f59e0b" strokeWidth="1" strokeDasharray="4 4" />
+                            <text x="582" y="70" fill="#f59e0b" fontSize="7" fontWeight="bold">Gc</text>
+
+                            {chartRight.map((item, i) => {
+                              const x = 32 + i * (540 / (chartRight.length - 1));
+                              const barHeight = (item.value / 320) * 85;
+                              const y = 100 - barHeight;
+                              
+                              let barColor = "#059669"; 
+                              if (item.value < 140) {
+                                barColor = "#6366f1"; 
+                              }
+                              if (i % 3 === 0 && item.value > 180) {
+                                barColor = "#10b981"; 
+                              }
+
+                              return (
+                                <g key={`cr-${i}`}>
+                                  <rect 
+                                    x={x - 2} 
+                                    y={y} 
+                                    width="4" 
+                                    height={barHeight} 
+                                    fill={barColor} 
+                                    rx="0.5"
+                                  />
+                                  {item.value > 0 && (
+                                    <text 
+                                      x={x} 
+                                      y={y - 3} 
+                                      fill={theme === 'dark' ? '#cbd5e1' : '#1e293b'} 
+                                      fontSize="5.5" 
+                                      fontWeight="black" 
+                                      textAnchor="middle" 
+                                      className="font-mono"
+                                    >
+                                      {item.value}
+                                    </text>
+                                  )}
+                                </g>
+                              );
+                            })}
+
+                            {chartRight.map((item, i) => {
+                              if (i % 11 === 0 || i === chartRight.length - 1) {
+                                const x = 32 + i * (540 / (chartRight.length - 1));
+                                return (
+                                  <text key={`cr-lbl-${i}`} x={x} y="112" fill="#94a3b8" fontSize="6.5" textAnchor="middle" fontWeight="bold">{item.date}</text>
+                                );
+                              }
+                              return null;
+                            })}
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* COMENTÁRIOS E DIRETRIZES DE OPERAÇÃO */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between min-h-[140px]`}>
+                      <div className="flex items-center gap-2 border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
+                        <FileText className="w-4 h-4 text-red-500 animate-pulse" />
+                        <h4 className="font-extrabold text-[11px] text-red-600 dark:text-red-400 uppercase tracking-wider block">
+                          {language === 'bilingual' ? 'DIRETRIZES & COMENTÁRIOS GERAIS DE PÁTIOS / 堆场备忘录与运行评论' : 'DIRETRIZES & COMENTÁRIOS GERAIS DE PÁTIOS'}
+                        </h4>
+                      </div>
+                      <div className="flex-1 flex flex-col pt-1">
+                        {isEditMode ? (
+                          <textarea
+                            value={yardsComment}
+                            onChange={(e) => {
+                              setYardsComment(e.target.value);
+                              updateGlobalDoc('yardsComment', e.target.value);
+                            }}
+                            className="w-full flex-1 p-2 text-xs font-semibold border border-gray-200 dark:border-gray-700 dark:bg-slate-800 rounded-lg focus:ring-1 focus:ring-red-500 outline-none resize-none text-slate-800 dark:text-slate-100 placeholder:text-gray-400 font-sans"
+                            rows={3}
+                          />
+                        ) : (
+                          <div className="text-xs leading-relaxed font-bold text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans p-1.5 bg-slate-50/40 dark:bg-slate-900/40 rounded-lg border border-slate-50 dark:border-none">
+                            {yardsComment}
+                          </div>
+                        )}
                       </div>
                     </div>
 
+                    <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between min-h-[140px]`}>
+                      <div className="flex items-center gap-2 border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
+                        <FileText className="w-4 h-4 text-emerald-500" />
+                        <h4 className="font-extrabold text-[11px] text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
+                          {language === 'bilingual' ? 'ANÁLISE DE BACKLOG & CAPACIDADE / 预测积压与交付分析' : 'ANÁLISE DE BACKLOG & CAPACIDADE'}
+                        </h4>
+                      </div>
+                      <div className="flex-1 flex flex-col pt-1">
+                        {isEditMode ? (
+                          <textarea
+                            value={chartNote1}
+                            onChange={(e) => {
+                              setChartNote1(e.target.value);
+                              updateGlobalDoc('chartNote1', e.target.value);
+                            }}
+                            className="w-full flex-1 p-2 text-xs font-semibold border border-gray-200 dark:border-gray-700 dark:bg-slate-800 rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none resize-none text-slate-800 dark:text-slate-100 placeholder:text-gray-400 font-sans"
+                            rows={3}
+                          />
+                        ) : (
+                          <div className="text-xs leading-relaxed font-bold text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans p-1.5 bg-slate-50/40 dark:bg-slate-900/40 rounded-lg border border-slate-50 dark:border-none">
+                            {chartNote1}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                 </div>
@@ -2107,27 +2244,9 @@ export default function App() {
                         ))}
                       </div>
                     )}
-                    {warehouseYards.length > 0 && (
-                      <div className={`grid grid-cols-3 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
-                        {warehouseYards.map(([key, yard]) => (
-                          <YardCard 
-                            key={key} 
-                            yard={yard} 
-                            ocupacao={getYardOcupacao(yard)} 
-                            isEdit={isEditMode} 
-                            theme={theme} 
-                            isSmall 
-                            t={t} 
-                            language={language} 
-                            renderLabel={renderLabel} 
-                            widescreenMode={widescreenMode} 
-                          />
-                        ))}
-                      </div>
-                    )}
-                    {bufferYards.length > 0 && (
-                      <div className={`grid grid-cols-3 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
-                        {bufferYards.map(([key, yard]) => (
+                    {nonBondedYards.length > 0 && (
+                      <div className={`grid ${widescreenMode ? 'grid-cols-4 gap-1.5' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5'}`}>
+                        {nonBondedYards.map(([key, yard]) => (
                           <YardCard 
                             key={key} 
                             yard={yard} 
@@ -2531,6 +2650,179 @@ export default function App() {
             )}
 
           </div>
+
+          {currentSlide === 0 && (
+            <div className="w-full max-w-[1300px] mt-6 mb-4 px-2">
+              <div className={`p-4 rounded-2xl shadow-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-800' : 'bg-white border-slate-150 shadow-sm'} transition-all`}>
+                <div className="flex items-center justify-between border-b pb-2.5 mb-4 border-gray-100 dark:border-slate-800">
+                  <h3 className="font-extrabold text-xs sm:text-sm flex items-center gap-2 text-red-650 dark:text-red-400 uppercase tracking-tight">
+                    <TrendingUp className="w-5 h-5" /> {language === 'bilingual' ? '系统运营图表 / Gráficos de Operações do Sistema' : language === 'zh' ? '系统运营图表' : 'Gráficos de Operações do Sistema'}
+                  </h3>
+                  <span className="text-[10px] bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-200 font-bold px-2.5 py-0.5 rounded-full select-none uppercase">
+                    {language === 'bilingual' ? '实时分析 / Real-Time Analysis' : language === 'zh' ? '实时分析' : 'Real-time Analysis'}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* GRÁFICO 1: BACKLOG E CAPACIDADE */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a] border-slate-800 font-sans' : 'bg-slate-50/50 border-slate-100 font-sans'} flex flex-col justify-between h-[250px]`}>
+                    <div className="flex justify-between items-center mb-1">
+                      <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <TrendingUp className="w-4 h-4 text-emerald-500" /> {getChartLeftTitle()}
+                      </h4>
+                      <div className="flex gap-2 text-[9px] font-bold">
+                        <span className="flex items-center gap-1 text-slate-800 dark:text-slate-200"><span className="w-1.5 h-1.5 bg-slate-800 dark:bg-slate-400 inline-block rounded-sm"></span>{language === 'bilingual' ? '到港 / ATA' : 'ATA'}</span>
+                        <span className="flex items-center gap-1 text-emerald-500">
+                          <span className="w-1.5 h-1.5 bg-[#10b981] inline-block rounded-sm"></span>
+                          {language === 'pt' ? 'Capacidade (210/dia)' : (language === 'zh' ? '交付能力 (210/天)' : '交付 / Capacidade (210/d)')}
+                        </span>
+                        <span className="flex items-center gap-1 text-red-500">
+                          <span className="w-1.5 h-1.5 bg-red-500 inline-block rounded-full"></span>
+                          {language === 'pt' ? 'Backlog' : (language === 'zh' ? '预测积压' : '积压 / Backlog')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="relative flex-1 w-full pt-1.5">
+                      <svg className="w-full h-full" viewBox="0 0 600 120" preserveAspectRatio="none">
+                        <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                        <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                        <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                        <line x1="30" y1="80" x2="580" y2="80" stroke="#10b981" strokeWidth="1" strokeDasharray="4 4" />
+
+                        {chartLeft.map((item, i) => {
+                          const x = 35 + i * (540 / (chartLeft.length - 1));
+                          const barHeight = (item.arrivals / 6000) * 85;
+                          const y = 100 - barHeight;
+                          return (
+                            <rect 
+                              key={i}
+                              x={x - 3} 
+                              y={y} 
+                              width="6" 
+                              height={barHeight} 
+                              fill={theme === 'dark' ? '#334155' : '#1e293b'} 
+                              rx="0.5"
+                            />
+                          );
+                        })}
+
+                        <path
+                          d={chartLeft.reduce((acc, item, i) => {
+                            const x = 35 + i * (540 / (chartLeft.length - 1));
+                            const y = 100 - (item.backlog / 6000) * 85;
+                            return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                          }, '')}
+                          fill="none"
+                          stroke="#ef4444"
+                          strokeWidth="1.5"
+                        />
+
+                        {chartLeft.map((item, i) => {
+                          const x = 35 + i * (540 / (chartLeft.length - 1));
+                          const y = 100 - (item.backlog / 6000) * 85;
+                          const picosDesejados = ['W1', 'W2', 'W18', 'W21', 'W22', 'W23', 'W24', 'W25', 'W26', 'W27', 'W28'];
+                          if (picosDesejados.includes(item.week) && item.backlog > 0) {
+                            return (
+                              <g key={`cl-${i}`}>
+                                <circle cx={x} cy={y} r="3" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
+                                <text x={x} y={y - 4} fill="#ef4444" fontSize="7" fontWeight="black" textAnchor="middle" className="font-mono">{item.backlog}</text>
+                              </g>
+                            );
+                          }
+                          return null;
+                        })}
+
+                        {chartLeft.map((item, i) => {
+                          if (i % 2 === 0 || i === chartLeft.length - 1) {
+                            const x = 35 + i * (540 / (chartLeft.length - 1));
+                            return (
+                              <text key={`cl-lbl-${i}`} x={x} y="112" fill="#94a3b8" fontSize="7" textAnchor="middle" fontWeight="bold" className="font-mono">{item.week}</text>
+                            );
+                          }
+                          return null;
+                        })}
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* GRÁFICO 2: ENTRADAS VS METAS */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a] border-slate-800 font-sans' : 'bg-slate-50/50 border-slate-100 font-sans'} flex flex-col justify-between h-[250px]`}>
+                    <div className="flex justify-between items-center mb-1">
+                      <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <Database className="w-4 h-4 text-cyan-500" /> {getChartRightTitle()}
+                      </h4>
+                      <div className="flex gap-2 text-[9px] font-bold">
+                        <span className="flex items-center gap-1 text-emerald-500"><span className="w-1.5 h-1.5 bg-[#059669] inline-block rounded-sm"></span>{language === 'bilingual' ? '高效 / High' : t('opHigh')}</span>
+                        <span className="flex items-center gap-1 text-indigo-500"><span className="w-1.5 h-1.5 bg-[#6366f1] inline-block rounded-sm"></span>{language === 'bilingual' ? '稳定 / Stable' : t('opStable')}</span>
+                        <span className="flex items-center gap-1 text-[#f59e0b]"><span className="w-1.5 h-0.5 border-t border-[#f59e0b] border-dashed inline-block"></span>{language === 'bilingual' ? '目标 / Gc (140)' : t('metaGc')}</span>
+                      </div>
+                    </div>
+
+                    <div className="relative flex-1 w-full pt-1.5">
+                      <svg className="w-full h-full" viewBox="0 0 600 120" preserveAspectRatio="none">
+                        <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                        <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                        <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                        <line x1="30" y1="67" x2="580" y2="67" stroke="#f59e0b" strokeWidth="1" strokeDasharray="4 4" />
+                        <text x="582" y="70" fill="#f59e0b" fontSize="7" fontWeight="bold">Gc</text>
+
+                        {chartRight.map((item, i) => {
+                          const x = 32 + i * (540 / (chartRight.length - 1));
+                          const barHeight = (item.value / 320) * 85;
+                          const y = 100 - barHeight;
+                          
+                          let barColor = "#059669"; 
+                          if (item.value < 140) {
+                            barColor = "#6366f1"; 
+                          }
+                          if (i % 3 === 0 && item.value > 180) {
+                            barColor = "#10b981"; 
+                          }
+
+                          return (
+                            <g key={`cr-${i}`}>
+                              <rect 
+                                x={x - 2} 
+                                y={y} 
+                                width="4" 
+                                height={barHeight} 
+                                fill={barColor} 
+                                rx="0.5"
+                              />
+                              {item.value > 0 && (
+                                <text 
+                                  x={x} 
+                                  y={y - 3} 
+                                  fill={theme === 'dark' ? '#cbd5e1' : '#1e293b'} 
+                                  fontSize="5.5" 
+                                  fontWeight="black" 
+                                  textAnchor="middle" 
+                                  className="font-mono"
+                                >
+                                  {item.value}
+                                </text>
+                              )}
+                            </g>
+                          );
+                        })}
+
+                        {chartRight.map((item, i) => {
+                          if (i % 11 === 0 || i === chartRight.length - 1) {
+                            const x = 32 + i * (540 / (chartRight.length - 1));
+                            return (
+                              <text key={`cr-lbl-${i}`} x={x} y="112" fill="#94a3b8" fontSize="6.5" textAnchor="middle" fontWeight="bold">{item.date}</text>
+                            );
+                          }
+                          return null;
+                        })}
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* PAINEL LATERAL DE EDIÇÃO */}
@@ -3435,13 +3727,13 @@ function YardCard({ yard, ocupacao, isEdit, isSmall = false, theme, t, language,
       <div className={`grid grid-cols-3 gap-0.5 font-bold uppercase pt-0.5 leading-tight ${
         widescreenMode ? 'mt-0.5 text-[8.2px]' : 'mt-1 text-[9px]'
       } text-gray-400`}>
-        <div className="text-left truncate">
+        <div className="text-left">
           <span className="text-gray-400">{language === 'bilingual' ? '港口/Porto' : (language === 'zh' ? '港口' : 'Porto')}:</span> <span className="text-gray-700 dark:text-gray-200 font-extrabold leading-none">{yard.porto}</span>
         </div>
-        <div className="text-center truncate">
+        <div className="text-center">
           <span className="text-gray-400">{language === 'bilingual' ? '待提/Coleta' : (language === 'zh' ? '待提' : 'Coleta')}:</span> <span className="text-blue-500 font-bold leading-none">{yard.prontoColeta}</span>
         </div>
-        <div className="text-right truncate">
+        <div className="text-right">
           <span className="text-gray-400">{language === 'bilingual' ? '已交付/DL' : (language === 'zh' ? '已交付' : 'Deliv.')}:</span> <span className="text-emerald-500 font-bold leading-none">{yard.delivered}</span>
         </div>
       </div>
