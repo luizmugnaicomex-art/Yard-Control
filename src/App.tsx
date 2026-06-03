@@ -1766,7 +1766,7 @@ export default function App() {
           <div 
             id="slide-capture-area" 
             className={`
-              w-full shadow-2xl rounded-2xl transition-all relative border overflow-hidden
+              w-full shadow-2xl rounded-2xl transition-all relative border ${currentSlide === 0 ? 'overflow-y-auto' : 'overflow-hidden'}
               ${widescreenMode ? 'p-3.5' : 'p-6'}
               ${theme === 'dark' ? 'bg-[#0f172a] border-slate-800' : 'bg-[#FAFCFF] border-slate-100'}
             `}
@@ -2138,7 +2138,7 @@ export default function App() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {/* Gráfico 1 Expandido */}
-                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-[260px]`}>
+                       <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-[280px]`}>
                         <div className="flex justify-between items-center mb-1">
                           <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                             <TrendingUp className="w-4 h-4 text-emerald-500" /> {getChartLeftTitle()}
@@ -2157,7 +2157,7 @@ export default function App() {
                         </div>
 
                         <div className="relative flex-1 w-full pt-1.5">
-                          <svg className="w-full h-full" viewBox="0 0 600 120" preserveAspectRatio="none">
+                          <svg className="w-full h-full overflow-visible" style={{ overflow: 'visible' }} viewBox="0 0 600 135" preserveAspectRatio="none">
                             <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
                             <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
                             <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
@@ -2196,21 +2196,21 @@ export default function App() {
                               const y = 100 - (item.backlog / 6000) * 85;
                               const picosDesejados = ['W1', 'W2', 'W18', 'W19', 'W21', 'W22', 'W23', 'W24', 'W25', 'W26', 'W27', 'W28'];
                               if (picosDesejados.includes(item.week) && item.backlog > 0) {
-                                return (
-                                  <g key={`cl-${i}`}>
-                                    <circle cx={x} cy={y} r="3" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
-                                    <text x={x} y={y - 4} fill="#ef4444" fontSize="7" fontWeight="black" textAnchor="middle" className="font-mono">{item.backlog}</text>
-                                  </g>
-                                );
-                              }
-                              return null;
+                                  return (
+                                    <g key={`cl-${i}`}>
+                                      <circle cx={x} cy={y} r="3" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
+                                      <text x={x} y={y - 4} fill="#ef4444" fontSize="7" fontWeight="black" textAnchor="middle" className="font-mono">{item.backlog}</text>
+                                    </g>
+                                  );
+                                }
+                                return null;
                             })}
 
                             {chartLeft.map((item, i) => {
                               if (i % 2 === 0 || i === chartLeft.length - 1) {
                                 const x = 35 + i * (540 / (chartLeft.length - 1));
                                 return (
-                                  <text key={`cl-lbl-${i}`} x={x} y="112" fill="#94a3b8" fontSize="7" textAnchor="middle" fontWeight="bold" className="font-mono">{item.week}</text>
+                                  <text key={`cl-lbl-${i}`} x={x} y="118" fill="#94a3b8" fontSize="7" textAnchor="middle" fontWeight="bold" className="font-mono">{item.week}</text>
                                 );
                               }
                               return null;
@@ -2220,7 +2220,7 @@ export default function App() {
                       </div>
 
                       {/* Gráfico 2 Expandido */}
-                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-[260px]`}>
+                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-[280px]`}>
                         <div className="flex justify-between items-center mb-1">
                           <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                             <Database className="w-4 h-4 text-cyan-500" /> {getChartRightTitle()}
@@ -2233,7 +2233,7 @@ export default function App() {
                         </div>
 
                         <div className="relative flex-1 w-full pt-1.5">
-                          <svg className="w-full h-full" viewBox="0 0 600 120" preserveAspectRatio="none">
+                          <svg className="w-full h-full overflow-visible" style={{ overflow: 'visible' }} viewBox="0 0 600 135" preserveAspectRatio="none">
                             <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
                             <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
                             <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
@@ -2284,7 +2284,7 @@ export default function App() {
                               if (i % 11 === 0 || i === chartRight.length - 1) {
                                 const x = 32 + i * (540 / (chartRight.length - 1));
                                 return (
-                                  <text key={`cr-lbl-${i}`} x={x} y="112" fill="#94a3b8" fontSize="6.5" textAnchor="middle" fontWeight="bold">{item.date}</text>
+                                  <text key={`cr-lbl-${i}`} x={x} y="118" fill="#94a3b8" fontSize="6.5" textAnchor="middle" fontWeight="bold">{item.date}</text>
                                 );
                               }
                               return null;
@@ -2548,7 +2548,7 @@ export default function App() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1">
                     
                     {/* Gráfico 1 Expandido */}
-                    <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between h-[235px]`}>
+                    <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between h-[270px]`}>
                       <div className="flex justify-between items-center mb-1">
                         <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                           <TrendingUp className="w-4 h-4 text-emerald-500" /> {getChartLeftTitle()}
@@ -2567,7 +2567,7 @@ export default function App() {
                       </div>
 
                       <div className="relative flex-1 w-full pt-1.5">
-                        <svg className="w-full h-full" viewBox="0 0 600 120" preserveAspectRatio="none">
+                        <svg className="w-full h-full overflow-visible" style={{ overflow: 'visible' }} viewBox="0 0 600 135" preserveAspectRatio="none">
                           <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
                           <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
                           <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
@@ -2620,7 +2620,7 @@ export default function App() {
                             if (i % 2 === 0 || i === chartLeft.length - 1) {
                               const x = 35 + i * (540 / (chartLeft.length - 1));
                               return (
-                                <text key={`cl-lbl-${i}`} x={x} y="112" fill="#94a3b8" fontSize="7" textAnchor="middle" fontWeight="bold" className="font-mono">{item.week}</text>
+                                <text key={`cl-lbl-${i}`} x={x} y="118" fill="#94a3b8" fontSize="7" textAnchor="middle" fontWeight="bold" className="font-mono">{item.week}</text>
                               );
                             }
                             return null;
@@ -2630,7 +2630,7 @@ export default function App() {
                     </div>
 
                     {/* Gráfico 2 Expandido */}
-                    <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between h-[235px]`}>
+                    <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between h-[270px]`}>
                       <div className="flex justify-between items-center mb-1">
                         <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                           <Database className="w-4 h-4 text-cyan-500" /> {getChartRightTitle()}
@@ -2643,7 +2643,7 @@ export default function App() {
                       </div>
 
                       <div className="relative flex-1 w-full pt-1.5">
-                        <svg className="w-full h-full" viewBox="0 0 600 120" preserveAspectRatio="none">
+                        <svg className="w-full h-full overflow-visible" style={{ overflow: 'visible' }} viewBox="0 0 600 135" preserveAspectRatio="none">
                           <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
                           <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
                           <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
@@ -2694,7 +2694,7 @@ export default function App() {
                             if (i % 11 === 0 || i === chartRight.length - 1) {
                               const x = 32 + i * (540 / (chartRight.length - 1));
                               return (
-                                <text key={`cr-lbl-${i}`} x={x} y="112" fill="#94a3b8" fontSize="6.5" textAnchor="middle" fontWeight="bold">{item.date}</text>
+                                <text key={`cr-lbl-${i}`} x={x} y="118" fill="#94a3b8" fontSize="6.5" textAnchor="middle" fontWeight="bold">{item.date}</text>
                               );
                             }
                             return null;
