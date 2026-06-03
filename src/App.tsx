@@ -29,7 +29,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Anchor,
+  Building2,
+  Package,
+  Layers,
+  Boxes,
+  Percent
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -1807,192 +1813,316 @@ export default function App() {
               {currentSlide === 0 ? (
                 <div id="website-dashboard-container" className="flex flex-col gap-6 w-full">
                   
-                  {/* DESIGN REFRESH: 3x3 YARDS & VESSELS MATRIX */}
+                  {/* DESIGN REFRESH: MODERN CATEGORIZED SECTIONS WITH CAPACITY ROLLUPS */}
                   {(() => {
-                    const yardClia = (Object.entries(yards) as [string, Yard][]).find(([key, y]) => key === 'clia' || (y && y.name.toUpperCase().includes('CLIA')));
-                    const yardInter = (Object.entries(yards) as [string, Yard][]).find(([key, y]) => key === 'intermaritima' || (y && y.name.toUpperCase().includes('INTERMARITIMA')));
-                    const yardBuffer = (Object.entries(yards) as [string, Yard][]).find(([_, y]) => y && y.type === 'BUFFER') || (Object.entries(yards) as [string, Yard][]).find(([key]) => key === 'buffer');
-                    
-                    const yardTecon = (Object.entries(yards) as [string, Yard][]).find(([key, y]) => key === 'tecon' || (y && y.name.toUpperCase().includes('TECON')));
-                    const yardTpc = (Object.entries(yards) as [string, Yard][]).find(([key, y]) => key === 'tpc' || (y && y.name.toUpperCase().includes('TPC')));
-                    
-                    const warehouses = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type === 'WAREHOUSE');
-                    const yardAg = warehouses.find(([key, y]) => key === 'ag' || (y && y.name.toUpperCase().includes('AG'))) || warehouses[0];
-                    const yardCts = warehouses.find(([key, y]) => key === 'cts' || (y && y.name.toUpperCase().includes('CTS')) || (y && y.name.toUpperCase().includes('PONTUAL'))) || warehouses[1];
-                    const yardMultilog = warehouses.find(([key, y]) => key === 'multilog' || (y && y.name.toUpperCase().includes('MULTILOG'))) || warehouses[2];
+                    const bondedYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type === 'BONDED');
+                    const warehouseYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type === 'WAREHOUSE');
+                    const bufferYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type === 'BUFFER');
+                    const otherYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type !== 'BONDED' && y.type !== 'WAREHOUSE' && y.type !== 'BUFFER');
+
+                    // Calculate live executive telemetry summaries
+                    const getSummary = (list: [string, Yard][]) => {
+                      const totalCap = list.reduce((sum, [_, y]) => sum + (y?.capacity || 0), 0);
+                      const totalCheio = list.reduce((sum, [_, y]) => sum + (y?.cheio || 0), 0);
+                      const pct = totalCap > 0 ? Math.round((totalCheio / totalCap) * 100) : 0;
+                      return { totalCap, totalCheio, pct };
+                    };
+
+                    const bondedSum = getSummary(bondedYards);
+                    const warehouseSum = getSummary(warehouseYards);
+                    const bufferSum = getSummary(bufferYards);
 
                     return (
-                      <div className="flex flex-col gap-4">
+                      <div className="flex flex-col gap-6">
+                        
+                        {/* MAIN TITLE BLOCK */}
                         <div className="flex items-center gap-2 border-b pb-1.5 border-gray-200 dark:border-slate-800">
                           <Database className="w-4 h-4 text-red-500 animate-pulse" />
                           <h3 className="font-extrabold text-[12px] text-gray-800 dark:text-gray-100 uppercase tracking-widest">
-                            {language === 'bilingual' ? 'Grade Operacional de Monitoramento / 堆场动态与船舶总览' : 'Grade Operacional de Monitoramento'}
+                            {language === 'bilingual' ? 'Painel Integrado de Capacidade & Monitoramento de Pátios / 供应链与堆场动态总览监控塔' : 'Grade Operacional de Monitoramento'}
                           </h3>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-                          {/* ROW 1 CARD 1: CLIA EMPORIO */}
-                          {yardClia && (
-                            <YardCard 
-                              yard={yardClia[1]} 
-                              ocupacao={getYardOcupacao(yardClia[1])} 
-                              isEdit={isEditMode} 
-                              theme={theme} 
-                              t={t} 
-                              language={language} 
-                              renderLabel={renderLabel} 
-                              widescreenMode={widescreenMode} 
-                            />
-                          )}
-
-                          {/* ROW 1 CARD 2: INTERMARITIMA */}
-                          {yardInter && (
-                            <YardCard 
-                              yard={yardInter[1]} 
-                              ocupacao={getYardOcupacao(yardInter[1])} 
-                              isEdit={isEditMode} 
-                              theme={theme} 
-                              t={t} 
-                              language={language} 
-                              renderLabel={renderLabel} 
-                              widescreenMode={widescreenMode} 
-                            />
-                          )}
-
-                          {/* ROW 1 CARD 3: BYD BUFFER */}
-                          {yardBuffer && (
-                            <YardCard 
-                              yard={yardBuffer[1]} 
-                              ocupacao={getYardOcupacao(yardBuffer[1])} 
-                              isEdit={isEditMode} 
-                              theme={theme} 
-                              t={t} 
-                              language={language} 
-                              renderLabel={renderLabel} 
-                              widescreenMode={widescreenMode} 
-                            />
-                          )}
-
-                          {/* ROW 2 CARD 1: TECON */}
-                          {yardTecon && (
-                            <YardCard 
-                              yard={yardTecon[1]} 
-                              ocupacao={getYardOcupacao(yardTecon[1])} 
-                              isEdit={isEditMode} 
-                              theme={theme} 
-                              t={t} 
-                              language={language} 
-                              renderLabel={renderLabel} 
-                              widescreenMode={widescreenMode} 
-                            />
-                          )}
-
-                          {/* ROW 2 CARD 2: TPC */}
-                          {yardTpc && (
-                            <YardCard 
-                              yard={yardTpc[1]} 
-                              ocupacao={getYardOcupacao(yardTpc[1])} 
-                              isEdit={isEditMode} 
-                              theme={theme} 
-                              t={t} 
-                              language={language} 
-                              renderLabel={renderLabel} 
-                              widescreenMode={widescreenMode} 
-                            />
-                          )}
-
-                          {/* ROW 2 CARD 3: ESCALA DE NAVIOS */}
-                          <div className="flex flex-col h-full min-h-[220px]">
-                            <div className={`p-3 rounded-xl flex-1 border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
-                              <div>
-                                <div className="flex items-center justify-between border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
-                                  <h3 className="font-extrabold text-xs flex items-center gap-2 text-[#2563eb] tracking-tight">
-                                    <Ship className="w-4 h-4" /> {language === 'bilingual' ? '活跃船舶靠泊计划 (ETA)' : t('vesselSchedule')}
-                                  </h3>
-                                  <span className="text-[9px] bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 font-bold px-1.5 py-0.5 rounded-full">{t('projected')}</span>
+                        {/* SECTION 1: BONDED TERMINALS */}
+                        <div className="flex flex-col gap-3">
+                          <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-slate-50/70 border-slate-200/80'} border-l-4 border-l-blue-500`}>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="p-1.5 bg-blue-500/10 dark:bg-blue-500/20 text-blue-500 rounded-lg">
+                                  <Anchor className="w-4.5 h-4.5" />
                                 </div>
-
-                                <div className="overflow-x-auto">
-                                  <table className="w-full text-left text-xs">
-                                    <thead>
-                                      <tr className="border-b border-gray-100 dark:border-slate-800 text-gray-400 font-bold uppercase text-[9.5px] tracking-wider">
-                                        <th className="py-1.5">{getColHeader('vessel')}</th>
-                                        <th className="py-1.5 text-center">{getColHeader('eta')}</th>
-                                        <th className="py-1.5 text-right">{getColHeader('cntrs')}</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
-                                      {vessels.map((vessel) => (
-                                        <tr key={vessel.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
-                                          <td className={`font-extrabold text-gray-800 dark:text-gray-200 text-xs tracking-tight ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.name}</td>
-                                          <td className={`text-center text-gray-650 dark:text-gray-400 font-mono font-medium ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.eta}</td>
-                                          <td className={`text-right font-black text-blue-600 dark:text-blue-400 text-xs ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.cntrs.toLocaleString()}</td>
-                                        </tr>
-                                      ))}
-                                      {vessels.length === 0 && (
-                                        <tr>
-                                          <td colSpan={3} className="text-center py-6 text-gray-400">{t('noVessels')}</td>
-                                        </tr>
-                                      )}
-                                    </tbody>
-                                  </table>
+                                <div>
+                                  <h4 className="font-extrabold text-[12px] text-gray-900 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
+                                    {language === 'bilingual' ? 'Terminais & Recintos Alfandegados / 保税堆场与港口终端' : 'Terminais & Recintos Alfandegados'}
+                                  </h4>
+                                  <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-normal">
+                                    {language === 'bilingual' ? 'Portos, CLIAs e recintos primários integrados à aduana nacional / 进境集装箱一二级保税堆场及通关放行单元（CLIA & Portos）' : 'Desembaraço aduaneiro e portuário.'}
+                                  </p>
                                 </div>
                               </div>
-
-                              <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 flex justify-between items-center">
-                                <span className="font-bold uppercase tracking-tight text-[9.5px]">
-                                  {language === 'bilingual' ? '集装箱总数 / Total Containers:' : t('totalContainers') + ':'}
-                                </span>
-                                <span className="font-extrabold text-xs text-gray-700 dark:text-gray-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono">
-                                  {vessels.reduce((acc, curr) => acc + curr.cntrs, 0).toLocaleString()}
-                                </span>
+                              
+                              <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border dark:border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs">
+                                <div className="flex flex-col">
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Capacidade / 容量' : 'Capacidade'}</span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bondedSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">TEU</span></span>
+                                </div>
+                                <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
+                                <div className="flex flex-col">
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Ocupado / 已用' : 'Ocupado'}</span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bondedSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">TEU</span></span>
+                                </div>
+                                <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Geral / 占比' : 'Ocupação'}</span>
+                                  <span className={`text-[10px] px-1 py-0.2 rounded font-black ${
+                                    bondedSum.pct >= 89 
+                                      ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300' 
+                                      : bondedSum.pct >= 65 
+                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300' 
+                                        : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                                  }`}>
+                                    {bondedSum.pct}%
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
 
-                          {/* ROW 3 CARD 1: AG - INTER CDEX */}
-                          {yardAg && (
-                            <YardCard 
-                              yard={yardAg[1]} 
-                              ocupacao={getYardOcupacao(yardAg[1])} 
-                              isEdit={isEditMode} 
-                              theme={theme} 
-                              t={t} 
-                              language={language} 
-                              renderLabel={renderLabel} 
-                              widescreenMode={widescreenMode} 
-                            />
-                          )}
-
-                          {/* ROW 3 CARD 2: CTS - PONTUAL */}
-                          {yardCts && (
-                            <YardCard 
-                              yard={yardCts[1]} 
-                              ocupacao={getYardOcupacao(yardCts[1])} 
-                              isEdit={isEditMode} 
-                              theme={theme} 
-                              t={t} 
-                              language={language} 
-                              renderLabel={renderLabel} 
-                              widescreenMode={widescreenMode} 
-                            />
-                          )}
-
-                          {/* ROW 3 CARD 3: MULTILOG */}
-                          {yardMultilog && (
-                            <YardCard 
-                              yard={yardMultilog[1]} 
-                              ocupacao={getYardOcupacao(yardMultilog[1])} 
-                              isEdit={isEditMode} 
-                              theme={theme} 
-                              t={t} 
-                              language={language} 
-                              renderLabel={renderLabel} 
-                              widescreenMode={widescreenMode} 
-                            />
-                          )}
-
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+                            {bondedYards.map(([key, yardItem]) => (
+                              <YardCard 
+                                key={key}
+                                yard={yardItem} 
+                                ocupacao={getYardOcupacao(yardItem)} 
+                                isEdit={isEditMode} 
+                                theme={theme} 
+                                t={t} 
+                                language={language} 
+                                renderLabel={renderLabel} 
+                                widescreenMode={widescreenMode} 
+                              />
+                            ))}
+                            {bondedYards.length === 0 && (
+                              <div className="col-span-full text-center py-6 text-gray-450 dark:text-gray-500 text-xs font-semibold bg-gray-50 dark:bg-slate-800/40 rounded-lg border border-dashed border-gray-100 dark:border-slate-800">
+                                {language === 'bilingual' ? 'Nenhum terminal alfandegado cadastrado. / 未记录保税堆场。' : 'Nenhum terminal alfandegado cadastrado.'}
+                              </div>
+                            )}
+                          </div>
                         </div>
+
+                        {/* SECTION 2: WAREHOUSES */}
+                        <div className="flex flex-col gap-3">
+                          <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-slate-50/70 border-slate-200/80'} border-l-4 border-l-emerald-500`}>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="p-1.5 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-500 rounded-lg">
+                                  <Building2 className="w-4.5 h-4.5" />
+                                </div>
+                                <div>
+                                  <h4 className="font-extrabold text-[12px] text-gray-900 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
+                                    {language === 'bilingual' ? 'Centros de Distribuição & Armazéns (Warehouses) / 仓库、总装中心与分拨站' : 'Centros de Distribuição & Armazéns'}
+                                  </h4>
+                                  <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-normal">
+                                    {language === 'bilingual' ? 'Estocagem nacionalizada, processos de desova, kit de autopeças e expedição doméstica / 零部件接收存放在线、开箱拆包、国内生产件及成品配套与配送中心（CD/WAREHOUSE）' : 'Estocagem nacionalizada e expedição.'}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border dark:border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs">
+                                <div className="flex flex-col">
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Capacidade / 容量' : 'Capacidade'}</span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(warehouseSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">TEU</span></span>
+                                </div>
+                                <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
+                                <div className="flex flex-col">
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Ocupado / 已用' : 'Ocupado'}</span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(warehouseSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">TEU</span></span>
+                                </div>
+                                <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Geral / 占比' : 'Ocupação'}</span>
+                                  <span className={`text-[10px] px-1 py-0.2 rounded font-black ${
+                                    warehouseSum.pct >= 89 
+                                      ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300' 
+                                      : warehouseSum.pct >= 65 
+                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300' 
+                                        : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                                  }`}>
+                                    {warehouseSum.pct}%
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+                            {warehouseYards.map(([key, yardItem]) => (
+                              <YardCard 
+                                key={key}
+                                yard={yardItem} 
+                                ocupacao={getYardOcupacao(yardItem)} 
+                                isEdit={isEditMode} 
+                                theme={theme} 
+                                t={t} 
+                                language={language} 
+                                renderLabel={renderLabel} 
+                                widescreenMode={widescreenMode} 
+                              />
+                            ))}
+                            {warehouseYards.length === 0 && (
+                              <div className="col-span-full text-center py-6 text-gray-450 dark:text-gray-500 text-xs font-semibold bg-gray-50 dark:bg-slate-800/40 rounded-lg border border-dashed border-gray-100 dark:border-slate-800">
+                                {language === 'bilingual' ? 'Nenhum centro de distribuição cadastrado. / 未记录分拨仓库。' : 'Nenhum centro de distribuição cadastrado.'}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* SECTION 3: BUFFER YARDS & VESSELS FLUX */}
+                        <div className="flex flex-col gap-3">
+                          <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-slate-50/70 border-slate-200/80'} border-l-4 border-l-amber-500`}>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="p-1.5 bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 rounded-lg">
+                                  <Layers className="w-4.5 h-4.5" />
+                                </div>
+                                <div>
+                                  <h4 className="font-extrabold text-[12px] text-gray-900 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
+                                    {language === 'bilingual' ? 'Pátios de Apoio & Janela de Atracação / 辅助缓冲堆场与船只抵港监控' : 'Pátios de Apoio & Janela de Atracação'}
+                                  </h4>
+                                  <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-normal">
+                                    {language === 'bilingual' ? 'Estocagem pulmão reguladora de fluxo e roteirização marítima iminente / 调节短驳流量的缓冲堆护，以及最近干线船期及预期到货集装箱量' : 'Capacidade buffer e ETA de navios em tempo real.'}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border dark:border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs">
+                                <div className="flex flex-col">
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Capacidade Buffer / 缓冲容量' : 'Buffer'}</span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bufferSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">TEU</span></span>
+                                </div>
+                                <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
+                                <div className="flex flex-col">
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Ocupado Buffer / 缓冲已用' : 'Ocupado'}</span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bufferSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">TEU</span></span>
+                                </div>
+                                <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Geral / 占比' : 'Ocupação'}</span>
+                                  <span className={`text-[10px] px-1 py-0.2 rounded font-black ${
+                                    bufferSum.pct >= 89 
+                                      ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300' 
+                                      : bufferSum.pct >= 65 
+                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300' 
+                                        : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                                  }`}>
+                                    {bufferSum.pct}%
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+                            {/* Buffer cards grid layout */}
+                            <div className="col-span-1 lg:col-span-2 flex flex-col gap-3">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {bufferYards.map(([key, yardItem]) => (
+                                  <YardCard 
+                                    key={key}
+                                    yard={yardItem} 
+                                    ocupacao={getYardOcupacao(yardItem)} 
+                                    isEdit={isEditMode} 
+                                    theme={theme} 
+                                    t={t} 
+                                    language={language} 
+                                    renderLabel={renderLabel} 
+                                    widescreenMode={widescreenMode} 
+                                  />
+                                ))}
+                                {bufferYards.length === 0 && (
+                                  <div className="col-span-full text-center py-6 text-gray-450 dark:text-gray-500 text-xs font-semibold bg-gray-50 dark:bg-slate-800/40 rounded-lg border border-dashed border-gray-100 dark:border-slate-800">
+                                    {language === 'bilingual' ? 'Nenhum pátio de apoio regulador cadastrado. / 未记录缓冲/辅助堆场。' : 'Nenhum pátio de apoio cadastrado.'}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Vessels Table Card */}
+                            <div className="col-span-1">
+                              <div className="flex flex-col h-full min-h-[220px]">
+                                <div className={`p-3 rounded-xl flex-1 border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
+                                  <div>
+                                    <div className="flex items-center justify-between border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
+                                      <h3 className="font-extrabold text-xs flex items-center gap-2 text-[#2563eb] tracking-tight">
+                                        <Ship className="w-4 h-4 text-blue-500" /> {language === 'bilingual' ? '活跃船舶靠泊计划 (ETA)' : t('vesselSchedule')}
+                                      </h3>
+                                      <span className="text-[9px] bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 font-bold px-1.5 py-0.5 rounded-full">{t('projected')}</span>
+                                    </div>
+
+                                    <div className="overflow-x-auto">
+                                      <table className="w-full text-left text-xs">
+                                        <thead>
+                                          <tr className="border-b border-gray-100 dark:border-slate-800 text-gray-400 font-bold uppercase text-[9.5px] tracking-wider">
+                                            <th className="py-1.5">{getColHeader('vessel')}</th>
+                                            <th className="py-1.5 text-center">{getColHeader('eta')}</th>
+                                            <th className="py-1.5 text-right">{getColHeader('cntrs')}</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
+                                          {vessels.map((vessel) => (
+                                            <tr key={vessel.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
+                                              <td className={`font-extrabold text-gray-800 dark:text-gray-200 text-xs tracking-tight ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.name}</td>
+                                              <td className={`text-center text-gray-650 dark:text-gray-400 font-mono font-medium ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.eta}</td>
+                                              <td className={`text-right font-black text-blue-600 dark:text-blue-400 text-xs ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.cntrs.toLocaleString()}</td>
+                                            </tr>
+                                          ))}
+                                          {vessels.length === 0 && (
+                                            <tr>
+                                              <td colSpan={3} className="text-center py-6 text-gray-400">{t('noVessels')}</td>
+                                            </tr>
+                                          )}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 flex justify-between items-center">
+                                    <span className="font-bold uppercase tracking-tight text-[9.5px]">
+                                      {language === 'bilingual' ? '集装箱总数 / Total Containers:' : t('totalContainers') + ':'}
+                                    </span>
+                                    <span className="font-extrabold text-xs text-gray-700 dark:text-gray-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono">
+                                      {vessels.reduce((acc, curr) => acc + curr.cntrs, 0).toLocaleString()}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                          </div>
+                        </div>
+
+                        {/* OTHER DYNAMIC EXTRA YARDS FALLBACK */}
+                        {otherYards.length > 0 && (
+                          <div className="flex flex-col gap-3">
+                            <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Outros Pátios Adicionais / 其他堆场</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+                              {otherYards.map(([key, yardItem]) => (
+                                <YardCard 
+                                  key={key}
+                                  yard={yardItem} 
+                                  ocupacao={getYardOcupacao(yardItem)} 
+                                  isEdit={isEditMode} 
+                                  theme={theme} 
+                                  t={t} 
+                                  language={language} 
+                                  renderLabel={renderLabel} 
+                                  widescreenMode={widescreenMode} 
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                       </div>
                     );
                   })()}
