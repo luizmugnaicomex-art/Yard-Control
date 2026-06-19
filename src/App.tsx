@@ -49,7 +49,8 @@ import {
   setDoc, 
   updateDoc, 
   deleteDoc, 
-  writeBatch 
+  writeBatch,
+  getDocs
 } from 'firebase/firestore';
 import { 
   db, 
@@ -234,35 +235,38 @@ const ORIGINAL_VESSELS: Vessel[] = [
 ];
 
 const ORIGINAL_CHART_LEFT: ChartLeftItem[] = [
-  { week: 'W1', arrivals: 800, backlog: 1416 },
-  { week: 'W2', arrivals: 1100, backlog: 858 },
-  { week: 'W3', arrivals: 900, backlog: 335 },
-  { week: 'W4', arrivals: 1200, backlog: 77 },
-  { week: 'W5', arrivals: 1000, backlog: 0 },
+  { week: 'W1', arrivals: 0, backlog: 1416 },
+  { week: 'W2', arrivals: 861, backlog: 807 },
+  { week: 'W3', arrivals: 935, backlog: 272 },
+  { week: 'W4', arrivals: 1198, backlog: 0 },
+  { week: 'W5', arrivals: 500, backlog: 0 },
   { week: 'W6', arrivals: 950, backlog: 0 },
-  { week: 'W7', arrivals: 1300, backlog: 0 },
-  { week: 'W8', arrivals: 1150, backlog: 0 },
-  { week: 'W9', arrivals: 1700, backlog: 624 },
-  { week: 'W10', arrivals: 1400, backlog: 203 },
-  { week: 'W11', arrivals: 1550, backlog: 63 },
-  { week: 'W12', arrivals: 1350, backlog: 0 },
-  { week: 'W13', arrivals: 1680, backlog: 571 },
-  { week: 'W14', arrivals: 1100, backlog: 139 },
-  { week: 'W15', arrivals: 1950, backlog: 628 },
-  { week: 'W16', arrivals: 2200, backlog: 1447 },
-  { week: 'W17', arrivals: 1800, backlog: 1052 },
-  { week: 'W18', arrivals: 2750, backlog: 2658 },
-  { week: 'W19', arrivals: 2400, backlog: 3087 },
-  { week: 'W20', arrivals: 2500, backlog: 2966 },
-  { week: 'W21', arrivals: 3100, backlog: 4664 },
-  { week: 'W22', arrivals: 3200, backlog: 5936 },
-  { week: 'W23', arrivals: 2900, backlog: 5427 },
-  { week: 'W24', arrivals: 2100, backlog: 4654 },
-  { week: 'W25', arrivals: 1600, backlog: 3604 },
-  { week: 'W26', arrivals: 1200, backlog: 2554 },
-  { week: 'W27', arrivals: 850, backlog: 1504 },
-  { week: 'W28', arrivals: 500, backlog: 454 },
-  { week: 'W29', arrivals: 300, backlog: 0 },
+  { week: 'W7', arrivals: 1100, backlog: 0 },
+  { week: 'W8', arrivals: 1250, backlog: 0 },
+  { week: 'W9', arrivals: 2043, backlog: 573 },
+  { week: 'W10', arrivals: 500, backlog: 0 },
+  { week: 'W11', arrivals: 1000, backlog: 0 },
+  { week: 'W12', arrivals: 750, backlog: 0 },
+  { week: 'W13', arrivals: 2023, backlog: 553 },
+  { week: 'W14', arrivals: 350, backlog: 0 },
+  { week: 'W15', arrivals: 1841, backlog: 371 },
+  { week: 'W16', arrivals: 2182, backlog: 1083 },
+  { week: 'W17', arrivals: 899, backlog: 512 },
+  { week: 'W18', arrivals: 2902, backlog: 1944 },
+  { week: 'W19', arrivals: 1641, backlog: 2115 },
+  { week: 'W20', arrivals: 1309, backlog: 1954 },
+  { week: 'W21', arrivals: 3084, backlog: 3568 },
+  { week: 'W22', arrivals: 2579, backlog: 4677 },
+  { week: 'W23', arrivals: 2028, backlog: 5235 },
+  { week: 'W24', arrivals: 1670, backlog: 5435 },
+  { week: 'W25', arrivals: 1779, backlog: 5744 },
+  { week: 'W26', arrivals: 452, backlog: 4726 },
+  { week: 'W27', arrivals: 521, backlog: 3777 },
+  { week: 'W28', arrivals: 900, backlog: 3207 },
+  { week: 'W29', arrivals: 468, backlog: 2205 },
+  { week: 'W30', arrivals: 420, backlog: 1155 },
+  { week: 'W31', arrivals: 420, backlog: 105 },
+  { week: 'W32', arrivals: 100, backlog: 0 }
 ];
 
 const ORIGINAL_CHART_RIGHT: ChartRightItem[] = [
@@ -345,6 +349,7 @@ export default function App() {
   const [vessels, setVessels] = useState<Vessel[]>(() => JSON.parse(JSON.stringify(ORIGINAL_VESSELS)));
   const [chartLeft, setChartLeft] = useState<ChartLeftItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_LEFT)));
   const [chartRight, setChartRight] = useState<ChartRightItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_RIGHT)));
+  const [scenarioValue, setScenarioValue] = useState(210);
   
   // NAVEGAÇÃO DE SLIDES E COMENTÁRIOS DAS NOVAS PÁGINAS
   const [currentSlide, setCurrentSlide] = useState(0); // 0: Geral, 1: Pátios, 2: Navios, 3: Gráficos
@@ -436,6 +441,27 @@ export default function App() {
     }
   };
 
+  const forceInitializeChartLeft = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'chartLeft'));
+      const batchDel = writeBatch(db);
+      querySnapshot.forEach((docSnap) => {
+        batchDel.delete(doc(db, 'chartLeft', docSnap.id));
+      });
+      await batchDel.commit();
+
+      const batch = writeBatch(db);
+      ORIGINAL_CHART_LEFT.forEach((item, index) => {
+        const id = String(index).padStart(3, '0');
+        batch.set(doc(db, 'chartLeft', id), item);
+      });
+      await batch.commit();
+      console.log("Sincronização forçada de chartLeft executada com sucesso!");
+    } catch (e) {
+      console.warn("Erro ao forçar inicialização de chartLeft:", e);
+    }
+  };
+
   const initializeChartLeftInDb = async () => {
     try {
       const batch = writeBatch(db);
@@ -477,7 +503,8 @@ export default function App() {
         vesselNote1,
         vesselNote2,
         chartNote1,
-        chartNote2
+        chartNote2,
+        scenarioValue
       });
     } catch (e) {
       console.warn("Primeira inicialização de config ignorada:", e);
@@ -600,6 +627,7 @@ export default function App() {
         if (data.vesselNote2 !== undefined) setVesselNote2(data.vesselNote2);
         if (data.chartNote1 !== undefined) setChartNote1(data.chartNote1);
         if (data.chartNote2 !== undefined) setChartNote2(data.chartNote2);
+        if (data.scenarioValue !== undefined) setScenarioValue(data.scenarioValue);
       } else {
         initializeConfigInDb();
       }
@@ -766,8 +794,8 @@ export default function App() {
   };
 
   // RESETAR PARA DADOS DA IMAGEM ORIGINAL
-  const resetToOriginal = () => {
-    if (window.confirm("Deseja restaurar todos os dados originais da imagem capturada?")) {
+  const resetToOriginal = async () => {
+    if (window.confirm("Deseja restaurar todos os dados originais da imagem capturada? / 是否要还原并保存为默认原始数据？")) {
       setYards(JSON.parse(JSON.stringify(ORIGINAL_YARDS)));
       setVessels(JSON.parse(JSON.stringify(ORIGINAL_VESSELS)));
       setChartLeft(JSON.parse(JSON.stringify(ORIGINAL_CHART_LEFT)));
@@ -777,19 +805,87 @@ export default function App() {
       const defaultVesselNote1 = "Escala regular de navios activa - Monitoramento detalhado das janelas de atracação. / 常规活跃船舶靠泊计划 - 详细监控和管理泊位窗口。";
       const defaultVesselNote2 = "Destaques operacionais dos navios (Ex: Prioridades de descarga BYD). / 船舶运营重点亮点 (例如：比亚迪重箱卸船优先顺序)。";
       const defaultChartNote1 = "Comentários sobre o Backlog Projetado vs Capacidade de Entrega Semanal. / 预测积压量与周度交付能力的对比分析说明。";
-      const defaultChartNote2 = "Análise de gargalos e metas diárias garantidas (meta Gc de 140). / 关于每日进箱量与保证目标 (Gc 140) 的瓶颈分析和建议。";
+      const defaultChartNote2 = "Análise de gargalos e metas diárias garantidas (meta Gc de 140). / 关于每日进箱量与保证目标 (Gc 140) 的瓶颈 analysis 和建议。";
 
       setYardsComment(defaultYardsComment);
       setVesselNote1(defaultVesselNote1);
       setVesselNote2(defaultVesselNote2);
       setChartNote1(defaultChartNote1);
       setChartNote2(defaultChartNote2);
+      setScenarioValue(210);
 
-      updateGlobalDoc('yardsComment', defaultYardsComment);
-      updateGlobalDoc('vesselNote1', defaultVesselNote1);
-      updateGlobalDoc('vesselNote2', defaultVesselNote2);
-      updateGlobalDoc('chartNote1', defaultChartNote1);
-      updateGlobalDoc('chartNote2', defaultChartNote2);
+      try {
+        // Encontra e atualiza coleção 'config'
+        await setDoc(doc(db, 'config', 'global'), {
+          language,
+          slideTitlePT,
+          slideTitleZH,
+          watermarkText,
+          showWatermark,
+          theme,
+          widescreenMode,
+          slideWidth,
+          yardsComment: defaultYardsComment,
+          vesselNote1: defaultVesselNote1,
+          vesselNote2: defaultVesselNote2,
+          chartNote1: defaultChartNote1,
+          chartNote2: defaultChartNote2,
+          scenarioValue: 210
+        });
+
+        // Grava pátios (yards)
+        const yardsSnap = await getDocs(collection(db, 'yards'));
+        const batchY = writeBatch(db);
+        yardsSnap.forEach(dSnap => batchY.delete(doc(db, 'yards', dSnap.id)));
+        await batchY.commit();
+
+        const batchY2 = writeBatch(db);
+        Object.entries(ORIGINAL_YARDS).forEach(([key, val]) => {
+          batchY2.set(doc(db, 'yards', key), val);
+        });
+        await batchY2.commit();
+
+        // Grava navios (vessels)
+        const vesselsSnap = await getDocs(collection(db, 'vessels'));
+        const batchV = writeBatch(db);
+        vesselsSnap.forEach(dSnap => batchV.delete(doc(db, 'vessels', dSnap.id)));
+        await batchV.commit();
+
+        const batchV2 = writeBatch(db);
+        ORIGINAL_VESSELS.forEach((vessel) => {
+          batchV2.set(doc(db, 'vessels', String(vessel.id)), vessel);
+        });
+        await batchV2.commit();
+
+        // Grava chartLeft
+        const clSnap = await getDocs(collection(db, 'chartLeft'));
+        const batchCL = writeBatch(db);
+        clSnap.forEach(dSnap => batchCL.delete(doc(db, 'chartLeft', dSnap.id)));
+        await batchCL.commit();
+
+        const batchCL2 = writeBatch(db);
+        ORIGINAL_CHART_LEFT.forEach((item, index) => {
+          const id = String(index).padStart(3, '0');
+          batchCL2.set(doc(db, 'chartLeft', id), item);
+        });
+        await batchCL2.commit();
+
+        // Grava chartRight
+        const crSnap = await getDocs(collection(db, 'chartRight'));
+        const batchCR = writeBatch(db);
+        crSnap.forEach(dSnap => batchCR.delete(doc(db, 'chartRight', dSnap.id)));
+        await batchCR.commit();
+
+        const batchCR2 = writeBatch(db);
+        ORIGINAL_CHART_RIGHT.forEach((item, index) => {
+          const id = String(index).padStart(3, '0');
+          batchCR2.set(doc(db, 'chartRight', id), item);
+        });
+        await batchCR2.commit();
+
+      } catch (err) {
+        console.error("Erro ao resetar dados no Firestore:", err);
+      }
     }
   };
 
@@ -1269,15 +1365,18 @@ export default function App() {
     const finalVal = isNaN(numValue) ? 0 : numValue;
     
     const updated = [...chartLeft];
-    if (updated[index] && (field === 'backlog' || field === 'arrivals')) {
+    const item = updated[index];
+    if (!item) return;
+
+    if (field === 'backlog' || field === 'arrivals') {
       updated[index] = {
-        ...updated[index],
+        ...item,
         [field]: finalVal
-      } as ChartLeftItem;
+      };
     }
     setChartLeft(updated);
 
-    const docId = String(index).padStart(3, '0');
+    const docId = item.docId || String(index).padStart(3, '0');
     try {
       await updateDoc(doc(db, 'chartLeft', docId), {
         [field]: finalVal
@@ -1458,10 +1557,10 @@ export default function App() {
         };
       case 3:
         return {
-          titlePT: "GRÁFICOS ANALÍTICOS E FLUXO DE DESEMPENHO",
-          titleZH: "BYD 堆场运营负荷与进出箱趋势分析",
-          subPT: "Backlog Projetado, Capacidade de Entrega, Fluxo Diário e Metas Garantidas",
-          subZH: "预测周度积压量随时间波动趋势、每日工作交付吞吐能率与目标值趋势对比",
+          titlePT: "INBOUND CAPACITY RAMP-UP PLAN",
+          titleZH: "INBOUND CAPACITY RAMP-UP PLAN",
+          subPT: "PROJECTION OF ARRIVALS SHOWING ACTUAL VS ESTIMATED CONTAINER VOLUME PER WEEK.",
+          subZH: "PROJECTION OF ARRIVALS SHOWING ACTUAL VS ESTIMATED CONTAINER VOLUME PER WEEK.",
         };
       default:
         return {
@@ -1476,6 +1575,16 @@ export default function App() {
   // Retorna título dinâmico conforme a seleção de linguagem e o slide ativo
   const getSlideTitle = () => {
     const dyn = getDynamicSlideTitleAndSubtitle();
+    if (currentSlide === 3) {
+      return (
+        <div className="flex items-center gap-2">
+          <div className="w-[4px] h-[18px] bg-blue-600 rounded-xs self-center"></div>
+          <span className="text-[18px] font-black text-slate-850 dark:text-white uppercase tracking-wider font-sans leading-none">
+            {dyn.titlePT}
+          </span>
+        </div>
+      );
+    }
     if (language === 'pt') return <span className="text-xl font-black">{dyn.titlePT}</span>;
     if (language === 'zh') return <span className="text-2xl font-black font-sans tracking-wide">{dyn.titleZH}</span>;
     return (
@@ -1488,6 +1597,13 @@ export default function App() {
 
   const getSlideSubtitle = () => {
     const dyn = getDynamicSlideTitleAndSubtitle();
+    if (currentSlide === 3) {
+      return (
+        <div className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wide mt-1 pl-3">
+          {dyn.subPT}
+        </div>
+      );
+    }
     if (language === 'pt') return dyn.subPT;
     if (language === 'zh') return dyn.subZH;
     return (
@@ -1789,10 +1905,13 @@ export default function App() {
               {/* CABEÇALHO DO SLIDE */}
               <div id="slide-header" className={`flex justify-between items-start border-b border-dashed border-gray-200 dark:border-gray-800 ${widescreenMode ? 'mb-2 pb-1.5' : 'mb-4 pb-3'}`}>
                 <div className="w-4/5">
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-red-600 dark:text-red-400 mb-1 tracking-widest uppercase">
-                    <span>{language === 'bilingual' ? `${TRANSLATIONS.systemTitle.pt} | ${TRANSLATIONS.systemTitle.zh}` : t('systemTitle')}</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
-                  </div>
+                  {currentSlide !== 3 && (
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-red-600 dark:text-red-400 mb-1 tracking-widest uppercase">
+                      <span>{language === 'bilingual' ? `${TRANSLATIONS.systemTitle.pt} | ${TRANSLATIONS.systemTitle.zh}` : t('systemTitle')}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
+                    </div>
+                  )}
+                  {currentSlide === 3 && <div className="mt-1"></div>}
                   <div className="focus:ring-0 focus:outline-none w-full">
                     {getSlideTitle()}
                   </div>
@@ -1801,11 +1920,37 @@ export default function App() {
 
                 {/* LOGO BYD estilizado em SVG */}
                 <div className="flex flex-col items-end">
-                  <div className="flex items-center gap-1 font-bold tracking-widest text-lg text-red-600 dark:text-red-500">
-                    <span className="border-2 border-red-600 dark:border-red-500 px-1 py-0.5 rounded text-xs font-black">BYD</span>
-                    <span className="text-[11px] text-gray-400 dark:text-gray-500 font-sans tracking-normal">{t('logistics')}</span>
+                  {currentSlide === 3 ? (
+                    <div className="flex items-center gap-2 mb-1 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <span className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">
+                        SCENARIO (/DAY):
+                      </span>
+                      <input
+                        type="number"
+                        value={scenarioValue}
+                        onChange={(e) => {
+                          const val = Number(e.target.value) || 0;
+                          setScenarioValue(val);
+                          updateGlobalDoc('scenarioValue', val);
+                        }}
+                        className="w-14 px-1 py-0.5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-750 text-slate-900 dark:text-white rounded text-[11px] text-center font-bold font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 font-bold tracking-widest text-lg text-red-600 dark:text-red-500">
+                      <span className="border-2 border-red-600 dark:border-red-500 px-1 py-0.5 rounded text-xs font-black">BYD</span>
+                      <span className="text-[11px] text-gray-400 dark:text-gray-500 font-sans tracking-normal">{t('logistics')}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1">
+                    {currentSlide === 3 && (
+                      <div className="flex items-center gap-0.5 font-bold tracking-widest text-[9px] text-red-605 dark:text-red-500 mr-1.5">
+                        <span className="border border-red-600 dark:border-red-500 px-0.5 py-0 rounded-[2px] text-[7px] font-black leading-none">BYD</span>
+                        <span className="text-[8px] text-gray-400 dark:text-gray-500 font-sans tracking-normal leading-none">{t('logistics')}</span>
+                      </div>
+                    )}
+                    <span className="text-[8px] text-gray-400 uppercase font-mono tracking-wider">{t('nationalOperations')}</span>
                   </div>
-                  <span className="text-[8px] text-gray-400 mt-1 uppercase font-mono tracking-wider">{t('nationalOperations')}</span>
                 </div>
               </div>
 
@@ -2147,7 +2292,7 @@ export default function App() {
                             <span className="flex items-center gap-1 text-slate-800 dark:text-slate-205"><span className="w-1.5 h-1.5 bg-slate-800 dark:bg-slate-400 inline-block rounded-sm"></span>{language === 'bilingual' ? '到港 / ATA' : 'ATA'}</span>
                             <span className="flex items-center gap-1 text-emerald-500">
                               <span className="w-1.5 h-0.5 border-t border-emerald-500 border-dashed inline-block"></span>
-                              {language === 'pt' ? 'Capacidade (210/dia)' : (language === 'zh' ? '交付能力 (210/天)' : '交付 / Capacidade (210/d)')}
+                              {language === 'pt' ? `Capacidade (${scenarioValue}/dia)` : (language === 'zh' ? `交付能力 (${scenarioValue}/天)` : `交付 / Capacidade (${scenarioValue}/d)`)}
                             </span>
                             <span className="flex items-center gap-1 text-red-500">
                               <span className="w-1.5 h-1.5 bg-red-500 inline-block rounded-full"></span>
@@ -2161,7 +2306,21 @@ export default function App() {
                             <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
                             <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
                             <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                            <line x1="30" y1="80" x2="580" y2="80" stroke="#10b981" strokeWidth="1" strokeDasharray="4 4" />
+                            
+                            {/* Dynamic green dashed line connecting the actual delivery capped by max capacity (scenarioValue * 7) */}
+                            <path
+                              d={chartLeft.reduce((acc, item, i) => {
+                                const x = 35 + i * (540 / (chartLeft.length - 1));
+                                const prevBacklog = i === 0 ? 1416 : chartLeft[i-1].backlog;
+                                const delivery = Math.min(scenarioValue * 7, prevBacklog + item.arrivals);
+                                const y = 100 - (delivery / 6000) * 85;
+                                return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                              }, '')}
+                              fill="none"
+                              stroke="#10b981"
+                              strokeWidth="1.25"
+                              strokeDasharray="4 4"
+                            />
 
                             {chartLeft.map((item, i) => {
                               const x = 35 + i * (540 / (chartLeft.length - 1));
@@ -2194,26 +2353,41 @@ export default function App() {
                             {chartLeft.map((item, i) => {
                               const x = 35 + i * (540 / (chartLeft.length - 1));
                               const y = 100 - (item.backlog / 6000) * 85;
-                              const picosDesejados = ['W1', 'W2', 'W18', 'W19', 'W21', 'W22', 'W23', 'W24', 'W25', 'W26', 'W27', 'W28'];
-                              if (picosDesejados.includes(item.week) && item.backlog > 0) {
-                                  return (
-                                    <g key={`cl-${i}`}>
-                                      <circle cx={x} cy={y} r="3" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
-                                      <text x={x} y={y - 4} fill="#ef4444" fontSize="7" fontWeight="black" textAnchor="middle" className="font-mono">{item.backlog}</text>
-                                    </g>
-                                  );
-                                }
-                                return null;
+                              return (
+                                <g key={`cl-${i}`}>
+                                  <circle cx={x} cy={y} r="2" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
+                                  <text 
+                                    x={x} 
+                                    y={y - 4} 
+                                    fill="#ef4444" 
+                                    fontSize="6" 
+                                    fontWeight="black" 
+                                    textAnchor="middle" 
+                                    className="font-mono"
+                                  >
+                                    {item.backlog}
+                                  </text>
+                                </g>
+                              );
                             })}
 
                             {chartLeft.map((item, i) => {
-                              if (i % 2 === 0 || i === chartLeft.length - 1) {
-                                const x = 35 + i * (540 / (chartLeft.length - 1));
-                                return (
-                                  <text key={`cl-lbl-${i}`} x={x} y="118" fill="#94a3b8" fontSize="7" textAnchor="middle" fontWeight="bold" className="font-mono">{item.week}</text>
-                                );
-                              }
-                              return null;
+                              const x = 35 + i * (540 / (chartLeft.length - 1));
+                              return (
+                                <text 
+                                  key={`cl-lbl-${i}`} 
+                                  x={x} 
+                                  y="112" 
+                                  fill="#94a3b8" 
+                                  fontSize="5.5" 
+                                  textAnchor="end" 
+                                  fontWeight="bold" 
+                                  className="font-mono"
+                                  transform={`rotate(-45, ${x}, 112)`}
+                                >
+                                  {item.week} - 2026
+                                </text>
+                              );
                             })}
                           </svg>
                         </div>
@@ -2557,7 +2731,7 @@ export default function App() {
                           <span className="flex items-center gap-1 text-slate-850 dark:text-slate-200"><span className="w-1.5 h-1.5 bg-slate-805 dark:bg-slate-400 inline-block rounded-sm"></span>{language === 'bilingual' ? '到港 / ATA' : 'ATA'}</span>
                           <span className="flex items-center gap-1 text-emerald-500">
                             <span className="w-1.5 h-0.5 border-t border-emerald-500 border-dashed inline-block"></span>
-                            {language === 'pt' ? 'Capacidade (210/dia)' : (language === 'zh' ? '交付能力 (210/天)' : '交付 / Capacidade (210/d)')}
+                            {language === 'pt' ? `Capacidade (${scenarioValue}/dia)` : (language === 'zh' ? `交付能力 (${scenarioValue}/天)` : `交付 / Capacidade (${scenarioValue}/d)`)}
                           </span>
                           <span className="flex items-center gap-1 text-red-500">
                             <span className="w-1.5 h-1.5 bg-red-500 inline-block rounded-full"></span>
@@ -2571,7 +2745,21 @@ export default function App() {
                           <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
                           <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
                           <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                          <line x1="30" y1="80" x2="580" y2="80" stroke="#10b981" strokeWidth="1" strokeDasharray="4 4" />
+                          
+                          {/* Dynamic green dashed line connecting the actual delivery capped by max capacity (scenarioValue * 7) */}
+                          <path
+                            d={chartLeft.reduce((acc, item, i) => {
+                              const x = 35 + i * (540 / (chartLeft.length - 1));
+                              const prevBacklog = i === 0 ? 1416 : chartLeft[i-1].backlog;
+                              const delivery = Math.min(scenarioValue * 7, prevBacklog + item.arrivals);
+                              const y = 100 - (delivery / 6000) * 85;
+                              return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                            }, '')}
+                            fill="none"
+                            stroke="#10b981"
+                            strokeWidth="1.25"
+                            strokeDasharray="4 4"
+                          />
 
                           {chartLeft.map((item, i) => {
                             const x = 35 + i * (540 / (chartLeft.length - 1));
@@ -2604,26 +2792,41 @@ export default function App() {
                           {chartLeft.map((item, i) => {
                             const x = 35 + i * (540 / (chartLeft.length - 1));
                             const y = 100 - (item.backlog / 6000) * 85;
-                            const picosDesejados = ['W1', 'W2', 'W18', 'W21', 'W22', 'W23', 'W24', 'W25', 'W26', 'W27', 'W28'];
-                            if (picosDesejados.includes(item.week) && item.backlog > 0) {
-                              return (
-                                <g key={`cl-${i}`}>
-                                  <circle cx={x} cy={y} r="3" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
-                                  <text x={x} y={y - 4} fill="#ef4444" fontSize="7" fontWeight="black" textAnchor="middle" className="font-mono">{item.backlog}</text>
-                                </g>
-                              );
-                            }
-                            return null;
+                            return (
+                              <g key={`cl-${i}`}>
+                                <circle cx={x} cy={y} r="2" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
+                                <text 
+                                  x={x} 
+                                  y={y - 4} 
+                                  fill="#ef4444" 
+                                  fontSize="6" 
+                                  fontWeight="black" 
+                                  textAnchor="middle" 
+                                  className="font-mono"
+                                >
+                                  {item.backlog}
+                                </text>
+                              </g>
+                            );
                           })}
 
                           {chartLeft.map((item, i) => {
-                            if (i % 2 === 0 || i === chartLeft.length - 1) {
-                              const x = 35 + i * (540 / (chartLeft.length - 1));
-                              return (
-                                <text key={`cl-lbl-${i}`} x={x} y="118" fill="#94a3b8" fontSize="7" textAnchor="middle" fontWeight="bold" className="font-mono">{item.week}</text>
-                              );
-                            }
-                            return null;
+                            const x = 35 + i * (540 / (chartLeft.length - 1));
+                            return (
+                              <text 
+                                key={`cl-lbl-${i}`} 
+                                x={x} 
+                                y="112" 
+                                fill="#94a3b8" 
+                                fontSize="5.5" 
+                                textAnchor="end" 
+                                fontWeight="bold" 
+                                className="font-mono"
+                                transform={`rotate(-45, ${x}, 112)`}
+                              >
+                                {item.week} - 2026
+                              </text>
+                            );
                           })}
                         </svg>
                       </div>
