@@ -72,6 +72,17 @@ service cloud.firestore {
         && data.type is string && data.type.size() <= 15;
     }
 
+    function isValidContainer(data) {
+      return data.keys().hasAll(['id', 'yardId', 'vesselName', 'size', 'status', 'category'])
+        && data.keys().size() == 6
+        && data.id is string && data.id.size() <= 30
+        && data.yardId is string && data.yardId.size() <= 50
+        && data.vesselName is string && data.vesselName.size() <= 100
+        && data.size is string && data.size.size() <= 20
+        && data.status is string && (data.status == 'CHEIO' || data.status == 'VAZIO')
+        && data.category is string && (data.category == 'PORTO' || data.category == 'PRONTO_COLETA' || data.category == 'DELIVERED' || data.category == 'GERAL');
+    }
+
     function isValidConfig(data) {
       return data.keys().hasAll(['language', 'slideTitlePT', 'slideTitleZH', 'watermarkText', 'showWatermark', 'theme', 'widescreenMode', 'slideWidth'])
         && data.keys().size() <= 20
@@ -91,6 +102,12 @@ service cloud.firestore {
     }
 
     // MATCH BLOCKS FOR ALL IDENTIFIED COLLECTIONS
+
+    match /containers/{containerId} {
+      allow read: if true;
+      allow create, update: if isValidId(containerId) && isValidContainer(incoming());
+      allow delete: if isValidId(containerId);
+    }
 
     match /yards/{yardId} {
       allow read: if true;

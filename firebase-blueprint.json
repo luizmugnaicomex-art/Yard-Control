@@ -70,9 +70,27 @@
         "lastUpdatedBy": { "type": "string", "description": "User UID who made the latest change" }
       },
       "required": ["language", "slideTitlePT", "slideTitleZH", "watermarkText", "showWatermark", "theme", "widescreenMode"]
+    },
+    "ContainerDefinition": {
+      "title": "Container Log",
+      "description": "Represents an individual cargo container stored inside a yard area.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Container unique identification number (e.g. BYDU8271829)" },
+        "yardId": { "type": "string", "description": "Association to the parent yard key" },
+        "vesselName": { "type": "string", "description": "Associated vessel name" },
+        "size": { "type": "string", "description": "Container size and form factor" },
+        "status": { "type": "string", "enum": ["CHEIO", "VAZIO"], "description": "Full or empty status" },
+        "category": { "type": "string", "enum": ["PORTO", "PRONTO_COLETA", "DELIVERED", "GERAL"], "description": "Internal category routing" }
+      },
+      "required": ["id", "yardId", "vesselName", "size", "status", "category"]
     }
   },
   "firestore": {
+    "/containers/{containerId}": {
+      "schema": "ContainerDefinition",
+      "description": "Individual containers stored inside the terminal yards."
+    },
     "/yards/{yardId}": {
       "schema": "YardDefinition",
       "description": "Database instances representing individual yards (tecon, intermaritima, etc.)."

@@ -35,10 +35,13 @@ import {
   Package,
   Layers,
   Boxes,
-  Percent
+  Percent,
+  FileSpreadsheet,
+  Upload
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
 
 // FIREBASE INTEGRATION
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -50,7 +53,8 @@ import {
   updateDoc, 
   deleteDoc, 
   writeBatch,
-  getDocs
+  getDocs,
+  getDoc
 } from 'firebase/firestore';
 import { 
   db, 
@@ -194,6 +198,15 @@ export type YardsState = {
   [key: string]: Yard;
 };
 
+export interface Container {
+  id: string;
+  yardId: string;
+  vesselName: string;
+  size: string;
+  status: 'CHEIO' | 'VAZIO';
+  category: 'PORTO' | 'PRONTO_COLETA' | 'DELIVERED' | 'GERAL';
+}
+
 export interface Vessel {
   id: number;
   name: string;
@@ -232,6 +245,39 @@ const ORIGINAL_VESSELS: Vessel[] = [
   { id: 2, name: 'MSC LA SPEZIA', eta: '22/05/2026', cntrs: 1712 },
   { id: 3, name: 'MSC MARIACRISTINA', eta: '30/05/2026', cntrs: 1799 },
   { id: 4, name: 'MSC AURIGA', eta: '05/06/2026', cntrs: 1329 },
+];
+
+const INITIAL_CONTAINERS: Container[] = [
+  // TECON containers
+  { id: 'MSCU4829104', yardId: 'tecon', vesselName: 'MSC SAVONA', size: "40' HC", status: 'CHEIO', category: 'PORTO' },
+  { id: 'BYDU9012487', yardId: 'tecon', vesselName: 'MSC LA SPEZIA', size: "40' HC", status: 'CHEIO', category: 'PRONTO_COLETA' },
+  { id: 'MEDU7384910', yardId: 'tecon', vesselName: 'MSC MARIACRISTINA', size: "20' GP", status: 'CHEIO', category: 'DELIVERED' },
+  { id: 'BYDU2840192', yardId: 'tecon', vesselName: 'MSC AURIGA', size: "40' HC", status: 'CHEIO', category: 'PORTO' },
+
+  // INTERMARITIMA containers
+  { id: 'MSCU1948502', yardId: 'intermaritima', vesselName: 'MSC LA SPEZIA', size: "40' HC", status: 'CHEIO', category: 'PORTO' },
+  { id: 'BYDU8392019', yardId: 'intermaritima', vesselName: 'MSC MARIACRISTINA', size: "40' HC", status: 'CHEIO', category: 'PRONTO_COLETA' },
+  { id: 'SUDU4820194', yardId: 'intermaritima', vesselName: 'MSC AURIGA', size: "20' GP", status: 'CHEIO', category: 'DELIVERED' },
+
+  // TPC containers
+  { id: 'BYDU7482910', yardId: 'tpc', vesselName: 'MSC SAVONA', size: "40' HC", status: 'CHEIO', category: 'PORTO' },
+  { id: 'MSCU8491029', yardId: 'tpc', vesselName: 'MSC MARIACRISTINA', size: "40' HC", status: 'CHEIO', category: 'PRONTO_COLETA' },
+  { id: 'BYDU3849102', yardId: 'tpc', vesselName: 'MSC AURIGA', size: "20' GP", status: 'CHEIO', category: 'PORTO' },
+
+  // CLIA EMPORIO containers
+  { id: 'BYDU9201847', yardId: 'clia', vesselName: 'MSC SAVONA', size: "40' HC", status: 'CHEIO', category: 'PORTO' },
+  { id: 'MSCU3849201', yardId: 'clia', vesselName: 'MSC LA SPEZIA', size: "20' GP", status: 'CHEIO', category: 'PRONTO_COLETA' },
+
+  // AG - INTER CDEX containers
+  { id: 'BYDU8491028', yardId: 'ag', vesselName: 'N/A', size: "40' HC", status: 'CHEIO', category: 'GERAL' },
+  { id: 'MSCU1849102', yardId: 'ag', vesselName: 'MSC SAVONA', size: "40' HC", status: 'CHEIO', category: 'PRONTO_COLETA' },
+
+  // CTS - PONTUAL containers
+  { id: 'BYDU1029481', yardId: 'cts', vesselName: 'N/A', size: "40' HC", status: 'VAZIO', category: 'GERAL' },
+
+  // BYD BUFFER containers
+  { id: 'BYDU9910481', yardId: 'buffer', vesselName: 'MSC AURIGA', size: "40' HC", status: 'CHEIO', category: 'GERAL' },
+  { id: 'BYDU5510294', yardId: 'buffer', vesselName: 'N/A', size: "40' HC", status: 'VAZIO', category: 'GERAL' }
 ];
 
 const ORIGINAL_CHART_LEFT: ChartLeftItem[] = [
@@ -350,6 +396,17 @@ export default function App() {
   const [chartLeft, setChartLeft] = useState<ChartLeftItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_LEFT)));
   const [chartRight, setChartRight] = useState<ChartRightItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_RIGHT)));
   const [scenarioValue, setScenarioValue] = useState(210);
+
+  // ESTADOS DE CONTÊINERES (Para detalhamento por área)
+  const [selectedYardKey, setSelectedYardKey] = useState<string | null>(null);
+  const [containers, setContainers] = useState<Container[]>(() => JSON.parse(JSON.stringify(INITIAL_CONTAINERS)));
+  
+  // Estados para formulário de cadastro de novo contêiner
+  const [newContainerId, setNewContainerId] = useState("");
+  const [newContainerSize, setNewContainerSize] = useState("40' HC");
+  const [newContainerStatus, setNewContainerStatus] = useState<'CHEIO' | 'VAZIO'>('CHEIO');
+  const [newContainerCategory, setNewContainerCategory] = useState<'PORTO' | 'PRONTO_COLETA' | 'DELIVERED' | 'GERAL'>('GERAL');
+  const [newContainerVessel, setNewContainerVessel] = useState("N/A");
   
   // NAVEGAÇÃO DE SLIDES E COMENTÁRIOS DAS NOVAS PÁGINAS
   const [currentSlide, setCurrentSlide] = useState(0); // 0: Geral, 1: Pátios, 2: Navios, 3: Gráficos
@@ -384,6 +441,30 @@ export default function App() {
   const [isDesktop, setIsDesktop] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [dbStatus, setDbStatus] = useState<'connecting' | 'online' | 'offline'>('connecting');
+  const [configExistsInDb, setConfigExistsInDb] = useState<boolean | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void | Promise<void>;
+  } | null>(null);
+
+  const requestConfirmation = (title: string, message: string, onConfirm: () => void | Promise<void>) => {
+    setConfirmConfig({
+      isOpen: true,
+      title,
+      message,
+      onConfirm: async () => {
+        try {
+          await onConfirm();
+        } catch (e) {
+          console.error("Erro na confirmação:", e);
+        } finally {
+          setConfirmConfig(null);
+        }
+      }
+    });
+  };
 
   // NOVOS ESTADOS PARA ADICIONAR SEMANAS E DIAS DE ENTREGA
   const [newWeekName, setNewWeekName] = useState('W30');
@@ -421,6 +502,25 @@ export default function App() {
       await batch.commit();
     } catch (e) {
       console.warn("Primeira inicialização de yards ignorada (sem permissão ou já feito):", e);
+    }
+  };
+
+  const initializeContainersInDb = async () => {
+    try {
+      const batch = writeBatch(db);
+      INITIAL_CONTAINERS.forEach((c) => {
+        batch.set(doc(db, 'containers', c.id), {
+          id: c.id,
+          yardId: c.yardId,
+          vesselName: c.vesselName,
+          size: c.size,
+          status: c.status,
+          category: c.category
+        });
+      });
+      await batch.commit();
+    } catch (e) {
+      console.warn("Primeira inicialização de containers ignorada:", e);
     }
   };
 
@@ -516,10 +616,19 @@ export default function App() {
     setDbStatus('connecting');
     
     // Yards
-    const unsubYards = onSnapshot(collection(db, 'yards'), (snapshot) => {
+    const unsubYards = onSnapshot(collection(db, 'yards'), async (snapshot) => {
       setDbStatus('online');
       if (snapshot.empty) {
-        initializeYardsInDb();
+        try {
+          const configDoc = await getDoc(doc(db, 'config', 'global'));
+          if (!configDoc.exists()) {
+            initializeYardsInDb();
+          } else {
+            setYards({});
+          }
+        } catch (e) {
+          console.warn("Erro ao verificar config para yards:", e);
+        }
         return;
       }
       const newYards: YardsState = {};
@@ -533,9 +642,18 @@ export default function App() {
     });
 
     // Vessels
-    const unsubVessels = onSnapshot(collection(db, 'vessels'), (snapshot) => {
+    const unsubVessels = onSnapshot(collection(db, 'vessels'), async (snapshot) => {
       if (snapshot.empty) {
-        initializeVesselsInDb();
+        try {
+          const configDoc = await getDoc(doc(db, 'config', 'global'));
+          if (!configDoc.exists()) {
+            initializeVesselsInDb();
+          } else {
+            setVessels([]);
+          }
+        } catch (e) {
+          console.warn("Erro ao verificar config para vessels:", e);
+        }
         return;
       }
       const newVessels: Vessel[] = [];
@@ -560,9 +678,18 @@ export default function App() {
     });
 
     // ChartLeft
-    const unsubChartLeft = onSnapshot(collection(db, 'chartLeft'), (snapshot) => {
+    const unsubChartLeft = onSnapshot(collection(db, 'chartLeft'), async (snapshot) => {
       if (snapshot.empty) {
-        initializeChartLeftInDb();
+        try {
+          const configDoc = await getDoc(doc(db, 'config', 'global'));
+          if (!configDoc.exists()) {
+            initializeChartLeftInDb();
+          } else {
+            setChartLeft([]);
+          }
+        } catch (e) {
+          console.warn("Erro ao verificar config para chartLeft:", e);
+        }
         return;
       }
       const newChartLeft: ChartLeftItem[] = [];
@@ -586,9 +713,18 @@ export default function App() {
     });
 
     // ChartRight
-    const unsubChartRight = onSnapshot(collection(db, 'chartRight'), (snapshot) => {
+    const unsubChartRight = onSnapshot(collection(db, 'chartRight'), async (snapshot) => {
       if (snapshot.empty) {
-        initializeChartRightInDb();
+        try {
+          const configDoc = await getDoc(doc(db, 'config', 'global'));
+          if (!configDoc.exists()) {
+            initializeChartRightInDb();
+          } else {
+            setChartRight([]);
+          }
+        } catch (e) {
+          console.warn("Erro ao verificar config para chartRight:", e);
+        }
         return;
       }
       const newChartRight: { index: string, item: ChartRightItem }[] = [];
@@ -635,12 +771,45 @@ export default function App() {
       console.warn("Falha ao ler config global do Firestore:", err);
     });
 
+    // Containers
+    const unsubContainers = onSnapshot(collection(db, 'containers'), async (snapshot) => {
+      if (snapshot.empty) {
+        try {
+          const configDoc = await getDoc(doc(db, 'config', 'global'));
+          if (!configDoc.exists()) {
+            initializeContainersInDb();
+          } else {
+            setContainers([]);
+          }
+        } catch (e) {
+          console.warn("Erro ao verificar config para containers:", e);
+        }
+        return;
+      }
+      const newContainers: Container[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        newContainers.push({
+          id: docSnap.id,
+          yardId: data.yardId || "",
+          vesselName: data.vesselName || "N/A",
+          size: data.size || "40' HC",
+          status: data.status || "CHEIO",
+          category: data.category || "GERAL"
+        });
+      });
+      setContainers(newContainers);
+    }, (err) => {
+      console.warn("Falha ao ler containers do Firestore:", err);
+    });
+
     return () => {
       unsubYards();
       unsubVessels();
       unsubChartLeft();
       unsubChartRight();
       unsubConfig();
+      unsubContainers();
     };
   }, [user]);
 
@@ -764,13 +933,6 @@ export default function App() {
     );
   };
 
-  const getColHeader = (key: string) => {
-    if (!TRANSLATIONS[key]) return key;
-    if (language === 'pt') return TRANSLATIONS[key].pt;
-    if (language === 'zh') return TRANSLATIONS[key].zh;
-    return `${TRANSLATIONS[key].zh} (${TRANSLATIONS[key].pt})`;
-  };
-
   const getChartLeftTitle = () => {
     if (language === 'pt') return TRANSLATIONS.chartLeftTitle.pt;
     if (language === 'zh') return TRANSLATIONS.chartLeftTitle.zh;
@@ -793,16 +955,28 @@ export default function App() {
     );
   };
 
+  const getColHeader = (key: string) => {
+    if (!TRANSLATIONS[key]) return key;
+    if (language === 'pt') return TRANSLATIONS[key].pt;
+    if (language === 'zh') return TRANSLATIONS[key].zh;
+    return `${TRANSLATIONS[key].zh} (${TRANSLATIONS[key].pt})`;
+  };
+
   // RESETAR PARA DADOS DA IMAGEM ORIGINAL
-  const resetToOriginal = async () => {
-    if (window.confirm("Deseja restaurar todos os dados originais da imagem capturada? / 是否要还原并保存为默认原始数据？")) {
+  const resetToOriginal = () => {
+    const title = language === 'bilingual' ? 'Restaurar Dados / 还原数据' : 'Restaurar Dados';
+    const message = language === 'bilingual'
+      ? "Deseja restaurar todos os dados originais da imagem capturada? / 是否要还原并保存为默认原始数据？"
+      : "Deseja restaurar todos os dados originais da imagem capturada?";
+
+    requestConfirmation(title, message, async () => {
       setYards(JSON.parse(JSON.stringify(ORIGINAL_YARDS)));
       setVessels(JSON.parse(JSON.stringify(ORIGINAL_VESSELS)));
       setChartLeft(JSON.parse(JSON.stringify(ORIGINAL_CHART_LEFT)));
       setChartRight(JSON.parse(JSON.stringify(ORIGINAL_CHART_RIGHT)));
       
       const defaultYardsComment = "Inserir comentários sobre a capacidade e ocupação dos pátios de forma bilíngue aqui. / 在此输入关于堆场容量、占用比率的双语说明。";
-      const defaultVesselNote1 = "Escala regular de navios activa - Monitoramento detalhado das janelas de atracação. / 常规活跃船舶靠泊计划 - 详细监控和管理泊位窗口。";
+      const defaultVesselNote1 = "Escala regular de navios activa - Monitoramento detalhado das janelas de atracação. / 常规活跃船舶靠泊计划 - 详细监控 and 管理泊位窗口。";
       const defaultVesselNote2 = "Destaques operacionais dos navios (Ex: Prioridades de descarga BYD). / 船舶运营重点亮点 (例如：比亚迪重箱卸船优先顺序)。";
       const defaultChartNote1 = "Comentários sobre o Backlog Projetado vs Capacidade de Entrega Semanal. / 预测积压量与周度交付能力的对比分析说明。";
       const defaultChartNote2 = "Análise de gargalos e metas diárias garantidas (meta Gc de 140). / 关于每日进箱量与保证目标 (Gc 140) 的瓶颈 analysis 和建议。";
@@ -883,10 +1057,425 @@ export default function App() {
         });
         await batchCR2.commit();
 
+        // Grava containers
+        setContainers(JSON.parse(JSON.stringify(INITIAL_CONTAINERS)));
+        const containersSnap = await getDocs(collection(db, 'containers'));
+        const batchC = writeBatch(db);
+        containersSnap.forEach(dSnap => batchC.delete(doc(db, 'containers', dSnap.id)));
+        await batchC.commit();
+
+        const batchC2 = writeBatch(db);
+        INITIAL_CONTAINERS.forEach((c) => {
+          batchC2.set(doc(db, 'containers', c.id), {
+            id: c.id,
+            yardId: c.yardId,
+            vesselName: c.vesselName,
+            size: c.size,
+            status: c.status,
+            category: c.category
+          });
+        });
+        await batchC2.commit();
+
       } catch (err) {
         console.error("Erro ao resetar dados no Firestore:", err);
       }
+    });
+  };
+
+  // Local filter states for container modal
+  const [containerSearch, setContainerSearch] = useState("");
+  const [containerStatusFilter, setContainerStatusFilter] = useState("ALL");
+  const [containerCategoryFilter, setContainerCategoryFilter] = useState("ALL");
+  const [selectedContainerIds, setSelectedContainerIds] = useState<string[]>([]);
+
+  // Clear selection when yard or filters change to avoid accidental out-of-view deletions
+  useEffect(() => {
+    setSelectedContainerIds([]);
+  }, [selectedYardKey, containerSearch, containerStatusFilter, containerCategoryFilter]);
+
+  const handleBulkDeleteContainers = () => {
+    if (selectedContainerIds.length === 0) return;
+    
+    const title = language === 'bilingual' ? 'Confirmar Exclusão / 确认删除' : 'Confirmar Exclusão';
+    const message = language === 'bilingual' 
+      ? `Deseja realmente remover os ${selectedContainerIds.length} contêineres selecionados? / 确定要删除选中的 ${selectedContainerIds.length} 个集装箱吗？` 
+      : `Deseja realmente remover os ${selectedContainerIds.length} contêineres selecionados?`;
+
+    requestConfirmation(title, message, async () => {
+      try {
+        const batch = writeBatch(db);
+        
+        let decCheio = 0;
+        let decVazio = 0;
+        let decPorto = 0;
+        let decProntoColeta = 0;
+        let decDelivered = 0;
+
+        selectedContainerIds.forEach(id => {
+          const container = containers.find(c => c.id === id);
+          if (container && container.yardId === selectedYardKey) {
+            batch.delete(doc(db, 'containers', id));
+            
+            if (container.status === 'CHEIO') decCheio++;
+            else decVazio++;
+
+            if (container.category === 'PORTO') decPorto++;
+            else if (container.category === 'PRONTO_COLETA') decProntoColeta++;
+            else if (container.category === 'DELIVERED') decDelivered++;
+          }
+        });
+
+        const yardRef = doc(db, 'yards', selectedYardKey);
+        const currentYard = yards[selectedYardKey];
+        if (currentYard) {
+          batch.update(yardRef, {
+            cheio: Math.max(0, (currentYard.cheio || 0) - decCheio),
+            vazio: Math.max(0, (currentYard.vazio || 0) - decVazio),
+            porto: Math.max(0, (currentYard.porto || 0) - decPorto),
+            prontoColeta: Math.max(0, (currentYard.prontoColeta || 0) - decProntoColeta),
+            delivered: Math.max(0, (currentYard.delivered || 0) - decDelivered)
+          });
+        }
+
+        await batch.commit();
+        setSelectedContainerIds([]);
+      } catch (error) {
+        console.error("Erro ao deletar contêineres em lote:", error);
+        alert("Erro ao realizar a exclusão em lote / 批量删除失败");
+      }
+    });
+  };
+
+  const handleClearYard = () => {
+    if (!selectedYardKey) return;
+    const yardContainers = containers.filter(c => c.yardId === selectedYardKey);
+    if (yardContainers.length === 0) {
+      alert(language === 'bilingual' 
+        ? 'Não há contêineres neste pátio para limpar. / 该堆场中没有可清除的集装箱。' 
+        : 'Não há contêineres neste pátio para limpar.');
+      return;
     }
+
+    const title = language === 'bilingual' ? 'Limpar Pátio / 清空堆场' : 'Limpar Pátio';
+    const message = language === 'bilingual'
+      ? `ATENÇÃO: Deseja realmente remover TODOS os ${yardContainers.length} contêineres do pátio ${yards[selectedYardKey]?.name}? Esta ação não pode ser desfeita. / 警告：确定要删除堆场 ${yards[selectedYardKey]?.name} 中的所有 ${yardContainers.length} 个集装箱吗？此操作无法撤销。`
+      : `ATENÇÃO: Deseja realmente remover TODOS os ${yardContainers.length} contêineres do pátio ${yards[selectedYardKey]?.name}? Esta ação não pode ser desfeita.`;
+
+    requestConfirmation(title, message, async () => {
+      try {
+        const batch = writeBatch(db);
+        yardContainers.forEach(container => {
+          batch.delete(doc(db, 'containers', container.id));
+        });
+
+        const yardRef = doc(db, 'yards', selectedYardKey);
+        batch.update(yardRef, {
+          cheio: 0,
+          vazio: 0,
+          porto: 0,
+          prontoColeta: 0,
+          delivered: 0
+        });
+
+        await batch.commit();
+        setSelectedContainerIds([]);
+      } catch (error) {
+        console.error("Erro ao esvaziar pátio:", error);
+        alert("Erro ao esvaziar o pátio / 清空堆场失败");
+      }
+    });
+  };
+
+  const handleDeleteContainer = (container: Container) => {
+    const title = language === 'bilingual' ? 'Confirmar Exclusão / 确认删除' : 'Confirmar Exclusão';
+    const message = language === 'bilingual' 
+      ? `Deseja realmente remover o contêiner ${container.id}? / 确定要删除集装箱 ${container.id} 吗？` 
+      : `Deseja realmente remover o contêiner ${container.id}?`;
+
+    requestConfirmation(title, message, async () => {
+      try {
+        await deleteDoc(doc(db, 'containers', container.id));
+        
+        const yardRef = doc(db, 'yards', container.yardId);
+        const currentYard = yards[container.yardId];
+        if (currentYard) {
+          const updateObj: any = {};
+          if (container.status === 'CHEIO') {
+            updateObj.cheio = Math.max(0, (currentYard.cheio || 0) - 1);
+          } else {
+            updateObj.vazio = Math.max(0, (currentYard.vazio || 0) - 1);
+          }
+          
+          if (container.category === 'PORTO') {
+            updateObj.porto = Math.max(0, (currentYard.porto || 0) - 1);
+          } else if (container.category === 'PRONTO_COLETA') {
+            updateObj.prontoColeta = Math.max(0, (currentYard.prontoColeta || 0) - 1);
+          } else if (container.category === 'DELIVERED') {
+            updateObj.delivered = Math.max(0, (currentYard.delivered || 0) - 1);
+          }
+          
+          await updateDoc(yardRef, updateObj);
+        }
+      } catch (error) {
+        console.error("Erro ao deletar contêiner:", error);
+      }
+    });
+  };
+
+  const handleAddContainer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newContainerId.trim() || !selectedYardKey) return;
+    const cId = newContainerId.trim().toUpperCase();
+    
+    if (containers.some(c => c.id === cId)) {
+      alert(language === 'bilingual' ? 'Contêiner já cadastrado! / 该集装箱已存在！' : 'Contêiner já cadastrado!');
+      return;
+    }
+    
+    try {
+      await setDoc(doc(db, 'containers', cId), {
+        id: cId,
+        yardId: selectedYardKey,
+        size: newContainerSize,
+        status: newContainerStatus,
+        category: newContainerCategory,
+        vesselName: newContainerVessel
+      });
+      
+      const yardRef = doc(db, 'yards', selectedYardKey);
+      const currentYard = yards[selectedYardKey];
+      if (currentYard) {
+        const updateObj: any = {};
+        if (newContainerStatus === 'CHEIO') {
+          updateObj.cheio = (currentYard.cheio || 0) + 1;
+        } else {
+          updateObj.vazio = (currentYard.vazio || 0) + 1;
+        }
+        
+        if (newContainerCategory === 'PORTO') {
+          updateObj.porto = (currentYard.porto || 0) + 1;
+        } else if (newContainerCategory === 'PRONTO_COLETA') {
+          updateObj.prontoColeta = (currentYard.prontoColeta || 0) + 1;
+        } else if (newContainerCategory === 'DELIVERED') {
+          updateObj.delivered = (currentYard.delivered || 0) + 1;
+        }
+        
+        await updateDoc(yardRef, updateObj);
+      }
+      
+      setNewContainerId("");
+    } catch (error) {
+      console.error("Erro ao adicionar contêiner:", error);
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    // Worksheet 1: Layout_Importacao
+    const headers = [
+      ["Identificacao", "Tamanho", "Status", "Categoria", "Navio"],
+      ["MSCU4829104", "40' HC", "CHEIO", "PORTO", "MSC SAVONA"],
+      ["BYDU9012487", "40' HC", "CHEIO", "PRONTO_COLETA", "MSC LA SPEZIA"],
+      ["BYDU1029481", "40' HC", "VAZIO", "GERAL", "N/A"],
+      ["MEDU7384910", "20' GP", "CHEIO", "DELIVERED", "MSC MARIACRISTINA"]
+    ];
+    
+    // Worksheet 2: Instrucoes
+    const instructions = [
+      ["Coluna / Column", "Descricao / Description", "Valores Aceitos / Accepted Values", "Exemplo / Example"],
+      ["Identificacao", "Número de identificação única do contêiner / Container unique ID number (11 chars)", "Texto livre (Ex: MSCU1234567) / String", "MSCU1234567"],
+      ["Tamanho", "Tamanho ou dimensão do contêiner / Container physical size or dimensions", "20' GP, 40' HC, 40' OT (Default: 40' HC)", "40' HC"],
+      ["Status", "Situação do contêiner (cheio ou vazio) / Container physical status (full/empty)", "CHEIO (ou FULL/重箱), VAZIO (ou EMPTY/空箱) (Default: CHEIO)", "CHEIO"],
+      ["Categoria", "Categoria logística no pátio / Logistic category for the yard slot", "PORTO (港口), PRONTO_COLETA (待收箱), DELIVERED (已交付), GERAL (通用) (Default: GERAL)", "PRONTO_COLETA"],
+      ["Navio", "Nome do navio associado ou N/A se nenhum / Name of the associated vessel", "Texto livre ou N/A (Default: N/A)", "MSC SAVONA"]
+    ];
+
+    const wb = XLSX.utils.book_new();
+    
+    const ws1 = XLSX.utils.aoa_to_sheet(headers);
+    XLSX.utils.book_append_sheet(wb, ws1, "Layout_Importacao");
+    
+    const ws2 = XLSX.utils.aoa_to_sheet(instructions);
+    XLSX.utils.book_append_sheet(wb, ws2, "Instrucoes_Layout");
+    
+    XLSX.writeFile(wb, "layout_importacao_conteineres.xlsx");
+  };
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedYardKey) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        if (!bstr) return;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        
+        // Find the sheet (either the first sheet, or named "Layout_Importacao" or "Template")
+        const sheetName = wb.SheetNames.find(name => name.toLowerCase().includes('import') || name.toLowerCase().includes('template')) || wb.SheetNames[0];
+        const ws = wb.Sheets[sheetName];
+        
+        // Convert sheet to JSON array of arrays
+        const data: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        
+        if (data.length <= 1) {
+          alert(language === 'bilingual' 
+            ? 'Planilha vazia ou sem dados! / 表格为空或无数据！' 
+            : 'Planilha vazia ou sem dados!');
+          return;
+        }
+        
+        // Let's identify column headers (case-insensitive and trimmed)
+        const headers = data[0].map(h => String(h || '').trim().toLowerCase());
+        
+        // Map common headers flexibly
+        const idIdx = headers.findIndex(h => h.includes('ident') || h.includes('id') || h.includes('box') || h.includes('nº') || h.includes('número') || h.includes('numero') || h.includes('container') || h.includes('箱号'));
+        const sizeIdx = headers.findIndex(h => h.includes('taman') || h.includes('size') || h.includes('dimen') || h.includes('尺寸'));
+        const statusIdx = headers.findIndex(h => h.includes('stat') || h.includes('situa') || h.includes('estado') || h.includes('状态'));
+        const categoryIdx = headers.findIndex(h => h.includes('categ') || h.includes('tipo') || h.includes('class') || h.includes('类别'));
+        const vesselIdx = headers.findIndex(h => h.includes('navio') || h.includes('vessel') || h.includes('ship') || h.includes('barco') || h.includes('船舶'));
+        
+        if (idIdx === -1) {
+          alert(language === 'bilingual'
+            ? 'Coluna "Identificacao" (ou similar) não encontrada! Verifique o modelo. / 未找到“箱号”列！请检查模板。'
+            : 'Coluna "Identificacao" (ou similar) não encontrada! Certifique-se de usar os cabeçalhos padrão.');
+          return;
+        }
+        
+        const importedContainers: Container[] = [];
+        const existingIds = new Set(containers.map(c => c.id));
+        
+        let dupCount = 0;
+        let successCount = 0;
+        
+        // Stats increment counters for this import session
+        let addCheio = 0;
+        let addVazio = 0;
+        let addPorto = 0;
+        let addProntoColeta = 0;
+        let addDelivered = 0;
+        
+        const batch = writeBatch(db);
+        
+        for (let i = 1; i < data.length; i++) {
+          const row = data[i];
+          if (!row || row.length === 0) continue;
+          
+          const rawId = row[idIdx];
+          if (rawId === undefined || rawId === null || String(rawId).trim() === '') continue;
+          
+          const id = String(rawId).trim().toUpperCase();
+          if (!id) continue;
+          
+          // Check for duplicate in the same upload file or in firestore
+          if (existingIds.has(id) || importedContainers.some(c => c.id === id)) {
+            dupCount++;
+            continue;
+          }
+          
+          // Size parsing
+          let size = sizeIdx !== -1 && row[sizeIdx] ? String(row[sizeIdx]).trim() : "40' HC";
+          if (!size.includes("'")) {
+            if (size === "40" || size === "40HC" || size.toLowerCase().includes("hc")) size = "40' HC";
+            else if (size === "20" || size === "20GP" || size.toLowerCase().includes("gp")) size = "20' GP";
+            else if (size === "40OT" || size.toLowerCase().includes("ot")) size = "40' OT";
+          }
+          
+          // Status parsing
+          let rawStatus = statusIdx !== -1 && row[statusIdx] ? String(row[statusIdx]).trim().toUpperCase() : "CHEIO";
+          let status: 'CHEIO' | 'VAZIO' = 'CHEIO';
+          if (rawStatus.includes("VAZ") || rawStatus.includes("EMP") || rawStatus.includes("空") || rawStatus === "K" || rawStatus === "VACIO") {
+            status = 'VAZIO';
+          }
+          
+          // Category parsing
+          let rawCategory = categoryIdx !== -1 && row[categoryIdx] ? String(row[categoryIdx]).trim().toUpperCase() : "GERAL";
+          let category: 'PORTO' | 'PRONTO_COLETA' | 'DELIVERED' | 'GERAL' = 'GERAL';
+          
+          if (rawCategory.includes("PORT") || rawCategory.includes("港")) {
+            category = 'PORTO';
+          } else if (rawCategory.includes("PRON") || rawCategory.includes("COLE") || rawCategory.includes("REC") || rawCategory.includes("待")) {
+            category = 'PRONTO_COLETA';
+          } else if (rawCategory.includes("DELI") || rawCategory.includes("ENTR") || rawCategory.includes("PAG") || rawCategory.includes("交付")) {
+            category = 'DELIVERED';
+          }
+          
+          // Vessel parsing
+          let vesselName = vesselIdx !== -1 && row[vesselIdx] ? String(row[vesselIdx]).trim() : "N/A";
+          if (!vesselName || vesselName.toUpperCase() === "N/A" || vesselName === "-") {
+            vesselName = "N/A";
+          }
+          
+          const newCntr: Container = {
+            id,
+            yardId: selectedYardKey,
+            size,
+            status,
+            category,
+            vesselName
+          };
+          
+          importedContainers.push(newCntr);
+          
+          // Add to firestore batch
+          batch.set(doc(db, 'containers', id), {
+            id,
+            yardId: selectedYardKey,
+            size,
+            status,
+            category,
+            vesselName
+          });
+          
+          // Update stat counters
+          if (status === 'CHEIO') addCheio++;
+          else addVazio++;
+          
+          if (category === 'PORTO') addPorto++;
+          else if (category === 'PRONTO_COLETA') addProntoColeta++;
+          else if (category === 'DELIVERED') addDelivered++;
+          
+          successCount++;
+        }
+        
+        if (successCount > 0) {
+          // Update Yard document stats in firestore
+          const yardRef = doc(db, 'yards', selectedYardKey);
+          const currentYard = yards[selectedYardKey];
+          if (currentYard) {
+            await updateDoc(yardRef, {
+              cheio: (currentYard.cheio || 0) + addCheio,
+              vazio: (currentYard.vazio || 0) + addVazio,
+              porto: (currentYard.porto || 0) + addPorto,
+              prontoColeta: (currentYard.prontoColeta || 0) + addProntoColeta,
+              delivered: (currentYard.delivered || 0) + addDelivered
+            });
+          }
+          
+          await batch.commit();
+          
+          alert(language === 'bilingual'
+            ? `Sucesso! Importados: ${successCount}. Duplicados ignorados: ${dupCount}. / 导入成功！共 ${successCount} 个，忽略重复 ${dupCount} 个。`
+            : `Sucesso! Foram importados ${successCount} contêiner(es) com sucesso. ${dupCount} contêineres duplicados foram ignorados.`);
+        } else {
+          alert(language === 'bilingual'
+            ? `Nenhum contêiner novo importado. Todos os ${dupCount} contêineres já existiam no sistema. / 未导入新集装箱。所有 ${dupCount} 个集装箱在系统中均已存在。`
+            : `Nenhum contêiner novo foi importado. Todos os ${dupCount} contêineres já existiam no sistema.`);
+        }
+        
+        // Reset file input
+        const fInput = document.getElementById('excel_upload_input') as HTMLInputElement;
+        if (fInput) fInput.value = '';
+        
+      } catch (err) {
+        console.error("Erro ao processar planilha Excel:", err);
+        alert(language === 'bilingual'
+          ? "Erro ao ler o arquivo Excel. Verifique se o formato está correto. / 读取Excel文件失败。请检查格式是否正确。"
+          : "Erro ao processar o arquivo Excel. Certifique-se de que o arquivo não está corrompido e segue o padrão.");
+      }
+    };
+    reader.readAsBinaryString(file);
   };
 
   // HELPER PARA CONVERSÃO DE CORES OKLCH / OKLAB PARA COR RESPEITADA PELO HTML2CANVAS
@@ -1343,20 +1932,25 @@ export default function App() {
   };
 
   // EXCLUIR PÁTIO / WAREHOUSE
-  const deleteYard = async (key: string) => {
-    if (!window.confirm("Deseja realmente excluir este pátio/warehouse? / 确定要删除该堆场吗？")) return;
+  const deleteYard = (key: string) => {
+    const title = language === 'bilingual' ? 'Excluir Pátio / 删除堆场' : 'Excluir Pátio';
+    const message = language === 'bilingual'
+      ? "Deseja realmente excluir este pátio/warehouse? / 确定要删除该堆场吗？"
+      : "Deseja realmente excluir este pátio/warehouse?";
 
-    setYards(prev => {
-      const copy = { ...prev };
-      delete copy[key];
-      return copy;
+    requestConfirmation(title, message, async () => {
+      setYards(prev => {
+        const copy = { ...prev };
+        delete copy[key];
+        return copy;
+      });
+
+      try {
+        await deleteDoc(doc(db, 'yards', key));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `yards/${key}`);
+      }
     });
-
-    try {
-      await deleteDoc(doc(db, 'yards', key));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `yards/${key}`);
-    }
   };
 
   // ALTERAR DADO ESPECÍFICO DO GRÁFICO DA ESQUERDA (Backlog/ETA)
@@ -2045,6 +2639,7 @@ export default function App() {
                                 language={language} 
                                 renderLabel={renderLabel} 
                                 widescreenMode={widescreenMode} 
+                                onClick={() => setSelectedYardKey(key)}
                               />
                             ))}
                             {bondedYards.length === 0 && (
@@ -2112,6 +2707,7 @@ export default function App() {
                                 language={language} 
                                 renderLabel={renderLabel} 
                                 widescreenMode={widescreenMode} 
+                                onClick={() => setSelectedYardKey(key)}
                               />
                             ))}
                             {warehouseYards.length === 0 && (
@@ -2182,6 +2778,7 @@ export default function App() {
                                     language={language} 
                                     renderLabel={renderLabel} 
                                     widescreenMode={widescreenMode} 
+                                    onClick={() => setSelectedYardKey(key)}
                                   />
                                 ))}
                                 {bufferYards.length === 0 && (
@@ -2262,6 +2859,7 @@ export default function App() {
                                   language={language} 
                                   renderLabel={renderLabel} 
                                   widescreenMode={widescreenMode} 
+                                  onClick={() => setSelectedYardKey(key)}
                                 />
                               ))}
                             </div>
@@ -2544,6 +3142,7 @@ export default function App() {
                             language={language} 
                             renderLabel={renderLabel} 
                             widescreenMode={widescreenMode} 
+                            onClick={() => setSelectedYardKey(key)}
                           />
                         ))}
                       </div>
@@ -2562,6 +3161,7 @@ export default function App() {
                             language={language} 
                             renderLabel={renderLabel} 
                             widescreenMode={widescreenMode} 
+                            onClick={() => setSelectedYardKey(key)}
                           />
                         ))}
                       </div>
@@ -3757,6 +4357,533 @@ export default function App() {
 
       </main>
 
+      {/* AREA LISTS MODAL FOR CONTAINERS AND VESSELS */}
+      {selectedYardKey && yards[selectedYardKey] && (() => {
+        const selectedYard = yards[selectedYardKey];
+        const yardOcupacao = getYardOcupacao(selectedYard);
+        
+        // Filtered containers
+        const filteredContainers = containers.filter(c => {
+          if (c.yardId !== selectedYardKey) return false;
+          if (containerSearch.trim()) {
+            const s = containerSearch.trim().toLowerCase();
+            if (!c.id.toLowerCase().includes(s)) return false;
+          }
+          if (containerStatusFilter !== 'ALL' && c.status !== containerStatusFilter) return false;
+          if (containerCategoryFilter !== 'ALL' && c.category !== containerCategoryFilter) return false;
+          return true;
+        });
+
+        // Associated vessels from the containers in this yard
+        const uniqueVessels = Array.from(new Set(
+          containers
+            .filter(c => c.yardId === selectedYardKey && c.vesselName && c.vesselName !== 'N/A')
+            .map(c => c.vesselName)
+        ));
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className={`relative rounded-2xl shadow-2xl w-full max-w-5xl max-h-[85vh] flex flex-col overflow-hidden border transition-all ${
+              theme === 'dark' 
+                ? 'bg-[#1e293b] border-slate-800 text-white' 
+                : 'bg-white border-slate-100 text-slate-800'
+            }`}>
+              
+              {/* Modal Header */}
+              <div className={`p-4 border-b flex justify-between items-center ${
+                theme === 'dark' ? 'border-slate-800 bg-[#0f172a]' : 'border-gray-100 bg-gray-50'
+              }`}>
+                <div>
+                  <h3 className="font-extrabold text-sm md:text-base flex items-center gap-2">
+                    <Boxes className="w-5 h-5 text-blue-500" />
+                    <span>
+                      {language === 'bilingual' 
+                        ? `Detalhamento de Área: ${selectedYard.name} / 堆场细化: ${selectedYard.name}`
+                        : `Detalhamento de Área: ${selectedYard.name}`}
+                    </span>
+                  </h3>
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    {language === 'bilingual'
+                      ? 'Visualize e gerencie os contêineres e navios presentes no terminal / 查看并管理终端内的集装箱和船舶'
+                      : 'Visualize e gerencie os contêineres e navios presentes no terminal'}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setSelectedYardKey(null)}
+                  className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-500 transition-colors"
+                >
+                  <Plus className="w-5 h-5 rotate-45 transform" />
+                </button>
+              </div>
+
+              {/* Modal Body Info Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4 border-b dark:border-slate-800 bg-blue-50/20 dark:bg-[#111827]/40 text-xs">
+                <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Capacidade / 容量' : 'Capacidade'}</span>
+                  <span className="font-mono text-base font-black text-slate-700 dark:text-slate-150 mt-1">{selectedYard.capacity.toLocaleString()} <span className="text-xs text-gray-400 font-normal">TEU</span></span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Ocupação / 占用率' : 'Ocupação'}</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-sm font-black px-1.5 py-0.2 rounded ${
+                      yardOcupacao >= 89 
+                        ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300' 
+                        : yardOcupacao >= 65 
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300' 
+                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                    }`}>{yardOcupacao}%</span>
+                    <span className="text-[10px] text-gray-400 font-bold">({(selectedYard.cheio + selectedYard.vazio).toLocaleString()} TEU)</span>
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Cheios / 重箱' : 'Cheios'}</span>
+                  <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 mt-1">{selectedYard.cheio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">TEU</span></span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Vazios / 空箱' : 'Vazios'}</span>
+                  <span className="font-mono text-sm font-bold text-gray-500 mt-1">{selectedYard.vazio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">TEU</span></span>
+                </div>
+                <div className="col-span-2 md:col-span-1 p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Pronto Coleta / 待收箱' : 'Pronto Coleta'}</span>
+                  <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-450 mt-1">{(selectedYard.prontoColeta || 0).toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">TEU</span></span>
+                </div>
+              </div>
+
+              {/* Modal Core Area */}
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col lg:flex-row gap-4 min-h-0">
+                
+                {/* Left Side: Vessels and Add form */}
+                <div className="w-full lg:w-[320px] flex flex-col gap-4">
+                  
+                  {/* Vessels list */}
+                  <div className={`p-3.5 rounded-xl border ${
+                    theme === 'dark' ? 'bg-[#152033] border-slate-850' : 'bg-slate-50 border-slate-100'
+                  }`}>
+                    <h4 className="font-extrabold text-[11px] uppercase tracking-wider flex items-center gap-1.5 text-blue-600 dark:text-blue-400 mb-2.5">
+                      <Ship className="w-4 h-4" />
+                      <span>{language === 'bilingual' ? 'Navios Associados / 关联船舶' : 'Navios Associados'}</span>
+                    </h4>
+                    
+                    <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
+                      {uniqueVessels.map((v) => (
+                        <div key={v} className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 text-[11.5px] font-bold">
+                          <span className="text-gray-850 dark:text-gray-250 truncate mr-1">{v}</span>
+                          <span className="text-[9px] bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 px-1.5 py-0.2 rounded">
+                            {containers.filter(c => c.yardId === selectedYardKey && c.vesselName === v).length} cntrs
+                          </span>
+                        </div>
+                      ))}
+                      {uniqueVessels.length === 0 && (
+                        <div className="text-center py-4 text-[10px] text-gray-400">
+                          {language === 'bilingual' ? 'Nenhum navio associado nesta área. / 该区域没有关联船舶。' : 'Nenhum navio associado nesta área.'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Add Container Form */}
+                  <div className={`p-3.5 rounded-xl border ${
+                    theme === 'dark' ? 'bg-[#152033] border-slate-850' : 'bg-slate-50 border-slate-100'
+                  }`}>
+                    <h4 className="font-extrabold text-[11px] uppercase tracking-wider flex items-center gap-1.5 text-emerald-600 dark:text-emerald-450 mb-2.5">
+                      <Plus className="w-4 h-4" />
+                      <span>{language === 'bilingual' ? 'Cadastrar Novo / 登记新集装箱' : 'Cadastrar Novo'}</span>
+                    </h4>
+                    
+                    <form onSubmit={handleAddContainer} className="space-y-2.5 text-xs">
+                      <div>
+                        <label className="text-[9px] uppercase tracking-tight text-gray-400 font-bold block mb-1">Número do Contêiner / 箱号</label>
+                        <input 
+                          type="text"
+                          required
+                          value={newContainerId}
+                          onChange={(e) => setNewContainerId(e.target.value)}
+                          placeholder="EX: BYDU1234567"
+                          className="w-full rounded-lg border dark:border-slate-800 p-2 font-mono text-xs font-bold uppercase bg-white dark:bg-[#1e293b] text-slate-800 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[9px] uppercase tracking-tight text-gray-400 font-bold block mb-1">Tamanho / 尺寸</label>
+                          <select 
+                            value={newContainerSize}
+                            onChange={(e) => setNewContainerSize(e.target.value)}
+                            className="w-full rounded-lg border dark:border-slate-800 p-2 bg-white dark:bg-[#1e293b] focus:outline-hidden text-xs font-bold"
+                          >
+                            <option value="20' GP">20' GP</option>
+                            <option value="40' HC">40' HC</option>
+                            <option value="40' OT">40' OT</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[9px] uppercase tracking-tight text-gray-400 font-bold block mb-1">Status / 状态</label>
+                          <select 
+                            value={newContainerStatus}
+                            onChange={(e) => setNewContainerStatus(e.target.value as any)}
+                            className="w-full rounded-lg border dark:border-slate-800 p-2 bg-white dark:bg-[#1e293b] focus:outline-hidden text-xs font-bold"
+                          >
+                            <option value="CHEIO">CHEIO / 重箱</option>
+                            <option value="VAZIO">VAZIO / 空箱</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2">
+                        <div>
+                          <label className="text-[9px] uppercase tracking-tight text-gray-400 font-bold block mb-1">Categoria / 类别</label>
+                          <select 
+                            value={newContainerCategory}
+                            onChange={(e) => setNewContainerCategory(e.target.value as any)}
+                            className="w-full rounded-lg border dark:border-slate-800 p-2 bg-white dark:bg-[#1e293b] focus:outline-hidden text-xs font-bold"
+                          >
+                            <option value="GERAL">GERAL / 通用</option>
+                            <option value="PORTO">PORTO / 港口</option>
+                            <option value="PRONTO_COLETA">PRONTO COLETA / 待收箱</option>
+                            <option value="DELIVERED">DELIVERED / 已交付</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[9px] uppercase tracking-tight text-gray-400 font-bold block mb-1">Navio Associado / 对应船舶</label>
+                          <select 
+                            value={newContainerVessel}
+                            onChange={(e) => setNewContainerVessel(e.target.value)}
+                            className="w-full rounded-lg border dark:border-slate-800 p-2 bg-white dark:bg-[#1e293b] focus:outline-hidden text-xs font-bold"
+                          >
+                            <option value="N/A">N/A (Nenhum / 无)</option>
+                            {vessels.map(v => (
+                              <option key={v.id} value={v.name}>{v.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <button 
+                        type="submit" 
+                        className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold p-2 rounded-lg text-xs tracking-wide shadow-xs transition-colors mt-1"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>{language === 'bilingual' ? 'Adicionar Contêiner / 添加集装箱' : 'Adicionar Contêiner'}</span>
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Excel Import/Template card */}
+                  <div className={`p-3.5 rounded-xl border ${
+                    theme === 'dark' ? 'bg-[#152033] border-slate-850' : 'bg-slate-50 border-slate-100'
+                  }`}>
+                    <h4 className="font-extrabold text-[11px] uppercase tracking-wider flex items-center gap-1.5 text-blue-600 dark:text-blue-400 mb-2">
+                      <FileSpreadsheet className="w-4 h-4" />
+                      <span>{language === 'bilingual' ? 'Integração Excel / 电子表格集成' : 'Integração Excel'}</span>
+                    </h4>
+
+                    <p className="text-[10px] text-gray-400 mb-3 leading-relaxed">
+                      {language === 'bilingual'
+                        ? 'Baixe o modelo padrão ou carregue uma planilha para cadastrar múltiplos contêineres de uma só vez. / 下载标准模板或上传表格以一次性注册多个集装箱。'
+                        : 'Baixe o modelo padrão ou carregue uma planilha para cadastrar múltiplos contêineres de uma só vez.'}
+                    </p>
+
+                    <div className="space-y-2">
+                      {/* Button 1: Download Standard Template */}
+                      <button
+                        onClick={handleDownloadTemplate}
+                        className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold p-2 rounded-lg text-xs tracking-wide shadow-xs transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>{language === 'bilingual' ? 'Baixar Modelo / 下载标准模板' : 'Baixar Modelo'}</span>
+                      </button>
+
+                      {/* Button 2: Upload Excel File */}
+                      <label className="w-full flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold p-2 rounded-lg text-xs tracking-wide shadow-xs transition-colors cursor-pointer text-center">
+                        <Upload className="w-4 h-4" />
+                        <span>{language === 'bilingual' ? 'Importar Planilha / 导入 Excel 文件' : 'Importar Planilha'}</span>
+                        <input
+                          id="excel_upload_input"
+                          type="file"
+                          accept=".xlsx, .xls"
+                          onChange={handleImportExcel}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    {/* Standard layout guideline for user */}
+                    <div className="mt-3.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+                      <span className="text-[9px] uppercase tracking-wider text-gray-400 font-extrabold block mb-1.5">
+                        {language === 'bilingual' ? 'Layout de Colunas / 列布局规范' : 'Layout de Colunas'}
+                      </span>
+                      <div className="space-y-1 text-[10px] leading-tight">
+                        <div className="flex justify-between items-center py-0.5 border-b border-dashed border-gray-200 dark:border-gray-800 font-mono">
+                          <span className="font-bold text-blue-600 dark:text-blue-400">Identificacao</span>
+                          <span className="text-gray-400 text-[9px]">{language === 'bilingual' ? 'ID (Ex: BYDU1234567)' : 'ID (Ex: BYDU1234567)'}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5 border-b border-dashed border-gray-200 dark:border-gray-800 font-mono">
+                          <span className="font-bold text-blue-600 dark:text-blue-400">Tamanho</span>
+                          <span className="text-gray-400 text-[9px]">20' GP, 40' HC, 40' OT</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5 border-b border-dashed border-gray-200 dark:border-gray-800 font-mono">
+                          <span className="font-bold text-blue-600 dark:text-blue-400">Status</span>
+                          <span className="text-gray-400 text-[9px]">CHEIO / VAZIO</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5 border-b border-dashed border-gray-200 dark:border-gray-800 font-mono">
+                          <span className="font-bold text-blue-600 dark:text-blue-400">Categoria</span>
+                          <span className="text-gray-400 text-[9px]">PORTO, DELIVERED, GERAL...</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5 font-mono">
+                          <span className="font-bold text-blue-600 dark:text-blue-400">Navio</span>
+                          <span className="text-gray-400 text-[9px]">{language === 'bilingual' ? 'Nome ou N/A' : 'Nome ou N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Right Side: Search, Filter & Containers Table */}
+                <div className="flex-1 flex flex-col min-h-[250px] lg:min-h-0">
+                  
+                  {/* Filter and Search Bar */}
+                  <div className="flex flex-col sm:flex-row gap-2.5 mb-2.5">
+                    <div className="flex-1 relative">
+                      <input 
+                        type="text"
+                        value={containerSearch}
+                        onChange={(e) => setContainerSearch(e.target.value)}
+                        placeholder={language === 'bilingual' ? "Buscar por número... / 搜索箱号..." : "Buscar por número..."}
+                        className="w-full rounded-lg border dark:border-slate-800 p-2 pl-2.5 bg-white dark:bg-[#1e293b] text-xs font-bold text-slate-800 dark:text-white"
+                      />
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <select 
+                        value={containerStatusFilter}
+                        onChange={(e) => setContainerStatusFilter(e.target.value)}
+                        className="rounded-lg border dark:border-slate-800 p-2 bg-white dark:bg-[#1e293b] text-xs font-bold"
+                      >
+                        <option value="ALL">{language === 'bilingual' ? 'Status: Todos / 所有状态' : 'Status: Todos'}</option>
+                        <option value="CHEIO">CHEIO / 重箱</option>
+                        <option value="VAZIO">VAZIO / 空箱</option>
+                      </select>
+
+                      <select 
+                        value={containerCategoryFilter}
+                        onChange={(e) => setContainerCategoryFilter(e.target.value)}
+                        className="rounded-lg border dark:border-slate-800 p-2 bg-white dark:bg-[#1e293b] text-xs font-bold"
+                      >
+                        <option value="ALL">{language === 'bilingual' ? 'Categoria: Todas / 所有类别' : 'Categoria: Todas'}</option>
+                        <option value="GERAL">GERAL / 通用</option>
+                        <option value="PORTO">PORTO / 港口</option>
+                        <option value="PRONTO_COLETA">PRONTO COLETA / 待收</option>
+                        <option value="DELIVERED">DELIVERED / 已付</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Bulk Actions Toolbar */}
+                  <div className="flex items-center justify-between gap-2 mb-3 p-2 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/25">
+                    <div className="flex items-center gap-2 pl-1">
+                      <input 
+                        type="checkbox"
+                        id="bulk_select_all_top"
+                        checked={filteredContainers.length > 0 && filteredContainers.every(c => selectedContainerIds.includes(c.id))}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            const newSelection = [...new Set([...selectedContainerIds, ...filteredContainers.map(c => c.id)])];
+                            setSelectedContainerIds(newSelection);
+                          } else {
+                            const filteredIds = filteredContainers.map(c => c.id);
+                            setSelectedContainerIds(selectedContainerIds.filter(id => !filteredIds.includes(id)));
+                          }
+                        }}
+                        className="rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <label htmlFor="bulk_select_all_top" className="text-[10.5px] font-bold text-gray-500 dark:text-gray-400 cursor-pointer select-none">
+                        {language === 'bilingual' 
+                          ? `Selecionar tudo / 全选 (${selectedContainerIds.length} / ${filteredContainers.length})` 
+                          : `Selecionar tudo (${selectedContainerIds.length} / ${filteredContainers.length})`}
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {selectedContainerIds.length > 0 && (
+                        <button
+                          onClick={handleBulkDeleteContainers}
+                          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-extrabold px-3 py-1.5 rounded-lg text-xs shadow-xs transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>{language === 'bilingual' ? 'Excluir Selecionados / 删除所选' : 'Excluir Selecionados'}</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={handleClearYard}
+                        className="flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 font-extrabold px-3 py-1.5 rounded-lg text-xs border border-amber-500/20 transition-colors"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>{language === 'bilingual' ? 'Esvaziar Pátio / 清空堆场' : 'Esvaziar Pátio'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Containers Table */}
+                  <div className={`flex-1 overflow-auto rounded-xl border ${
+                    theme === 'dark' ? 'border-slate-800 bg-[#0f172a]/30' : 'border-slate-100 bg-slate-50/20'
+                  }`}>
+                    <table className="w-full text-left text-xs font-sans min-w-[500px]">
+                      <thead>
+                        <tr className={`border-b font-extrabold uppercase text-[9.5px] tracking-wider text-gray-400 sticky top-0 z-10 ${
+                          theme === 'dark' ? 'border-slate-800 bg-[#1e293b]' : 'border-gray-150 bg-slate-50'
+                        }`}>
+                          <th className="p-3 w-10 text-center">
+                            <input 
+                              type="checkbox"
+                              checked={filteredContainers.length > 0 && filteredContainers.every(c => selectedContainerIds.includes(c.id))}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  const newSelection = [...new Set([...selectedContainerIds, ...filteredContainers.map(c => c.id)])];
+                                  setSelectedContainerIds(newSelection);
+                                } else {
+                                  const filteredIds = filteredContainers.map(c => c.id);
+                                  setSelectedContainerIds(selectedContainerIds.filter(id => !filteredIds.includes(id)));
+                                }
+                              }}
+                              className="rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                            />
+                          </th>
+                          <th className="p-3 font-mono">{language === 'bilingual' ? 'Identificação / 箱号' : 'Identificação'}</th>
+                          <th className="p-3 text-center">{language === 'bilingual' ? 'Tamanho / 尺寸' : 'Tamanho'}</th>
+                          <th className="p-3 text-center">Status</th>
+                          <th className="p-3 text-center">{language === 'bilingual' ? 'Categoria / 类别' : 'Categoria'}</th>
+                          <th className="p-3">{language === 'bilingual' ? 'Navio / 船舶' : 'Navio'}</th>
+                          <th className="p-3 text-right">{language === 'bilingual' ? 'Ação / 操作' : 'Ação'}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-slate-800/60 font-semibold text-slate-700 dark:text-gray-300">
+                        {filteredContainers.map((container) => {
+                          return (
+                            <tr key={container.id} className={`hover:bg-gray-50/40 dark:hover:bg-slate-800/10 transition-colors ${
+                              selectedContainerIds.includes(container.id) ? 'bg-blue-500/5 dark:bg-blue-500/5' : ''
+                            }`}>
+                              <td className="p-3 w-10 text-center">
+                                <input 
+                                  type="checkbox"
+                                  checked={selectedContainerIds.includes(container.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedContainerIds([...selectedContainerIds, container.id]);
+                                    } else {
+                                      setSelectedContainerIds(selectedContainerIds.filter(id => id !== container.id));
+                                    }
+                                  }}
+                                  className="rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                                />
+                              </td>
+                              <td className="p-3 font-mono font-black text-slate-900 dark:text-slate-100">{container.id}</td>
+                              <td className="p-3 text-center font-mono">{container.size}</td>
+                              <td className="p-3 text-center">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
+                                  container.status === 'CHEIO' 
+                                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' 
+                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                  }`}>
+                                  {container.status === 'CHEIO' ? 'CHEIO / 重' : 'VAZIO / 空'}
+                                </span>
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                  container.category === 'PORTO' 
+                                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300' 
+                                    : container.category === 'PRONTO_COLETA'
+                                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
+                                      : container.category === 'DELIVERED'
+                                        ? 'bg-emerald-150 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                }`}>
+                                  {container.category}
+                                </span>
+                              </td>
+                              <td className="p-3 max-w-[130px] truncate text-xs font-extrabold text-slate-800 dark:text-slate-200">
+                                {container.vesselName || "N/A"}
+                              </td>
+                              <td className="p-3 text-right">
+                                <button 
+                                  onClick={() => handleDeleteContainer(container)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 p-1.5 rounded-lg transition-all"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {filteredContainers.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="text-center py-8 text-gray-400">
+                              {language === 'bilingual'
+                                ? 'Nenhum contêiner correspondente encontrado. / 未找到匹配的集装箱。'
+                                : 'Nenhum contêiner correspondente encontrado.'}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Modal Footer */}
+              <div className={`p-3 border-t flex justify-between items-center text-[10px] text-gray-400 ${
+                theme === 'dark' ? 'border-slate-800 bg-[#0f172a]' : 'border-gray-100 bg-gray-50'
+              }`}>
+                <span>{language === 'bilingual' ? `Total nesta área: ${containers.filter(c => c.yardId === selectedYardKey).length} contêiner(es) / 该区域共 ${containers.filter(c => c.yardId === selectedYardKey).length} 个集装箱` : `Total nesta área: ${containers.filter(c => c.yardId === selectedYardKey).length} contêiner(es)`}</span>
+                <button 
+                  onClick={() => setSelectedYardKey(null)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-black px-4 py-1.5 rounded-lg text-xs shadow-xs transition-colors"
+                >
+                  {language === 'bilingual' ? 'Fechar / 关闭' : 'Fechar'}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {confirmConfig && confirmConfig.isOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`relative rounded-xl shadow-2xl w-full max-w-md p-6 border transition-all ${
+            theme === 'dark' 
+              ? 'bg-[#1e293b] border-slate-800 text-white' 
+              : 'bg-white border-slate-100 text-slate-800'
+          }`}>
+            <h3 className="text-base font-black uppercase mb-2 tracking-wide flex items-center gap-2">
+              <span className="text-amber-500 font-bold font-mono text-lg">⚠️</span> {confirmConfig.title}
+            </h3>
+            <p className="text-xs font-semibold leading-relaxed mb-6 opacity-90 whitespace-pre-line">
+              {confirmConfig.message}
+            </p>
+            <div className="flex justify-end gap-2.5">
+              <button
+                onClick={() => setConfirmConfig(null)}
+                className={`px-4 py-2 rounded-lg text-xs font-extrabold border transition-all ${
+                  theme === 'dark' 
+                    ? 'border-slate-800 bg-[#0f172a] text-slate-300 hover:bg-slate-800' 
+                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {language === 'bilingual' ? 'Cancelar / 取消' : 'Cancelar'}
+              </button>
+              <button
+                onClick={() => confirmConfig.onConfirm()}
+                className="px-4 py-2 rounded-lg text-xs font-black bg-red-600 hover:bg-red-700 text-white shadow-xs transition-all"
+              >
+                {language === 'bilingual' ? 'Confirmar / 确认' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -3773,9 +4900,10 @@ interface YardCardProps {
   language: string;
   renderLabel: (key: string, colorClass?: string) => React.ReactNode;
   widescreenMode?: boolean;
+  onClick?: () => void;
 }
 
-function YardCard({ yard, ocupacao, isEdit, isSmall = false, theme, t, language, renderLabel, widescreenMode = false }: YardCardProps) {
+function YardCard({ yard, ocupacao, isEdit, isSmall = false, theme, t, language, renderLabel, widescreenMode = false, onClick }: YardCardProps) {
   const isRed = ocupacao >= 89;
   const isYellow = ocupacao > 65 && ocupacao < 89;
 
@@ -3808,13 +4936,15 @@ function YardCard({ yard, ocupacao, isEdit, isSmall = false, theme, t, language,
   }
 
   return (
-    <div className={`rounded-lg border relative transition-all ${
-      widescreenMode ? (isSmall ? 'p-1.5' : 'p-2') : 'p-2.5'
-    } ${
-      theme === 'dark' 
-        ? 'bg-[#1e293b] border-slate-800 text-white' 
-        : 'bg-white border-slate-100 shadow-sm'
-      } ${ringClass}`}
+    <div 
+      onClick={onClick}
+      className={`rounded-lg border relative transition-all cursor-pointer hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 ${
+        widescreenMode ? (isSmall ? 'p-1.5' : 'p-2') : 'p-2.5'
+      } ${
+        theme === 'dark' 
+          ? 'bg-[#1e293b] border-slate-800 text-white' 
+          : 'bg-white border-slate-100 shadow-sm'
+        } ${ringClass}`}
     >
       
       {/* Topo do Card */}
