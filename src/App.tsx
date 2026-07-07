@@ -2232,14 +2232,14 @@ export default function App() {
       {isEditMode && (
         <header id="control-panel-header" className="bg-white border-b border-gray-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4 z-10 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="bg-[#10b981] text-white p-2 rounded-lg">
-              <Sparkles className="w-5 h-5" />
+            <div className="bg-red-600 text-white p-2 rounded-lg">
+              <Globe className="w-5 h-5 animate-spin-slow" />
             </div>
             <div>
               <h1 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-                SlideMaker Interativo <span className="text-xs bg-red-100 text-red-800 font-semibold px-2 py-0.5 rounded-full">BYD Logistics Global</span>
+                Portal BYD Logistics <span className="text-[10px] bg-red-100 text-red-800 font-extrabold px-2 py-0.5 rounded-full tracking-wider">CONTROL TOWER</span>
               </h1>
-              <p className="text-xs text-gray-500">Gere e edite dados de pátio em tempo real para seu PowerPoint (Bilingue/Mandarim)</p>
+              <p className="text-xs text-gray-500">Sistema Integrado de Controle de Pátios, Escalas e Planejamento Operacional (Bilingue/Mandarim)</p>
             </div>
           </div>
 
@@ -2317,27 +2317,12 @@ export default function App() {
               </button>
             </div>
 
-            {/* Alternar Proporção */}
-            <button
-              id="btn-toggle-widescreen"
-              onClick={() => { const val = !widescreenMode; setWidescreenMode(val); updateGlobalDoc('widescreenMode', val); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                widescreenMode 
-                  ? 'bg-blue-50 text-blue-700 border border-blue-200' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-              title="Trava o tamanho na proporção de slide 16:9 widescreen"
-            >
-              <FileText className="w-4 h-4" />
-              {widescreenMode ? "16:9 Slide" : "Livre"}
-            </button>
-
             {/* Alternador de Tema do slide */}
             <button
               id="btn-toggle-theme"
               onClick={() => { const val = theme === 'light' ? 'dark' : 'light'; setTheme(val); updateGlobalDoc('theme', val); }}
-              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-all"
-              title="Alternar Tema do Slide"
+              className="p-2 rounded-lg bg-gray-150 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-650 dark:text-gray-350 transition-all cursor-pointer"
+              title="Alternar Tema do Portal"
             >
               {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
@@ -2346,7 +2331,8 @@ export default function App() {
             <button
               id="btn-reset-data"
               onClick={resetToOriginal}
-              className="px-3 py-1.5 bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all"
+              className="px-3 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Resetar dados aos valores originais do sistema"
             >
               <RotateCcw className="w-4 h-4" />
               Reset
@@ -2357,14 +2343,14 @@ export default function App() {
               id="btn-download-pdf"
               onClick={handleDownloadPDF}
               disabled={pdfStatus === 'rendering'}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm border flex items-center gap-1.5 transition-all transform hover:-translate-y-0.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm border flex items-center gap-1.5 transition-all transform hover:-translate-y-0.5 cursor-pointer ${
                 pdfStatus === 'rendering'
                   ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
                   : pdfStatus === 'success'
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                   : pdfStatus === 'error'
                   ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
-                  : 'bg-gradient-to-r from-red-50 to-rose-50 text-red-750 border-red-200 hover:from-red-100 hover:to-rose-100'
+                  : 'bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-red-200 hover:from-red-100 hover:to-rose-100'
               }`}
             >
               {pdfStatus === 'rendering' ? (
@@ -2376,10 +2362,10 @@ export default function App() {
                 {pdfStatus === 'rendering'
                   ? (language === 'zh' ? '正在生成 PDF...' : 'Gerando PDF...')
                   : pdfStatus === 'success'
-                  ? (language === 'zh' ? 'PDF 已下载' : 'PDF Exportado!')
+                  ? (language === 'zh' ? 'PDF 已下载' : 'Relatório Exportado!')
                   : pdfStatus === 'error'
                   ? (language === 'zh' ? '错误' : 'Erro!')
-                  : (language === 'zh' ? '导出 PDF' : 'Salvar PDF')}
+                  : (language === 'zh' ? '导出 PDF' : 'Exportar PDF')}
               </span>
             </button>
 
@@ -2387,10 +2373,11 @@ export default function App() {
             <button
               id="btn-presentation-mode"
               onClick={() => setIsEditMode(false)}
-              className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-lg text-xs font-bold shadow flex items-center gap-2 transition-all transform hover:-translate-y-0.5"
+              className="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-lg text-xs font-bold shadow flex items-center gap-2 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+              title="Alternar para visualização limpa e expansiva em tela cheia do Portal"
             >
               <Tv className="w-4 h-4" />
-              Apresentar
+              Modo Monitor
             </button>
           </div>
         </header>
@@ -2439,77 +2426,75 @@ export default function App() {
         {/* VIEWPORT DO SLIDE (ESQUERDA) */}
         <div id="slide-viewport-container" className="flex-1 px-2 py-1 flex flex-col items-center justify-start overflow-y-auto w-full">
           
-          {/* SELECIONADOR DE SLIDES - ESTILO PPT SLIDEMAKER */}
-          <div className="w-full max-w-[1300px] flex items-center justify-between bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-slate-800 rounded-xl px-4 py-2.5 mb-2.5 shadow-md select-none transition-all">
-            <div className="flex items-center gap-1.5">
-              <Tv className="w-4 h-4 text-red-500 animate-pulse" />
-              <span className="text-[10px] font-black text-slate-800 dark:text-gray-200 uppercase tracking-widest block">
-                {language === 'bilingual' ? 'Slides da Apresentação / 演示文稿幻灯片:' : language === 'zh' ? '演示文稿幻灯片:' : 'Slides da Apresentação:'}
-              </span>
+          {/* NAVEGAÇÃO DE MÓDULOS - ESTILO WEBSITE CORPORATIVO */}
+          <div className="w-full max-w-[1400px] flex flex-col md:flex-row md:items-center justify-between bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-slate-800 rounded-xl px-4 py-3 mb-4 shadow-sm select-none transition-all gap-3">
+            <div className="flex items-center gap-2">
+              <div className="bg-red-50 dark:bg-red-950/30 p-1.5 rounded-lg text-red-600">
+                <Database className="w-4 h-4 text-red-600" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-slate-800 dark:text-gray-200 uppercase tracking-widest block">
+                  {language === 'bilingual' ? 'Módulos Operacionais / 智能控制面板' : language === 'zh' ? '智能控制面板:' : 'Módulos Operacionais:'}
+                </span>
+                <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'zh' ? '实时控制台' : 'Console em tempo real'}</span>
+              </div>
             </div>
             
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               {[
-                { index: 0, pt: "1. Painel Geral", zh: "1. 综合大盘" },
-                { index: 1, pt: "2. Pátios", zh: "2. 纯堆场数据" },
-                { index: 2, pt: "3. Navios", zh: "3. 纯船舶计划" },
-                { index: 3, pt: "4. Gráficos", zh: "4. 纯运营图表" },
+                { index: 0, pt: "Visão Geral", zh: "综合大盘", icon: <Database className="w-3.5 h-3.5" /> },
+                { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", icon: <Building2 className="w-3.5 h-3.5" /> },
+                { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-3.5 h-3.5" /> },
+                { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-3.5 h-3.5" /> },
               ].map(s => (
                 <button
                   key={s.index}
                   onClick={() => setCurrentSlide(s.index)}
-                  className={`px-3 py-1 text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 border rounded-lg ${
+                  className={`px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-2 border rounded-lg ${
                     currentSlide === s.index
-                      ? 'bg-red-600 text-white border-red-700 shadow shadow-red-300 dark:shadow-none'
-                      : 'bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:bg-gray-150 dark:hover:bg-slate-700'
+                      ? 'bg-red-600 text-white border-red-700 shadow-md shadow-red-550/20 dark:shadow-none'
+                      : 'bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700'
                   }`}
                 >
+                  {s.icon}
                   <span>{language === 'zh' ? s.zh : language === 'pt' ? s.pt : `${s.pt} / ${s.zh}`}</span>
                 </button>
               ))}
             </div>
 
-            <div className="flex items-center gap-2 text-[10.5px] text-gray-400 font-mono font-bold">
-              <button 
-                onClick={() => setCurrentSlide(prev => (prev - 1 + 4) % 4)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded transition-all cursor-pointer text-gray-500 dark:text-gray-400"
-                title="Slide Anterior"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span>{currentSlide + 1} / 4</span>
-              <button 
-                onClick={() => setCurrentSlide(prev => (prev + 1) % 4)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded transition-all cursor-pointer text-gray-500 dark:text-gray-400"
-                title="Próximo Slide"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              <span className="text-[9px] opacity-75 hidden xl:inline ml-1">(Alt + Setas para navegar)</span>
+            <div className="flex items-center gap-2 text-[10.5px] text-gray-400 font-mono font-bold bg-slate-50 dark:bg-slate-800/55 border border-slate-250/20 px-2 py-1 rounded-lg">
+              <span className="text-[9px] text-red-600 dark:text-red-400 font-black uppercase tracking-widest">{language === 'zh' ? '当前视图' : 'Visualização'}:</span>
+              <span className="text-slate-750 dark:text-gray-200 font-extrabold">{currentSlide + 1} / 4</span>
             </div>
           </div>
           
-          {/* CONTAINER DO SLIDE (COMPARTIMENTO DE TELA PPT) */}
+          {/* CONTAINER DO WEBSITE DASHBOARD (COMPARTIMENTO FLUIDO SEM ESCALONAMENTO INTERNO) */}
           <div 
             id="slide-capture-area" 
             className={`
-              w-full shadow-2xl rounded-2xl transition-all relative border ${currentSlide === 0 ? 'overflow-y-auto' : 'overflow-hidden'}
-              ${widescreenMode ? 'p-3.5' : 'p-6'}
-              ${theme === 'dark' ? 'bg-[#0f172a] border-slate-800' : 'bg-[#FAFCFF] border-slate-100'}
+              w-full max-w-[1400px] shadow-lg rounded-2xl transition-all relative border overflow-visible
+              ${theme === 'dark' ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-[#FAFCFF] border-slate-100 text-slate-800'}
+              p-6 md:p-8
             `}
-            style={{
+            style={pdfStatus === 'rendering' ? {
               maxWidth: widescreenMode ? `${slideWidth}px` : '100%',
               aspectRatio: widescreenMode ? '16/9' : 'auto',
               minHeight: widescreenMode ? '720px' : 'auto',
+            } : {
+              maxWidth: '100%',
+              minHeight: 'auto',
             }}
           >
             {/* ZOOM SCALE CONTENT WRAPPER */}
             <div 
-              style={{
+              style={pdfStatus === 'rendering' ? {
                 transform: `scale(${slideScale})`,
                 transformOrigin: 'top left',
                 width: `${100 / slideScale}%`,
                 height: widescreenMode ? `${100 / slideScale}%` : 'auto',
+              } : {
+                width: '100%',
+                height: 'auto',
               }}
               className="flex flex-col justify-between"
             >
