@@ -3628,7 +3628,7 @@ export default function App() {
                                     language={language} 
                                     renderLabel={renderLabel} 
                                     widescreenMode={widescreenMode} 
-                                    onClick={() => setSelectedYardKey(key)}
+                                    onClick={() => setCurrentSlide(4)}
                                   />
                                 ))}
                                 {bufferYards.length === 0 && (
@@ -4011,7 +4011,13 @@ export default function App() {
                             language={language} 
                             renderLabel={renderLabel} 
                             widescreenMode={widescreenMode} 
-                            onClick={() => setSelectedYardKey(key)}
+                            onClick={() => {
+                              if (yard.type === 'BUFFER') {
+                                setCurrentSlide(4);
+                              } else {
+                                setSelectedYardKey(key);
+                              }
+                            }}
                           />
                         ))}
                       </div>
