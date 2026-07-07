@@ -37,9 +37,17 @@ export interface BufferSlot {
   col: number;
   containerNo?: string;
   cargoType?: string;
-  size?: '20FT' | '40FT';
-  priority?: 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW';
+  size?: '20FT' | '40FT' | string;
+  priority?: 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW' | string;
   isOptimalPickup?: boolean;
+  status?: string;
+  entryTime?: string;
+  danfe?: string;
+  origin?: string;
+  loteNo?: string;
+  statusRecebimento?: string;
+  validade?: string;
+  stack?: BufferSlot[];
   updatedAt?: string;
 }
 

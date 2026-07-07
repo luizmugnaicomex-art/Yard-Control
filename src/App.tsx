@@ -39,7 +39,10 @@ import {
   Percent,
   FileSpreadsheet,
   Upload,
-  Info
+  Info,
+  Maximize2,
+  Minimize2,
+  Filter
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -247,6 +250,7 @@ export interface BufferSlot {
   origin?: string;
   loteNo?: string;
   statusRecebimento?: string;
+  validade?: string;
   updatedAt?: string;
 }
 
@@ -621,6 +625,8 @@ export default function App() {
   const [editingSlot, setEditingSlot] = useState<BufferSlot | null>(null);
   const [editingSlotAreaId, setEditingSlotAreaId] = useState<string | null>(null);
   const [editingStackIndex, setEditingStackIndex] = useState<number>(0);
+  const [isBufferMapMaximized, setIsBufferMapMaximized] = useState<boolean>(false);
+  const [bufferStatusFilter, setBufferStatusFilter] = useState<'ALL' | 'CHEIO' | 'VAZIO'>('ALL');
   
   // Efeito para salvar buffers no LocalStorage
   useEffect(() => {
@@ -1218,10 +1224,36 @@ export default function App() {
     const total = area.rows * area.cols;
     const occupiedSlots = area.slots.filter(slot => !!slot.containerNo);
     const occupied = occupiedSlots.length;
+    
+    let totalFull = 0;
+    let totalEmpty = 0;
+
+    area.slots.forEach(slot => {
+      if (!slot.containerNo) return;
+      
+      if (slot.stack && slot.stack.length > 0) {
+        slot.stack.forEach(stackedSlot => {
+          const status = (stackedSlot.status || 'CHEIO').toUpperCase();
+          if (status.includes('VAZIO') || status.includes('EMP')) {
+            totalEmpty++;
+          } else {
+            totalFull++;
+          }
+        });
+      } else {
+        const status = (slot.status || 'CHEIO').toUpperCase();
+        if (status.includes('VAZIO') || status.includes('EMP')) {
+          totalEmpty++;
+        } else {
+          totalFull++;
+        }
+      }
+    });
+
     const empty = total - occupied;
     const percentage = total > 0 ? Math.round((occupied / total) * 100) : 0;
     const optimalCount = occupiedSlots.filter(slot => !!slot.isOptimalPickup).length;
-    return { total, occupied, empty, percentage, optimalCount };
+    return { total, occupied, empty, percentage, optimalCount, totalFull, totalEmpty };
   };
 
   const getOptimalPickupList = () => {
@@ -1251,6 +1283,11 @@ export default function App() {
           isOptimalPickup: !!slot.isOptimalPickup,
           status: slot.status || 'CHEIO',
           entryTime: slot.entryTime || '',
+          danfe: slot.danfe || '',
+          origin: slot.origin || '',
+          loteNo: slot.loteNo || '',
+          statusRecebimento: slot.statusRecebimento || '',
+          validade: slot.validade || '',
           updatedAt: slot.updatedAt
         }] : []);
 
@@ -1267,6 +1304,11 @@ export default function App() {
       isOptimalPickup: !!activeLayer.isOptimalPickup,
       status: activeLayer.status || 'CHEIO',
       entryTime: activeLayer.entryTime || '',
+      danfe: activeLayer.danfe || '',
+      origin: activeLayer.origin || '',
+      loteNo: activeLayer.loteNo || '',
+      statusRecebimento: activeLayer.statusRecebimento || '',
+      validade: activeLayer.validade || '',
       updatedAt: slot.updatedAt || new Date().toISOString().split('T')[0],
       stack: stack
     });
@@ -1290,6 +1332,11 @@ export default function App() {
       isOptimalPickup: !!editingSlot.isOptimalPickup,
       status: editingSlot.status || 'CHEIO',
       entryTime: editingSlot.entryTime || '',
+      danfe: editingSlot.danfe || '',
+      origin: editingSlot.origin || '',
+      loteNo: editingSlot.loteNo || '',
+      statusRecebimento: editingSlot.statusRecebimento || '',
+      validade: editingSlot.validade || '',
       updatedAt: new Date().toISOString().split('T')[0]
     };
 
@@ -1319,6 +1366,11 @@ export default function App() {
         isOptimalPickup: !!topLayer.isOptimalPickup,
         status: topLayer.status || 'CHEIO',
         entryTime: topLayer.entryTime || '',
+        danfe: topLayer.danfe || '',
+        origin: topLayer.origin || '',
+        loteNo: topLayer.loteNo || '',
+        statusRecebimento: topLayer.statusRecebimento || '',
+        validade: topLayer.validade || '',
         updatedAt: new Date().toISOString().split('T')[0],
         stack: validLayers
       };
@@ -1553,6 +1605,11 @@ export default function App() {
           h === 'status do recebimento' || h.includes('recebimento') || h.includes('receipt')
         );
 
+        const validadeIdx = headers.findIndex(h => 
+          h === 'data de validade' || h === 'validade' || h === 'vencimento' || h === 'free time' ||
+          h.includes('validade') || h.includes('free time') || h.includes('vencimento') || h.includes('validity') || h.includes('expire')
+        );
+
         const vehicleTypeIdx = headers.findIndex(h => 
           h === 'tipo de veículo' || h === 'tipo de veiculo' || h.includes('veículo') || h.includes('veiculo') || h.includes('tamanho')
         );
@@ -1606,6 +1663,7 @@ export default function App() {
           let rawOrigin = originIdx !== -1 && row[originIdx] ? String(row[originIdx]).trim() : '';
           let rawLoteNo = loteNoIdx !== -1 && row[loteNoIdx] ? String(row[loteNoIdx]).trim() : '';
           let rawStatusRecebimento = statusRecebimentoIdx !== -1 && row[statusRecebimentoIdx] ? String(row[statusRecebimentoIdx]).trim() : '';
+          let rawValidade = validadeIdx !== -1 && row[validadeIdx] ? String(row[validadeIdx]).trim() : '';
           
           let rawVehicleType = vehicleTypeIdx !== -1 && row[vehicleTypeIdx] ? String(row[vehicleTypeIdx]).trim() : '';
           let sizeStr = "40' HC";
@@ -1629,6 +1687,7 @@ export default function App() {
             origin: rawOrigin,
             loteNo: rawLoteNo,
             statusRecebimento: rawStatusRecebimento,
+            validade: rawValidade,
             updatedAt: new Date().toISOString().split('T')[0]
           };
 
@@ -1704,6 +1763,7 @@ export default function App() {
                 origin: topContainer.origin,
                 loteNo: topContainer.loteNo,
                 statusRecebimento: topContainer.statusRecebimento,
+                validade: topContainer.validade,
                 updatedAt: topContainer.updatedAt,
                 stack: containersInSlot // all containers in stack from bottom to top
               });
@@ -4450,7 +4510,24 @@ export default function App() {
                           </span>
                           <span className="text-sm text-gray-400">/ {getCurrentBufferOccupancy().total} slots</span>
                         </div>
-                        <div className="mt-2 w-full bg-gray-200 dark:bg-slate-850 rounded-full h-2">
+
+                        {/* Breakdown of Cheios / Vazios */}
+                        <div className="mt-2.5 mb-2 grid grid-cols-2 gap-2 border-t border-b border-gray-150/45 dark:border-slate-800 py-1.5">
+                          <div className="flex flex-col">
+                            <span className="text-[8.5px] text-gray-400 uppercase font-black tracking-tight">{language === 'zh' ? '重箱' : 'Cheios'}</span>
+                            <span className="text-sm font-black text-blue-600 dark:text-blue-400 font-mono">
+                              {getCurrentBufferOccupancy().totalFull}
+                            </span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[8.5px] text-gray-400 uppercase font-black tracking-tight">{language === 'zh' ? '空箱' : 'Vazios (Swap)'}</span>
+                            <span className="text-sm font-black text-slate-500 dark:text-slate-400 font-mono">
+                              {getCurrentBufferOccupancy().totalEmpty}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-1 w-full bg-gray-200 dark:bg-slate-850 rounded-full h-2">
                           <div 
                             className="bg-red-650 h-2 rounded-full transition-all duration-500" 
                             style={{ width: `${getCurrentBufferOccupancy().percentage}%` }}
@@ -4531,7 +4608,7 @@ export default function App() {
                       {/* THE MAP CANVAS CARD */}
                       <div className={`p-5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-full`}>
                         <div>
-                          <div className="flex justify-between items-center border-b pb-2 mb-4 border-gray-100 dark:border-slate-800">
+                          <div className="flex justify-between items-center border-b pb-2 mb-3 border-gray-100 dark:border-slate-800">
                             <h4 className="text-xs font-black text-slate-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
                               <Boxes className="w-4 h-4 text-red-500" />
                               {language === 'zh' ? '智能 2D 地图：俯视与通道布局监控' : 'Mapa 2D do Buffer: Vista Aérea e Alocação Espacial'}
@@ -4542,6 +4619,60 @@ export default function App() {
                               <span className="flex items-center gap-1 text-blue-500"><span className="w-2.5 h-2.5 bg-blue-500/10 border border-blue-500/30 rounded-sm inline-block"></span>{language === 'zh' ? '普通优先级' : 'Normal Pri'}</span>
                               <span className="flex items-center gap-1 text-emerald-500"><span className="w-2.5 h-2.5 bg-emerald-500 rounded-sm inline-block animate-pulse"></span>{language === 'zh' ? '最佳发运 (⚡ Quick-Out)' : 'Melhor Posicionado (⚡)'}</span>
                             </div>
+                          </div>
+
+                          {/* CONTROL ROW: STATUS FILTERS & MAXIMIZE */}
+                          <div className="flex flex-wrap justify-between items-center gap-2 mb-4 bg-slate-50 dark:bg-slate-900/40 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-black uppercase text-gray-400 dark:text-gray-505 flex items-center gap-1">
+                                <Filter className="w-3 h-3 text-red-500" />
+                                {language === 'zh' ? '过滤状态:' : 'Filtrar por Status:'}
+                              </span>
+                              <div className="flex gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setBufferStatusFilter('ALL')}
+                                  className={`px-2 py-0.5 rounded text-[9px] font-extrabold transition-all cursor-pointer ${
+                                    bufferStatusFilter === 'ALL'
+                                      ? 'bg-red-650 text-white shadow-xs'
+                                      : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
+                                  }`}
+                                >
+                                  {language === 'zh' ? '全部' : 'Todos'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setBufferStatusFilter('CHEIO')}
+                                  className={`px-2 py-0.5 rounded text-[9px] font-extrabold transition-all cursor-pointer ${
+                                    bufferStatusFilter === 'CHEIO'
+                                      ? 'bg-blue-600 text-white shadow-xs'
+                                      : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
+                                  }`}
+                                >
+                                  {language === 'zh' ? '仅重箱' : 'Cheios'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setBufferStatusFilter('VAZIO')}
+                                  className={`px-2 py-0.5 rounded text-[9px] font-extrabold transition-all cursor-pointer ${
+                                    bufferStatusFilter === 'VAZIO'
+                                      ? 'bg-slate-500 text-white shadow-xs'
+                                      : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
+                                  }`}
+                                >
+                                  {language === 'zh' ? '仅空箱' : 'Vazios'}
+                                </button>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setIsBufferMapMaximized(true)}
+                              className="px-2.5 py-1 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-950/60 rounded text-[9.5px] font-black flex items-center gap-1 transition-all cursor-pointer shadow-xs"
+                            >
+                              <Maximize2 className="w-3 h-3" />
+                              {language === 'zh' ? '全屏放大' : 'Maximizar Mapa'}
+                            </button>
                           </div>
 
                           {/* THE ACTUAL GRID MAP */}
@@ -4574,6 +4705,10 @@ export default function App() {
                                         const slot = getSlotAt(r, c);
                                         const isOccupied = !!slot?.containerNo;
                                         const isVazio = slot?.status?.toLowerCase().includes('vaz') || slot?.status?.toLowerCase().includes('emp');
+                                        const isFilteredOut = isOccupied && (
+                                          (bufferStatusFilter === 'CHEIO' && isVazio) ||
+                                          (bufferStatusFilter === 'VAZIO' && !isVazio)
+                                        );
                                         
                                         return (
                                           <div 
@@ -4594,6 +4729,7 @@ export default function App() {
                                                 ) 
                                                 : 'border-dashed border-gray-300 dark:border-slate-800 bg-transparent hover:border-red-400 hover:bg-slate-100/30 hover:shadow-inner'
                                               }
+                                              ${isFilteredOut ? 'opacity-15 saturate-50 blur-[0.3px] pointer-events-none' : ''}
                                             `}
                                           >
                                             {/* Top indicators */}
@@ -4621,18 +4757,32 @@ export default function App() {
 
                                             {/* Main Info */}
                                             {isOccupied ? (
-                                              <div className="flex flex-col gap-0.5 mt-1">
-                                                <div className="text-[10.5px] font-black text-slate-800 dark:text-gray-100 font-mono tracking-tight truncate leading-tight flex items-center justify-between">
+                                              <div className="flex flex-col gap-0.2 mt-0.5 leading-tight">
+                                                <div className="text-[10.5px] font-black text-slate-800 dark:text-gray-100 font-mono tracking-tight truncate flex items-center justify-between">
                                                   <span className="truncate">{slot.containerNo}</span>
                                                   {isVazio && (
-                                                    <span className="text-[7.5px] font-extrabold px-1 py-0.2 bg-gray-200 dark:bg-slate-800 text-gray-600 dark:text-gray-400 rounded-sm scale-90" title="Vazio / Empty">
+                                                    <span className="text-[7.5px] font-extrabold px-1 py-0.2 bg-gray-200 dark:bg-slate-800 text-gray-600 dark:text-gray-400 rounded-sm scale-90 shrink-0" title="Vazio / Empty">
                                                       {language === 'zh' ? '空' : 'V'}
                                                     </span>
                                                   )}
                                                 </div>
-                                                <div className="text-[9px] font-bold text-gray-500 dark:text-gray-400 truncate leading-tight">
+                                                <div className="text-[8.5px] font-bold text-gray-400 dark:text-gray-450 truncate">
                                                   {slot.cargoType}
                                                 </div>
+                                                {(slot.loteNo || slot.validade) && (
+                                                  <div className="text-[8px] font-extrabold truncate flex flex-col gap-0.1 border-t border-slate-150/40 dark:border-slate-800/60 pt-0.5 mt-0.5">
+                                                    {slot.loteNo && (
+                                                      <span className="text-blue-600 dark:text-blue-400 font-black truncate">
+                                                        L:{slot.loteNo}
+                                                      </span>
+                                                    )}
+                                                    {slot.validade && (
+                                                      <span className="text-amber-600 dark:text-amber-450 truncate" title={`Validade / Free Time End: ${slot.validade}`}>
+                                                        F.T:{slot.validade}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                )}
                                               </div>
                                             ) : (
                                               <div className="flex-1 flex flex-col items-center justify-center text-gray-400 group">
@@ -4645,7 +4795,7 @@ export default function App() {
 
                                             {/* Bottom Pill */}
                                             {isOccupied && (
-                                              <div className="flex justify-between items-center text-[7.5px] font-bold">
+                                              <div className="flex justify-between items-center text-[7.5px] font-bold mt-1">
                                                 <span className={`px-1 rounded ${
                                                   slot.priority === 'CRITICAL' ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' :
                                                   slot.priority === 'HIGH' ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300' :
@@ -6824,6 +6974,290 @@ export default function App() {
               >
                 {language === 'bilingual' ? 'Confirmar / 确认' : 'Confirmar'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isBufferMapMaximized && (
+        <div className="fixed inset-0 z-[120] bg-slate-950/98 backdrop-blur-lg flex flex-col overflow-hidden text-white font-sans animate-fade-in">
+          
+          {/* Header */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-5 border-b border-slate-850 bg-[#0b0f19]/80 backdrop-blur-md sticky top-0 z-20">
+            <div>
+              <div className="flex items-center gap-2">
+                <Boxes className="w-5 h-5 text-red-500 animate-pulse" />
+                <h3 className="text-sm font-black tracking-widest uppercase text-slate-100">
+                  {language === 'zh' ? '全屏 2D 智能监控：堆场通道 alocação' : 'Monitoramento 2D Maximizado do Buffer'}
+                </h3>
+              </div>
+              <div className="text-[10.5px] text-gray-400 font-bold mt-1.5 flex flex-wrap items-center gap-2">
+                <span>{language === 'zh' ? '当前区域:' : 'Área Ativa:'}</span>
+                <select
+                  value={activeBufferId}
+                  onChange={(e) => setActiveBufferId(e.target.value)}
+                  className="bg-[#1e293b] text-white border border-slate-700 text-[10.5px] font-black rounded px-2 py-0.5 outline-none cursor-pointer"
+                >
+                  {bufferAreas.map((area) => (
+                    <option key={area.id} value={area.id}>
+                      {area.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="font-mono bg-slate-850 px-2 py-0.5 rounded text-gray-400">
+                  COORD: {getCurrentBufferArea().rows}x{getCurrentBufferArea().cols}
+                </span>
+              </div>
+            </div>
+
+            {/* Middle Stats Bar */}
+            <div className="flex items-center gap-4 flex-wrap bg-[#1e293b]/40 border border-slate-800 p-2 rounded-xl">
+              <div className="flex flex-col text-center">
+                <span className="text-[9px] text-gray-400 uppercase font-bold">{language === 'zh' ? '占用率' : 'Ocupação'}</span>
+                <span className="text-sm font-black text-white font-mono">
+                  {getCurrentBufferOccupancy().occupied} / {getCurrentBufferOccupancy().total} Slots ({getCurrentBufferOccupancy().percentage}%)
+                </span>
+              </div>
+              <div className="h-6 w-px bg-slate-800"></div>
+              <div className="flex flex-col text-center">
+                <span className="text-[9px] text-blue-400 uppercase font-bold">{language === 'zh' ? '重箱' : 'Cheios'}</span>
+                <span className="text-sm font-black text-blue-400 font-mono">
+                  {getCurrentBufferOccupancy().totalFull}
+                </span>
+              </div>
+              <div className="h-6 w-px bg-slate-800"></div>
+              <div className="flex flex-col text-center">
+                <span className="text-[9px] text-slate-400 uppercase font-bold">{language === 'zh' ? '空箱' : 'Vazios (Swap)'}</span>
+                <span className="text-sm font-black text-slate-300 font-mono">
+                  {getCurrentBufferOccupancy().totalEmpty}
+                </span>
+              </div>
+              <div className="h-6 w-px bg-slate-800"></div>
+              <div className="flex flex-col text-center">
+                <span className="text-[9px] text-emerald-400 uppercase font-bold">{language === 'zh' ? '直接提车' : 'Rota Rápida'}</span>
+                <span className="text-sm font-black text-emerald-400 font-mono">
+                  {getCurrentBufferOccupancy().optimalCount}
+                </span>
+              </div>
+            </div>
+
+            {/* Actions & Filters */}
+            <div className="flex items-center gap-3 self-stretch md:self-auto justify-between">
+              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-2 py-1 rounded-lg">
+                <span className="text-[10px] text-gray-400 uppercase font-black tracking-wider flex items-center gap-1">
+                  <Filter className="w-3 h-3 text-red-500" />
+                  {language === 'zh' ? '过滤:' : 'Filtro:'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setBufferStatusFilter('ALL')}
+                  className={`px-2 py-0.5 rounded text-[10px] font-black transition-all cursor-pointer ${
+                    bufferStatusFilter === 'ALL'
+                      ? 'bg-red-650 text-white'
+                      : 'bg-transparent text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {language === 'zh' ? '全' : 'Todos'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBufferStatusFilter('CHEIO')}
+                  className={`px-2 py-0.5 rounded text-[10px] font-black transition-all cursor-pointer ${
+                    bufferStatusFilter === 'CHEIO'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-transparent text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {language === 'zh' ? '重' : 'Cheios'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBufferStatusFilter('VAZIO')}
+                  className={`px-2 py-0.5 rounded text-[10px] font-black transition-all cursor-pointer ${
+                    bufferStatusFilter === 'VAZIO'
+                      ? 'bg-slate-500 text-white'
+                      : 'bg-transparent text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {language === 'zh' ? '空' : 'Vazios'}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsBufferMapMaximized(false)}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-lg flex items-center gap-1.5 shadow-lg shadow-red-600/10 transition-all cursor-pointer border border-transparent"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
+                {language === 'zh' ? '收起地图 / 返回' : 'Fechar'}
+              </button>
+            </div>
+          </div>
+
+          {/* Grid Area - Expansive scroll stage */}
+          <div className="flex-1 overflow-auto p-6 bg-slate-950 flex justify-center items-start">
+            <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 shadow-2xl flex flex-col items-center min-w-max">
+              
+              {/* Columns Header */}
+              <div className="flex mb-2 pl-8">
+                {Array.from({ length: getCurrentBufferArea().cols }).map((_, c) => (
+                  <div key={c} className="w-40 text-center text-[10.5px] font-black text-gray-500 font-mono tracking-wider">
+                    COL {c + 1}
+                  </div>
+                ))}
+              </div>
+
+              {/* Rows */}
+              <div className="space-y-2.5">
+                {Array.from({ length: getCurrentBufferArea().rows }).map((_, r) => {
+                  const isNumericArea = activeBufferId.includes('buffer-e') || activeBufferId.includes('buffer-b');
+                  const rowLetter = isNumericArea ? String(r + 1) : String.fromCharCode(65 + r);
+                  return (
+                    <div key={r} className="flex items-center gap-3">
+                      {/* Row Label */}
+                      <div className="w-8 text-center text-xs font-black text-gray-400 font-mono bg-slate-850 py-1 rounded">
+                        {isNumericArea ? `R${rowLetter}` : rowLetter}
+                      </div>
+
+                      {/* Columns */}
+                      <div className="flex gap-2.5">
+                        {Array.from({ length: getCurrentBufferArea().cols }).map((_, c) => {
+                          const slot = getSlotAt(r, c);
+                          const isOccupied = !!slot?.containerNo;
+                          const isVazio = slot?.status?.toLowerCase().includes('vaz') || slot?.status?.toLowerCase().includes('emp');
+                          const isFilteredOut = isOccupied && (
+                            (bufferStatusFilter === 'CHEIO' && isVazio) ||
+                            (bufferStatusFilter === 'VAZIO' && !isVazio)
+                          );
+
+                          return (
+                            <div
+                              key={c}
+                              onClick={() => handleSlotClick(r, c)}
+                              className={`
+                                w-40 h-28 rounded-xl transition-all duration-300 cursor-pointer select-none relative flex flex-col justify-between p-3 text-left border shadow-sm
+                                ${isOccupied
+                                  ? (slot.isOptimalPickup
+                                    ? 'bg-emerald-950/25 border-emerald-500 hover:border-emerald-400 hover:bg-emerald-950/45 text-white'
+                                    : (slot.priority === 'CRITICAL' || slot.priority === 'HIGH'
+                                      ? 'bg-red-950/25 border-red-500 hover:border-red-400 hover:bg-red-950/45 text-white'
+                                      : (isVazio
+                                        ? 'bg-slate-900/60 border-slate-700 hover:border-slate-500 text-slate-400'
+                                        : 'bg-blue-950/20 border-blue-500 hover:border-blue-400 hover:bg-blue-950/40 text-white'
+                                      )
+                                    )
+                                  )
+                                  : 'border-dashed border-slate-800 bg-transparent hover:border-red-500 hover:bg-slate-850/45 hover:shadow-inner'
+                                }
+                                ${isFilteredOut ? 'opacity-10 saturate-50 blur-[0.4px] pointer-events-none' : ''}
+                              `}
+                            >
+                              {/* Top Indicators Row */}
+                              <div className="flex justify-between items-start">
+                                <span className="text-[8.5px] font-mono font-black text-gray-400 bg-slate-800/80 px-1.5 py-0.5 rounded">
+                                  {isNumericArea ? `${activeBufferId.includes('buffer-e') ? 'E' : 'B'}_${rowLetter}_${c + 1}` : `${rowLetter}${c + 1}`}
+                                </span>
+
+                                {isOccupied && (
+                                  <div className="flex gap-1 items-center">
+                                    {slot.isOptimalPickup && (
+                                      <span className="flex h-2.5 w-2.5 relative">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                      </span>
+                                    )}
+                                    <span className="text-[7.5px] font-mono font-black bg-slate-800 px-1.5 py-0.5 rounded text-gray-200">
+                                      {slot.size === '40\' HC' ? "40' HC" : "20' FT"}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Container Identity Box */}
+                              {isOccupied ? (
+                                <div className="flex flex-col gap-0.5 mt-1.5">
+                                  <div className="text-[11.5px] font-black text-slate-100 font-mono tracking-wide flex justify-between items-center">
+                                    <span className="truncate select-all select-text">{slot.containerNo}</span>
+                                    {isVazio && (
+                                      <span className="text-[7.5px] font-black px-1.5 py-0.2 bg-slate-800 text-slate-400 rounded">
+                                        {language === 'zh' ? '空箱' : 'VAZIO'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[9px] font-bold text-gray-400 truncate">
+                                    {slot.cargoType}
+                                  </div>
+
+                                  {/* WMS Metadata Details (Lot & Free Time End Date) */}
+                                  {(slot.loteNo || slot.validade) && (
+                                    <div className="text-[8.5px] font-black truncate flex flex-col gap-0.5 mt-1 border-t border-slate-800 pt-1">
+                                      {slot.loteNo && (
+                                        <span className="text-blue-400 flex items-center gap-1">
+                                          <span className="text-[7.5px] text-gray-500 font-bold uppercase">LOTE:</span>
+                                          <span className="font-mono tracking-tight">{slot.loteNo}</span>
+                                        </span>
+                                      )}
+                                      {slot.validade && (
+                                        <span className="text-amber-400 flex items-center gap-1" title="Free Time End Date (Data de validade)">
+                                          <span className="text-[7.5px] text-gray-500 font-bold uppercase">FREE TIME:</span>
+                                          <span className="font-mono tracking-tight">{slot.validade}</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="flex-1 flex flex-col items-center justify-center text-gray-600">
+                                  <Plus className="w-5 h-5 text-slate-800 hover:text-red-500 transition-colors" />
+                                  <span className="text-[8px] font-black tracking-widest uppercase mt-1">
+                                    {language === 'zh' ? '空位置 / 快速分配' : 'Alocar Slot'}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Footer Priority and Height details */}
+                              {isOccupied && (
+                                <div className="flex justify-between items-center text-[8px] font-bold mt-1">
+                                  <span className={`px-1.5 py-0.5 rounded text-[7.5px] font-black ${
+                                    slot.priority === 'CRITICAL' ? 'bg-red-950 text-red-400 border border-red-900/50' :
+                                    slot.priority === 'HIGH' ? 'bg-orange-950 text-orange-400 border border-orange-900/50' :
+                                    slot.priority === 'NORMAL' ? 'bg-blue-950 text-blue-400 border border-blue-900/50' :
+                                    'bg-slate-800 text-gray-400'
+                                  }`}>
+                                    {slot.priority}
+                                  </span>
+
+                                  {slot.stack && slot.stack.length > 1 && (
+                                    <span className="text-[7.5px] font-black text-purple-400 bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-800/40 flex items-center gap-1">
+                                      <Layers className="w-3 h-3 inline text-purple-500" />
+                                      <span>ALTURA: {slot.stack.length}</span>
+                                    </span>
+                                  )}
+
+                                  {slot.isOptimalPickup && (
+                                    <span className="text-[8.5px] font-extrabold text-emerald-400 flex items-center gap-0.5 animate-pulse">
+                                      ⚡ QUICK-OUT
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Legend Footer */}
+              <div className="mt-6 text-[10.5px] text-gray-500 font-bold max-w-2xl text-center leading-relaxed flex items-center gap-2">
+                <Info className="w-4 h-4 text-blue-500 shrink-0" />
+                <span>
+                  {language === 'zh' ? '💡 在全屏模式下，您可以直接看到所有集装箱的批次号(Lote)和有效到期日(Free time)。单击任意格子可直接调出编辑侧边栏，支持叠放高度管理。' : '💡 No modo tela cheia, o Nº do lote e a Data de validade (Free Time) são mostrados diretamente sobre o contêiner. Clique em qualquer slot para editá-lo.'}
+                </span>
+              </div>
+
             </div>
           </div>
         </div>
