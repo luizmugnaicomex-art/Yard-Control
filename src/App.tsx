@@ -38,7 +38,8 @@ import {
   Boxes,
   Percent,
   FileSpreadsheet,
-  Upload
+  Upload,
+  Info
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -231,6 +232,32 @@ export interface ChartRightItem {
   type: string;
 }
 
+export interface BufferSlot {
+  row?: number;
+  col?: number;
+  containerNo?: string;
+  cargoType?: string;
+  size?: '20FT' | '40FT' | string;
+  priority?: 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW' | string;
+  isOptimalPickup?: boolean;
+  status?: 'CHEIO' | 'VAZIO' | string;
+  entryTime?: string;
+  stack?: BufferSlot[];
+  danfe?: string;
+  origin?: string;
+  loteNo?: string;
+  statusRecebimento?: string;
+  updatedAt?: string;
+}
+
+export interface BufferArea {
+  id: string;
+  name: string;
+  rows: number;
+  cols: number;
+  slots: BufferSlot[];
+}
+
 // DADOS INICIAIS DA IMAGEM ORIGINAL (Para restauração e estado inicial)
 const ORIGINAL_YARDS: YardsState = {
   tecon: { name: 'TECON', type: 'BONDED', capacity: 2000, cheio: 1643, vazio: 0, porto: 576, prontoColeta: 2253, delivered: 5535, previous_total: 1600 },
@@ -409,7 +436,197 @@ export default function App() {
   const [newContainerStatus, setNewContainerStatus] = useState<'CHEIO' | 'VAZIO'>('CHEIO');
   const [newContainerCategory, setNewContainerCategory] = useState<'PORTO' | 'PRONTO_COLETA' | 'DELIVERED' | 'GERAL'>('GERAL');
   const [newContainerVessel, setNewContainerVessel] = useState("N/A");
+
+  // CONFIGURAÇÕES DOS BUFFERS BYD
+  const defaultBufferAreas: BufferArea[] = [
+    {
+      id: "buffer-e",
+      name: "BYD Buffer E (Zona E / E区 - Ativo)",
+      rows: 12,
+      cols: 10,
+      slots: [
+        {
+          row: 1, col: 7,
+          containerNo: "MSBU7855741",
+          cargoType: "EQEKL",
+          size: "40' HC",
+          priority: "NORMAL",
+          isOptimalPickup: true,
+          status: "CHEIO",
+          entryTime: "2026-07-07 13:14:30",
+          stack: [
+            { containerNo: "MSBU7855741", cargoType: "EQEKL", size: "40' HC", priority: "NORMAL", status: "CHEIO", entryTime: "2026-07-07 13:14:30", isOptimalPickup: true }
+          ]
+        },
+        {
+          row: 10, col: 7,
+          containerNo: "MSBU7659712",
+          cargoType: "EQEKL",
+          size: "40' HC",
+          priority: "HIGH",
+          isOptimalPickup: false,
+          status: "CHEIO",
+          entryTime: "2026-07-07 13:04:14",
+          stack: [
+            { containerNo: "MSBU7665762", cargoType: "EQEKL", size: "40' HC", priority: "NORMAL", status: "CHEIO", entryTime: "2026-07-07 13:02:41", isOptimalPickup: false },
+            { containerNo: "MSBU7659712", cargoType: "EQEKL", size: "40' HC", priority: "HIGH", status: "CHEIO", entryTime: "2026-07-07 13:04:14", isOptimalPickup: false }
+          ]
+        },
+        {
+          row: 10, col: 6,
+          containerNo: "MSBU7659585",
+          cargoType: "EQEKL",
+          size: "40' HC",
+          priority: "NORMAL",
+          isOptimalPickup: true,
+          status: "CHEIO",
+          entryTime: "2026-07-07 12:44:59",
+          stack: [
+            { containerNo: "MSBU7659585", cargoType: "EQEKL", size: "40' HC", priority: "NORMAL", status: "CHEIO", entryTime: "2026-07-07 12:44:59", isOptimalPickup: true }
+          ]
+        }
+      ]
+    },
+    {
+      id: "buffer-b",
+      name: "BYD Buffer B (Zona B / B区 - Ativo)",
+      rows: 13,
+      cols: 6,
+      slots: [
+        {
+          row: 11, col: 0,
+          containerNo: "CAAU5967121",
+          cargoType: "S3CH",
+          size: "40' HC",
+          priority: "NORMAL",
+          isOptimalPickup: true,
+          status: "CHEIO",
+          entryTime: "2026-07-07 12:49:10",
+          stack: [
+            { containerNo: "CMAU8726186", cargoType: "S3CH", size: "40' HC", priority: "NORMAL", status: "CHEIO", entryTime: "2026-07-07 12:48:33", isOptimalPickup: false },
+            { containerNo: "CAAU5967121", cargoType: "S3CH", size: "40' HC", priority: "NORMAL", status: "CHEIO", entryTime: "2026-07-07 12:49:10", isOptimalPickup: true }
+          ]
+        },
+        {
+          row: 11, col: 1,
+          containerNo: "TIIU4357285",
+          cargoType: "S3CH",
+          size: "40' HC",
+          priority: "NORMAL",
+          isOptimalPickup: true,
+          status: "CHEIO",
+          entryTime: "2026-07-07 12:47:18",
+          stack: [
+            { containerNo: "CMAU9747990", cargoType: "S3CH", size: "40' HC", priority: "NORMAL", status: "CHEIO", entryTime: "2026-07-07 12:46:24", isOptimalPickup: false },
+            { containerNo: "TIIU4357285", cargoType: "S3CH", size: "40' HC", priority: "NORMAL", status: "CHEIO", entryTime: "2026-07-07 12:47:18", isOptimalPickup: true }
+          ]
+        }
+      ]
+    },
+    {
+      id: "buffer-alfa",
+      name: "BYD Buffer Alfa (Zona Rápida / 快速拨备区)",
+      rows: 4,
+      cols: 6,
+      slots: [
+        { row: 0, col: 0 },
+        { row: 0, col: 1, containerNo: "BYDU8812903", cargoType: "Dolphin Mini EV", size: "40' HC", priority: "CRITICAL", isOptimalPickup: true },
+        { row: 0, col: 2 },
+        { row: 0, col: 3, containerNo: "BYDU4556102", cargoType: "Seal EV Luxury", size: "40' HC", priority: "HIGH", isOptimalPickup: true },
+        { row: 0, col: 4 },
+        { row: 0, col: 5 },
+        { row: 1, col: 0 },
+        { row: 1, col: 1, containerNo: "BYDU9920194", cargoType: "Song Plus DM-i", size: "40' HC", priority: "NORMAL", isOptimalPickup: false },
+        { row: 1, col: 2, containerNo: "BYDU3388410", cargoType: "Blade Battery Packs", size: "20FT", priority: "CRITICAL", isOptimalPickup: true },
+        { row: 1, col: 3 },
+        { row: 1, col: 4 },
+        { row: 1, col: 5 },
+        { row: 2, col: 0, containerNo: "BYDU1122334", cargoType: "King DM-i Sedan", size: "40' HC", priority: "LOW", isOptimalPickup: true },
+        { row: 2, col: 1 },
+        { row: 2, col: 2 },
+        { row: 2, col: 3 },
+        { row: 2, col: 4, containerNo: "BYDU7722991", cargoType: "Chassis Modules", size: "20FT", priority: "NORMAL", isOptimalPickup: false },
+        { row: 2, col: 5 },
+        { row: 3, col: 0 },
+        { row: 3, col: 1 },
+        { row: 3, col: 2 },
+        { row: 3, col: 3 },
+        { row: 3, col: 4 },
+        { row: 3, col: 5, containerNo: "BYDU5544332", cargoType: "Dolphin EV SUV", size: "40' HC", priority: "HIGH", isOptimalPickup: true }
+      ]
+    },
+    {
+      id: "buffer-beta",
+      name: "BYD Buffer Beta (Estoque Auxiliar / 备用缓冲区)",
+      rows: 5,
+      cols: 8,
+      slots: [
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+        { row: 0, col: 2, containerNo: "BYDU1234567", cargoType: "Yuan Plus EV", size: "40' HC", priority: "NORMAL", isOptimalPickup: true },
+        { row: 0, col: 3 },
+        { row: 0, col: 4 },
+        { row: 0, col: 5 },
+        { row: 0, col: 6 },
+        { row: 0, col: 7 },
+        { row: 1, col: 0 },
+        { row: 1, col: 1 },
+        { row: 1, col: 2 },
+        { row: 1, col: 3 },
+        { row: 1, col: 4, containerNo: "BYDU6543210", cargoType: "Blade Battery Packs", size: "20FT", priority: "HIGH", isOptimalPickup: false },
+        { row: 1, col: 5 },
+        { row: 1, col: 6 },
+        { row: 1, col: 7 },
+        { row: 2, col: 0 },
+        { row: 2, col: 1 },
+        { row: 2, col: 2 },
+        { row: 2, col: 3 },
+        { row: 2, col: 4 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+        { row: 2, col: 7, containerNo: "BYDU1112223", cargoType: "Dolphin EV SUV", size: "40' HC", priority: "CRITICAL", isOptimalPickup: true },
+        { row: 3, col: 0 },
+        { row: 3, col: 1 },
+        { row: 3, col: 2 },
+        { row: 3, col: 3, containerNo: "BYDU4445556", cargoType: "Motor Assemblies", size: "20FT", priority: "NORMAL", isOptimalPickup: false },
+        { row: 3, col: 4 },
+        { row: 3, col: 5 },
+        { row: 3, col: 6 },
+        { row: 3, col: 7 },
+        { row: 4, col: 0 },
+        { row: 4, col: 1 },
+        { row: 4, col: 2 },
+        { row: 4, col: 3 },
+        { row: 4, col: 4 },
+        { row: 4, col: 5, containerNo: "BYDU9998887", cargoType: "Tan EV Luxury", size: "40' HC", priority: "HIGH", isOptimalPickup: true },
+        { row: 4, col: 6 },
+        { row: 4, col: 7 }
+      ]
+    }
+  ];
+
+  const [bufferAreas, setBufferAreas] = useState<BufferArea[]>(() => {
+    const saved = localStorage.getItem('byd_buffer_areas');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Clean up or migrate any stored formats if necessary, or just load them.
+        if (parsed && parsed.length > 0) return parsed;
+      } catch (e) { console.error(e); }
+    }
+    return defaultBufferAreas;
+  });
+
+  const [activeBufferId, setActiveBufferId] = useState<string>('buffer-e');
+  const [editingSlot, setEditingSlot] = useState<BufferSlot | null>(null);
+  const [editingSlotAreaId, setEditingSlotAreaId] = useState<string | null>(null);
+  const [editingStackIndex, setEditingStackIndex] = useState<number>(0);
   
+  // Efeito para salvar buffers no LocalStorage
+  useEffect(() => {
+    localStorage.setItem('byd_buffer_areas', JSON.stringify(bufferAreas));
+  }, [bufferAreas]);
+
   // NAVEGAÇÃO DE SLIDES E COMENTÁRIOS DAS NOVAS PÁGINAS
   const [currentSlide, setCurrentSlide] = useState(0); // 0: Geral, 1: Pátios, 2: Navios, 3: Gráficos
   const [yardsComment, setYardsComment] = useState("Inserir comentários sobre a capacidade e ocupação dos pátios de forma bilíngue aqui. / 在此输入关于堆场容量、占用比率的双语说明。");
@@ -882,9 +1099,9 @@ export default function App() {
       }
       
       if (e.key === 'ArrowRight' || e.key === 'PageDown') {
-        setCurrentSlide(prev => (prev + 1) % 4);
+        setCurrentSlide(prev => (prev + 1) % 5);
       } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-        setCurrentSlide(prev => (prev - 1 + 4) % 4);
+        setCurrentSlide(prev => (prev - 1 + 5) % 5);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -971,6 +1188,569 @@ export default function App() {
     if (language === 'pt') return TRANSLATIONS[key].pt;
     if (language === 'zh') return TRANSLATIONS[key].zh;
     return `${TRANSLATIONS[key].zh} (${TRANSLATIONS[key].pt})`;
+  };
+
+  // ==========================================
+  // FUNÇÕES AUXILIARES - BYD BUFFER MODULE
+  // ==========================================
+  const getCurrentBufferArea = (): BufferArea => {
+    return bufferAreas.find(area => area.id === activeBufferId) || bufferAreas[0];
+  };
+
+  const getSlotAt = (row: number, col: number): BufferSlot | undefined => {
+    const area = getCurrentBufferArea();
+    return area.slots.find(slot => slot.row === row && slot.col === col);
+  };
+
+  const getSlotCoordsLabel = (row: number, col: number): string => {
+    const area = getCurrentBufferArea();
+    const isNumericArea = area.id.includes('buffer-e') || area.id.includes('buffer-b') || area.id.includes('real');
+    if (isNumericArea) {
+      const prefix = area.id.includes('buffer-e') ? 'E' : (area.id.includes('buffer-b') ? 'B' : 'BUF');
+      return `${prefix}_${row + 1}_${col + 1}`;
+    }
+    const rowLetter = String.fromCharCode(65 + row);
+    return `${rowLetter}${col + 1}`;
+  };
+
+  const getCurrentBufferOccupancy = () => {
+    const area = getCurrentBufferArea();
+    const total = area.rows * area.cols;
+    const occupiedSlots = area.slots.filter(slot => !!slot.containerNo);
+    const occupied = occupiedSlots.length;
+    const empty = total - occupied;
+    const percentage = total > 0 ? Math.round((occupied / total) * 100) : 0;
+    const optimalCount = occupiedSlots.filter(slot => !!slot.isOptimalPickup).length;
+    return { total, occupied, empty, percentage, optimalCount };
+  };
+
+  const getOptimalPickupList = () => {
+    const area = getCurrentBufferArea();
+    return area.slots
+      .filter(slot => !!slot.containerNo && !!slot.isOptimalPickup)
+      .map(slot => ({
+        ...slot,
+        areaId: area.id,
+        areaName: area.name
+      }));
+  };
+
+  const handleSlotClick = (row: number, col: number) => {
+    const slot = getSlotAt(row, col) || { row, col };
+    
+    // Normalize slot to have a stack array
+    const stack = slot.stack && slot.stack.length > 0
+      ? [...slot.stack]
+      : (slot.containerNo ? [{
+          row: slot.row,
+          col: slot.col,
+          containerNo: slot.containerNo,
+          cargoType: slot.cargoType || '',
+          size: slot.size || "40' HC",
+          priority: slot.priority || 'NORMAL',
+          isOptimalPickup: !!slot.isOptimalPickup,
+          status: slot.status || 'CHEIO',
+          entryTime: slot.entryTime || '',
+          updatedAt: slot.updatedAt
+        }] : []);
+
+    const activeIndex = stack.length > 0 ? stack.length - 1 : 0;
+    const activeLayer: Partial<BufferSlot> = stack[activeIndex] || {};
+
+    setEditingSlot({
+      row: slot.row,
+      col: slot.col,
+      containerNo: activeLayer.containerNo || '',
+      cargoType: activeLayer.cargoType || 'Dolphin Mini EV',
+      size: activeLayer.size || "40' HC",
+      priority: activeLayer.priority || 'NORMAL',
+      isOptimalPickup: !!activeLayer.isOptimalPickup,
+      status: activeLayer.status || 'CHEIO',
+      entryTime: activeLayer.entryTime || '',
+      updatedAt: slot.updatedAt || new Date().toISOString().split('T')[0],
+      stack: stack
+    });
+    setEditingStackIndex(activeIndex);
+    setEditingSlotAreaId(activeBufferId);
+  };
+
+  const handleSaveSlot = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSlot || !editingSlotAreaId) return;
+
+    // Update the active layer in our local stack copy
+    const updatedStack = editingSlot.stack ? [...editingSlot.stack] : [];
+    const layerData: BufferSlot = {
+      row: editingSlot.row,
+      col: editingSlot.col,
+      containerNo: editingSlot.containerNo ? editingSlot.containerNo.trim().toUpperCase() : '',
+      cargoType: editingSlot.cargoType || '',
+      size: editingSlot.size || "40' HC",
+      priority: editingSlot.priority || 'NORMAL',
+      isOptimalPickup: !!editingSlot.isOptimalPickup,
+      status: editingSlot.status || 'CHEIO',
+      entryTime: editingSlot.entryTime || '',
+      updatedAt: new Date().toISOString().split('T')[0]
+    };
+
+    if (updatedStack.length > 0 && editingStackIndex >= 0 && editingStackIndex < updatedStack.length) {
+      updatedStack[editingStackIndex] = layerData;
+    } else {
+      updatedStack.push(layerData);
+    }
+
+    setBufferAreas(prev => prev.map(area => {
+      if (area.id !== editingSlotAreaId) return area;
+
+      const updatedSlots = [...area.slots];
+      const slotIndex = updatedSlots.findIndex(s => s.row === editingSlot.row && s.col === editingSlot.col);
+
+      // Main slot container is the topmost container in the stack
+      const validLayers = updatedStack.filter(item => !!item.containerNo);
+      const topLayer: Partial<BufferSlot> = validLayers[validLayers.length - 1] || {};
+
+      const newSlotData: BufferSlot = {
+        row: editingSlot.row,
+        col: editingSlot.col,
+        containerNo: topLayer.containerNo || '',
+        cargoType: topLayer.cargoType || '',
+        size: topLayer.size || "40' HC",
+        priority: topLayer.priority || 'NORMAL',
+        isOptimalPickup: !!topLayer.isOptimalPickup,
+        status: topLayer.status || 'CHEIO',
+        entryTime: topLayer.entryTime || '',
+        updatedAt: new Date().toISOString().split('T')[0],
+        stack: validLayers
+      };
+
+      if (slotIndex > -1) {
+        if (!newSlotData.containerNo) {
+          // If no containers left, clear slot
+          updatedSlots[slotIndex] = { row: editingSlot.row, col: editingSlot.col };
+        } else {
+          updatedSlots[slotIndex] = newSlotData;
+        }
+      } else if (newSlotData.containerNo) {
+        updatedSlots.push(newSlotData);
+      }
+
+      return {
+        ...area,
+        slots: updatedSlots
+      };
+    }));
+
+    setEditingSlot(null);
+    setEditingSlotAreaId(null);
+  };
+
+  const handleClearSlot = () => {
+    if (!editingSlot || !editingSlotAreaId) return;
+
+    setBufferAreas(prev => prev.map(area => {
+      if (area.id !== editingSlotAreaId) return area;
+
+      const updatedSlots = [...area.slots];
+      const slotIndex = updatedSlots.findIndex(s => s.row === editingSlot.row && s.col === editingSlot.col);
+
+      if (slotIndex > -1) {
+        updatedSlots[slotIndex] = {
+          row: editingSlot.row,
+          col: editingSlot.col
+        };
+      }
+
+      return {
+        ...area,
+        slots: updatedSlots
+      };
+    }));
+
+    setEditingSlot(null);
+    setEditingSlotAreaId(null);
+  };
+
+  const handleCreateNewBufferZone = () => {
+    const name = prompt(
+      language === 'zh' ? '请输入新双语缓冲区名称：' : 'Digite o nome da nova Área de Buffer:',
+      `BYD Buffer Gamma (Peças / 零部件区)`
+    );
+    if (!name) return;
+
+    const rowsInput = prompt(language === 'zh' ? '请输入行数（1 - 10）：' : 'Digite a quantidade de Linhas (1 - 10):', '5');
+    const colsInput = prompt(language === 'zh' ? '请输入列数（1 - 15）：' : 'Digite a quantidade de Colunas (1 - 15):', '6');
+
+    const rows = parseInt(rowsInput || '') || 5;
+    const cols = parseInt(colsInput || '') || 6;
+
+    if (rows < 1 || rows > 10 || cols < 1 || cols > 15) {
+      alert(language === 'zh' ? '行数或列数超出范围（1-10行，1-15列）。' : 'Dimensões fora dos limites suportados (1-10 linhas, 1-15 colunas).');
+      return;
+    }
+
+    const id = `buffer-custom-${Date.now()}`;
+    const newArea: BufferArea = {
+      id,
+      name,
+      rows,
+      cols,
+      slots: []
+    };
+
+    setBufferAreas(prev => [...prev, newArea]);
+    setActiveBufferId(id);
+  };
+
+  const handleDeleteBufferZone = () => {
+    const area = getCurrentBufferArea();
+    if (!area) return;
+
+    if (bufferAreas.length <= 1) {
+      alert(language === 'zh'
+        ? "至少需要保留一个缓冲区区域，无法删除最后一个。"
+        : "É necessário manter pelo menos uma área de buffer. Não é possível excluir a última.");
+      return;
+    }
+
+    const title = language === 'zh' ? '删除缓冲区区域' : 'Excluir Área de Buffer';
+    const confirmMessage = language === 'zh'
+      ? `您确定要删除缓冲区区域 "${area.name}" 吗？此区域内的所有堆位信息都将丢失！`
+      : `Tem certeza que deseja excluir a área de buffer "${area.name}"? Todos os contêineres e informações desta área serão perdidos permanentemente!`;
+
+    requestConfirmation(title, confirmMessage, () => {
+      const remainingAreas = bufferAreas.filter(a => a.id !== area.id);
+      setBufferAreas(remainingAreas);
+      setActiveBufferId(remainingAreas[0].id);
+
+      alert(language === 'zh'
+        ? `已成功删除缓冲区区域 "${area.name}"。`
+        : `Área de buffer "${area.name}" excluída com sucesso.`);
+    });
+  };
+
+  const handleExportBufferLayout = () => {
+    const area = getCurrentBufferArea();
+    
+    const headers = [
+      language === 'zh' ? '堆位坐标' : 'Posição',
+      language === 'zh' ? '集装箱号' : 'Contêiner',
+      language === 'zh' ? '货物类型 / 车型' : 'Modelo / Carga',
+      language === 'zh' ? '尺寸' : 'Tamanho',
+      language === 'zh' ? '优先级' : 'Prioridade',
+      language === 'zh' ? '最佳发运 (⚡)' : 'Melhor Posicionado',
+      language === 'zh' ? '最近更新日期' : 'Última Atualização'
+    ];
+
+    const dataRows = [];
+    for (let r = 0; r < area.rows; r++) {
+      for (let c = 0; c < area.cols; c++) {
+        const slot = area.slots.find(s => s.row === r && s.col === c);
+        const coords = getSlotCoordsLabel(r, c);
+        
+        if (slot && slot.containerNo) {
+          dataRows.push([
+            coords,
+            slot.containerNo,
+            slot.cargoType || 'N/A',
+            slot.size || "40' HC",
+            slot.priority || 'NORMAL',
+            slot.isOptimalPickup ? 'SIM / YES' : 'NÃO / NO',
+            slot.updatedAt || ''
+          ]);
+        } else {
+          dataRows.push([
+            coords,
+            'LIVRE / VACANT',
+            '',
+            '',
+            '',
+            '',
+            ''
+          ]);
+        }
+      }
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet([
+      [area.name],
+      [],
+      headers,
+      ...dataRows
+    ]);
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Buffer Map");
+
+    XLSX.writeFile(wb, `${area.name.replace(/\s+/g, '_')}_Layout.xlsx`);
+  };
+
+  const handleImportBufferExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        if (!bstr) return;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const sheetName = wb.SheetNames[0];
+        const ws = wb.Sheets[sheetName];
+        
+        // Convert sheet to JSON array of arrays
+        const data: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        
+        if (data.length <= 1) {
+          alert(language === 'zh' ? '表格为空或无数据！' : 'Planilha vazia ou sem dados!');
+          return;
+        }
+
+        // Identify column headers (case-insensitive and trimmed)
+        const headers = data[0].map(h => String(h || '').trim().toLowerCase());
+        
+        // Highly robust and targeted column identification
+        const containerNoIdx = headers.findIndex(h => 
+          h === 'cód. contêiner' || h === 'cod. conteiner' || h === 'container' || h === 'container no' ||
+          h.includes('cód. contêiner') || h.includes('cod. conteiner') || h.includes('container') || h.includes('箱号')
+        );
+
+        const locationIdx = headers.findIndex(h => 
+          h === 'locação' || h === 'locacao' || h === 'location' || h === 'posição' || h === 'posicao' ||
+          h.includes('locação') || h.includes('locacao') || h.includes('posição') || h.includes('posicao') || h.includes('堆位')
+        );
+
+        // Avoid partial match with 'tipo de veículo'
+        const typeIdx = headers.findIndex(h => 
+          h === 'tipo' || h === 'tipo de contêiner' || h === 'tipo de container' || h === 'status' || h === 'estado' ||
+          (h.includes('tipo') && !h.includes('veículo') && !h.includes('veiculo')) || h.includes('status') || h.includes('estado')
+        );
+
+        const carSystemIdx = headers.findIndex(h => 
+          h === 'sistema de carro' || h === 'car system' || h === 'modelo' || h === '车型' ||
+          h.includes('sistema de carro') || h.includes('car system') || h.includes('modelo') || h.includes('车型')
+        );
+
+        // Target 'tempo de entrada no pátio'
+        const entryTimeIdx = headers.findIndex(h => 
+          h === 'tempo de entrada no pátio' || h === 'tempo de entrada no patio' || h === 'tempo de entrada' || h === 'entrada' ||
+          h.includes('tempo de entrada') || h.includes('entrada') || h.includes('tempo') || h.includes('时间')
+        );
+
+        // Additional valuable WMS metadata columns
+        const danfeIdx = headers.findIndex(h => 
+          h === 'danfe' || h.includes('danfe') || h.includes('nota fiscal') || h.includes('nf-e')
+        );
+
+        const originIdx = headers.findIndex(h => 
+          h === 'origem do contêiner' || h === 'origem do container' || h === 'origem' || h.includes('origem') || h.includes('origin')
+        );
+
+        const loteNoIdx = headers.findIndex(h => 
+          h === 'nº do lote' || h === 'no do lote' || h === 'lote' || h.includes('lote') || h.includes('batch')
+        );
+
+        const statusRecebimentoIdx = headers.findIndex(h => 
+          h === 'status do recebimento' || h.includes('recebimento') || h.includes('receipt')
+        );
+
+        const vehicleTypeIdx = headers.findIndex(h => 
+          h === 'tipo de veículo' || h === 'tipo de veiculo' || h.includes('veículo') || h.includes('veiculo') || h.includes('tamanho')
+        );
+
+        if (containerNoIdx === -1 || locationIdx === -1) {
+          alert(language === 'zh' 
+            ? '未能识别“Cód. Contêiner”（集装箱号）或“Locação”（堆位）列，请检查文件表头。' 
+            : 'Colunas "Cód. Contêiner" e/ou "Locação" não encontradas! Verifique o cabeçalho da planilha.');
+          return;
+        }
+
+        // We will group containers by area and location
+        // Map of areaId -> { [coords]: BufferSlot[] }
+        const parsedGroups: { [areaId: string]: { [coords: string]: BufferSlot[] } } = {};
+        
+        for (let i = 1; i < data.length; i++) {
+          const row = data[i];
+          if (!row || row.length === 0) continue;
+
+          const rawContainerNo = row[containerNoIdx];
+          const rawLocation = row[locationIdx];
+          if (!rawContainerNo || !rawLocation) continue;
+
+          const containerNo = String(rawContainerNo).trim().toUpperCase();
+          const locationStr = String(rawLocation).trim();
+
+          // Parse location e.g. E_2_8 or B_12_1
+          const match = locationStr.match(/^([A-Za-z0-9]+)_([0-9]+)_([0-9]+)$/);
+          if (!match) continue;
+
+          const areaPrefix = match[1].toUpperCase();
+          const rowNum = parseInt(match[2]);
+          const colNum = parseInt(match[3]);
+
+          if (isNaN(rowNum) || isNaN(colNum)) continue;
+
+          // Convert to 0-based indices
+          const rIdx = rowNum - 1;
+          const cIdx = colNum - 1;
+
+          // Resolve area ID and Area Name
+          const areaId = `buffer-${areaPrefix.toLowerCase()}`;
+
+          let rawType = typeIdx !== -1 && row[typeIdx] ? String(row[typeIdx]).trim() : 'Cheio';
+          let statusStr = rawType.toLowerCase().includes('vaz') || rawType.toLowerCase().includes('emp') ? 'VAZIO' : 'CHEIO';
+
+          let rawCarSystem = carSystemIdx !== -1 && row[carSystemIdx] ? String(row[carSystemIdx]).trim() : 'EQEKL';
+          let entryTimeStr = entryTimeIdx !== -1 && row[entryTimeIdx] ? String(row[entryTimeIdx]).trim() : '';
+
+          let rawDanfe = danfeIdx !== -1 && row[danfeIdx] ? String(row[danfeIdx]).trim() : '';
+          let rawOrigin = originIdx !== -1 && row[originIdx] ? String(row[originIdx]).trim() : '';
+          let rawLoteNo = loteNoIdx !== -1 && row[loteNoIdx] ? String(row[loteNoIdx]).trim() : '';
+          let rawStatusRecebimento = statusRecebimentoIdx !== -1 && row[statusRecebimentoIdx] ? String(row[statusRecebimentoIdx]).trim() : '';
+          
+          let rawVehicleType = vehicleTypeIdx !== -1 && row[vehicleTypeIdx] ? String(row[vehicleTypeIdx]).trim() : '';
+          let sizeStr = "40' HC";
+          if (rawVehicleType.includes('20')) {
+            sizeStr = "20' GP";
+          } else if (rawVehicleType.includes('40')) {
+            sizeStr = "40' HC";
+          }
+
+          const slotData: BufferSlot = {
+            row: rIdx,
+            col: cIdx,
+            containerNo,
+            cargoType: rawCarSystem,
+            size: sizeStr,
+            priority: "NORMAL",
+            isOptimalPickup: false,
+            status: statusStr,
+            entryTime: entryTimeStr,
+            danfe: rawDanfe,
+            origin: rawOrigin,
+            loteNo: rawLoteNo,
+            statusRecebimento: rawStatusRecebimento,
+            updatedAt: new Date().toISOString().split('T')[0]
+          };
+
+          if (!parsedGroups[areaId]) {
+            parsedGroups[areaId] = {};
+          }
+
+          const coordKey = `${rIdx}_${cIdx}`;
+          if (!parsedGroups[areaId][coordKey]) {
+            parsedGroups[areaId][coordKey] = [];
+          }
+
+          parsedGroups[areaId][coordKey].push(slotData);
+        }
+
+        // Now we integrate these into bufferAreas
+        setBufferAreas(prev => {
+          const updatedAreas = [...prev];
+
+          Object.keys(parsedGroups).forEach(areaId => {
+            const coordsMap = parsedGroups[areaId];
+
+            // Calculate max rows and cols needed
+            let maxRow = 4;
+            let maxCol = 6;
+            Object.keys(coordsMap).forEach(key => {
+              const [r, c] = key.split('_').map(Number);
+              if (r >= maxRow) maxRow = r + 1;
+              if (c >= maxCol) maxCol = c + 1;
+            });
+
+            // Ensure we have some safe padding or standard sizes
+            if (areaId.includes('-e') && maxRow < 12) maxRow = 12;
+            if (areaId.includes('-e') && maxCol < 10) maxCol = 10;
+            if (areaId.includes('-b') && maxRow < 13) maxRow = 13;
+            if (areaId.includes('-b') && maxCol < 6) maxCol = 6;
+
+            // Find if area already exists
+            let areaIndex = updatedAreas.findIndex(a => a.id === areaId);
+            const areaPrefix = areaId.split('-')[1].toUpperCase();
+            const areaName = `BYD Buffer ${areaPrefix} (Zona ${areaPrefix} / ${areaPrefix}区 - Ativo)`;
+
+            const slots: BufferSlot[] = [];
+
+            // Process slots and stacks
+            Object.keys(coordsMap).forEach(key => {
+              const [r, c] = key.split('_').map(Number);
+              const containersInSlot = coordsMap[key];
+
+              // Sort by entryTime to preserve stacking order (earliest entry = bottom, latest entry = top)
+              containersInSlot.sort((a, b) => {
+                const parseDate = (str: string | undefined) => {
+                  if (!str) return 0;
+                  const d = Date.parse(str.replace(/-/g, '/'));
+                  return isNaN(d) ? 0 : d;
+                };
+                return parseDate(a.entryTime) - parseDate(b.entryTime);
+              });
+
+              const topContainer = containersInSlot[containersInSlot.length - 1];
+
+              slots.push({
+                row: r,
+                col: c,
+                containerNo: topContainer.containerNo,
+                cargoType: topContainer.cargoType,
+                size: topContainer.size,
+                priority: topContainer.priority,
+                isOptimalPickup: topContainer.isOptimalPickup,
+                status: topContainer.status,
+                entryTime: topContainer.entryTime,
+                danfe: topContainer.danfe,
+                origin: topContainer.origin,
+                loteNo: topContainer.loteNo,
+                statusRecebimento: topContainer.statusRecebimento,
+                updatedAt: topContainer.updatedAt,
+                stack: containersInSlot // all containers in stack from bottom to top
+              });
+            });
+
+            const newArea: BufferArea = {
+              id: areaId,
+              name: areaName,
+              rows: maxRow,
+              cols: maxCol,
+              slots: slots
+            };
+
+            if (areaIndex > -1) {
+              // Update existing area
+              updatedAreas[areaIndex] = newArea;
+            } else {
+              // Add new area
+              updatedAreas.push(newArea);
+            }
+          });
+
+          return updatedAreas;
+        });
+
+        // Set the active buffer to the first imported area
+        const firstAreaId = Object.keys(parsedGroups)[0];
+        if (firstAreaId) {
+          setActiveBufferId(firstAreaId);
+        }
+
+        alert(language === 'zh'
+          ? `导入成功！已更新 ${Object.keys(parsedGroups).length} 个缓冲区区域。`
+          : `Importação realizada com sucesso! Foram atualizadas ${Object.keys(parsedGroups).length} áreas de buffer de acordo com as coordenadas da planilha.`);
+
+        // Reset file input
+        const fInput = document.getElementById('excel_upload_buffer_input') as HTMLInputElement;
+        if (fInput) fInput.value = '';
+
+      } catch (err) {
+        console.error("Erro ao processar planilha de Buffer:", err);
+        alert(language === 'zh'
+          ? "解析缓冲区表格失败，请验证格式。"
+          : "Erro ao processar planilha de Buffer. Verifique se o formato segue o padrão de locações (Ex: E_2_8).");
+      }
+    };
+    reader.readAsBinaryString(file);
   };
 
   // RESETAR PARA DADOS DA IMAGEM ORIGINAL
@@ -2173,6 +2953,13 @@ export default function App() {
           subPT: "PROJECTION OF ARRIVALS SHOWING ACTUAL VS ESTIMATED CONTAINER VOLUME PER WEEK.",
           subZH: "PROJECTION OF ARRIVALS SHOWING ACTUAL VS ESTIMATED CONTAINER VOLUME PER WEEK.",
         };
+      case 4:
+        return {
+          titlePT: "BYD BUFFER INTEGRATED HUB & TRANSPORTE RÁPIDO",
+          titleZH: "比亚迪智能缓冲中转枢纽与快速移运监控",
+          subPT: "Mapeamento em tempo real de posições, escoamento de contêineres e otimização de retirada rápida",
+          subZH: "缓冲区堆位、放行流向与智能移箱优化监控",
+        };
       default:
         return {
           titlePT: slideTitlePT,
@@ -2444,6 +3231,7 @@ export default function App() {
               {[
                 { index: 0, pt: "Visão Geral", zh: "综合大盘", icon: <Database className="w-3.5 h-3.5" /> },
                 { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", icon: <Building2 className="w-3.5 h-3.5" /> },
+                { index: 4, pt: "BYD Buffer", zh: "智能缓冲区", icon: <Layers className="w-3.5 h-3.5" /> },
                 { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-3.5 h-3.5" /> },
                 { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-3.5 h-3.5" /> },
               ].map(s => (
@@ -2464,7 +3252,7 @@ export default function App() {
 
             <div className="flex items-center gap-2 text-[10.5px] text-gray-400 font-mono font-bold bg-slate-50 dark:bg-slate-800/55 border border-slate-250/20 px-2 py-1 rounded-lg">
               <span className="text-[9px] text-red-600 dark:text-red-400 font-black uppercase tracking-widest">{language === 'zh' ? '当前视图' : 'Visualização'}:</span>
-              <span className="text-slate-750 dark:text-gray-200 font-extrabold">{currentSlide + 1} / 4</span>
+              <span className="text-slate-750 dark:text-gray-200 font-extrabold">{currentSlide + 1} / 5</span>
             </div>
           </div>
           
@@ -3316,7 +4104,7 @@ export default function App() {
 
                   </div>
                 </div>
-              ) : (
+              ) : currentSlide === 3 ? (
                 /* SLIDE 4: GRÁFICOS (CHARTS ONLY) COM CAIXAS DE COMENTÁRIOS */
                 <div id="slide-dashboard-grid-charts" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
                   
@@ -3566,6 +4354,347 @@ export default function App() {
                             {chartNote2 || "Sem diretrizes de desempenho para este período. / 本期间内无附加吞吐分析。"}
                           </div>
                         )}
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              ) : (
+                /* SLIDE 5: BYD BUFFER (2D MAP GRID AND COORDINATE LAYOUT) */
+                <div id="slide-dashboard-grid-buffer" className="flex flex-col gap-4 w-full h-full min-h-[660px]">
+                  
+                  {/* TOP CONTROL HUB FOR BYD BUFFER */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3`}>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
+                        <Layers className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
+                          {language === 'bilingual' ? 'HUB DE BUFFER INTEGRADO BYD / 比亚迪智能缓冲中转枢纽' : language === 'zh' ? '比亚迪智能缓冲中转枢纽' : 'HUB DE BUFFER INTEGRADO BYD'}
+                        </h3>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                          {language === 'zh' ? '实时监控、空余容量管理与 2D 堆位可视化地图' : 'Mapeamento de slots, otimização de retirada rápida e indicador de capacidade'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* SELECT BUFFER AREA DROPDOWN & EXPORT ACTIONS */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select 
+                        value={activeBufferId}
+                        onChange={(e) => setActiveBufferId(e.target.value)}
+                        className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none cursor-pointer focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
+                      >
+                        {bufferAreas.map(area => (
+                          <option key={area.id} value={area.id}>{area.name}</option>
+                        ))}
+                      </select>
+
+                      <button
+                        onClick={handleExportBufferLayout}
+                        className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 hover:bg-emerald-100 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                        title="Exportar dados de ocupação para Excel"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                        Exportar Excel
+                      </button>
+
+                      <label className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40 hover:bg-amber-100 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{language === 'zh' ? '导入 Excel' : 'Importar Excel'}</span>
+                        <input
+                          id="excel_upload_buffer_input"
+                          type="file"
+                          accept=".xlsx, .xls"
+                          onChange={handleImportBufferExcel}
+                          className="hidden"
+                        />
+                      </label>
+
+                      <button
+                        onClick={handleCreateNewBufferZone}
+                        className="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40 hover:bg-blue-100 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                        title="Criar uma nova área de buffer personalizada"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        {language === 'zh' ? '新建区' : 'Nova Área'}
+                      </button>
+
+                      <button
+                        onClick={handleDeleteBufferZone}
+                        className="px-3 py-1.5 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/40 hover:bg-red-100 dark:hover:bg-red-950/60 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                        title={language === 'zh' ? '删除当前选中的缓冲区区域' : 'Excluir área de buffer atual selecionada'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        {language === 'zh' ? '删除当前区' : 'Excluir Área'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* STATS AND GRID MAP WRAPPER */}
+                  <div className="grid grid-cols-12 gap-4">
+                    
+                    {/* STATS PANEL (LEFT COLUMN / 3 SPAN) */}
+                    <div className="col-span-12 xl:col-span-3 flex flex-col gap-3">
+                      
+                      {/* STAT 1: OCCUPANCY */}
+                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
+                        <div className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">
+                          {language === 'zh' ? '堆位使用率 / 占用情况' : 'Ocupação do Buffer'}
+                        </div>
+                        <div className="flex items-baseline gap-2 mt-1">
+                          <span className="text-2xl font-black text-slate-800 dark:text-white font-mono">
+                            {getCurrentBufferOccupancy().occupied}
+                          </span>
+                          <span className="text-sm text-gray-400">/ {getCurrentBufferOccupancy().total} slots</span>
+                        </div>
+                        <div className="mt-2 w-full bg-gray-200 dark:bg-slate-850 rounded-full h-2">
+                          <div 
+                            className="bg-red-650 h-2 rounded-full transition-all duration-500" 
+                            style={{ width: `${getCurrentBufferOccupancy().percentage}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] text-gray-500 font-mono mt-1.5 font-bold">
+                          <span>{getCurrentBufferOccupancy().percentage}% {language === 'zh' ? '已满' : 'Ocupado'}</span>
+                          <span className="text-emerald-500">{getCurrentBufferOccupancy().empty} {language === 'zh' ? '可用' : 'livres'}</span>
+                        </div>
+                      </div>
+
+                      {/* STAT 2: OPTIMIZED QUICK OUTS */}
+                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
+                        <div className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-yellow-500" />
+                          {language === 'zh' ? '最佳发运箱 / Quick-Out' : 'Melhor Posicionamento'}
+                        </div>
+                        <div className="flex items-baseline gap-2 mt-1">
+                          <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                            {getCurrentBufferOccupancy().optimalCount}
+                          </span>
+                          <span className="text-xs text-gray-400 font-bold uppercase">{language === 'zh' ? '无死角直接出货' : 'Prontos p/ Retirada'}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-2 leading-tight">
+                          {language === 'zh' ? '堆放在外侧或上层，发运时无需挪动其他箱，可实现零成本快速提出。' : 'Contêineres situados nas bordas de fácil acesso, otimizados para retirada rápida sem necessidade de movimentações extras.'}
+                        </p>
+                      </div>
+
+                      {/* STAT 3: DISPATCH RECO LIST */}
+                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex-1 flex flex-col justify-between min-h-[220px]`}>
+                        <div>
+                          <div className="text-[10px] text-red-600 dark:text-red-400 font-extrabold uppercase tracking-widest border-b pb-1.5 mb-2 border-gray-105 dark:border-slate-800">
+                            {language === 'zh' ? '零移箱发运建议优先顺序' : 'Sugestões de Retirada Rápida'}
+                          </div>
+                          <div className="space-y-1.5 max-h-[220px] overflow-y-auto w-full">
+                            {getOptimalPickupList().map((slot, idx) => (
+                              <div 
+                                key={idx} 
+                                onClick={() => handleSlotClick(slot.row, slot.col)}
+                                className="p-1.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 hover:bg-red-50 dark:hover:bg-red-950/20 hover:border-red-200 transition-all cursor-pointer flex justify-between items-center"
+                              >
+                                <div>
+                                  <div className="text-[10px] font-black text-slate-800 dark:text-gray-100 font-mono flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block animate-ping"></span>
+                                    {slot.containerNo}
+                                  </div>
+                                  <div className="text-[9px] text-gray-400 font-bold">
+                                    {slot.cargoType} • <span className="font-mono text-red-600 dark:text-red-400">Pos {getSlotCoordsLabel(slot.row, slot.col)}</span>
+                                  </div>
+                                </div>
+                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${
+                                  slot.priority === 'CRITICAL' ? 'bg-red-100 text-red-800' :
+                                  slot.priority === 'HIGH' ? 'bg-orange-100 text-orange-800' :
+                                  'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {slot.priority}
+                                </span>
+                              </div>
+                            ))}
+                            {getOptimalPickupList().length === 0 && (
+                              <div className="text-center py-8 text-gray-400 text-[11px] font-bold">
+                                {language === 'zh' ? '当前没有标记为最佳发运位置的箱子。' : 'Nenhum contêiner na rota rápida de retirada.'}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="mt-3 pt-2.5 border-t border-dashed border-gray-100 dark:border-slate-850 text-[9.5px] text-gray-400 text-center font-bold uppercase">
+                          ⚡ BYD Quick-Out Optimizer v1.1
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* GRID MAP AREA (MIDDLE / COLUMN 9 SPAN) */}
+                    <div className="col-span-12 xl:col-span-9 flex flex-col gap-3">
+                      
+                      {/* THE MAP CANVAS CARD */}
+                      <div className={`p-5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-full`}>
+                        <div>
+                          <div className="flex justify-between items-center border-b pb-2 mb-4 border-gray-100 dark:border-slate-800">
+                            <h4 className="text-xs font-black text-slate-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
+                              <Boxes className="w-4 h-4 text-red-500" />
+                              {language === 'zh' ? '智能 2D 地图：俯视与通道布局监控' : 'Mapa 2D do Buffer: Vista Aérea e Alocação Espacial'}
+                            </h4>
+                            <div className="flex gap-3 text-[9px] font-bold flex-wrap">
+                              <span className="flex items-center gap-1 text-slate-500"><span className="w-2.5 h-2.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-sm inline-block"></span>{language === 'zh' ? '空余' : 'Vazio'}</span>
+                              <span className="flex items-center gap-1 text-red-500"><span className="w-2.5 h-2.5 bg-red-500/10 border border-red-500/30 rounded-sm inline-block"></span>{language === 'zh' ? '临界/高优先级' : 'Alta Pri'}</span>
+                              <span className="flex items-center gap-1 text-blue-500"><span className="w-2.5 h-2.5 bg-blue-500/10 border border-blue-500/30 rounded-sm inline-block"></span>{language === 'zh' ? '普通优先级' : 'Normal Pri'}</span>
+                              <span className="flex items-center gap-1 text-emerald-500"><span className="w-2.5 h-2.5 bg-emerald-500 rounded-sm inline-block animate-pulse"></span>{language === 'zh' ? '最佳发运 (⚡ Quick-Out)' : 'Melhor Posicionado (⚡)'}</span>
+                            </div>
+                          </div>
+
+                          {/* THE ACTUAL GRID MAP */}
+                          <div className="w-full overflow-x-auto bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-100 dark:border-slate-850/50 flex flex-col items-center">
+                            
+                            {/* Columns indexes header */}
+                            <div className="flex mb-1.5 pl-6">
+                              {Array.from({ length: getCurrentBufferArea().cols }).map((_, c) => (
+                                <div key={c} className="w-28 text-center text-[10px] font-black text-gray-400 font-mono">
+                                  {language === 'zh' ? `第 ${c + 1} 列` : `COL ${c + 1}`}
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Rows block */}
+                            <div className="space-y-2">
+                              {Array.from({ length: getCurrentBufferArea().rows }).map((_, r) => {
+                                const isNumericArea = activeBufferId.includes('buffer-e') || activeBufferId.includes('buffer-b');
+                                const rowLetter = isNumericArea ? String(r + 1) : String.fromCharCode(65 + r); // A, B, C, D... or 1, 2, 3...
+                                return (
+                                  <div key={r} className="flex items-center gap-2">
+                                    {/* Row label */}
+                                    <div className="w-5 text-center text-xs font-black text-gray-500 dark:text-gray-400 font-mono">
+                                      {isNumericArea ? `R${rowLetter}` : rowLetter}
+                                    </div>
+
+                                    {/* Column cells */}
+                                    <div className="flex gap-2">
+                                      {Array.from({ length: getCurrentBufferArea().cols }).map((_, c) => {
+                                        const slot = getSlotAt(r, c);
+                                        const isOccupied = !!slot?.containerNo;
+                                        const isVazio = slot?.status?.toLowerCase().includes('vaz') || slot?.status?.toLowerCase().includes('emp');
+                                        
+                                        return (
+                                          <div 
+                                            key={c}
+                                            onClick={() => handleSlotClick(r, c)}
+                                            className={`
+                                              w-28 h-20 rounded-xl transition-all duration-250 cursor-pointer select-none relative flex flex-col justify-between p-2 text-left border
+                                              ${isOccupied 
+                                                ? (slot.isOptimalPickup 
+                                                  ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 shadow-md shadow-emerald-500/10' 
+                                                  : (slot.priority === 'CRITICAL' || slot.priority === 'HIGH'
+                                                    ? 'bg-red-50/80 dark:bg-red-950/20 border-red-400'
+                                                    : (isVazio 
+                                                      ? 'bg-slate-50 dark:bg-slate-900/40 border-gray-400/80 text-gray-500'
+                                                      : 'bg-blue-50/80 dark:bg-blue-950/15 border-blue-400'
+                                                    )
+                                                  )
+                                                ) 
+                                                : 'border-dashed border-gray-300 dark:border-slate-800 bg-transparent hover:border-red-400 hover:bg-slate-100/30 hover:shadow-inner'
+                                              }
+                                            `}
+                                          >
+                                            {/* Top indicators */}
+                                            <div className="flex justify-between items-start">
+                                              <span className="text-[7.5px] font-mono font-bold text-gray-400 bg-white/70 dark:bg-slate-800/80 px-1 py-0.2 rounded">
+                                                {isNumericArea ? `${activeBufferId.includes('buffer-e') ? 'E' : 'B'}_${rowLetter}_${c + 1}` : `${rowLetter}${c + 1}`}
+                                              </span>
+
+                                              {isOccupied && (
+                                                <div className="flex gap-1 items-center">
+                                                  {slot.isOptimalPickup && (
+                                                    <span className="flex h-2 w-2 relative">
+                                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                                    </span>
+                                                  )}
+                                                  <span className={`text-[7px] font-black px-1.5 py-0.2 rounded ${
+                                                    slot.size === '40\' HC' ? 'bg-[#3b82f6] text-white' : 'bg-amber-600 text-white'
+                                                  }`}>
+                                                    {slot.size === '40\' HC' ? "40'" : "20'"}
+                                                  </span>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Main Info */}
+                                            {isOccupied ? (
+                                              <div className="flex flex-col gap-0.5 mt-1">
+                                                <div className="text-[10.5px] font-black text-slate-800 dark:text-gray-100 font-mono tracking-tight truncate leading-tight flex items-center justify-between">
+                                                  <span className="truncate">{slot.containerNo}</span>
+                                                  {isVazio && (
+                                                    <span className="text-[7.5px] font-extrabold px-1 py-0.2 bg-gray-200 dark:bg-slate-800 text-gray-600 dark:text-gray-400 rounded-sm scale-90" title="Vazio / Empty">
+                                                      {language === 'zh' ? '空' : 'V'}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <div className="text-[9px] font-bold text-gray-500 dark:text-gray-400 truncate leading-tight">
+                                                  {slot.cargoType}
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="flex-1 flex flex-col items-center justify-center text-gray-400 group">
+                                                <Plus className="w-4 h-4 text-gray-300 dark:text-slate-700 hover:text-red-500 transition-colors" />
+                                                <span className="text-[7.5px] font-bold uppercase tracking-widest mt-1 opacity-0 hover:opacity-100 transition-all text-gray-400">
+                                                  {language === 'zh' ? '添加' : 'Adicionar'}
+                                                </span>
+                                              </div>
+                                            )}
+
+                                            {/* Bottom Pill */}
+                                            {isOccupied && (
+                                              <div className="flex justify-between items-center text-[7.5px] font-bold">
+                                                <span className={`px-1 rounded ${
+                                                  slot.priority === 'CRITICAL' ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' :
+                                                  slot.priority === 'HIGH' ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300' :
+                                                  slot.priority === 'NORMAL' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' :
+                                                  'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-400'
+                                                }`}>
+                                                  {slot.priority}
+                                                </span>
+
+                                                {slot.stack && slot.stack.length > 1 && (
+                                                  <span className="text-[7.5px] font-black text-purple-600 dark:text-purple-450 bg-purple-50 dark:bg-purple-950/20 px-1 rounded border border-purple-200/50 dark:border-purple-800/40 flex items-center gap-0.5">
+                                                    <Layers className="w-2.5 h-2.5 inline" />
+                                                    <span>H:{slot.stack.length}</span>
+                                                  </span>
+                                                )}
+
+                                                {slot.isOptimalPickup && (
+                                                  <span className="text-[8px] font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                                                    ⚡ Quick
+                                                  </span>
+                                                )}
+                                              </div>
+                                            )}
+
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                          </div>
+                        </div>
+
+                        {/* DESCRITORES ADICIONAIS */}
+                        <div className="mt-4 pt-3 border-t border-dashed border-gray-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs text-gray-400 font-bold bg-slate-50/40 dark:bg-slate-900/40 p-3 rounded-lg">
+                          <div className="flex items-center gap-1.5 leading-snug">
+                            <Info className="w-4 h-4 text-blue-500 shrink-0" />
+                            <span>
+                              {language === 'zh' ? '💡 双击或单击任何格子可以编辑、更改状态、调整出货优先级或将其标记为“零阻碍快速提车”位置。' : '💡 Clique em qualquer slot para alocar um contêiner, desocupar a vaga ou marcar como "Melhor Posicionamento" para prioridade de entrega.'}
+                            </span>
+                          </div>
+                          <span className="font-mono text-[10px] text-red-600 dark:text-red-400 uppercase font-black shrink-0">
+                            COORD: {getCurrentBufferArea().rows}x{getCurrentBufferArea().cols} GRID MAP
+                          </span>
+                        </div>
+
                       </div>
                     </div>
 
@@ -4763,6 +5892,412 @@ export default function App() {
             </div>
 
           </aside>
+        )}
+
+        {/* FLOATING MODAL FOR EDITING BUFFER SLOT */}
+        {editingSlot && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4 select-none">
+            <div className={`w-full max-w-md rounded-2xl border shadow-2xl p-6 ${
+              theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 text-slate-800'
+            }`}>
+              
+              {/* Header */}
+              <div className="flex justify-between items-center border-b pb-3.5 mb-4 border-gray-150 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="bg-red-50 dark:bg-red-950/40 p-2 rounded-xl text-red-600">
+                    <Boxes className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black uppercase tracking-wider text-red-600 dark:text-red-400">
+                      {language === 'zh' ? '编辑缓冲区堆位坐标' : 'Editar Posição do Buffer'}
+                    </h4>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase">
+                      Slot Coords: <span className="text-slate-800 dark:text-gray-100 font-black">{getSlotCoordsLabel(editingSlot.row, editingSlot.col)}</span>
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setEditingSlot(null)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer text-sm font-extrabold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleSaveSlot} className="space-y-4">
+                
+                {/* Container Number */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10.5px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    {language === 'zh' ? '集装箱号 / Container ID' : 'Número do Contêiner'}
+                  </label>
+                  <input 
+                    type="text"
+                    required
+                    placeholder="Ex: BYDU9910293"
+                    value={editingSlot.containerNo || ''}
+                    onChange={(e) => setEditingSlot(prev => prev ? { ...prev, containerNo: e.target.value.toUpperCase() } : null)}
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-mono font-black tracking-widest uppercase rounded-lg outline-none focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+
+                {/* Cargo / Model Selector */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10.5px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    {language === 'zh' ? '货物类型或车型 / Cargo Type' : 'Tipo de Carga / Modelo'}
+                  </label>
+                  <input 
+                    type="text"
+                    required
+                    placeholder="Ex: Dolphin Mini EV"
+                    value={editingSlot.cargoType || ''}
+                    onChange={(e) => setEditingSlot(prev => prev ? { ...prev, cargoType: e.target.value } : null)}
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100 mb-1"
+                  />
+                  
+                  {/* Quick select buttons */}
+                  <div className="flex flex-wrap gap-1">
+                    {["Dolphin Mini EV", "Dolphin EV SUV", "Seal EV Luxury", "Yuan Plus EV", "Song Plus DM-i", "King DM-i Sedan", "Blade Battery Packs", "Chassis Modules", "Motor Assemblies"].map(model => (
+                      <button
+                        key={model}
+                        type="button"
+                        onClick={() => setEditingSlot(prev => prev ? { ...prev, cargoType: model } : null)}
+                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-600 dark:text-gray-300 rounded text-[9px] font-bold transition-all border border-transparent hover:border-red-200"
+                      >
+                        {model}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Row: Status & Size */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10.5px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {language === 'zh' ? '尺寸 / Container Size' : 'Tamanho'}
+                    </label>
+                    <select
+                      value={editingSlot.size || "40' HC"}
+                      onChange={(e) => setEditingSlot(prev => prev ? { ...prev, size: e.target.value } : null)}
+                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none cursor-pointer focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="40' HC">40' HC</option>
+                      <option value="20FT">20FT</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10.5px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {language === 'zh' ? '状态 / Status' : 'Status'}
+                    </label>
+                    <select
+                      value={editingSlot.status || 'CHEIO'}
+                      onChange={(e) => setEditingSlot(prev => prev ? { ...prev, status: e.target.value } : null)}
+                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none cursor-pointer focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="CHEIO">{language === 'zh' ? '重箱 (Cheio)' : 'CHEIO'}</option>
+                      <option value="VAZIO">{language === 'zh' ? '空箱 (Vazio)' : 'VAZIO'}</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Priority & Entry Time */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10.5px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {language === 'zh' ? '提箱优先级 / Priority' : 'Prioridade'}
+                    </label>
+                    <select
+                      value={editingSlot.priority || 'NORMAL'}
+                      onChange={(e) => setEditingSlot(prev => prev ? { ...prev, priority: e.target.value } : null)}
+                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none cursor-pointer focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="CRITICAL">CRITICAL</option>
+                      <option value="HIGH">HIGH</option>
+                      <option value="NORMAL">NORMAL</option>
+                      <option value="LOW">LOW</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10.5px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {language === 'zh' ? '入库时间 / Entry Time' : 'Tempo de Entrada'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: 2026-07-07 13:14:30"
+                      value={editingSlot.entryTime || ''}
+                      onChange={(e) => setEditingSlot(prev => prev ? { ...prev, entryTime: e.target.value } : null)}
+                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
+                    />
+                  </div>
+                </div>
+
+                {/* WMS Metadata Details */}
+                {(editingSlot.danfe || editingSlot.origin || editingSlot.loteNo || editingSlot.statusRecebimento) && (
+                  <div className="p-3.5 rounded-xl border border-dashed border-red-200 dark:border-red-900/45 bg-red-50/15 dark:bg-red-950/5 flex flex-col gap-2.5 shadow-sm">
+                    <span className="text-[10.5px] font-black text-red-600 dark:text-red-400 uppercase tracking-wider flex items-center gap-1">
+                      <FileText className="w-3.5 h-3.5" />
+                      {language === 'zh' ? 'WMS 系统导入信息' : 'Informações de Origem (WMS)'}
+                    </span>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                      {editingSlot.danfe && (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase">DANFE</span>
+                          <span className="font-mono bg-white dark:bg-slate-900/60 p-1.5 rounded border border-gray-150 dark:border-slate-850 text-slate-800 dark:text-slate-100 select-all truncate" title={editingSlot.danfe}>
+                            {editingSlot.danfe}
+                          </span>
+                        </div>
+                      )}
+                      {editingSlot.loteNo && (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase">{language === 'zh' ? '批次号 / Lote' : 'Nº do Lote'}</span>
+                          <span className="font-mono bg-white dark:bg-slate-900/60 p-1.5 rounded border border-gray-150 dark:border-slate-850 text-slate-800 dark:text-slate-100 truncate select-all" title={editingSlot.loteNo}>
+                            {editingSlot.loteNo}
+                          </span>
+                        </div>
+                      )}
+                      {editingSlot.origin && (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase">{language === 'zh' ? '来源 / Origin' : 'Origem'}</span>
+                          <span className="bg-white dark:bg-slate-900/60 p-1.5 rounded border border-gray-150 dark:border-slate-850 text-slate-800 dark:text-slate-100 truncate select-all" title={editingSlot.origin}>
+                            {editingSlot.origin}
+                          </span>
+                        </div>
+                      )}
+                      {editingSlot.statusRecebimento && (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase">{language === 'zh' ? '接收状态' : 'Recebimento'}</span>
+                          <span className="bg-white dark:bg-slate-900/60 p-1.5 rounded border border-gray-150 dark:border-slate-850 text-slate-800 dark:text-slate-100 select-all">
+                            {editingSlot.statusRecebimento}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Multi-container Stacking Controller */}
+                <div className="p-3 rounded-xl border border-dashed border-purple-200 dark:border-purple-800 bg-purple-50/20 dark:bg-purple-950/5 flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10.5px] font-black text-purple-600 dark:text-purple-450 uppercase tracking-wider flex items-center gap-1">
+                      <Layers className="w-3.5 h-3.5" />
+                      {language === 'zh' ? '集装箱重叠叠放高度 / Pilha de Contêineres' : 'Pilha (Stacking Layers)'}
+                    </span>
+                    <span className="text-[9.5px] font-extrabold text-purple-500">
+                      H: {editingSlot.stack ? editingSlot.stack.length : 1}
+                    </span>
+                  </div>
+
+                  {/* Layers visual list */}
+                  <div className="flex flex-col gap-1 text-[10px]">
+                    {editingSlot.stack && editingSlot.stack.map((item, idx) => {
+                      const isEditingThisLayer = editingStackIndex === idx;
+                      return (
+                        <div 
+                          key={idx}
+                          onClick={() => {
+                            // Save current layer before switching
+                            const updatedStack = editingSlot.stack ? [...editingSlot.stack] : [];
+                            updatedStack[editingStackIndex] = {
+                              row: editingSlot.row,
+                              col: editingSlot.col,
+                              containerNo: editingSlot.containerNo ? editingSlot.containerNo.trim().toUpperCase() : '',
+                              cargoType: editingSlot.cargoType || '',
+                              size: editingSlot.size || "40' HC",
+                              priority: editingSlot.priority || 'NORMAL',
+                              isOptimalPickup: !!editingSlot.isOptimalPickup,
+                              status: editingSlot.status || 'CHEIO',
+                              entryTime: editingSlot.entryTime || '',
+                              updatedAt: new Date().toISOString().split('T')[0]
+                            };
+
+                            const nextLayer = updatedStack[idx];
+                            setEditingSlot(prev => prev ? {
+                              ...prev,
+                              containerNo: nextLayer.containerNo || '',
+                              cargoType: nextLayer.cargoType || '',
+                              size: nextLayer.size || "40' HC",
+                              priority: nextLayer.priority || 'NORMAL',
+                              isOptimalPickup: !!nextLayer.isOptimalPickup,
+                              status: nextLayer.status || 'CHEIO',
+                              entryTime: nextLayer.entryTime || '',
+                              stack: updatedStack
+                            } : null);
+                            setEditingStackIndex(idx);
+                          }}
+                          className={`flex justify-between items-center p-1.5 rounded cursor-pointer transition-all border ${
+                            isEditingThisLayer 
+                              ? 'bg-purple-100 dark:bg-purple-950/40 border-purple-400 font-extrabold text-purple-700 dark:text-purple-300' 
+                              : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800 text-gray-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <span className="flex items-center gap-1 font-mono">
+                            <span className="text-[8px] bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-1 rounded-sm">L{idx + 1}</span>
+                            <span>{item.containerNo || (language === 'zh' ? '空层' : 'Vago')}</span>
+                          </span>
+                          <span className="text-[9px] truncate max-w-[120px]">{item.cargoType || 'N/A'}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Actions for Stack */}
+                  <div className="flex gap-2 justify-end pt-1">
+                    {editingSlot.stack && editingSlot.stack.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedStack = editingSlot.stack ? [...editingSlot.stack] : [];
+                          if (updatedStack.length <= 1) return;
+                          updatedStack.splice(editingStackIndex, 1);
+                          const nextIdx = Math.max(0, editingStackIndex - 1);
+                          const nextLayer = updatedStack[nextIdx] || {};
+
+                          setEditingSlot(prev => prev ? {
+                            ...prev,
+                            containerNo: nextLayer.containerNo || '',
+                            cargoType: nextLayer.cargoType || '',
+                            size: nextLayer.size || "40' HC",
+                            priority: nextLayer.priority || 'NORMAL',
+                            isOptimalPickup: !!nextLayer.isOptimalPickup,
+                            status: nextLayer.status || 'CHEIO',
+                            entryTime: nextLayer.entryTime || '',
+                            danfe: nextLayer.danfe || '',
+                            origin: nextLayer.origin || '',
+                            loteNo: nextLayer.loteNo || '',
+                            statusRecebimento: nextLayer.statusRecebimento || '',
+                            stack: updatedStack
+                          } : null);
+                          setEditingStackIndex(nextIdx);
+                        }}
+                        className="px-2 py-1 text-[9px] font-black text-red-600 bg-red-50 dark:bg-red-950/20 rounded hover:bg-red-100 transition-colors cursor-pointer"
+                      >
+                        {language === 'zh' ? '删除当前层' : 'Remover Camada'}
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updatedStack = editingSlot.stack ? [...editingSlot.stack] : [];
+                        // Save current layer before appending
+                        updatedStack[editingStackIndex] = {
+                          row: editingSlot.row,
+                          col: editingSlot.col,
+                          containerNo: editingSlot.containerNo ? editingSlot.containerNo.trim().toUpperCase() : '',
+                          cargoType: editingSlot.cargoType || '',
+                          size: editingSlot.size || "40' HC",
+                          priority: editingSlot.priority || 'NORMAL',
+                          isOptimalPickup: !!editingSlot.isOptimalPickup,
+                          status: editingSlot.status || 'CHEIO',
+                          entryTime: editingSlot.entryTime || '',
+                          danfe: editingSlot.danfe || '',
+                          origin: editingSlot.origin || '',
+                          loteNo: editingSlot.loteNo || '',
+                          statusRecebimento: editingSlot.statusRecebimento || '',
+                          updatedAt: new Date().toISOString().split('T')[0]
+                        };
+
+                        const newLayer: BufferSlot = {
+                          row: editingSlot.row,
+                          col: editingSlot.col,
+                          containerNo: '',
+                          cargoType: 'Dolphin Mini EV',
+                          size: "40' HC",
+                          priority: 'NORMAL',
+                          isOptimalPickup: false,
+                          status: 'CHEIO',
+                          entryTime: '',
+                          danfe: '',
+                          origin: '',
+                          loteNo: '',
+                          statusRecebimento: '',
+                          updatedAt: new Date().toISOString().split('T')[0]
+                        };
+                        updatedStack.push(newLayer);
+                        const nextIdx = updatedStack.length - 1;
+
+                        setEditingSlot(prev => prev ? {
+                          ...prev,
+                          containerNo: '',
+                          cargoType: 'Dolphin Mini EV',
+                          size: "40' HC",
+                          priority: 'NORMAL',
+                          isOptimalPickup: false,
+                          status: 'CHEIO',
+                          entryTime: '',
+                          danfe: '',
+                          origin: '',
+                          loteNo: '',
+                          statusRecebimento: '',
+                          stack: updatedStack
+                        } : null);
+                        setEditingStackIndex(nextIdx);
+                      }}
+                      className="px-2 py-1 text-[9px] font-black text-purple-600 bg-purple-100 dark:bg-purple-950/35 rounded hover:bg-purple-200 transition-colors cursor-pointer"
+                    >
+                      {language === 'zh' ? '添加叠放层 L' + (editingSlot.stack ? editingSlot.stack.length + 1 : 2) : 'Adicionar Camada'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Toggle Checkbox: Is Optimal Pickup */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-gray-150 dark:border-slate-800 flex items-start gap-2.5">
+                  <input 
+                    type="checkbox"
+                    id="chk-optimal"
+                    checked={editingSlot.isOptimalPickup || false}
+                    onChange={(e) => setEditingSlot(prev => prev ? { ...prev, isOptimalPickup: e.target.checked } : null)}
+                    className="mt-1 w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 cursor-pointer"
+                  />
+                  <div className="flex flex-col leading-tight cursor-pointer">
+                    <label htmlFor="chk-optimal" className="text-xs font-extrabold text-slate-800 dark:text-slate-100 cursor-pointer flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-yellow-500 inline" />
+                      {language === 'zh' ? '标记为最易提取位置 (⚡ Quick-Out)' : 'Melhor Posicionamento (⚡ Quick-Out)'}
+                    </label>
+                    <span className="text-[9.5px] text-gray-400 mt-1">
+                      {language === 'zh' ? '此箱位于外围或单层，无需任何移箱操作即可直接出库。' : 'Este contêiner está desobstruído na borda, pronto para envio sem custo de remoções.'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-2 pt-3 border-t border-gray-150 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setEditingSlot(null)}
+                    className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-lg text-xs transition-colors cursor-pointer"
+                  >
+                    {language === 'zh' ? '取消' : 'Cancelar'}
+                  </button>
+
+                  {getSlotAt(editingSlot.row, editingSlot.col)?.containerNo && (
+                    <button
+                      type="button"
+                      onClick={handleClearSlot}
+                      className="px-4 py-2 bg-red-100 dark:bg-red-950/40 hover:bg-red-200 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 font-bold rounded-lg text-xs transition-colors cursor-pointer"
+                      title="Desocupar esta vaga"
+                    >
+                      {language === 'zh' ? '释放堆位' : 'Desocupar'}
+                    </button>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs transition-all shadow-md shadow-red-600/15 cursor-pointer"
+                  >
+                    {language === 'zh' ? '保存' : 'Salvar'}
+                  </button>
+                </div>
+
+              </form>
+
+            </div>
+          </div>
         )}
 
       </main>

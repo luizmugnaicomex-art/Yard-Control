@@ -31,3 +31,22 @@ export interface ChartRightItem {
   value: number;
   type?: string;
 }
+
+export interface BufferSlot {
+  row: number;
+  col: number;
+  containerNo?: string;
+  cargoType?: string;
+  size?: '20FT' | '40FT';
+  priority?: 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW';
+  isOptimalPickup?: boolean;
+  updatedAt?: string;
+}
+
+export interface BufferArea {
+  id: string;
+  name: string;
+  rows: number;
+  cols: number;
+  slots: BufferSlot[];
+}
