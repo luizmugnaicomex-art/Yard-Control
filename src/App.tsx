@@ -442,6 +442,8 @@ export default function App() {
     const saved = localStorage.getItem('byd_additional_backlog');
     return saved ? Number(saved) : 0;
   });
+  const [selectedScenario, setSelectedScenario] = useState<'etapa1' | 'etapa2'>('etapa2');
+  const [chartMode, setChartMode] = useState<'historical' | 'projection'>('projection');
 
   useEffect(() => {
     localStorage.setItem('byd_daily_delivery_rate', String(dailyDeliveryRate));
@@ -450,6 +452,76 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('byd_additional_backlog', String(additionalBacklog));
   }, [additionalBacklog]);
+
+  const getSummary = (list: [string, Yard][]) => {
+    const totalCap = list.reduce((sum, [_, y]) => sum + (y?.capacity || 0), 0);
+    const totalCheio = list.reduce((sum, [_, y]) => sum + (y?.cheio || 0), 0);
+    const pct = totalCap > 0 ? Math.round((totalCheio / totalCap) * 100) : 0;
+    return { totalCap, totalCheio, pct };
+  };
+
+  const bondedSum = getSummary(bondedYards);
+  const warehouseSum = getSummary(warehouseYards);
+  const bufferSum = getSummary(bufferYards);
+
+  const getDynamicChartLeft = () => {
+    const bondedVal = bondedSum?.totalCheio || 0;
+    const warehouseVal = warehouseSum?.totalCheio || 0;
+    const bufferVal = bufferSum?.totalCheio || 0;
+    const inventoryBacklog = bondedVal + warehouseVal + bufferVal;
+    
+    const upcomingArrivals = vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0);
+    
+    // Starting backlog for W28 projection
+    let currentBacklog = inventoryBacklog + additionalBacklog;
+    
+    // We preserve historical data for weeks W1 to W27
+    const result: { week: string; arrivals: number; backlog: number }[] = [];
+    for (let i = 0; i < 27; i++) {
+      if (ORIGINAL_CHART_LEFT[i]) {
+        result.push({ ...ORIGINAL_CHART_LEFT[i] });
+      }
+    }
+    
+    // We calculate arrivals ratio for remaining weeks (W28 to W32)
+    const originalRemainingArrivals = [900, 468, 420, 420, 100];
+    const sumOriginalRemaining = 2308;
+    const ratio = sumOriginalRemaining > 0 ? (upcomingArrivals / sumOriginalRemaining) : 0;
+    
+    const weeklyCapacity = dailyDeliveryRate * 7;
+    
+    // Generate from W28 onwards
+    let w = 28;
+    const maxWeeks = 45; // safety ceiling
+    
+    while (w <= maxWeeks) {
+      let arrivals = 0;
+      if (selectedScenario === 'etapa2') {
+        const arrIndex = w - 28;
+        if (arrIndex >= 0 && arrIndex < originalRemainingArrivals.length) {
+          arrivals = Math.round(originalRemainingArrivals[arrIndex] * ratio);
+        }
+      }
+      
+      const weekBacklog = Math.max(0, currentBacklog + arrivals - weeklyCapacity);
+      
+      result.push({
+        week: `W${w}`,
+        arrivals,
+        backlog: Math.round(weekBacklog)
+      });
+      
+      currentBacklog = weekBacklog;
+      
+      if (currentBacklog <= 0 && w >= 32) {
+        break;
+      }
+      
+      w++;
+    }
+    
+    return result;
+  };
 
   // ESTADOS DE CONTÊINERES (Para detalhamento por área)
   const [selectedYardKey, setSelectedYardKey] = useState<string | null>(null);
@@ -3697,8 +3769,26 @@ export default function App() {
                                   // 4. Grand Total Pending Volume (including additional if any)
                                   const totalPendingVolume = inventoryBacklog + upcomingArrivals + additionalBacklog;
 
+                                  // Active volume selection based on scenario
+                                  const activeScenarioVolume = selectedScenario === 'etapa1'
+                                    ? (inventoryBacklog + additionalBacklog)
+                                    : totalPendingVolume;
+
                                   // 5. Drain Days
-                                  const drainTimeDays = dailyDeliveryRate > 0 ? (totalPendingVolume / dailyDeliveryRate) : 0;
+                                  const drainTimeDays = dailyDeliveryRate > 0 ? (activeScenarioVolume / dailyDeliveryRate) : 0;
+
+                                  const getCompletionWeek = (days: number) => {
+                                    const weeksNeeded = Math.ceil(days / 7);
+                                    return `W${28 + weeksNeeded}`;
+                                  };
+
+                                  const getCompletionDateStr = (days: number) => {
+                                    const baseDate = new Date('2026-07-08');
+                                    baseDate.setDate(baseDate.getDate() + Math.round(days));
+                                    const d = String(baseDate.getDate()).padStart(2, '0');
+                                    const m = String(baseDate.getMonth() + 1).padStart(2, '0');
+                                    return `${d}/${m}`;
+                                  };
 
                                   // Status levels
                                   let statusColor = "text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
@@ -3800,18 +3890,28 @@ export default function App() {
                                           
                                           {/* Step-by-Step Math Visualization */}
                                           <div className="flex flex-col gap-2.5">
-                                            <h4 className="text-[11px] font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                              {language === 'bilingual' ? 'Demonstração do Cálculo de Carga / 货量流速测算步骤' : 'Step-by-Step Volume Calculation'}
-                                            </h4>
+                                            <div className="flex items-center justify-between">
+                                              <h4 className="text-[11px] font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                {language === 'bilingual' ? 'Demonstração do Cálculo de Carga / 货量流速测算步骤' : 'Step-by-Step Volume Calculation'}
+                                              </h4>
+                                              <span className="text-[8.5px] text-red-500 dark:text-red-400 font-black animate-pulse bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded border border-red-150 dark:border-red-900">
+                                                {language === 'bilingual' ? 'CLIQUE PARA SELECIONAR CENÁRIO DE PROJEÇÃO / 点击选择预测场景' : 'CLICK TO SELECT PROJECTION SCENARIO'}
+                                              </span>
+                                            </div>
 
                                             {/* Step 1 */}
-                                            <div className={`p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
-                                              theme === 'dark' ? 'bg-slate-800/40 border-slate-800' : 'bg-white border-slate-200/50 shadow-xs'
-                                            }`}>
+                                            <div 
+                                              onClick={() => setSelectedScenario('etapa1')}
+                                              className={`p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs cursor-pointer transition-all select-none ${
+                                                selectedScenario === 'etapa1'
+                                                  ? 'ring-2 ring-blue-500 bg-blue-50/40 dark:bg-blue-950/30 border-blue-400'
+                                                  : theme === 'dark' ? 'bg-slate-805/30 border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700' : 'bg-white border-slate-200/50 shadow-xs opacity-60 hover:opacity-100 hover:border-slate-350'
+                                              }`}
+                                            >
                                               <div className="flex flex-wrap items-center gap-1.5">
-                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-500">Etapa 1</span>
-                                                <span className="text-gray-600 dark:text-slate-300 font-semibold">
-                                                  {language === 'bilingual' ? 'Cálculo de Backlog Pátios:' : 'Stock Yards Backlog Sum:'}
+                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${selectedScenario === 'etapa1' ? 'bg-blue-600 text-white' : 'bg-blue-500/10 text-blue-500'}`}>Etapa 1</span>
+                                                <span className="text-gray-600 dark:text-slate-300 font-bold">
+                                                  {language === 'bilingual' ? 'Cálculo de Backlog Pátios (Sem ETA):' : 'Stock Yards Backlog Sum:'}
                                                 </span>
                                                 <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-blue-600 dark:text-blue-400">
                                                   {bondedVal.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Bonded</span>
@@ -3825,22 +3925,28 @@ export default function App() {
                                                   {bufferVal.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">BYD Buffer</span>
                                                 </span>
                                               </div>
-                                              <div className="flex items-center gap-1 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-slate-800 pt-1.5 sm:pt-0 sm:pl-3">
+                                              <div className="flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-slate-800 pt-1.5 sm:pt-0 sm:pl-3">
                                                 <span className="text-[10px] text-gray-450 uppercase font-black font-sans">Backlog =</span>
                                                 <span className="font-mono font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[13px]">
                                                   {inventoryBacklog.toLocaleString()}
                                                 </span>
+                                                {selectedScenario === 'etapa1' && <span className="text-[9px] font-black text-blue-600">●</span>}
                                               </div>
                                             </div>
 
                                             {/* Step 2 */}
-                                            <div className={`p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
-                                              theme === 'dark' ? 'bg-slate-800/40 border-slate-800' : 'bg-white border-slate-200/50 shadow-xs'
-                                            }`}>
+                                            <div 
+                                              onClick={() => setSelectedScenario('etapa2')}
+                                              className={`p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs cursor-pointer transition-all select-none ${
+                                                selectedScenario === 'etapa2'
+                                                  ? 'ring-2 ring-purple-500 bg-purple-50/40 dark:bg-purple-950/30 border-purple-400'
+                                                  : theme === 'dark' ? 'bg-slate-805/30 border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700' : 'bg-white border-slate-200/50 shadow-xs opacity-60 hover:opacity-100 hover:border-slate-350'
+                                              }`}
+                                            >
                                               <div className="flex flex-wrap items-center gap-1.5">
-                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-purple-500/10 text-purple-500">Etapa 2</span>
-                                                <span className="text-gray-600 dark:text-slate-300 font-semibold">
-                                                  {language === 'bilingual' ? 'Carga Total para Escoar:' : 'Total Volume to Drain:'}
+                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${selectedScenario === 'etapa2' ? 'bg-purple-600 text-white' : 'bg-purple-500/10 text-purple-500'}`}>Etapa 2</span>
+                                                <span className="text-gray-600 dark:text-slate-300 font-bold">
+                                                  {language === 'bilingual' ? 'Carga Total para Escoar (Com ETA):' : 'Total Volume to Drain:'}
                                                 </span>
                                                 <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-amber-600 dark:text-amber-400">
                                                   {inventoryBacklog.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Backlog</span>
@@ -3858,11 +3964,12 @@ export default function App() {
                                                   </>
                                                 )}
                                               </div>
-                                              <div className="flex items-center gap-1 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-slate-800 pt-1.5 sm:pt-0 sm:pl-3">
+                                              <div className="flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-slate-800 pt-1.5 sm:pt-0 sm:pl-3">
                                                 <span className="text-[10px] text-gray-450 uppercase font-black font-sans">Total =</span>
                                                 <span className="font-mono font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded text-[13px]">
                                                   {totalPendingVolume.toLocaleString()}
                                                 </span>
+                                                {selectedScenario === 'etapa2' && <span className="text-[9px] font-black text-purple-600">●</span>}
                                               </div>
                                             </div>
                                           </div>
@@ -3912,7 +4019,10 @@ export default function App() {
                                         {/* Visual Day Counter Ring / Widget (Right 4 columns) */}
                                         <div className={`lg:col-span-4 p-4 rounded-xl border flex flex-col justify-center items-center text-center ${statusBgLight} border-dashed border-gray-300 dark:border-slate-700 relative overflow-hidden`}>
                                           <span className="text-[9.5px] text-gray-450 dark:text-gray-400 uppercase font-black tracking-wider mb-2">
-                                            {language === 'bilingual' ? 'Tempo de Escoamento Projetado / 预计总库存出清周期' : 'Projected Drain Timeline'}
+                                            {selectedScenario === 'etapa1'
+                                              ? (language === 'bilingual' ? 'Tempo de Escoamento Backlog (Etapa 1) / 预计现有库存出清周期' : 'Projected Backlog Drain (Step 1)')
+                                              : (language === 'bilingual' ? 'Tempo de Escoamento Total (Etapa 2) / 预计总货量出清周期' : 'Projected Total Drain (Step 2)')
+                                            }
                                           </span>
 
                                           {/* Stunning Progress Ring Container */}
@@ -3952,16 +4062,23 @@ export default function App() {
                                             </div>
                                           </div>
 
-                                          <div className="mt-2.5 flex flex-col items-center gap-1.5">
+                                          <div className="mt-2 flex flex-col items-center gap-1 w-full">
                                             <span className={`inline-block text-[8.5px] px-2.5 py-0.5 rounded font-black uppercase tracking-wider text-center border ${statusColor}`}>
                                               {statusLabel}
                                             </span>
-                                            <p className="text-[9px] text-gray-400 max-w-[180px] leading-tight">
+                                            <p className="text-[9px] text-gray-400 max-w-[180px] leading-tight mt-0.5">
                                               {language === 'bilingual' 
-                                                ? `Escoamento de ${totalPendingVolume.toLocaleString()} contêineres à média de ${dailyDeliveryRate}/dia.` 
-                                                : `Draining ${totalPendingVolume.toLocaleString()} cntrs at ${dailyDeliveryRate}/day.`
+                                                ? `Escoamento de ${activeScenarioVolume.toLocaleString()} contêineres à média de ${dailyDeliveryRate}/dia.` 
+                                                : `Draining ${activeScenarioVolume.toLocaleString()} cntrs at ${dailyDeliveryRate}/day.`
                                               }
                                             </p>
+                                          </div>
+
+                                          <div className="mt-3.5 border-t border-dashed border-gray-200 dark:border-slate-700/60 pt-2 w-full flex flex-col items-center">
+                                            <span className="text-[8px] text-gray-400 dark:text-gray-500 uppercase font-black tracking-widest">{language === 'bilingual' ? 'Previsão de Conclusão / 预计完成' : 'Completion Week'}:</span>
+                                            <span className="text-sm font-black text-amber-600 dark:text-amber-400 mt-0.5 bg-amber-500/10 px-2 py-0.5 rounded-md">
+                                              {getCompletionWeek(drainTimeDays)} <span className="text-[10px] text-gray-500">({getCompletionDateStr(drainTimeDays)})</span>
+                                            </span>
                                           </div>
                                         </div>
                                       </div>
@@ -4063,115 +4180,123 @@ export default function App() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {/* Gráfico 1 Expandido */}
-                       <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-[280px]`}>
-                        <div className="flex justify-between items-center mb-1">
-                          <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                            <TrendingUp className="w-4 h-4 text-emerald-500" /> {getChartLeftTitle()}
-                          </h4>
-                          <div className="flex gap-2 text-[9px] font-bold">
-                            <span className="flex items-center gap-1 text-slate-800 dark:text-slate-205"><span className="w-1.5 h-1.5 bg-slate-800 dark:bg-slate-400 inline-block rounded-sm"></span>{language === 'bilingual' ? '到港 / ATA' : 'ATA'}</span>
-                            <span className="flex items-center gap-1 text-emerald-500">
-                              <span className="w-1.5 h-0.5 border-t border-emerald-500 border-dashed inline-block"></span>
-                              {language === 'pt' ? `Capacidade (${scenarioValue}/dia)` : (language === 'zh' ? `交付能力 (${scenarioValue}/天)` : `交付 / Capacidade (${scenarioValue}/d)`)}
-                            </span>
-                            <span className="flex items-center gap-1 text-red-500">
-                              <span className="w-1.5 h-1.5 bg-red-500 inline-block rounded-full"></span>
-                              {language === 'pt' ? 'Backlog' : (language === 'zh' ? '预测积压' : '积压 / Backlog')}
-                            </span>
-                          </div>
-                        </div>
+                      {(() => {
+                        const chartLeftData = getDynamicChartLeft();
+                        const maxVal = Math.max(...chartLeftData.map(item => item.backlog), 6000);
+                        return (
+                          <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-[280px]`}>
+                            <div className="flex justify-between items-center mb-1">
+                              <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                                <TrendingUp className="w-4 h-4 text-emerald-500" /> {getChartLeftTitle()}
+                              </h4>
+                              <div className="flex gap-2 text-[9px] font-bold font-sans">
+                                <span className="flex items-center gap-1 text-slate-800 dark:text-slate-205"><span className="w-1.5 h-1.5 bg-slate-800 dark:bg-slate-400 inline-block rounded-sm"></span>{language === 'bilingual' ? '到港 / ATA' : 'ATA'}</span>
+                                <span className="flex items-center gap-1 text-emerald-500">
+                                  <span className="w-1.5 h-0.5 border-t border-emerald-500 border-dashed inline-block"></span>
+                                  {language === 'pt' ? `Capacidade (${dailyDeliveryRate}/dia)` : (language === 'zh' ? `交付能力 (${dailyDeliveryRate}/天)` : `交付 / Capacidade (${dailyDeliveryRate}/d)`)}
+                                </span>
+                                <span className="flex items-center gap-1 text-red-500">
+                                  <span className="w-1.5 h-1.5 bg-red-500 inline-block rounded-full"></span>
+                                  {language === 'pt' ? 'Backlog' : (language === 'zh' ? '预测积压' : '积压 / Backlog')}
+                                </span>
+                              </div>
+                            </div>
 
-                        <div className="relative flex-1 w-full pt-1.5">
-                          <svg className="w-full h-full overflow-visible" style={{ overflow: 'visible' }} viewBox="0 0 600 135" preserveAspectRatio="none">
-                            <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                            <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                            <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                            
-                            {/* Dynamic green dashed line connecting the actual delivery capped by max capacity (scenarioValue * 7) */}
-                            <path
-                              d={chartLeft.reduce((acc, item, i) => {
-                                const x = 35 + i * (540 / (chartLeft.length - 1));
-                                const prevBacklog = i === 0 ? 1416 : chartLeft[i-1].backlog;
-                                const delivery = Math.min(scenarioValue * 7, prevBacklog + item.arrivals);
-                                const y = 100 - (delivery / 6000) * 85;
-                                return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-                              }, '')}
-                              fill="none"
-                              stroke="#10b981"
-                              strokeWidth="1.25"
-                              strokeDasharray="4 4"
-                            />
-
-                            {chartLeft.map((item, i) => {
-                              const x = 35 + i * (540 / (chartLeft.length - 1));
-                              const barHeight = (item.arrivals / 6000) * 85;
-                              const y = 100 - barHeight;
-                              return (
-                                <rect 
-                                  key={i}
-                                  x={x - 3} 
-                                  y={y} 
-                                  width="6" 
-                                  height={barHeight} 
-                                  fill={theme === 'dark' ? '#475569' : '#1e293b'} 
-                                  rx="0.5"
+                            <div className="relative flex-1 w-full pt-1.5">
+                              <svg className="w-full h-full overflow-visible" style={{ overflow: 'visible' }} viewBox="0 0 600 135" preserveAspectRatio="none">
+                                <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                                <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                                <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                                
+                                {/* Dynamic green dashed line connecting the actual delivery capped by max capacity (dailyDeliveryRate * 7) */}
+                                <path
+                                  d={chartLeftData.reduce((acc, item, i) => {
+                                    const x = 35 + i * (540 / (chartLeftData.length - 1));
+                                    const prevBacklog = i === 0 ? 1416 : chartLeftData[i-1].backlog;
+                                    const delivery = Math.min(dailyDeliveryRate * 7, prevBacklog + item.arrivals);
+                                    const y = 100 - (delivery / maxVal) * 85;
+                                    return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                                  }, '')}
+                                  fill="none"
+                                  stroke="#10b981"
+                                  strokeWidth="1.25"
+                                  strokeDasharray="4 4"
                                 />
-                              );
-                            })}
 
-                            <path
-                              d={chartLeft.reduce((acc, item, i) => {
-                                const x = 35 + i * (540 / (chartLeft.length - 1));
-                                const y = 100 - (item.backlog / 6000) * 85;
-                                return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-                              }, '')}
-                              fill="none"
-                              stroke="#ef4444"
-                              strokeWidth="1.5"
-                            />
+                                {chartLeftData.map((item, i) => {
+                                  const x = 35 + i * (540 / (chartLeftData.length - 1));
+                                  const barHeight = (item.arrivals / maxVal) * 85;
+                                  const y = 100 - barHeight;
+                                  return (
+                                    <rect 
+                                      key={i}
+                                      x={x - 2} 
+                                      y={y} 
+                                      width="4" 
+                                      height={barHeight} 
+                                      fill={theme === 'dark' ? '#475569' : '#1e293b'} 
+                                      rx="0.5"
+                                    />
+                                  );
+                                })}
 
-                            {chartLeft.map((item, i) => {
-                              const x = 35 + i * (540 / (chartLeft.length - 1));
-                              const y = 100 - (item.backlog / 6000) * 85;
-                              return (
-                                <g key={`cl-${i}`}>
-                                  <circle cx={x} cy={y} r="2" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
-                                  <text 
-                                    x={x} 
-                                    y={y - 4} 
-                                    fill="#ef4444" 
-                                    fontSize="6" 
-                                    fontWeight="black" 
-                                    textAnchor="middle" 
-                                    className="font-mono"
-                                  >
-                                    {item.backlog}
-                                  </text>
-                                </g>
-                              );
-                            })}
+                                <path
+                                  d={chartLeftData.reduce((acc, item, i) => {
+                                    const x = 35 + i * (540 / (chartLeftData.length - 1));
+                                    const y = 100 - (item.backlog / maxVal) * 85;
+                                    return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                                  }, '')}
+                                  fill="none"
+                                  stroke="#ef4444"
+                                  strokeWidth="1.5"
+                                />
 
-                            {chartLeft.map((item, i) => {
-                              const x = 35 + i * (540 / (chartLeft.length - 1));
-                              return (
-                                <text 
-                                  key={`cl-lbl-${i}`} 
-                                  x={x} 
-                                  y="112" 
-                                  fill="#94a3b8" 
-                                  fontSize="5.5" 
-                                  textAnchor="end" 
-                                  fontWeight="bold" 
-                                  className="font-mono"
-                                  transform={`rotate(-45, ${x}, 112)`}
-                                >
-                                  {item.week} - 2026
-                                </text>
-                              );
-                            })}
-                          </svg>
-                        </div>
-                      </div>
+                                {chartLeftData.map((item, i) => {
+                                  const x = 35 + i * (540 / (chartLeftData.length - 1));
+                                  const y = 100 - (item.backlog / maxVal) * 85;
+                                  return (
+                                    <g key={`cl-${i}`}>
+                                      <circle cx={x} cy={y} r="2" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
+                                      {(i % 2 === 0 || i === chartLeftData.length - 1 || item.backlog > 0) && (
+                                        <text 
+                                          x={x} 
+                                          y={y - 4} 
+                                          fill="#ef4444" 
+                                          fontSize="6" 
+                                          fontWeight="black" 
+                                          textAnchor="middle" 
+                                          className="font-mono"
+                                        >
+                                          {item.backlog}
+                                        </text>
+                                      )}
+                                    </g>
+                                  );
+                                })}
+
+                                {chartLeftData.map((item, i) => {
+                                  const x = 35 + i * (540 / (chartLeftData.length - 1));
+                                  return (
+                                    <text 
+                                      key={`cl-lbl-${i}`} 
+                                      x={x} 
+                                      y="112" 
+                                      fill="#94a3b8" 
+                                      fontSize="5.5" 
+                                      textAnchor="end" 
+                                      fontWeight="bold" 
+                                      className="font-mono"
+                                      transform={`rotate(-45, ${x}, 112)`}
+                                    >
+                                      {item.week} - 2026
+                                    </text>
+                                  );
+                                })}
+                              </svg>
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {/* Gráfico 2 Expandido */}
                       <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-[280px]`}>
@@ -4505,120 +4630,210 @@ export default function App() {
               ) : currentSlide === 3 ? (
                 /* SLIDE 4: GRÁFICOS (CHARTS ONLY) COM CAIXAS DE COMENTÁRIOS */
                 <div id="slide-dashboard-grid-charts" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
-                  
-                  {/* Metade Superior: Gráficos Lado a Lado em Escala Maior */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1">
-                    
-                    {/* Gráfico 1 Expandido */}
-                    <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between h-[270px]`}>
-                      <div className="flex justify-between items-center mb-1">
-                        <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                          <TrendingUp className="w-4 h-4 text-emerald-500" /> {getChartLeftTitle()}
-                        </h4>
-                        <div className="flex gap-2 text-[9px] font-bold">
-                          <span className="flex items-center gap-1 text-slate-850 dark:text-slate-200"><span className="w-1.5 h-1.5 bg-slate-805 dark:bg-slate-400 inline-block rounded-sm"></span>{language === 'bilingual' ? '到港 / ATA' : 'ATA'}</span>
-                          <span className="flex items-center gap-1 text-emerald-500">
-                            <span className="w-1.5 h-0.5 border-t border-emerald-500 border-dashed inline-block"></span>
-                            {language === 'pt' ? `Capacidade (${scenarioValue}/dia)` : (language === 'zh' ? `交付能力 (${scenarioValue}/天)` : `交付 / Capacidade (${scenarioValue}/d)`)}
-                          </span>
-                          <span className="flex items-center gap-1 text-red-500">
-                            <span className="w-1.5 h-1.5 bg-red-500 inline-block rounded-full"></span>
-                            {language === 'pt' ? 'Backlog' : (language === 'zh' ? '预测积压' : '积压 / Backlog')}
-                          </span>
-                        </div>
-                      </div>
+                  {(() => {
+                    const chartLeftData = getDynamicChartLeft();
+                    const maxVal = Math.max(...chartLeftData.map(item => item.backlog), 6000);
+                    return (
+                      <>
+                        {/* CONTROL HUB FOR SLIDE 4 */}
+                        <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-center gap-3 mb-2`}>
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-amber-500/10 text-amber-500 rounded-lg animate-pulse">
+                              <TrendingUp className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="font-extrabold text-[12px] text-gray-800 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
+                                {language === 'bilingual' ? 'Simulador de Escoamento de Carga / 货量流速仿真模拟器' : 'Cargo Drain Simulation'}
+                              </h3>
+                              <p className="text-[10px] text-gray-500 dark:text-gray-400 font-sans">
+                                {language === 'bilingual' ? 'Ajuste os cenários e capacidades para recalcular o gráfico de backlog / 调节不同发运场景与每日交付能力，实时重算积压出清曲线' : 'Adjust scenarios and rates to dynamically recalculate the backlog burn-down.'}
+                              </p>
+                            </div>
+                          </div>
 
-                      <div className="relative flex-1 w-full pt-1.5">
-                        <svg className="w-full h-full overflow-visible" style={{ overflow: 'visible' }} viewBox="0 0 600 135" preserveAspectRatio="none">
-                          <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                          <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                          <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                          
-                          {/* Dynamic green dashed line connecting the actual delivery capped by max capacity (scenarioValue * 7) */}
-                          <path
-                            d={chartLeft.reduce((acc, item, i) => {
-                              const x = 35 + i * (540 / (chartLeft.length - 1));
-                              const prevBacklog = i === 0 ? 1416 : chartLeft[i-1].backlog;
-                              const delivery = Math.min(scenarioValue * 7, prevBacklog + item.arrivals);
-                              const y = 100 - (delivery / 6000) * 85;
-                              return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-                            }, '')}
-                            fill="none"
-                            stroke="#10b981"
-                            strokeWidth="1.25"
-                            strokeDasharray="4 4"
-                          />
-
-                          {chartLeft.map((item, i) => {
-                            const x = 35 + i * (540 / (chartLeft.length - 1));
-                            const barHeight = (item.arrivals / 6000) * 85;
-                            const y = 100 - barHeight;
-                            return (
-                              <rect 
-                                key={i}
-                                x={x - 3} 
-                                y={y} 
-                                width="6" 
-                                height={barHeight} 
-                                fill={theme === 'dark' ? '#475569' : '#1e293b'} 
-                                rx="0.5"
-                              />
-                            );
-                          })}
-
-                          <path
-                            d={chartLeft.reduce((acc, item, i) => {
-                              const x = 35 + i * (540 / (chartLeft.length - 1));
-                              const y = 100 - (item.backlog / 6000) * 85;
-                              return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-                            }, '')}
-                            fill="none"
-                            stroke="#ef4444"
-                            strokeWidth="1.5"
-                          />
-
-                          {chartLeft.map((item, i) => {
-                            const x = 35 + i * (540 / (chartLeft.length - 1));
-                            const y = 100 - (item.backlog / 6000) * 85;
-                            return (
-                              <g key={`cl-${i}`}>
-                                <circle cx={x} cy={y} r="2" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
-                                <text 
-                                  x={x} 
-                                  y={y - 4} 
-                                  fill="#ef4444" 
-                                  fontSize="6" 
-                                  fontWeight="black" 
-                                  textAnchor="middle" 
-                                  className="font-mono"
-                                >
-                                  {item.backlog}
-                                </text>
-                              </g>
-                            );
-                          })}
-
-                          {chartLeft.map((item, i) => {
-                            const x = 35 + i * (540 / (chartLeft.length - 1));
-                            return (
-                              <text 
-                                key={`cl-lbl-${i}`} 
-                                x={x} 
-                                y="112" 
-                                fill="#94a3b8" 
-                                fontSize="5.5" 
-                                textAnchor="end" 
-                                fontWeight="bold" 
-                                className="font-mono"
-                                transform={`rotate(-45, ${x}, 112)`}
+                          {/* Toggles & Sliders */}
+                          <div className="flex flex-wrap items-center gap-4">
+                            {/* Scenario Selector */}
+                            <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 p-0.5 bg-slate-50 dark:bg-slate-800">
+                              <button 
+                                onClick={() => setSelectedScenario('etapa1')}
+                                className={`px-2.5 py-1 text-[10px] font-black rounded-md transition-all ${
+                                  selectedScenario === 'etapa1' 
+                                    ? 'bg-blue-600 text-white shadow-xs' 
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                }`}
                               >
-                                {item.week} - 2026
-                              </text>
-                            );
-                          })}
-                        </svg>
-                      </div>
-                    </div>
+                                {language === 'bilingual' ? 'Etapa 1 (Sem ETA)' : 'Etapa 1'}
+                              </button>
+                              <button 
+                                onClick={() => setSelectedScenario('etapa2')}
+                                className={`px-2.5 py-1 text-[10px] font-black rounded-md transition-all ${
+                                  selectedScenario === 'etapa2' 
+                                    ? 'bg-purple-600 text-white shadow-xs' 
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                }`}
+                              >
+                                {language === 'bilingual' ? 'Etapa 2 (Com ETA)' : 'Etapa 2'}
+                              </button>
+                            </div>
+
+                            {/* Daily Delivery Slider */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 font-sans">
+                                {language === 'bilingual' ? 'Capacidade / 能力:' : 'Capacity:'}
+                              </span>
+                              <input 
+                                type="range"
+                                min="50"
+                                max="500"
+                                step="10"
+                                value={dailyDeliveryRate}
+                                onChange={(e) => setDailyDeliveryRate(Number(e.target.value))}
+                                className="w-24 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-550 dark:bg-slate-700"
+                              />
+                              <span className="font-mono text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                                {dailyDeliveryRate}/dia
+                              </span>
+                            </div>
+
+                            {/* KPI Projection Result */}
+                            <div className="flex items-center gap-1.5 border-l border-dashed border-gray-250 dark:border-slate-700 pl-3">
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-sans">{language === 'bilingual' ? 'Previsão / 预计完成' : 'Completion'}:</span>
+                              <span className="text-[11px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md font-mono">
+                                {(() => {
+                                  const activeVol = selectedScenario === 'etapa1' 
+                                    ? (bondedSum.totalCheio + warehouseSum.totalCheio + bufferSum.totalCheio + additionalBacklog)
+                                    : (bondedSum.totalCheio + warehouseSum.totalCheio + bufferSum.totalCheio + vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0) + additionalBacklog);
+                                  const days = dailyDeliveryRate > 0 ? (activeVol / dailyDeliveryRate) : 0;
+                                  const weeksNeeded = Math.ceil(days / 7);
+                                  const complWeek = `W${28 + weeksNeeded}`;
+                                  const baseDate = new Date('2026-07-08');
+                                  baseDate.setDate(baseDate.getDate() + Math.round(days));
+                                  const d = String(baseDate.getDate()).padStart(2, '0');
+                                  const m = String(baseDate.getMonth() + 1).padStart(2, '0');
+                                  return `${complWeek} (${d}/${m})`;
+                                })()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Metade Superior: Gráficos Lado a Lado em Escala Maior */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1">
+                          
+                          {/* Gráfico 1 Expandido */}
+                          <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between h-[270px]`}>
+                            <div className="flex justify-between items-center mb-1">
+                              <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                                <TrendingUp className="w-4 h-4 text-emerald-500" /> {getChartLeftTitle()}
+                              </h4>
+                              <div className="flex gap-2 text-[9px] font-bold">
+                                <span className="flex items-center gap-1 text-slate-850 dark:text-slate-200"><span className="w-1.5 h-1.5 bg-slate-805 dark:bg-slate-400 inline-block rounded-sm"></span>{language === 'bilingual' ? '到港 / ATA' : 'ATA'}</span>
+                                <span className="flex items-center gap-1 text-emerald-500">
+                                  <span className="w-1.5 h-0.5 border-t border-emerald-500 border-dashed inline-block"></span>
+                                  {language === 'pt' ? `Capacidade (${dailyDeliveryRate}/dia)` : (language === 'zh' ? `交付能力 (${dailyDeliveryRate}/天)` : `交付 / Capacidade (${dailyDeliveryRate}/d)`)}
+                                </span>
+                                <span className="flex items-center gap-1 text-red-500">
+                                  <span className="w-1.5 h-1.5 bg-red-500 inline-block rounded-full"></span>
+                                  {language === 'pt' ? 'Backlog' : (language === 'zh' ? '预测积压' : '积压 / Backlog')}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="relative flex-1 w-full pt-1.5">
+                              <svg className="w-full h-full overflow-visible" style={{ overflow: 'visible' }} viewBox="0 0 600 135" preserveAspectRatio="none">
+                                <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                                <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                                <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
+                                
+                                {/* Dynamic green dashed line connecting the actual delivery capped by max capacity (dailyDeliveryRate * 7) */}
+                                <path
+                                  d={chartLeftData.reduce((acc, item, i) => {
+                                    const x = 35 + i * (540 / (chartLeftData.length - 1));
+                                    const prevBacklog = i === 0 ? 1416 : chartLeftData[i-1].backlog;
+                                    const delivery = Math.min(dailyDeliveryRate * 7, prevBacklog + item.arrivals);
+                                    const y = 100 - (delivery / maxVal) * 85;
+                                    return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                                  }, '')}
+                                  fill="none"
+                                  stroke="#10b981"
+                                  strokeWidth="1.25"
+                                  strokeDasharray="4 4"
+                                />
+
+                                {chartLeftData.map((item, i) => {
+                                  const x = 35 + i * (540 / (chartLeftData.length - 1));
+                                  const barHeight = (item.arrivals / maxVal) * 85;
+                                  const y = 100 - barHeight;
+                                  return (
+                                    <rect 
+                                      key={i}
+                                      x={x - 2} 
+                                      y={y} 
+                                      width="4" 
+                                      height={barHeight} 
+                                      fill={theme === 'dark' ? '#475569' : '#1e293b'} 
+                                      rx="0.5"
+                                    />
+                                  );
+                                })}
+
+                                <path
+                                  d={chartLeftData.reduce((acc, item, i) => {
+                                    const x = 35 + i * (540 / (chartLeftData.length - 1));
+                                    const y = 100 - (item.backlog / maxVal) * 85;
+                                    return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                                  }, '')}
+                                  fill="none"
+                                  stroke="#ef4444"
+                                  strokeWidth="1.5"
+                                />
+
+                                {chartLeftData.map((item, i) => {
+                                  const x = 35 + i * (540 / (chartLeftData.length - 1));
+                                  const y = 100 - (item.backlog / maxVal) * 85;
+                                  return (
+                                    <g key={`cl-${i}`}>
+                                      <circle cx={x} cy={y} r="2" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
+                                      {/* Prevent overlapping text nodes by showing labels at key points */}
+                                      {(i % 2 === 0 || i === chartLeftData.length - 1 || item.backlog > 0) && (
+                                        <text 
+                                          x={x} 
+                                          y={y - 4} 
+                                          fill="#ef4444" 
+                                          fontSize="6" 
+                                          fontWeight="black" 
+                                          textAnchor="middle" 
+                                          className="font-mono"
+                                        >
+                                          {item.backlog}
+                                        </text>
+                                      )}
+                                    </g>
+                                  );
+                                })}
+
+                                {chartLeftData.map((item, i) => {
+                                  const x = 35 + i * (540 / (chartLeftData.length - 1));
+                                  return (
+                                    <text 
+                                      key={`cl-lbl-${i}`} 
+                                      x={x} 
+                                      y="112" 
+                                      fill="#94a3b8" 
+                                      fontSize="5.5" 
+                                      textAnchor="end" 
+                                      fontWeight="bold" 
+                                      className="font-mono"
+                                      transform={`rotate(-45, ${x}, 112)`}
+                                    >
+                                      {item.week} - 2026
+                                    </text>
+                                  );
+                                })}
+                              </svg>
+                            </div>
+                          </div>
 
                     {/* Gráfico 2 Expandido */}
                     <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between h-[270px]`}>
@@ -4756,7 +4971,9 @@ export default function App() {
                     </div>
 
                   </div>
-
+                </>
+              );
+            })()}
                 </div>
               ) : (
                 /* SLIDE 5: BYD BUFFER (2D MAP GRID AND COORDINATE LAYOUT) */
