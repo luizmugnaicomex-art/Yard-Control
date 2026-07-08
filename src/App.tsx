@@ -442,7 +442,7 @@ export default function App() {
     const saved = localStorage.getItem('byd_additional_backlog');
     return saved ? Number(saved) : 0;
   });
-  const [selectedScenario, setSelectedScenario] = useState<'etapa1' | 'etapa2'>('etapa2');
+  const [selectedScenario, setSelectedScenario] = useState<'etapa1' | 'etapa2' | 'etapa3'>('etapa3');
   const [chartMode, setChartMode] = useState<'historical' | 'projection'>('projection');
 
   useEffect(() => {
@@ -468,12 +468,16 @@ export default function App() {
     const bondedVal = bondedSum?.totalCheio || 0;
     const warehouseVal = warehouseSum?.totalCheio || 0;
     const bufferVal = bufferSum?.totalCheio || 0;
-    const inventoryBacklog = bondedVal + warehouseVal + bufferVal;
-    
-    const upcomingArrivals = vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0);
     
     // Starting backlog for W28 projection
-    let currentBacklog = inventoryBacklog + additionalBacklog;
+    let currentBacklog = 0;
+    if (selectedScenario === 'etapa1') {
+      currentBacklog = bondedVal + warehouseVal + additionalBacklog;
+    } else {
+      currentBacklog = bondedVal + warehouseVal + bufferVal + additionalBacklog;
+    }
+    
+    const upcomingArrivals = vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0);
     
     // We preserve historical data for weeks W1 to W27
     const result: { week: string; arrivals: number; backlog: number }[] = [];
@@ -496,7 +500,7 @@ export default function App() {
     
     while (w <= maxWeeks) {
       let arrivals = 0;
-      if (selectedScenario === 'etapa2') {
+      if (selectedScenario === 'etapa3') {
         const arrIndex = w - 28;
         if (arrIndex >= 0 && arrIndex < originalRemainingArrivals.length) {
           arrivals = Math.round(originalRemainingArrivals[arrIndex] * ratio);
@@ -3230,11 +3234,11 @@ export default function App() {
             </div>
 
             {/* Seletor de Idiomas */}
-            <div className="bg-gray-100 p-1 rounded-lg flex items-center gap-1 border border-gray-200">
+            <div className="bg-gray-100 dark:bg-slate-800 p-1 rounded-lg flex items-center gap-1 border border-gray-200 dark:border-slate-700">
               <button 
                 id="btn-lang-pt"
                 onClick={() => { setLanguage('pt'); updateGlobalDoc('language', 'pt'); }}
-                className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'pt' ? 'bg-white shadow text-blue-700' : 'text-gray-500 hover:text-gray-800'}`}
+                className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'pt' ? 'bg-white dark:bg-slate-700 shadow text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
                 title="Português"
               >
                 🇧🇷 PT
@@ -3242,7 +3246,7 @@ export default function App() {
               <button 
                 id="btn-lang-zh"
                 onClick={() => { setLanguage('zh'); updateGlobalDoc('language', 'zh'); }}
-                className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'zh' ? 'bg-white shadow text-red-600' : 'text-gray-500 hover:text-gray-800'}`}
+                className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'zh' ? 'bg-white dark:bg-slate-700 shadow text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
                 title="Mandarim (中文)"
               >
                 🇨🇳 中文
@@ -3250,7 +3254,7 @@ export default function App() {
               <button 
                 id="btn-lang-bilingual"
                 onClick={() => { setLanguage('bilingual'); updateGlobalDoc('language', 'bilingual'); }}
-                className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'bilingual' ? 'bg-white shadow text-emerald-700' : 'text-gray-500 hover:text-gray-800'}`}
+                className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'bilingual' ? 'bg-white dark:bg-slate-700 shadow text-emerald-700 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
                 title="Bilíngue (Lado a Lado)"
               >
                 🌐 PT / 中文
@@ -3771,8 +3775,10 @@ export default function App() {
 
                                   // Active volume selection based on scenario
                                   const activeScenarioVolume = selectedScenario === 'etapa1'
-                                    ? (inventoryBacklog + additionalBacklog)
-                                    : totalPendingVolume;
+                                    ? (bondedVal + warehouseVal + additionalBacklog)
+                                    : selectedScenario === 'etapa2'
+                                      ? (bondedVal + warehouseVal + bufferVal + additionalBacklog)
+                                      : (bondedVal + warehouseVal + bufferVal + upcomingArrivals + additionalBacklog);
 
                                   // 5. Drain Days
                                   const drainTimeDays = dailyDeliveryRate > 0 ? (activeScenarioVolume / dailyDeliveryRate) : 0;
@@ -3792,17 +3798,17 @@ export default function App() {
 
                                   // Status levels
                                   let statusColor = "text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
-                                  let statusLabel = language === 'bilingual' ? "Fluxo Seguro / 安全流速" : "Safe Flow";
+                                  let statusLabel = language === 'bilingual' ? "Fluxo Seguro / 安全流速" : language === 'zh' ? "安全流速" : "Fluxo Seguro";
                                   let progressColor = "stroke-emerald-500";
                                   let statusBgLight = "bg-emerald-50/40 dark:bg-emerald-950/20";
                                   if (drainTimeDays > 45.0) {
                                     statusColor = "text-red-500 dark:text-red-400 bg-red-500/10 border-red-500/20 animate-pulse";
-                                    statusLabel = language === 'bilingual' ? "Gargalo Crítico / 严重积压" : "Severe Backlog";
+                                    statusLabel = language === 'bilingual' ? "Gargalo Crítico / 严重积压" : language === 'zh' ? "严重积压" : "Gargalo Crítico";
                                     progressColor = "stroke-red-500";
                                     statusBgLight = "bg-red-50/40 dark:bg-red-950/20";
                                   } else if (drainTimeDays > 25.0) {
                                     statusColor = "text-amber-500 dark:text-amber-400 bg-amber-500/10 border-amber-500/20";
-                                    statusLabel = language === 'bilingual' ? "Alerta de Acúmulo / 积压警示" : "Warning Backlog";
+                                    statusLabel = language === 'bilingual' ? "Alerta de Acúmulo / 积压警示" : language === 'zh' ? "积压警示" : "Alerta de Acúmulo";
                                     progressColor = "stroke-amber-500";
                                     statusBgLight = "bg-amber-50/40 dark:bg-amber-950/20";
                                   }
@@ -3911,7 +3917,7 @@ export default function App() {
                                               <div className="flex flex-wrap items-center gap-1.5">
                                                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${selectedScenario === 'etapa1' ? 'bg-blue-600 text-white' : 'bg-blue-500/10 text-blue-500'}`}>Etapa 1</span>
                                                 <span className="text-gray-600 dark:text-slate-300 font-bold">
-                                                  {language === 'bilingual' ? 'Cálculo de Backlog Pátios (Sem ETA):' : 'Stock Yards Backlog Sum:'}
+                                                  {language === 'bilingual' ? 'Pátios + CDs (Sem Buffer/ETA):' : 'Yards + Warehouses:'}
                                                 </span>
                                                 <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-blue-600 dark:text-blue-400">
                                                   {bondedVal.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Bonded</span>
@@ -3919,6 +3925,33 @@ export default function App() {
                                                 <span className="text-gray-400 font-black">+</span>
                                                 <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-indigo-600 dark:text-indigo-400">
                                                   {warehouseVal.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Warehouse</span>
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-slate-800 pt-1.5 sm:pt-0 sm:pl-3">
+                                                <span className="text-[10px] text-gray-450 uppercase font-black font-sans">Subtotal =</span>
+                                                <span className="font-mono font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-[13px]">
+                                                  {(bondedVal + warehouseVal).toLocaleString()}
+                                                </span>
+                                                {selectedScenario === 'etapa1' && <span className="text-[9px] font-black text-blue-600">●</span>}
+                                              </div>
+                                            </div>
+
+                                            {/* Step 2 */}
+                                            <div 
+                                              onClick={() => setSelectedScenario('etapa2')}
+                                              className={`p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs cursor-pointer transition-all select-none ${
+                                                selectedScenario === 'etapa2'
+                                                  ? 'ring-2 ring-amber-500 bg-amber-50/40 dark:bg-amber-950/30 border-amber-400'
+                                                  : theme === 'dark' ? 'bg-slate-805/30 border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700' : 'bg-white border-slate-200/50 shadow-xs opacity-60 hover:opacity-100 hover:border-slate-350'
+                                              }`}
+                                            >
+                                              <div className="flex flex-wrap items-center gap-1.5">
+                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${selectedScenario === 'etapa2' ? 'bg-amber-600 text-white' : 'bg-amber-500/10 text-amber-500'}`}>Etapa 2</span>
+                                                <span className="text-gray-600 dark:text-slate-300 font-bold">
+                                                  {language === 'bilingual' ? 'Pátios + CDs + Buffer (Sem ETA):' : 'Yards + Warehouses + Buffer:'}
+                                                </span>
+                                                <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-blue-600 dark:text-blue-400">
+                                                  {(bondedVal + warehouseVal).toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Subtotal</span>
                                                 </span>
                                                 <span className="text-gray-400 font-black">+</span>
                                                 <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-teal-600 dark:text-teal-400">
@@ -3930,23 +3963,23 @@ export default function App() {
                                                 <span className="font-mono font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[13px]">
                                                   {inventoryBacklog.toLocaleString()}
                                                 </span>
-                                                {selectedScenario === 'etapa1' && <span className="text-[9px] font-black text-blue-600">●</span>}
+                                                {selectedScenario === 'etapa2' && <span className="text-[9px] font-black text-amber-600">●</span>}
                                               </div>
                                             </div>
 
-                                            {/* Step 2 */}
+                                            {/* Step 3 */}
                                             <div 
-                                              onClick={() => setSelectedScenario('etapa2')}
+                                              onClick={() => setSelectedScenario('etapa3')}
                                               className={`p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs cursor-pointer transition-all select-none ${
-                                                selectedScenario === 'etapa2'
+                                                selectedScenario === 'etapa3'
                                                   ? 'ring-2 ring-purple-500 bg-purple-50/40 dark:bg-purple-950/30 border-purple-400'
                                                   : theme === 'dark' ? 'bg-slate-805/30 border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700' : 'bg-white border-slate-200/50 shadow-xs opacity-60 hover:opacity-100 hover:border-slate-350'
                                               }`}
                                             >
                                               <div className="flex flex-wrap items-center gap-1.5">
-                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${selectedScenario === 'etapa2' ? 'bg-purple-600 text-white' : 'bg-purple-500/10 text-purple-500'}`}>Etapa 2</span>
+                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${selectedScenario === 'etapa3' ? 'bg-purple-600 text-white' : 'bg-purple-500/10 text-purple-500'}`}>Etapa 3</span>
                                                 <span className="text-gray-600 dark:text-slate-300 font-bold">
-                                                  {language === 'bilingual' ? 'Carga Total para Escoar (Com ETA):' : 'Total Volume to Drain:'}
+                                                  {language === 'bilingual' ? 'Carga Total para Escoar (Com ETA + Adj):' : 'Total Volume to Drain:'}
                                                 </span>
                                                 <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-amber-600 dark:text-amber-400">
                                                   {inventoryBacklog.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Backlog</span>
@@ -3969,7 +4002,7 @@ export default function App() {
                                                 <span className="font-mono font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded text-[13px]">
                                                   {totalPendingVolume.toLocaleString()}
                                                 </span>
-                                                {selectedScenario === 'etapa2' && <span className="text-[9px] font-black text-purple-600">●</span>}
+                                                {selectedScenario === 'etapa3' && <span className="text-[9px] font-black text-purple-600">●</span>}
                                               </div>
                                             </div>
                                           </div>
@@ -4190,7 +4223,7 @@ export default function App() {
                                 <TrendingUp className="w-4 h-4 text-emerald-500" /> {getChartLeftTitle()}
                               </h4>
                               <div className="flex gap-2 text-[9px] font-bold font-sans">
-                                <span className="flex items-center gap-1 text-slate-800 dark:text-slate-205"><span className="w-1.5 h-1.5 bg-slate-800 dark:bg-slate-400 inline-block rounded-sm"></span>{language === 'bilingual' ? '到港 / ATA' : 'ATA'}</span>
+                                <span className="flex items-center gap-1 text-slate-800 dark:text-slate-300"><span className="w-1.5 h-1.5 bg-slate-800 dark:bg-slate-400 inline-block rounded-sm"></span>{language === 'bilingual' ? '到港 / ATA' : language === 'zh' ? '到港' : 'ATA'}</span>
                                 <span className="flex items-center gap-1 text-emerald-500">
                                   <span className="w-1.5 h-0.5 border-t border-emerald-500 border-dashed inline-block"></span>
                                   {language === 'pt' ? `Capacidade (${dailyDeliveryRate}/dia)` : (language === 'zh' ? `交付能力 (${dailyDeliveryRate}/天)` : `交付 / Capacidade (${dailyDeliveryRate}/d)`)}
@@ -4663,17 +4696,27 @@ export default function App() {
                                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
                                 }`}
                               >
-                                {language === 'bilingual' ? 'Etapa 1 (Sem ETA)' : 'Etapa 1'}
+                                {language === 'bilingual' ? 'Etapa 1 (Pátios+CDs)' : 'Etapa 1'}
                               </button>
                               <button 
                                 onClick={() => setSelectedScenario('etapa2')}
                                 className={`px-2.5 py-1 text-[10px] font-black rounded-md transition-all ${
                                   selectedScenario === 'etapa2' 
+                                    ? 'bg-amber-600 text-white shadow-xs' 
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                }`}
+                              >
+                                {language === 'bilingual' ? 'Etapa 2 (+Buffer)' : 'Etapa 2'}
+                              </button>
+                              <button 
+                                onClick={() => setSelectedScenario('etapa3')}
+                                className={`px-2.5 py-1 text-[10px] font-black rounded-md transition-all ${
+                                  selectedScenario === 'etapa3' 
                                     ? 'bg-purple-600 text-white shadow-xs' 
                                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
                                 }`}
                               >
-                                {language === 'bilingual' ? 'Etapa 2 (Com ETA)' : 'Etapa 2'}
+                                {language === 'bilingual' ? 'Etapa 3 (+ETA)' : 'Etapa 3'}
                               </button>
                             </div>
 
@@ -4701,9 +4744,11 @@ export default function App() {
                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-sans">{language === 'bilingual' ? 'Previsão / 预计完成' : 'Completion'}:</span>
                               <span className="text-[11px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md font-mono">
                                 {(() => {
-                                  const activeVol = selectedScenario === 'etapa1' 
-                                    ? (bondedSum.totalCheio + warehouseSum.totalCheio + bufferSum.totalCheio + additionalBacklog)
-                                    : (bondedSum.totalCheio + warehouseSum.totalCheio + bufferSum.totalCheio + vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0) + additionalBacklog);
+                                  const activeVol = selectedScenario === 'etapa1'
+                                    ? (bondedSum.totalCheio + warehouseSum.totalCheio + additionalBacklog)
+                                    : selectedScenario === 'etapa2'
+                                      ? (bondedSum.totalCheio + warehouseSum.totalCheio + bufferSum.totalCheio + additionalBacklog)
+                                      : (bondedSum.totalCheio + warehouseSum.totalCheio + bufferSum.totalCheio + vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0) + additionalBacklog);
                                   const days = dailyDeliveryRate > 0 ? (activeVol / dailyDeliveryRate) : 0;
                                   const weeksNeeded = Math.ceil(days / 7);
                                   const complWeek = `W${28 + weeksNeeded}`;
@@ -5505,24 +5550,24 @@ export default function App() {
                   {/* High-Level Logistics KPIs */}
                   <div className="space-y-1.5 font-sans">
                     <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">
-                      {language === 'bilingual' ? 'Indicadores de Pátio / 堆场高层物流 KPI' : 'Logística High-Level KPIs'}
+                      {language === 'bilingual' ? 'Indicadores de Pátio / 堆场高层物流 KPI' : language === 'zh' ? '堆场高层物流 KPI' : 'Indicadores de Pátio'}
                     </span>
-                    <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-150 text-xs">
-                      <div className="p-2 rounded-lg bg-white border border-slate-100 shadow-3xs flex flex-col justify-between">
-                        <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Capacidade Total / 总容量' : 'Capacidade Total'}</span>
-                        <span className="font-mono text-xs font-black text-slate-800 mt-0.5">
+                    <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-150 dark:border-slate-850 text-xs">
+                      <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
+                        <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Capacidade Total / 总容量' : language === 'zh' ? '总容量' : 'Capacidade Total'}</span>
+                        <span className="font-mono text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">
                           {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.capacity) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">TEU</span>
                         </span>
                       </div>
-                      <div className="p-2 rounded-lg bg-white border border-slate-100 shadow-3xs flex flex-col justify-between">
-                        <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Ocupação Geral / 总体占用率' : 'Ocupação Geral'}</span>
+                      <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
+                        <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Ocupação Geral / 总体占用率' : language === 'zh' ? '总体占用率' : 'Ocupação Geral'}</span>
                         <span className={`text-xs font-black mt-0.5 px-1 py-0.2 w-max rounded ${
                           (() => {
                             const totalCap = (Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.capacity) || 0), 0);
                             const totalCheio = (Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.cheio) || 0), 0);
                             const totalVazio = (Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.vazio) || 0), 0);
                             const util = totalCap > 0 ? Math.round(((totalCheio + totalVazio) / totalCap) * 100) : 0;
-                            return util >= 89 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700';
+                            return util >= 89 ? 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400' : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400';
                           })()
                         }`}>
                           {(() => {
@@ -5533,14 +5578,14 @@ export default function App() {
                           })()}%
                         </span>
                       </div>
-                      <div className="p-2 rounded-lg bg-white border border-slate-100 shadow-3xs flex flex-col justify-between">
-                        <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Total Cheios / 重箱总量' : 'Total Cheios'}</span>
+                      <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
+                        <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Total Cheios / 重箱总量' : language === 'zh' ? '重箱总量' : 'Total Cheios'}</span>
                         <span className="font-mono text-xs font-black text-blue-600 mt-0.5">
                           {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.cheio) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">TEU</span>
                         </span>
                       </div>
-                      <div className="p-2 rounded-lg bg-white border border-slate-100 shadow-3xs flex flex-col justify-between">
-                        <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Pronto Coleta / 待提总量' : 'Pronto Coleta'}</span>
+                      <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
+                        <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Pronto Coleta / 待提总量' : language === 'zh' ? '待提总量' : 'Pronto Coleta'}</span>
                         <span className="font-mono text-xs font-black text-emerald-600 mt-0.5">
                           {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.prontoColeta) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">TEU</span>
                         </span>
@@ -5548,15 +5593,15 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="bg-red-50 p-2.5 rounded-lg border border-red-100">
-                    <p className="text-[10px] text-red-800 font-medium leading-relaxed">
+                  <div className="bg-red-50 dark:bg-red-950/20 p-2.5 rounded-lg border border-red-100 dark:border-red-900/30">
+                    <p className="text-[10px] text-red-800 dark:text-red-300 font-medium leading-relaxed">
                       {language === 'zh' ? (
                         <span>请在下方选择并配置各个堆场和CD的实际参数。</span>
                       ) : language === 'pt' ? (
                         <span>Escolha um pátio no seletor abaixo para atualizar seus valores de capacidade, estoque e total anterior de contêineres.</span>
                       ) : (
                         <>
-                          <span className="font-extrabold text-[10.5px] text-red-950 block">请在下方选择并配置各个堆场和CD的实际参数。</span>
+                          <span className="font-extrabold text-[10.5px] text-red-950 dark:text-red-200 block">请在下方选择并配置各个堆场和CD的实际参数。</span>
                           <span className="opacity-85 block mt-0.5">Escolha um pátio no seletor abaixo para atualizar seus valores de capacidade, estoque e total anterior de contêineres.</span>
                         </>
                       )}
@@ -5566,12 +5611,12 @@ export default function App() {
                   {/* SELECTOR DE PÁTIO ATIVO */}
                   <div className="space-y-1.5 font-sans">
                     <label className="text-[9px] text-slate-500 font-extrabold uppercase tracking-wider block">
-                      {language === 'bilingual' ? 'Selecione o Pátio para Configurar / 选择堆场进行配置' : 'Selecionar Pátio'}
+                      {language === 'bilingual' ? 'Selecione o Pátio para Configurar / 选择堆场进行配置' : language === 'zh' ? '选择堆场进行配置' : 'Selecione o Pátio para Configurar'}
                     </label>
                     <select
                       value={activeYardKey}
                       onChange={(e) => setActiveYardKey(e.target.value)}
-                      className="w-full text-xs font-bold border border-gray-200 rounded-lg p-2 bg-slate-50 text-slate-800 focus:ring-1 focus:ring-red-500 outline-hidden"
+                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded-lg p-2 bg-slate-50 dark:bg-slate-850 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                     >
                       {(Object.entries(yards) as [string, Yard][]).map(([key, y]) => (
                         <option key={key} value={key}>
@@ -5586,11 +5631,11 @@ export default function App() {
                     const yard = yards[activeYardKey];
                     if (!yard) return null;
                     return (
-                      <div className="p-3 border border-red-100 rounded-xl bg-red-50/10 space-y-3 font-sans">
-                        <div className="flex justify-between items-center border-b border-red-100 pb-2">
+                      <div className="p-3 border border-red-150 dark:border-red-950/40 rounded-xl bg-red-50/10 dark:bg-red-950/5 space-y-3 font-sans">
+                        <div className="flex justify-between items-center border-b border-red-100 dark:border-red-950/40 pb-2">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-extrabold text-xs text-red-950">{yard.name}</span>
-                            <span className="text-[8.5px] bg-red-600/10 text-red-700 font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wide">{yard.type}</span>
+                            <span className="font-extrabold text-xs text-red-950 dark:text-red-200">{yard.name}</span>
+                            <span className="text-[8.5px] bg-red-600/10 text-red-700 dark:text-red-400 font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wide">{yard.type}</span>
                           </div>
                           <button 
                             type="button"
@@ -5601,74 +5646,74 @@ export default function App() {
                               if (keys.length > 0) setActiveYardKey(keys[0]);
                             }}
                             title="Excluir Pátio / 删除堆场"
-                            className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50 cursor-pointer"
+                            className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1 rounded hover:bg-red-55 dark:hover:bg-red-950/40 cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-2 text-slate-800">
+                        <div className="grid grid-cols-2 gap-2 text-slate-800 dark:text-slate-100">
                           <div>
-                            <label className="text-[9px] text-gray-500 font-black uppercase block mb-1">Capacidade / 总容量</label>
+                            <label className="text-[9px] text-gray-500 dark:text-gray-400 font-black uppercase block mb-1">Capacidade / 总容量</label>
                             <input 
                               type="number" 
                               value={yard.capacity} 
                               onChange={(e) => handleYardChange(activeYardKey, 'capacity', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white focus:ring-1 focus:ring-red-500 outline-hidden"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-blue-600 font-black uppercase block mb-1">Cheio / 重箱 (TEU)</label>
+                            <label className="text-[9px] text-blue-600 dark:text-blue-400 font-black uppercase block mb-1">Cheio / 重箱 (TEU)</label>
                             <input 
                               type="number" 
                               value={yard.cheio} 
                               onChange={(e) => handleYardChange(activeYardKey, 'cheio', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white focus:ring-1 focus:ring-red-500 outline-hidden"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-slate-500 font-black uppercase block mb-1">Vazio / 空箱 (TEU)</label>
+                            <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Vazio / 空箱 (TEU)</label>
                             <input 
                               type="number" 
                               value={yard.vazio} 
                               onChange={(e) => handleYardChange(activeYardKey, 'vazio', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white focus:ring-1 focus:ring-red-500 outline-hidden"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-slate-500 font-black uppercase block mb-1">Porto / 港口 (TEU)</label>
+                            <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Porto / 港口 (TEU)</label>
                             <input 
                               type="number" 
                               value={yard.porto} 
                               onChange={(e) => handleYardChange(activeYardKey, 'porto', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white focus:ring-1 focus:ring-red-500 outline-hidden"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-amber-600 font-black uppercase block mb-1">Pronto Coleta / 待提</label>
+                            <label className="text-[9px] text-amber-600 dark:text-amber-400 font-black uppercase block mb-1">Pronto Coleta / 待提</label>
                             <input 
                               type="number" 
                               value={yard.prontoColeta} 
                               onChange={(e) => handleYardChange(activeYardKey, 'prontoColeta', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white focus:ring-1 focus:ring-red-500 outline-hidden"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-emerald-600 font-black uppercase block mb-1">Delivered / 交付</label>
+                            <label className="text-[9px] text-emerald-600 dark:text-emerald-400 font-black uppercase block mb-1">Delivered / 交付</label>
                             <input 
                               type="number" 
                               value={yard.delivered} 
                               onChange={(e) => handleYardChange(activeYardKey, 'delivered', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white focus:ring-1 focus:ring-red-500 outline-hidden"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
                           </div>
                           <div className="col-span-2">
-                            <label className="text-[9px] text-rose-600 font-black uppercase block mb-1">Prev Total / 上期总量 (TEU)</label>
+                            <label className="text-[9px] text-rose-600 dark:text-rose-400 font-black uppercase block mb-1">Prev Total / 上期总量 (TEU)</label>
                             <input 
                               type="number" 
                               value={yard.previous_total !== undefined ? yard.previous_total : 0} 
                               onChange={(e) => handleYardChange(activeYardKey, 'previous_total', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white focus:ring-1 focus:ring-red-500 outline-hidden"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
                           </div>
                         </div>
@@ -5677,39 +5722,39 @@ export default function App() {
                   })()}
 
                   {/* COLLAPSIBLE CRIAR NOVO PÁTIO */}
-                  <div className="border border-gray-200 rounded-xl bg-slate-50 overflow-hidden font-sans">
+                  <div className="border border-gray-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans">
                     <button
                       type="button"
                       onClick={() => setShowAddYardForm(!showAddYardForm)}
-                      className="w-full p-3 bg-white text-left font-extrabold text-[10.5px] uppercase tracking-wider text-slate-700 flex items-center justify-between cursor-pointer"
+                      className="w-full p-3 bg-white dark:bg-slate-900 text-left font-extrabold text-[10.5px] uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center justify-between cursor-pointer"
                     >
                       <span className="flex items-center gap-1.5">
                         <Plus className="w-3.5 h-3.5 text-red-500" />
-                        {language === 'bilingual' ? 'Criar Novo Pátio / 增加新堆场' : 'Criar Novo Pátio'}
+                        {language === 'bilingual' ? 'Criar Novo Pátio / 增加新堆场' : language === 'zh' ? '增加新堆场' : 'Criar Novo Pátio'}
                       </span>
                       <span className="text-gray-400 font-black">{showAddYardForm ? '−' : '+'}</span>
                     </button>
                     
                     {showAddYardForm && (
-                      <form onSubmit={addYard} className="p-3 border-t border-gray-200 bg-white/70 space-y-2.5 text-[10.5px]">
+                      <form onSubmit={addYard} className="p-3 border-t border-gray-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 space-y-2.5 text-[10.5px]">
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[8.5px] text-slate-500 font-bold uppercase block mb-0.5">Nome do Pátio / 堆场名称</label>
+                            <label className="text-[8.5px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-0.5">Nome do Pátio / 堆场名称</label>
                             <input 
                               type="text" 
                               placeholder="NOME / 名称"
                               value={newYardName}
                               onChange={(e) => setNewYardName(e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white uppercase text-slate-800 outline-hidden"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 uppercase outline-hidden"
                               required
                             />
                           </div>
                           <div>
-                            <label className="text-[8.5px] text-slate-500 font-bold uppercase block mb-0.5">Tipo / 堆场类型</label>
+                            <label className="text-[8.5px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-0.5">Tipo / 堆场类型</label>
                             <select 
                               value={newYardType}
                               onChange={(e) => setNewYardType(e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white text-slate-800 uppercase outline-hidden"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 uppercase outline-hidden"
                             >
                               <option value="BONDED">BONDED / 关内</option>
                               <option value="WAREHOUSE">CD & WAREHOUSE / 仓库</option>
@@ -5718,86 +5763,86 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 text-slate-800">
+                        <div className="grid grid-cols-3 gap-2 text-slate-800 dark:text-slate-100">
                           <div>
-                            <label className="text-[8px] text-gray-500 font-bold uppercase block mb-0.5">Capacity / 容积</label>
+                            <label className="text-[8px] text-gray-500 dark:text-gray-400 font-bold uppercase block mb-0.5">Capacity / 容积</label>
                             <input 
                               type="number" 
                               placeholder="2000"
                               value={newYardCapacity}
                               onChange={(e) => setNewYardCapacity(Number(e.target.value) || 0)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
                               min="0"
                             />
                           </div>
                           <div>
-                            <label className="text-[8px] text-blue-500 font-bold uppercase block mb-0.5">Cheio / 重箱</label>
+                            <label className="text-[8px] text-blue-500 dark:text-blue-400 font-bold uppercase block mb-0.5">Cheio / 重箱</label>
                             <input 
                               type="number" 
                               placeholder="500"
                               value={newYardCheio}
                               onChange={(e) => setNewYardCheio(Number(e.target.value) || 0)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
                               min="0"
                             />
                           </div>
                           <div>
-                            <label className="text-[8px] text-slate-500 font-bold uppercase block mb-0.5">Vazio / 空箱</label>
+                            <label className="text-[8px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-0.5">Vazio / 空箱</label>
                             <input 
                               type="number" 
                               placeholder="100"
                               value={newYardVazio}
                               onChange={(e) => setNewYardVazio(Number(e.target.value) || 0)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
                               min="0"
                             />
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 text-slate-800">
+                        <div className="grid grid-cols-3 gap-2 text-slate-800 dark:text-slate-100">
                           <div>
-                            <label className="text-[8px] text-gray-500 font-bold uppercase block mb-0.5">Porto / 港口</label>
+                            <label className="text-[8px] text-gray-500 dark:text-gray-400 font-bold uppercase block mb-0.5">Porto / 港口</label>
                             <input 
                               type="number" 
                               placeholder="50"
                               value={newYardPorto}
                               onChange={(e) => setNewYardPorto(Number(e.target.value) || 0)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
                               min="0"
                             />
                           </div>
                           <div>
-                            <label className="text-[8px] text-blue-500 font-bold uppercase block mb-0.5">Coleta / 待提</label>
+                            <label className="text-[8px] text-blue-500 dark:text-blue-400 font-bold uppercase block mb-0.5">Coleta / 待提</label>
                             <input 
                               type="number" 
                               placeholder="120"
                               value={newYardProntoColeta}
                               onChange={(e) => setNewYardProntoColeta(Number(e.target.value) || 0)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
                               min="0"
                             />
                           </div>
                           <div>
-                            <label className="text-[8px] text-emerald-500 font-bold uppercase block mb-0.5">Deliv / 交付</label>
+                            <label className="text-[8px] text-emerald-500 dark:text-emerald-400 font-bold uppercase block mb-0.5">Deliv / 交付</label>
                             <input 
                               type="number" 
                               placeholder="80"
                               value={newYardDelivered}
                               onChange={(e) => setNewYardDelivered(Number(e.target.value) || 0)}
-                              className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
                               min="0"
                             />
                           </div>
                         </div>
 
                         <div>
-                          <label className="text-[8px] text-rose-500 font-bold uppercase block mb-0.5">Prev Total / 上期总量 (TEU)</label>
+                          <label className="text-[8px] text-rose-500 dark:text-rose-400 font-bold uppercase block mb-0.5">Prev Total / 上期总量 (TEU)</label>
                           <input 
                             type="number" 
                             placeholder="1000"
                             value={newYardPreviousTotal}
                             onChange={(e) => setNewYardPreviousTotal(Number(e.target.value) || 0)}
-                            className="w-full text-xs font-bold border border-gray-200 rounded p-1 bg-white"
+                            className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
                             min="0"
                           />
                         </div>
@@ -5816,16 +5861,16 @@ export default function App() {
 
               {/* TAB: STOCK (ESTOQUE DETALHADO DE CADA ÁREA) */}
               {activeTab === 'stock' && (
-                <div className="space-y-4 text-slate-800 font-sans">
-                  <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">
-                    <p className="text-[10px] text-emerald-800 font-medium leading-relaxed">
+                <div className="space-y-4 text-slate-800 dark:text-slate-200 font-sans">
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-900/50">
+                    <p className="text-[10px] text-emerald-800 dark:text-emerald-300 font-medium leading-relaxed">
                       {language === 'zh' ? (
                         <span>在这里，您可以像在“Detalhamento de Área”中一样管理各个堆场的集装箱明细。</span>
                       ) : language === 'pt' ? (
                         <span>Gerencie o detalhamento do estoque físico por área. É o mesmo que preencher no detalhamento do painel principal, agora diretamente no controlador lateral.</span>
                       ) : (
                         <>
-                          <span className="font-extrabold text-[10.5px] text-emerald-950 block">在这里，您可以像在“Detalhamento de Área”中一样管理各个堆场的集装箱明细。</span>
+                          <span className="font-extrabold text-[10.5px] text-emerald-950 dark:text-emerald-200 block">在这里，您可以像在“Detalhamento de Área”中一样管理各个堆场的集装箱明细。</span>
                           <span className="opacity-85 block mt-0.5">Gerencie o detalhamento do estoque físico por área. É o mesmo que preencher no detalhamento do painel principal, agora diretamente no controlador lateral.</span>
                         </>
                       )}
@@ -5834,13 +5879,13 @@ export default function App() {
 
                   {/* SELETOR DE ÁREA PARA O ESTOQUE */}
                   <div className="space-y-1.5 font-sans">
-                    <label className="text-[9px] text-slate-500 font-extrabold uppercase block tracking-wider">
-                      {language === 'bilingual' ? 'Selecionar Área / 选择堆场区域' : 'Selecionar Área'}
+                    <label className="text-[9px] text-slate-500 dark:text-slate-400 font-extrabold uppercase block tracking-wider">
+                      {language === 'bilingual' ? 'Selecionar Área / 选择堆场区域' : language === 'zh' ? '选择堆场区域' : 'Selecionar Área'}
                     </label>
                     <select
                       value={stockSelectedYardKey}
                       onChange={(e) => setStockSelectedYardKey(e.target.value)}
-                      className="w-full text-xs font-bold border border-gray-200 rounded-lg p-2 bg-slate-50 text-slate-800 outline-hidden"
+                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded-lg p-2 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-hidden focus:ring-1 focus:ring-emerald-500"
                     >
                       {(Object.entries(yards) as [string, Yard][]).map(([key, y]) => (
                         <option key={key} value={key}>
@@ -5859,50 +5904,52 @@ export default function App() {
                       ? Math.min(100, Math.round((occupied / stockYard.capacity) * 100)) 
                       : 0;
                     return (
-                      <div className="grid grid-cols-3 gap-1.5 bg-slate-50 p-2 rounded-lg border border-slate-150 text-[10px]">
+                      <div className="grid grid-cols-3 gap-1.5 bg-slate-50 dark:bg-slate-900/60 p-2 rounded-lg border border-slate-200 dark:border-slate-800 text-[10px] text-slate-800 dark:text-slate-200">
                         <div>
-                          <span className="text-[8px] text-gray-400 font-extrabold uppercase block">{language === 'bilingual' ? 'Capacidade / 容量' : 'Capacidade'}</span>
-                          <span className="font-mono font-bold text-gray-800">{(stockYard.capacity || 0).toLocaleString()}</span>
+                          <span className="text-[8px] text-gray-400 dark:text-gray-500 font-extrabold uppercase block">{language === 'bilingual' ? 'Capacidade / 容量' : language === 'zh' ? '容量' : 'Capacidade'}</span>
+                          <span className="font-mono font-bold text-gray-800 dark:text-slate-100">{(stockYard.capacity || 0).toLocaleString()}</span>
                         </div>
                         <div>
-                          <span className="text-[8px] text-gray-400 font-extrabold uppercase block">{language === 'bilingual' ? 'Ocupação / 占用' : 'Ocupação'}</span>
+                          <span className="text-[8px] text-gray-400 dark:text-gray-500 font-extrabold uppercase block">{language === 'bilingual' ? 'Ocupação / 占用' : language === 'zh' ? '占用' : 'Ocupação'}</span>
                           <span className={`font-bold px-1 rounded ${
-                            stockYardOcupacao >= 89 ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
+                            stockYardOcupacao >= 89 
+                              ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' 
+                              : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                           }`}>{stockYardOcupacao}%</span>
                         </div>
                         <div>
-                          <span className="text-[8px] text-gray-400 font-extrabold uppercase block">{language === 'bilingual' ? 'Cheios / 重箱' : 'Cheios'}</span>
-                          <span className="font-mono font-bold text-blue-600">{(stockYard.cheio || 0).toLocaleString()}</span>
+                          <span className="text-[8px] text-gray-400 dark:text-gray-500 font-extrabold uppercase block">{language === 'bilingual' ? 'Cheios / 重箱' : language === 'zh' ? '重箱' : 'Cheios'}</span>
+                          <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{(stockYard.cheio || 0).toLocaleString()}</span>
                         </div>
                       </div>
                     );
                   })()}
 
                   {/* PESQUISA E FILTROS */}
-                  <div className="space-y-1.5 bg-slate-50/50 p-2.5 rounded-lg border border-gray-150">
+                  <div className="space-y-1.5 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-lg border border-gray-200 dark:border-slate-800">
                     <input
                       type="text"
                       value={stockContainerSearch}
                       onChange={(e) => setStockContainerSearch(e.target.value)}
-                      placeholder={language === 'bilingual' ? "Pesquisar contêiner... / 搜索箱号..." : "Pesquisar contêiner..."}
-                      className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white text-slate-850 outline-hidden focus:ring-1 focus:ring-emerald-500"
+                      placeholder={language === 'bilingual' ? "Pesquisar contêiner... / 搜索箱号..." : language === 'zh' ? "搜索箱号..." : "Pesquisar contêiner..."}
+                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-hidden focus:ring-1 focus:ring-emerald-500"
                     />
                     <div className="grid grid-cols-2 gap-1.5">
                       <select
                         value={stockContainerStatusFilter}
                         onChange={(e) => setStockContainerStatusFilter(e.target.value)}
-                        className="text-[10px] font-bold border border-gray-200 rounded p-1 bg-white text-slate-700 outline-hidden"
+                        className="text-[10px] font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 outline-hidden"
                       >
-                        <option value="ALL">Status: {language === 'bilingual' ? 'Todos / 全部' : 'Todos'}</option>
+                        <option value="ALL">Status: {language === 'bilingual' ? 'Todos / 全部' : language === 'zh' ? '全部' : 'Todos'}</option>
                         <option value="CHEIO">CHEIO / 重箱</option>
                         <option value="VAZIO">VAZIO / 空箱</option>
                       </select>
                       <select
                         value={stockContainerCategoryFilter}
                         onChange={(e) => setStockContainerCategoryFilter(e.target.value)}
-                        className="text-[10px] font-bold border border-gray-200 rounded p-1 bg-white text-slate-700 outline-hidden"
+                        className="text-[10px] font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 outline-hidden"
                       >
-                        <option value="ALL">Cat: {language === 'bilingual' ? 'Todos / 全部' : 'Todos'}</option>
+                        <option value="ALL">Cat: {language === 'bilingual' ? 'Todos / 全部' : language === 'zh' ? '全部' : 'Todos'}</option>
                         <option value="GERAL">GERAL / 通用</option>
                         <option value="PORTO">PORTO / 港口</option>
                         <option value="PRONTO_COLETA">PRONTO / 待提</option>
@@ -5923,33 +5970,35 @@ export default function App() {
 
                     return (
                       <div className="space-y-3">
-                        <div className="border border-gray-200 rounded-lg overflow-hidden bg-white max-h-[160px] overflow-y-auto">
+                        <div className="border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden bg-white dark:bg-slate-900 max-h-[160px] overflow-y-auto">
                           <table className="w-full text-left border-collapse">
                             <thead>
-                              <tr className="bg-slate-50 text-[8.5px] uppercase tracking-wider text-slate-500 font-extrabold border-b border-gray-200 sticky top-0 bg-white">
-                                <th className="p-1.5 pl-2">{language === 'bilingual' ? 'Contêiner / 箱号' : 'Contêiner'}</th>
-                                <th className="p-1.5">{language === 'bilingual' ? 'Status / Size' : 'Status'}</th>
-                                <th className="p-1.5 text-center">{language === 'bilingual' ? 'Ações / 操作' : 'Ações'}</th>
+                              <tr className="bg-slate-50 dark:bg-slate-800 text-[8.5px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-extrabold border-b border-gray-200 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900">
+                                <th className="p-1.5 pl-2">{language === 'bilingual' ? 'Contêiner / 箱号' : language === 'zh' ? '箱号' : 'Contêiner'}</th>
+                                <th className="p-1.5">{language === 'bilingual' ? 'Status / Size' : language === 'zh' ? '状态 / 尺寸' : 'Status'}</th>
+                                <th className="p-1.5 text-center">{language === 'bilingual' ? 'Ações / 操作' : language === 'zh' ? '操作' : 'Ações'}</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 text-[10.5px]">
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800 text-[10.5px]">
                               {activeContainers.map((c) => (
-                                <tr key={c.id} className="hover:bg-slate-50 font-bold text-slate-850">
+                                <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 font-bold text-slate-800 dark:text-slate-200">
                                   <td className="p-1.5 pl-2 font-mono">
                                     <div className="tracking-tight">{c.id}</div>
-                                    <div className="text-[8px] text-gray-400 font-sans tracking-tight">{c.category} • {c.vesselName || 'N/A'}</div>
+                                    <div className="text-[8px] text-gray-400 dark:text-gray-500 font-sans tracking-tight">{c.category} • {c.vesselName || 'N/A'}</div>
                                   </td>
                                   <td className="p-1.5">
                                     <span className={`text-[8px] px-1 py-0.2 rounded font-extrabold uppercase ${
-                                      c.status === 'CHEIO' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'
+                                      c.status === 'CHEIO' 
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300' 
+                                        : 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-400'
                                     }`}>{c.status}</span>
-                                    <span className="text-[8px] text-slate-500 ml-1 font-mono">{c.size}</span>
+                                    <span className="text-[8px] text-slate-500 dark:text-slate-400 ml-1 font-mono">{c.size}</span>
                                   </td>
                                   <td className="p-1.5 text-center">
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteContainer(c)}
-                                      className="p-1 text-gray-400 hover:text-red-600 transition-colors rounded hover:bg-red-50 cursor-pointer"
+                                      className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors rounded hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -5958,8 +6007,8 @@ export default function App() {
                               ))}
                               {activeContainers.length === 0 && (
                                 <tr>
-                                  <td colSpan={3} className="p-4 text-center text-slate-400 text-[10px]">
-                                    {language === 'bilingual' ? 'Nenhum contêiner cadastrado. / 无已登记集装箱。' : 'Nenhum contêiner cadastrado.'}
+                                  <td colSpan={3} className="p-4 text-center text-slate-400 dark:text-slate-500 text-[10px]">
+                                    {language === 'bilingual' ? 'Nenhum contêiner cadastrado. / 无已登记集装箱。' : language === 'zh' ? '无已登记集装箱。' : 'Nenhum contêiner cadastrado.'}
                                   </td>
                                 </tr>
                               )}
@@ -5968,30 +6017,30 @@ export default function App() {
                         </div>
 
                         {/* REGISTRO DE CONTÊINER NA ABA */}
-                        <div className="p-3 bg-emerald-50/15 border border-emerald-100 rounded-xl space-y-2.5">
-                          <h4 className="font-extrabold text-[10.5px] uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                        <div className="p-3 bg-emerald-500/5 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/50 rounded-xl space-y-2.5">
+                          <h4 className="font-extrabold text-[10.5px] uppercase tracking-wider text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
                             <Plus className="w-3.5 h-3.5" />
-                            <span>{language === 'bilingual' ? 'Cadastrar Novo Contêiner / 登记新箱' : 'Cadastrar Novo Contêiner'}</span>
+                            <span>{language === 'bilingual' ? 'Cadastrar Novo Contêiner / 登记新箱' : language === 'zh' ? '登记新箱' : 'Cadastrar Novo Contêiner'}</span>
                           </h4>
                           <form onSubmit={handleAddContainer} className="space-y-2 text-[10px] font-sans">
                             <div>
-                              <label className="text-[8px] uppercase tracking-wider text-slate-500 font-extrabold block mb-0.5">ID do Contêiner / 箱号</label>
+                              <label className="text-[8px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-extrabold block mb-0.5">ID do Contêiner / 箱号</label>
                               <input
                                 type="text"
                                 required
                                 value={newContainerId}
                                 onChange={(e) => setNewContainerId(e.target.value)}
                                 placeholder="Ex: BYDU1234567"
-                                className="w-full border border-gray-200 rounded p-1.5 font-mono text-xs font-bold uppercase bg-white text-slate-800 outline-hidden focus:ring-1 focus:ring-emerald-500"
+                                className="w-full border border-gray-200 dark:border-slate-700 rounded p-1.5 font-mono text-xs font-bold uppercase bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-hidden focus:ring-1 focus:ring-emerald-500"
                               />
                             </div>
                             <div className="grid grid-cols-2 gap-1.5">
                               <div>
-                                <label className="text-[8px] uppercase tracking-wider text-slate-500 font-extrabold block mb-0.5">Tamanho / 尺寸</label>
+                                <label className="text-[8px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-extrabold block mb-0.5">Tamanho / 尺寸</label>
                                 <select
                                   value={newContainerSize}
                                   onChange={(e) => setNewContainerSize(e.target.value)}
-                                  className="w-full border border-gray-200 rounded p-1 bg-white font-bold text-slate-800 outline-hidden"
+                                  className="w-full border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 font-bold text-slate-800 dark:text-slate-100 outline-hidden"
                                 >
                                   <option value="20' GP">20' GP</option>
                                   <option value="40' HC">40' HC</option>
@@ -5999,11 +6048,11 @@ export default function App() {
                                 </select>
                               </div>
                               <div>
-                                <label className="text-[8px] uppercase tracking-wider text-slate-500 font-extrabold block mb-0.5">Status / 状态</label>
+                                <label className="text-[8px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-extrabold block mb-0.5">Status / 状态</label>
                                 <select
                                   value={newContainerStatus}
                                   onChange={(e) => setNewContainerStatus(e.target.value as any)}
-                                  className="w-full border border-gray-200 rounded p-1 bg-white font-bold text-slate-800 outline-hidden"
+                                  className="w-full border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 font-bold text-slate-800 dark:text-slate-100 outline-hidden"
                                 >
                                   <option value="CHEIO">CHEIO / 重箱</option>
                                   <option value="VAZIO">VAZIO / 空箱</option>
@@ -6012,11 +6061,11 @@ export default function App() {
                             </div>
                             <div className="grid grid-cols-2 gap-1.5">
                               <div>
-                                <label className="text-[8px] uppercase tracking-wider text-slate-500 font-extrabold block mb-0.5">Categoria / 类别</label>
+                                <label className="text-[8px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-extrabold block mb-0.5">Categoria / 类别</label>
                                 <select
                                   value={newContainerCategory}
                                   onChange={(e) => setNewContainerCategory(e.target.value as any)}
-                                  className="w-full border border-gray-200 rounded p-1 bg-white font-bold text-slate-800 outline-hidden text-[9.5px]"
+                                  className="w-full border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 font-bold text-slate-800 dark:text-slate-100 outline-hidden text-[9.5px]"
                                 >
                                   <option value="GERAL">GERAL / 通用</option>
                                   <option value="PORTO">PORTO / 港口</option>
@@ -6025,11 +6074,11 @@ export default function App() {
                                 </select>
                               </div>
                               <div>
-                                <label className="text-[8px] uppercase tracking-wider text-slate-500 font-extrabold block mb-0.5">Navio / 船舶</label>
+                                <label className="text-[8px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-extrabold block mb-0.5">Navio / 船舶</label>
                                 <select
                                   value={newContainerVessel}
                                   onChange={(e) => setNewContainerVessel(e.target.value)}
-                                  className="w-full border border-gray-200 rounded p-1 bg-white font-bold text-slate-800 outline-hidden text-[9.5px]"
+                                  className="w-full border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 font-bold text-slate-800 dark:text-slate-100 outline-hidden text-[9.5px]"
                                 >
                                   <option value="N/A">N/A</option>
                                   {vessels.map(v => (
@@ -6042,16 +6091,16 @@ export default function App() {
                               type="submit"
                               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold p-1.5 rounded text-xs transition-colors cursor-pointer"
                             >
-                              {language === 'bilingual' ? 'Adicionar Contêiner / 添加' : 'Adicionar Contêiner'}
+                              {language === 'bilingual' ? 'Adicionar Contêiner / 添加' : language === 'zh' ? '添加' : 'Adicionar Contêiner'}
                             </button>
                           </form>
                         </div>
 
                         {/* EXCEL IMPORT INTERFACE */}
-                        <div className="p-3 bg-blue-50/15 border border-blue-100 rounded-xl space-y-2">
-                          <h4 className="font-extrabold text-[10.5px] uppercase tracking-wider text-blue-800 flex items-center gap-1.5">
+                        <div className="p-3 bg-blue-500/5 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/50 rounded-xl space-y-2">
+                          <h4 className="font-extrabold text-[10.5px] uppercase tracking-wider text-blue-800 dark:text-blue-400 flex items-center gap-1.5">
                             <FileSpreadsheet className="w-3.5 h-3.5" />
-                            <span>{language === 'bilingual' ? 'Planilha Excel / 导入表格' : 'Planilha Excel'}</span>
+                            <span>{language === 'bilingual' ? 'Planilha Excel / 导入表格' : language === 'zh' ? '导入表格' : 'Planilha Excel'}</span>
                           </h4>
                           <div className="grid grid-cols-2 gap-1.5">
                             <button
@@ -6059,11 +6108,11 @@ export default function App() {
                               className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-1.5 rounded text-[10px] cursor-pointer"
                             >
                               <Download className="w-3 h-3" />
-                              <span>{language === 'bilingual' ? 'Modelo / 模板' : 'Modelo'}</span>
+                              <span>{language === 'bilingual' ? 'Modelo / 模板' : language === 'zh' ? '模板' : 'Modelo'}</span>
                             </button>
                             <label className="flex items-center justify-center gap-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-1 px-1.5 rounded text-[10px] cursor-pointer text-center">
                               <Upload className="w-3 h-3" />
-                              <span>{language === 'bilingual' ? 'Importar / 导入' : 'Importar'}</span>
+                              <span>{language === 'bilingual' ? 'Importar / 导入' : language === 'zh' ? '导入' : 'Importar'}</span>
                               <input
                                 id="excel_upload_input_stock"
                                 type="file"
@@ -6082,30 +6131,30 @@ export default function App() {
 
               {/* TAB: NAVIOS */}
               {activeTab === 'vessels' && (
-                <div className="space-y-4 text-slate-800">
-                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <p className="text-[11px] text-blue-800 font-medium flex flex-col gap-1.5">
+                <div className="space-y-4 text-slate-800 dark:text-slate-200">
+                  <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                    <p className="text-[11px] text-blue-800 dark:text-blue-300 font-medium flex flex-col gap-1.5">
                       {language === 'zh' ? (
                         <span>在此配置显示在看板右侧表格中的预计到港船舶计划。</span>
                       ) : language === 'pt' ? (
                         <span>Configure a escala dos navios que aparecem na tabela à direita do painel.</span>
                       ) : (
                         <>
-                          <span className="font-extrabold text-[12px] text-slate-900 block leading-normal">在此配置显示在看板右侧表格中的预计到港船舶计划。</span>
+                          <span className="font-extrabold text-[12px] text-slate-900 dark:text-slate-100 block leading-normal">在此配置显示在看板右侧表格中的预计到港船舶计划。</span>
                           <span className="text-[10.5px] block opacity-85 leading-tight">Configure a escala dos navios que aparecem na tabela à direita do painel.</span>
                         </>
                       )}
                     </p>
                   </div>
 
-                  <form onSubmit={addVessel} className="p-3 border border-dashed border-gray-200 rounded-lg bg-gray-50/50 space-y-2">
-                    <span className="text-[10px] font-black text-gray-500 uppercase block">Novo Navio / 新到船舶</span>
+                  <form onSubmit={addVessel} className="p-3 border border-dashed border-gray-200 dark:border-slate-800 rounded-lg bg-gray-50/50 dark:bg-slate-900/50 space-y-2">
+                    <span className="text-[10px] font-black text-gray-500 dark:text-gray-450 uppercase block">Novo Navio / 新到船舶</span>
                     <input 
                       type="text" 
                       placeholder="NOME DO NAVIO / 船名"
                       value={newVesselName}
                       onChange={(e) => setNewVesselName(e.target.value)}
-                      className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white uppercase text-slate-800"
+                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 uppercase text-slate-800 dark:text-slate-100 outline-hidden focus:ring-1 focus:ring-blue-500"
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <input 
@@ -6113,14 +6162,14 @@ export default function App() {
                         placeholder="ETA / 预计到港"
                         value={newVesselEta}
                         onChange={(e) => setNewVesselEta(e.target.value)}
-                        className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white text-slate-800"
+                        className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-hidden focus:ring-1 focus:ring-blue-500"
                       />
                       <input 
                         type="number" 
                         placeholder="Qtd Cntrs / 箱量"
                         value={newVesselCntrs}
                         onChange={(e) => setNewVesselCntrs(Number(e.target.value))}
-                        className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white text-slate-800"
+                        className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-hidden focus:ring-1 focus:ring-blue-500"
                       />
                     </div>
                     <button 
@@ -6133,11 +6182,11 @@ export default function App() {
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center pb-1">
-                      <span className="text-xs font-bold text-gray-700">Lista Cadastrada / 计划列表:</span>
+                      <span className="text-xs font-bold text-gray-700 dark:text-slate-300">Lista Cadastrada / 计划列表:</span>
                       <button
                         type="button"
                         onClick={autoSortVesselsByDate}
-                        className="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-extrabold px-2 py-1 rounded transition-all cursor-pointer flex items-center gap-1 uppercase"
+                        className="text-[10px] bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 font-extrabold px-2 py-1 rounded transition-all cursor-pointer flex items-center gap-1 uppercase"
                         title="Ordena os navios automaticamente com base na data do ETA / 基于预计到港日期自动排序"
                       >
                         <Sparkles className="w-3 h-3 text-[#d97706] animate-pulse" />
@@ -6146,17 +6195,17 @@ export default function App() {
                     </div>
 
                     {vessels.map(v => (
-                      <div key={v.id} className="p-2 border border-gray-100 rounded flex justify-between items-center text-xs bg-white">
+                      <div key={v.id} className="p-2 border border-gray-150 dark:border-slate-800 rounded flex justify-between items-center text-xs bg-white dark:bg-slate-900">
                         <div className="flex-1">
-                          <p className="font-extrabold text-gray-800">{v.name}</p>
-                          <p className="text-[10px] text-gray-400 font-mono">ETA: {v.eta} | Qtd: {v.cntrs}</p>
+                          <p className="font-extrabold text-gray-800 dark:text-slate-100">{v.name}</p>
+                          <p className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">ETA: {v.eta} | Qtd: {v.cntrs}</p>
                         </div>
                         <div className="flex items-center gap-1.5">
                           {/* Botões de Direção (Up/Down) */}
                           <button
                             type="button"
                             onClick={() => shiftVessel(v.id, 'up')}
-                            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded cursor-pointer transition-colors"
+                            className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800/40 rounded cursor-pointer transition-colors"
                             title="Mover para cima / 上移"
                           >
                             <ChevronUp className="w-4 h-4" />
@@ -6164,7 +6213,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => shiftVessel(v.id, 'down')}
-                            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded cursor-pointer transition-colors"
+                            className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800/40 rounded cursor-pointer transition-colors"
                             title="Mover para baixo / 下移"
                           >
                             <ChevronDown className="w-4 h-4" />
@@ -6174,7 +6223,7 @@ export default function App() {
                           <button 
                             type="button"
                             onClick={() => deleteVessel(v.id)}
-                            className="p-1 text-red-500 hover:bg-red-50 rounded cursor-pointer transition-colors"
+                            className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded cursor-pointer transition-colors"
                             title="Excluir Navio / 删除"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -6188,18 +6237,18 @@ export default function App() {
 
               {/* TAB: GRÁFICOS */}
               {activeTab === 'charts' && (
-                <div className="space-y-4 text-slate-800">
+                <div className="space-y-4 text-slate-800 dark:text-slate-200 font-sans">
                   
                   {/* COEFICIENTE DE BACKLOG */}
-                  <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-105 space-y-2">
-                    <p className="text-[11px] text-yellow-850 font-medium flex flex-col gap-1">
+                  <div className="bg-amber-50 dark:bg-amber-950/20 p-3 rounded-lg border border-amber-100 dark:border-amber-900/50 space-y-2">
+                    <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium flex flex-col gap-1">
                       {language === 'zh' ? (
                         <span>通过调整下方的积压系数，模拟物流危机或快速消箱。</span>
                       ) : language === 'pt' ? (
                         <span>Simule crises logísticas ou reduções rápidas ajustando o multiplicador de backlog abaixo.</span>
                       ) : (
                         <>
-                          <span className="font-extrabold text-[12px] text-amber-950 block">通过调整下方的积压系数，模拟物流危机或快速消箱。</span>
+                          <span className="font-extrabold text-[12px] text-amber-950 dark:text-amber-200 block">通过调整下方的积压系数，模拟物流危机或快速消箱。</span>
                           <span className="text-[10px] block opacity-85 leading-tight">Simule crises logísticas ou reduções rápidas ajustando o multiplicador de backlog abaixo.</span>
                         </>
                       )}
@@ -6207,24 +6256,24 @@ export default function App() {
                     <div className="grid grid-cols-2 gap-1.5">
                       <button 
                         onClick={() => applyMultiplierToBacklog(1.3)} 
-                        className="py-1 bg-red-100 text-red-700 font-bold rounded text-[10px] hover:bg-red-200 transition-all cursor-pointer font-sans"
+                        className="py-1 bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold rounded text-[10px] hover:bg-red-200 dark:hover:bg-red-900/40 transition-all cursor-pointer font-sans"
                       >
-                        Aumento / 增加 +30%
+                        {language === 'bilingual' ? 'Aumento / 增加 +30%' : language === 'zh' ? '增加 +30%' : 'Aumento +30%'}
                       </button>
                       <button 
                         onClick={() => applyMultiplierToBacklog(0.7)} 
-                        className="py-1 bg-green-100 text-green-700 font-bold rounded text-[10px] hover:bg-green-200 transition-all cursor-pointer font-sans"
+                        className="py-1 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold rounded text-[10px] hover:bg-emerald-200 dark:hover:bg-emerald-900/40 transition-all cursor-pointer font-sans"
                       >
-                        Redução / 减少 -30%
+                        {language === 'bilingual' ? 'Redução / 减少 -30%' : language === 'zh' ? '减少 -30%' : 'Redução -30%'}
                       </button>
                     </div>
                   </div>
 
                   {/* SEÇÃO CHART LEFT: SEMANAS / BACKLOG */}
-                  <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50 space-y-3.5">
-                    <div className="flex items-center gap-1.5 border-b pb-1.5 border-slate-200">
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/40 space-y-3.5">
+                    <div className="flex items-center gap-1.5 border-b pb-1.5 border-slate-200 dark:border-slate-800">
                       <TrendingUp className="w-4 h-4 text-emerald-500" />
-                      <span className="text-xs font-black text-slate-850 uppercase">
+                      <span className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase">
                         {language === 'zh' ? '每周积压与到港管理 (图表1)' : language === 'pt' ? 'Gerenciar semanas e backlog (Gráfico 1)' : 'Semanas & Backlog (Gráfico 1)'}
                       </span>
                     </div>
@@ -6241,66 +6290,66 @@ export default function App() {
                           setNewWeekName(`W${nextNum}`);
                         }
                       }}
-                      className="bg-white p-2.5 rounded-lg border border-slate-200 space-y-2 text-[11px]"
+                      className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2 text-[11px]"
                     >
-                      <div className="font-extrabold text-[#111827] mb-1">
-                        {language === 'zh' ? '➕ 添加新周数据' : '➕ Cadastrar nova semana'}
+                      <div className="font-extrabold text-[#111827] dark:text-slate-200 mb-1">
+                        {language === 'zh' ? '➕ 添加新周数据' : language === 'pt' ? '➕ Cadastrar nova semana' : '➕ Cadastrar nova semana / 添加新周数据'}
                       </div>
                       <div className="grid grid-cols-3 gap-1.5">
                         <div className="space-y-0.5">
-                          <label className="text-[9px] text-gray-400 font-bold uppercase block">Semana / 周</label>
+                          <label className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase block">Semana / 周</label>
                           <input 
                             type="text"
                             value={newWeekName}
                             onChange={(e) => setNewWeekName(e.target.value)}
                             required
                             placeholder="W30"
-                            className="w-full text-center border rounded p-1 font-bold text-slate-805 bg-white text-slate-850 focus:ring-1 focus:ring-slate-400 outline-none"
+                            className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
                           />
                         </div>
                         <div className="space-y-0.5">
-                          <label className="text-[9px] text-gray-400 font-bold uppercase block">ATA / 到港</label>
+                          <label className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase block">ETA / 到港</label>
                           <input 
                             type="number"
                             value={newWeekArrivals}
                             onChange={(e) => setNewWeekArrivals(Math.max(0, Number(e.target.value)))}
                             required
-                            className="w-full text-center border rounded p-1 font-bold text-slate-805 bg-white text-slate-850 focus:ring-1 focus:ring-slate-400 outline-none"
+                            className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
                           />
                         </div>
                         <div className="space-y-0.5">
-                          <label className="text-[9px] text-gray-400 font-bold uppercase block">Backlog / 积压</label>
+                          <label className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase block">Backlog / 积压</label>
                           <input 
                             type="number"
                             value={newWeekBacklog}
                             onChange={(e) => setNewWeekBacklog(Math.max(0, Number(e.target.value)))}
                             required
-                            className="w-full text-center border rounded p-1 font-bold text-slate-805 bg-white text-slate-850 focus:ring-1 focus:ring-slate-400 outline-none"
+                            className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
                           />
                         </div>
                       </div>
                       <button 
                         type="submit"
-                        className="w-full py-1 bg-slate-800 hover:bg-slate-900 text-white rounded font-bold text-[10px] uppercase transition-all cursor-pointer flex items-center justify-center gap-1"
+                        className="w-full py-1 bg-slate-800 hover:bg-slate-900 dark:bg-slate-750 dark:hover:bg-slate-600 text-white rounded font-bold text-[10px] uppercase transition-all cursor-pointer flex items-center justify-center gap-1"
                       >
-                        <Plus className="w-3.5 h-3.5" /> {language === 'zh' ? '添加周数据' : 'Adicionar Semana'}
+                        <Plus className="w-3.5 h-3.5" /> {language === 'zh' ? '添加周数据' : language === 'pt' ? 'Adicionar Semana' : 'Adicionar Semana / 添加'}
                       </button>
                     </form>
 
                     {/* Lista Sincronizada de Semanas */}
                     <div className="space-y-1.5">
-                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider block">
+                      <span className="text-[10px] font-black text-gray-500 dark:text-gray-450 uppercase tracking-wider block">
                         {language === 'zh' ? '📚 已配置周列表 (可滚动/可编辑)' : '📚 Semanas Configuradas (Lista Editável/Rolável):'}
                       </span>
-                      <div className="max-h-56 overflow-y-auto pr-1 border border-slate-200 rounded-lg p-1.5 bg-white space-y-1.5 shadow-inner">
+                      <div className="max-h-56 overflow-y-auto pr-1 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 bg-white dark:bg-slate-900 space-y-1.5 shadow-inner">
                         {chartLeft.map((item, idx) => (
-                          <div key={`edit-left-${idx}`} className="p-1.5 border border-slate-100 rounded bg-slate-50/50 flex flex-col gap-1 text-[11px]">
-                            <div className="flex justify-between items-center bg-slate-200/50 px-1.5 py-0.5 rounded">
-                              <span className="font-extrabold text-slate-800 font-mono">{item.week}</span>
+                           <div key={`edit-left-${idx}`} className="p-1.5 border border-slate-250 dark:border-slate-800 rounded bg-slate-50/50 dark:bg-slate-900/50 flex flex-col gap-1 text-[11px]">
+                            <div className="flex justify-between items-center bg-slate-200/50 dark:bg-slate-800/50 px-1.5 py-0.5 rounded">
+                              <span className="font-extrabold text-slate-800 dark:text-slate-100 font-mono">{item.week}</span>
                               <button 
                                 type="button" 
                                 onClick={() => handleDeleteChartLeft(idx)}
-                                className="p-0.5 hover:bg-red-50 text-red-500 rounded transition-all cursor-pointer"
+                                className="p-0.5 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 rounded transition-all cursor-pointer"
                                 title="Deletar semana"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -6313,7 +6362,7 @@ export default function App() {
                                   type="number"
                                   value={item.arrivals}
                                   onChange={(e) => handleChartLeftChange(idx, 'arrivals', e.target.value)}
-                                  className="w-16 text-center border rounded font-mono p-0.5 text-slate-800 bg-white font-bold"
+                                  className="w-16 text-center border border-slate-200 dark:border-slate-750 rounded font-mono p-0.5 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 font-bold outline-none"
                                 />
                               </div>
                               <div className="flex items-center justify-between gap-1">
@@ -6322,7 +6371,7 @@ export default function App() {
                                   type="number"
                                   value={item.backlog}
                                   onChange={(e) => handleChartLeftChange(idx, 'backlog', e.target.value)}
-                                  className="w-16 text-center border rounded font-mono p-0.5 text-slate-800 bg-white font-bold"
+                                  className="w-16 text-center border border-slate-200 dark:border-slate-750 rounded font-mono p-0.5 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 font-bold outline-none"
                                 />
                               </div>
                             </div>
@@ -6333,10 +6382,10 @@ export default function App() {
                   </div>
 
                   {/* SEÇÃO CHART RIGHT: ENTREGAS DIÁRIAS */}
-                  <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50 space-y-3.5">
-                    <div className="flex items-center gap-1.5 border-b pb-1.5 border-slate-200">
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/40 space-y-3.5">
+                    <div className="flex items-center gap-1.5 border-b pb-1.5 border-slate-200 dark:border-slate-800">
                       <Database className="w-4 h-4 text-cyan-500" />
-                      <span className="text-xs font-black text-slate-850 uppercase">
+                      <span className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase">
                         {language === 'zh' ? '每日出境交付数据配置 (图表2)' : language === 'pt' ? 'Configurar Entregas Diárias (Gráfico 2)' : 'Entregas Diárias (Gráfico 2)'}
                       </span>
                     </div>
@@ -6347,39 +6396,39 @@ export default function App() {
                         e.preventDefault();
                         handleAddChartRight(newDeliveryDate, newDeliveryValue, newDeliveryType);
                       }}
-                      className="bg-white p-2.5 rounded-lg border border-slate-200 space-y-2 text-[11px]"
+                      className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2 text-[11px]"
                     >
-                      <div className="font-extrabold text-[#111827] mb-1">
-                        {language === 'zh' ? '➕ 添加每日交付数据' : '➕ Cadastrar nova entrega'}
+                      <div className="font-extrabold text-[#111827] dark:text-slate-200 mb-1">
+                        {language === 'zh' ? '➕ 添加每日交付数据' : language === 'pt' ? '➕ Cadastrar nova entrega' : '➕ Cadastrar nova entrega / 添加每日交付数据'}
                       </div>
                       <div className="grid grid-cols-3 gap-1.5">
                         <div className="space-y-0.5">
-                          <label className="text-[9px] text-gray-400 font-bold uppercase block">{language === 'zh' ? '日期' : 'Data Ex.'}</label>
+                          <label className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase block">{language === 'zh' ? '日期' : 'Data Ex.'}</label>
                           <input 
                             type="text"
                             value={newDeliveryDate}
                             onChange={(e) => setNewDeliveryDate(e.target.value)}
                             required
                             placeholder="21/05"
-                            className="w-full text-center border rounded p-1 font-bold text-slate-805 bg-white text-slate-850 focus:ring-1 focus:ring-slate-400 outline-none"
+                            className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
                           />
                         </div>
                         <div className="space-y-0.5">
-                          <label className="text-[9px] text-gray-400 font-bold uppercase block">{language === 'zh' ? '交付值' : 'Qtd / Valor'}</label>
+                          <label className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase block">{language === 'zh' ? '交付值' : 'Qtd / Valor'}</label>
                           <input 
                             type="number"
                             value={newDeliveryValue}
                             onChange={(e) => setNewDeliveryValue(Math.max(0, Number(e.target.value)))}
                             required
-                            className="w-full text-center border rounded p-1 font-bold text-slate-805 bg-white text-slate-850 focus:ring-1 focus:ring-slate-400 outline-none"
+                            className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
                           />
                         </div>
                         <div className="space-y-0.5">
-                          <label className="text-[9px] text-gray-400 font-bold uppercase block">{language === 'zh' ? '类型' : 'Tipo'}</label>
+                          <label className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase block">{language === 'zh' ? '类型' : 'Tipo'}</label>
                           <select 
                             value={newDeliveryType}
                             onChange={(e) => setNewDeliveryType(e.target.value)}
-                            className="w-full text-center border rounded p-1 font-bold text-slate-805 bg-white text-slate-850 focus:ring-1 focus:ring-slate-400 outline-none"
+                            className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
                           >
                             <option value="A">Tipo A (Stable)</option>
                             <option value="B">Tipo B (High)</option>
@@ -6389,26 +6438,26 @@ export default function App() {
                       </div>
                       <button 
                         type="submit"
-                        className="w-full py-1 bg-slate-800 hover:bg-slate-900 text-white rounded font-bold text-[10px] uppercase transition-all cursor-pointer flex items-center justify-center gap-1"
+                        className="w-full py-1 bg-slate-800 hover:bg-slate-900 dark:bg-slate-750 dark:hover:bg-slate-600 text-white rounded font-bold text-[10px] uppercase transition-all cursor-pointer flex items-center justify-center gap-1"
                       >
-                        <Plus className="w-3.5 h-3.5" /> {language === 'zh' ? '添加交付数据' : 'Adicionar Entrega'}
+                        <Plus className="w-3.5 h-3.5" /> {language === 'zh' ? '添加交付数据' : language === 'pt' ? 'Adicionar Entrega' : 'Adicionar Entrega / 添加'}
                       </button>
                     </form>
 
                     {/* Lista Sincronizada de Entregas Diárias */}
                     <div className="space-y-1.5">
-                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider block">
+                      <span className="text-[10px] font-black text-gray-500 dark:text-gray-450 uppercase tracking-wider block">
                         {language === 'zh' ? '📚 已配置交付列表 (可滚动/可编辑)' : '📚 Entregas Cadastradas (Lista Editável/Rolável):'}
                       </span>
-                      <div className="max-h-56 overflow-y-auto pr-1 border border-slate-200 rounded-lg p-1.5 bg-white space-y-1.5 shadow-inner">
+                      <div className="max-h-56 overflow-y-auto pr-1 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 bg-white dark:bg-slate-900 space-y-1.5 shadow-inner">
                         {chartRight.map((item, idx) => (
-                          <div key={`edit-right-${idx}`} className="p-1.5 border border-slate-100 rounded bg-slate-50/50 flex flex-col gap-1 text-[11px]">
-                            <div className="flex justify-between items-center bg-slate-200/50 px-1.5 py-0.5 rounded">
-                              <span className="font-extrabold text-indigo-900 font-mono">{item.date}</span>
+                          <div key={`edit-right-${idx}`} className="p-1.5 border border-slate-250 dark:border-slate-800 rounded bg-slate-50/50 dark:bg-slate-900/50 flex flex-col gap-1 text-[11px]">
+                            <div className="flex justify-between items-center bg-slate-200/50 dark:bg-slate-800/50 px-1.5 py-0.5 rounded">
+                              <span className="font-extrabold text-indigo-900 dark:text-indigo-300 font-mono">{item.date}</span>
                               <button 
                                 type="button" 
                                 onClick={() => handleDeleteChartRight(idx)}
-                                className="p-0.5 hover:bg-red-50 text-red-500 rounded transition-all cursor-pointer"
+                                className="p-0.5 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 rounded transition-all cursor-pointer"
                                 title="Deletar entrega"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -6421,7 +6470,7 @@ export default function App() {
                                   type="number"
                                   value={item.value}
                                   onChange={(e) => handleChartRightChange(idx, 'value', e.target.value)}
-                                  className="w-16 text-center border rounded font-mono p-0.5 text-slate-800 bg-white font-bold"
+                                  className="w-16 text-center border border-slate-200 dark:border-slate-750 rounded font-mono p-0.5 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 font-bold outline-none"
                                 />
                               </div>
                               <div className="flex items-center justify-between gap-1">
@@ -6429,7 +6478,7 @@ export default function App() {
                                 <select 
                                   value={item.type}
                                   onChange={(e) => handleChartRightChange(idx, 'type', e.target.value)}
-                                  className="w-16 border rounded font-mono p-0.5 text-slate-850 bg-white font-bold text-center"
+                                  className="w-16 border border-slate-200 dark:border-slate-750 rounded font-mono p-0.5 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 font-bold text-center outline-none"
                                 >
                                   <option value="A">A</option>
                                   <option value="B">B</option>
@@ -6448,9 +6497,9 @@ export default function App() {
 
               {/* TAB: CONFIGURAÇÃO */}
               {activeTab === 'config' && (
-                <div className="space-y-4 text-slate-800">
+                <div className="space-y-4 text-slate-800 dark:text-slate-200">
                   <div className="space-y-1">
-                    <label className="text-[10px] text-gray-500 font-bold uppercase block">Título em PT / 葡萄牙语标题 (PT)</label>
+                    <label className="text-[10px] text-gray-500 dark:text-gray-450 font-bold uppercase block">Título em PT / 葡萄牙语标题 (PT)</label>
                     <input 
                       type="text" 
                       value={slideTitlePT}
@@ -6459,12 +6508,12 @@ export default function App() {
                         setSlideTitlePT(val);
                         updateGlobalDoc('slideTitlePT', val);
                       }}
-                      className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white text-slate-800 focus:ring-1 focus:ring-red-500 outline-none"
+                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-none"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] text-gray-500 font-bold uppercase block">Título em Mandarim / 中文标题 (ZH)</label>
+                    <label className="text-[10px] text-gray-500 dark:text-gray-450 font-bold uppercase block">Título em Mandarim / 中文标题 (ZH)</label>
                     <input 
                       type="text" 
                       value={slideTitleZH}
@@ -6473,14 +6522,14 @@ export default function App() {
                         setSlideTitleZH(val);
                         updateGlobalDoc('slideTitleZH', val);
                       }}
-                      className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white text-slate-800 focus:ring-1 focus:ring-red-500 outline-none"
+                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-none"
                     />
                   </div>
 
                   {/* SLIDE WIDTH CONTROL (SLIDER) */}
                   <div className="space-y-1 pt-1">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] text-gray-500 font-bold uppercase block">Largura do Painel (Slide) / 看板演示宽度</label>
+                      <label className="text-[10px] text-gray-500 dark:text-gray-450 font-bold uppercase block">Largura do Painel (Slide) / 看板演示宽度</label>
                       <span className="text-xs font-mono font-bold text-red-600 bg-red-50 dark:bg-red-950/20 px-2 py-0.5 rounded-md">{slideWidth}px</span>
                     </div>
                     <input 
@@ -6493,15 +6542,15 @@ export default function App() {
                         setSlideWidth(val);
                         updateGlobalDoc('slideWidth', val);
                       }}
-                      className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600 mt-1"
+                      className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-600 mt-1"
                     />
-                    <span className="text-[9.5px] text-gray-400 block leading-tight">Escolha dimensões maiores para dar mais espaço e evitar cortes de layout.</span>
+                    <span className="text-[9.5px] text-gray-400 dark:text-gray-500 block leading-tight">Escolha dimensões maiores para dar mais espaço e evitar cortes de layout. / 设置更宽的看板以保证各区域不发生折叠折角。</span>
                   </div>
 
                   {/* SIDE PANEL WIDTH CONTROL (SLIDER) */}
                   <div className="space-y-1 pt-1">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] text-gray-500 font-bold uppercase block">Largura do Painel de Edição / 侧栏编辑区宽度</label>
+                      <label className="text-[10px] text-gray-500 dark:text-gray-450 font-bold uppercase block">Largura do Painel de Edição / 侧栏编辑区宽度</label>
                       <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-md">{sidePanelWidth}px</span>
                     </div>
                     <input 
@@ -6510,17 +6559,17 @@ export default function App() {
                       max="700" 
                       value={sidePanelWidth}
                       onChange={(e) => setSidePanelWidth(Number(e.target.value))}
-                      className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 mt-1"
+                      className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 mt-1"
                     />
-                    <span className="text-[9.5px] text-gray-400 block leading-tight">Aumente para dar mais espaço à área de edição e evitar cortes ou quebras de linhas nas tabelas de dados. / 加宽侧框，防止编辑 data 被折叠遮挡。</span>
+                    <span className="text-[9.5px] text-gray-400 dark:text-gray-500 block leading-tight">Aumente para dar mais espaço à área de edição e evitar cortes ou quebras de linhas nas tabelas de dados. / 加宽侧框，防止编辑 data 被折叠遮挡。</span>
                   </div>
 
                    {/* CONFIGURAÇÃO DE AJUSTE AUTOMÁTICO DO CONTEÚDO */}
                   <div className="space-y-1.5 pt-1">
-                    <div className="flex items-center justify-between p-2.5 border border-emerald-100 rounded-lg bg-emerald-50/40 dark:bg-emerald-950/10 dark:border-emerald-900/30">
+                    <div className="flex items-center justify-between p-2.5 border border-emerald-100 dark:border-emerald-900/30 rounded-lg bg-emerald-50/40 dark:bg-emerald-950/10">
                       <div className="flex flex-col pr-2">
                         <span className="text-xs text-emerald-800 dark:text-emerald-450 font-bold">Auto-Ajustar à Tela / 自动自适应</span>
-                        <span className="text-[9.5px] text-gray-400 dark:text-gray-500 leading-tight">Redimensiona o slide de forma automática para evitar cortes na tela.</span>
+                        <span className="text-[9.5px] text-gray-400 dark:text-gray-500 leading-tight">Redimensiona o slide de forma automática para evitar cortes na tela. / 自动缩放演示区内容以完美适应您的屏幕窗口。</span>
                       </div>
                       <input 
                         type="checkbox" 
@@ -6534,7 +6583,7 @@ export default function App() {
                   {/* SLIDE CONTENT SCALE CONTROL (SLIDER) */}
                   <div className="space-y-1 pt-1">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] text-gray-500 font-bold uppercase block">Zoom do Conteúdo / 内容缩放</label>
+                      <label className="text-[10px] text-gray-500 dark:text-gray-450 font-bold uppercase block">Zoom do Conteúdo / 内容缩放</label>
                       <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${autoFit ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30' : 'text-blue-600 bg-blue-50 dark:bg-blue-950/20'}`}>
                         {Math.round(slideScale * 100)}% {autoFit && "(Auto)"}
                       </span>
@@ -6547,17 +6596,17 @@ export default function App() {
                       value={slideScale}
                       disabled={autoFit}
                       onChange={(e) => setSlideScale(Number(e.target.value))}
-                      className={`w-full h-1.5 rounded-lg appearance-none mt-1 ${autoFit ? 'bg-gray-100 dark:bg-slate-800 cursor-not-allowed accent-gray-400' : 'bg-gray-200 cursor-pointer accent-red-600'}`}
+                      className={`w-full h-1.5 rounded-lg appearance-none mt-1 ${autoFit ? 'bg-gray-100 dark:bg-slate-800 cursor-not-allowed accent-gray-400' : 'bg-gray-200 dark:bg-slate-700 cursor-pointer accent-red-600'}`}
                     />
-                    <span className="text-[9.5px] text-gray-400 block leading-tight">
+                    <span className="text-[9.5px] text-gray-400 dark:text-gray-500 block leading-tight">
                       {autoFit 
-                        ? "Desative o Auto-Ajustar acima para alterar a escala de zoom manualmente."
-                        : "Arraste para ajustar horizontal ou verticalmente a escala de zoom do painel."}
+                        ? "Desative o Auto-Ajustar acima para alterar a escala de zoom manualmente. / 关闭上方的自动自适应选项来手动调整缩放。"
+                        : "Arraste para ajustar horizontal ou verticalmente a escala de zoom do painel. / 拖动以调整缩放比例。"}
                     </span>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] text-gray-500 font-bold uppercase block">Identificador do Rodapé / 页脚水印标识</label>
+                    <label className="text-[10px] text-gray-500 dark:text-gray-450 font-bold uppercase block">Identificador do Rodapé / 页脚水印标识</label>
                     <input 
                       type="text" 
                       value={watermarkText}
@@ -6566,12 +6615,12 @@ export default function App() {
                         setWatermarkText(val);
                         updateGlobalDoc('watermarkText', val);
                       }}
-                      className="w-full text-xs font-bold border border-gray-200 rounded p-1.5 bg-white text-slate-800 focus:ring-1 focus:ring-red-500 outline-none"
+                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-none"
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-2 border border-gray-155 rounded-lg bg-gray-50/55">
-                    <span className="text-xs text-gray-600 font-bold">Mostrar Identificador de Rodapé / 显示页脚水印</span>
+                  <div className="flex items-center justify-between p-2 border border-gray-150 dark:border-slate-850 rounded-lg bg-gray-50/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200">
+                    <span className="text-xs text-gray-600 dark:text-slate-350 font-bold">Mostrar Identificador de Rodapé / 显示页脚水印</span>
                     <input 
                       type="checkbox" 
                       checked={showWatermark}
@@ -6580,7 +6629,7 @@ export default function App() {
                         setShowWatermark(val);
                         updateGlobalDoc('showWatermark', val);
                       }}
-                      className="rounded text-emerald-500 focus:ring-emerald-500 h-4 w-4 cursor-pointer"
+                      className="rounded text-emerald-500 focus:ring-emerald-500 h-4 w-4 cursor-pointer accent-emerald-500"
                     />
                   </div>
                 </div>
@@ -6589,9 +6638,9 @@ export default function App() {
             </div>
 
             {/* ASSINATURA INFERIOR DO EDIT */}
-            <div id="side-editor-footer" className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-              <span className="text-[10px] text-gray-400 font-semibold">BYD Slide Builder v2.5 (ZH Supported)</span>
-              <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1">
+            <div id="side-editor-footer" className="p-4 border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 flex items-center justify-between">
+              <span className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold font-sans">BYD Slide Builder v2.5 (ZH Supported)</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-450 font-bold flex items-center gap-1 font-sans">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> CN/BR Connected
               </span>
             </div>
