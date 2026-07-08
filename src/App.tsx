@@ -3649,7 +3649,7 @@ export default function App() {
                                     language={language} 
                                     renderLabel={renderLabel} 
                                     widescreenMode={widescreenMode} 
-                                    onClick={() => setCurrentSlide(4)}
+                                    onClick={() => setSelectedYardKey(key)}
                                   />
                                 ))}
                                 {bufferYards.length === 0 && (
@@ -3660,22 +3660,22 @@ export default function App() {
                               </div>
 
                               {/* NEW SECTION: Factory Backlog Tracking & Delivery Projection */}
-                              <div className={`p-4 rounded-xl border relative transition-all ${
+                              <div className={`p-5 rounded-xl border relative transition-all ${
                                 theme === 'dark' 
                                   ? 'bg-[#1e293b] border-slate-700 text-white' 
-                                  : 'bg-white border-slate-100 shadow-sm'
+                                  : 'bg-white border-slate-100 shadow-md'
                               }`}>
-                                <div className="flex items-center justify-between border-b pb-2 mb-3 border-gray-150/45 dark:border-slate-800">
-                                  <div className="flex items-center gap-2">
-                                    <div className="p-1.5 bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 rounded-lg">
-                                      <Truck className="w-4 h-4" />
+                                <div className="flex items-center justify-between border-b pb-3 mb-4 border-gray-150/45 dark:border-slate-800">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="p-1.5 bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 rounded-lg animate-pulse">
+                                      <Truck className="w-5 h-5" />
                                     </div>
                                     <div>
-                                      <h3 className="font-extrabold text-[12px] text-gray-800 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
-                                        {language === 'bilingual' ? 'Rastreamento de Backlog e Projeção de Escoamento / 厂区积压与发运监控' : 'Factory Backlog Tracking'}
+                                      <h3 className="font-extrabold text-[13px] text-gray-800 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
+                                        {language === 'bilingual' ? 'Consolidado de Backlog e Projeção de Escoamento / 厂区积压与发运监控' : 'Consolidated Backlog & Drain Projection'}
                                       </h3>
-                                      <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-normal">
-                                        {language === 'bilingual' ? 'Cálculo de tempo de escoamento do buffer somado aos navios / 结合在途船舶数量计算库存出清周期' : 'Calculate buffer drain time projection.'}
+                                      <p className="text-[10.5px] text-gray-500 dark:text-gray-400 leading-normal">
+                                        {language === 'bilingual' ? 'Cálculo automático em tempo real combinando pátios, armazéns e fluxo de navios / 自动同步保税堆场、仓库、辅助堆场及在途船舶数据进行发运测算' : 'Automatic real-time calculation combining yards, warehouses, and incoming vessels.'}
                                       </p>
                                     </div>
                                   </div>
@@ -3683,200 +3683,285 @@ export default function App() {
 
                                 {/* Dynamic calculations */}
                                 {(() => {
-                                  // 1. Current Buffer Backlog (Full Containers)
-                                  const currentBufferBacklog = bufferYards.reduce((sum, [_, y]) => sum + (y?.cheio || 0), 0);
+                                  // 1. Core inventories
+                                  const bondedVal = bondedSum.totalCheio;
+                                  const warehouseVal = warehouseSum.totalCheio;
+                                  const bufferVal = bufferSum.totalCheio;
 
-                                  // 2. ETA Panel Arrivals
+                                  // 2. Sum of Inventory Backlog
+                                  const inventoryBacklog = bondedVal + warehouseVal + bufferVal;
+
+                                  // 3. Upcoming Arrivals
                                   const upcomingArrivals = vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0);
 
-                                  // 3. Total Pending Volume
-                                  const totalPendingVolume = currentBufferBacklog + additionalBacklog + upcomingArrivals;
+                                  // 4. Grand Total Pending Volume (including additional if any)
+                                  const totalPendingVolume = inventoryBacklog + upcomingArrivals + additionalBacklog;
 
-                                  // 4. Drain Time
+                                  // 5. Drain Days
                                   const drainTimeDays = dailyDeliveryRate > 0 ? (totalPendingVolume / dailyDeliveryRate) : 0;
 
-                                  // Color coding for status
-                                  let statusColor = "text-emerald-500 dark:text-emerald-400 bg-emerald-500/10";
+                                  // Status levels
+                                  let statusColor = "text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
                                   let statusLabel = language === 'bilingual' ? "Fluxo Seguro / 安全流速" : "Safe Flow";
-                                  if (drainTimeDays > 7.0) {
-                                    statusColor = "text-red-500 dark:text-red-400 bg-red-500/10 animate-pulse";
+                                  let progressColor = "stroke-emerald-500";
+                                  let statusBgLight = "bg-emerald-50/40 dark:bg-emerald-950/20";
+                                  if (drainTimeDays > 45.0) {
+                                    statusColor = "text-red-500 dark:text-red-400 bg-red-500/10 border-red-500/20 animate-pulse";
                                     statusLabel = language === 'bilingual' ? "Gargalo Crítico / 严重积压" : "Severe Backlog";
-                                  } else if (drainTimeDays > 3.0) {
-                                    statusColor = "text-amber-500 dark:text-amber-400 bg-amber-500/10";
+                                    progressColor = "stroke-red-500";
+                                    statusBgLight = "bg-red-50/40 dark:bg-red-950/20";
+                                  } else if (drainTimeDays > 25.0) {
+                                    statusColor = "text-amber-500 dark:text-amber-400 bg-amber-500/10 border-amber-500/20";
                                     statusLabel = language === 'bilingual' ? "Alerta de Acúmulo / 积压警示" : "Warning Backlog";
+                                    progressColor = "stroke-amber-500";
+                                    statusBgLight = "bg-amber-50/40 dark:bg-amber-950/20";
                                   }
 
                                   return (
-                                    <div className="flex flex-col gap-4">
-                                      {/* Cards Grid */}
-                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                        {/* STAT 1: Current Backlog */}
-                                        <div className={`p-2.5 rounded-lg border ${theme === 'dark' ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-slate-50/50 border-slate-100'} flex flex-col justify-between`}>
-                                          <span className="text-[8.5px] text-gray-450 dark:text-gray-500 uppercase font-black tracking-wider leading-none">
-                                            {language === 'bilingual' ? 'Backlog Buffer / 现存重箱 backlog' : 'Buffer Backlog'}
+                                    <div className="flex flex-col gap-5">
+                                      {/* Phase 1: Real-time Area Inventory KPIs */}
+                                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                        {/* STAT 1: Bonded */}
+                                        <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a]/60 border-slate-800' : 'bg-slate-50 border-slate-100'} flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-transform`}>
+                                          <div className="absolute top-0 right-0 w-12 h-12 bg-blue-500/5 rounded-full -mr-4 -mt-4 transition-all group-hover:scale-125" />
+                                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase font-extrabold tracking-wider leading-none">
+                                            {language === 'bilingual' ? 'Bonded / 保税' : 'Bonded'}
                                           </span>
-                                          <div className="flex items-baseline gap-1 mt-1.5">
-                                            <span className="text-lg font-black text-blue-600 dark:text-blue-400 font-mono">
-                                              {currentBufferBacklog.toLocaleString()}
+                                          <div className="flex items-baseline gap-1 mt-2">
+                                            <span className="text-xl font-black text-blue-600 dark:text-blue-400 font-mono">
+                                              {bondedVal.toLocaleString()}
                                             </span>
-                                            <span className="text-[9px] text-gray-450">CNTRs</span>
+                                            <span className="text-[10px] text-gray-450 font-medium">CNTRs</span>
                                           </div>
+                                          <span className="text-[8px] text-gray-400 mt-1 block">
+                                            {language === 'bilingual' ? 'Sumado dos portos / 港口及保税库重箱' : 'Sum of ports & primary yards'}
+                                          </span>
                                         </div>
 
-                                        {/* STAT 2: Additional Backlog */}
-                                        <div className={`p-2.5 rounded-lg border ${theme === 'dark' ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-slate-50/50 border-slate-100'} flex flex-col justify-between`}>
-                                          <span className="text-[8.5px] text-gray-450 dark:text-gray-500 uppercase font-black tracking-wider leading-none flex items-center justify-between">
-                                            <span>{language === 'bilingual' ? 'Adicional / 额外待入库' : 'Additional'}</span>
+                                        {/* STAT 2: Warehouses */}
+                                        <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a]/60 border-slate-800' : 'bg-slate-50 border-slate-100'} flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-transform`}>
+                                          <div className="absolute top-0 right-0 w-12 h-12 bg-indigo-500/5 rounded-full -mr-4 -mt-4 transition-all group-hover:scale-125" />
+                                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase font-extrabold tracking-wider leading-none">
+                                            {language === 'bilingual' ? 'Warehouses / 仓库' : 'Warehouses'}
                                           </span>
-                                          <div className="flex items-center gap-1.5 mt-1.5 justify-between">
-                                            <div className="flex items-baseline gap-1">
-                                              <span className="text-lg font-black text-slate-700 dark:text-slate-300 font-mono">
-                                                {additionalBacklog.toLocaleString()}
-                                              </span>
-                                              <span className="text-[9px] text-gray-450">CNTRs</span>
-                                            </div>
-                                            {/* Small buttons to adjust additional */}
-                                            <div className="flex items-center gap-1">
-                                              <button 
-                                                onClick={() => setAdditionalBacklog(prev => Math.max(0, prev - 10))}
-                                                className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-800"
-                                                title="-10"
-                                              >
-                                                <ChevronDown className="w-3 h-3" />
-                                              </button>
-                                              <button 
-                                                onClick={() => setAdditionalBacklog(prev => prev + 10)}
-                                                className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-800"
-                                                title="+10"
-                                              >
-                                                <ChevronUp className="w-3 h-3" />
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                        {/* STAT 3: ETA Arrivals */}
-                                        <div className={`p-2.5 rounded-lg border ${theme === 'dark' ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-slate-50/50 border-slate-100'} flex flex-col justify-between`}>
-                                          <span className="text-[8.5px] text-gray-450 dark:text-gray-500 uppercase font-black tracking-wider leading-none">
-                                            {language === 'bilingual' ? 'Chegadas ETA / 预报在途' : 'ETA Arrivals'}
-                                          </span>
-                                          <div className="flex items-baseline gap-1 mt-1.5">
-                                            <span className="text-lg font-black text-amber-500 dark:text-amber-400 font-mono">
-                                              {upcomingArrivals.toLocaleString()}
+                                          <div className="flex items-baseline gap-1 mt-2">
+                                            <span className="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono">
+                                              {warehouseVal.toLocaleString()}
                                             </span>
-                                            <span className="text-[9px] text-gray-450">CNTRs</span>
+                                            <span className="text-[10px] text-gray-450 font-medium">CNTRs</span>
                                           </div>
+                                          <span className="text-[8px] text-gray-400 mt-1 block">
+                                            {language === 'bilingual' ? 'CDs e recintos secundários / 二级仓库与配送中心' : 'Secondary warehousing total'}
+                                          </span>
                                         </div>
 
-                                        {/* STAT 4: Daily Delivery Rate */}
-                                        <div className={`p-2.5 rounded-lg border ${theme === 'dark' ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-slate-50/50 border-slate-100'} flex flex-col justify-between`}>
-                                          <span className="text-[8.5px] text-gray-450 dark:text-gray-500 uppercase font-black tracking-wider leading-none flex items-center justify-between">
-                                            <span>{language === 'bilingual' ? 'Vazão Diária / 每日交付' : 'Daily Rate'}</span>
+                                        {/* STAT 3: BYD Buffer */}
+                                        <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a]/60 border-slate-800' : 'bg-slate-50 border-slate-100'} flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-transform`}>
+                                          <div className="absolute top-0 right-0 w-12 h-12 bg-teal-500/5 rounded-full -mr-4 -mt-4 transition-all group-hover:scale-125" />
+                                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase font-extrabold tracking-wider leading-none">
+                                            {language === 'bilingual' ? 'BYD Buffer / 缓冲堆场' : 'BYD Buffer'}
                                           </span>
-                                          <div className="flex items-center gap-1.5 mt-1.5 justify-between">
-                                            <div className="flex items-baseline gap-1">
-                                              <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                                                {dailyDeliveryRate}
-                                              </span>
-                                              <span className="text-[9px] text-gray-450">/dia</span>
-                                            </div>
-                                            {/* Small buttons to adjust daily rate */}
-                                            <div className="flex items-center gap-1">
-                                              <button 
-                                                onClick={() => setDailyDeliveryRate(prev => Math.max(10, prev - 10))}
-                                                className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-800"
-                                                title="-10"
-                                              >
-                                                <ChevronDown className="w-3 h-3" />
-                                              </button>
-                                              <button 
-                                                onClick={() => setDailyDeliveryRate(prev => prev + 10)}
-                                                className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-800"
-                                                title="+10"
-                                              >
-                                                <ChevronUp className="w-3 h-3" />
-                                              </button>
-                                            </div>
+                                          <div className="flex items-baseline gap-1 mt-2">
+                                            <span className="text-xl font-black text-teal-600 dark:text-teal-400 font-mono">
+                                              {bufferVal.toLocaleString()}
+                                            </span>
+                                            <span className="text-[10px] text-gray-450 font-medium">CNTRs</span>
                                           </div>
+                                          <span className="text-[8px] text-gray-400 mt-1 block">
+                                            {language === 'bilingual' ? 'Pátios de apoio ativos / 工厂外协缓冲堆场' : 'Active factory support yards'}
+                                          </span>
+                                        </div>
+
+                                        {/* STAT 4: TOTAL CONSOLIDATED BACKLOG */}
+                                        <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a]/80 border-amber-500/20' : 'bg-amber-50/30 border-amber-100'} flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-transform`}>
+                                          <div className="absolute top-0 right-0 w-12 h-12 bg-amber-500/10 rounded-full -mr-4 -mt-4 transition-all group-hover:scale-125" />
+                                          <span className="text-[9.5px] text-amber-600 dark:text-amber-400 uppercase font-black tracking-wider leading-none">
+                                            {language === 'bilingual' ? 'Backlog Consolidado / 综合总积压' : 'Consolidated Backlog'}
+                                          </span>
+                                          <div className="flex items-baseline gap-1 mt-2">
+                                            <span className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono">
+                                              {inventoryBacklog.toLocaleString()}
+                                            </span>
+                                            <span className="text-[10px] text-amber-500 font-bold">CNTRs</span>
+                                          </div>
+                                          <span className="text-[8px] text-slate-500 dark:text-slate-400 mt-1 block font-semibold">
+                                            {language === 'bilingual' ? 'Soma das 3 áreas de estoque / 三方库存总和' : 'Sum of 3 storage areas'}
+                                          </span>
                                         </div>
                                       </div>
 
-                                      {/* Main Calculation & Slider Section */}
-                                      <div className={`p-3 rounded-lg border ${
-                                        theme === 'dark' ? 'bg-slate-800/50 border-slate-700/60' : 'bg-amber-50/15 border-amber-100/40'
-                                      } flex flex-col gap-3`}>
-                                        {/* Slide Control Section */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                          <div>
-                                            <label className="text-[9.5px] text-gray-500 dark:text-gray-400 uppercase font-bold flex justify-between mb-1">
-                                              <span>{language === 'bilingual' ? 'Ajuste Fino: Contêineres Adicionais / 额外待入库' : 'Additional Containers'}</span>
-                                              <span className="font-mono text-slate-700 dark:text-slate-300">+{additionalBacklog}</span>
-                                            </label>
-                                            <input 
-                                              type="range"
-                                              min="0"
-                                              max="1500"
-                                              step="50"
-                                              value={additionalBacklog}
-                                              onChange={(e) => setAdditionalBacklog(Number(e.target.value))}
-                                              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-slate-605 dark:bg-slate-700"
-                                            />
+                                      {/* Main Calculation & Slider Block */}
+                                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                                        
+                                        {/* Math Breakdown Box (Left 8 columns) */}
+                                        <div className={`lg:col-span-8 p-4 rounded-xl border ${
+                                          theme === 'dark' ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50/50 border-slate-150/80'
+                                        } flex flex-col gap-4`}>
+                                          
+                                          {/* Step-by-Step Math Visualization */}
+                                          <div className="flex flex-col gap-2.5">
+                                            <h4 className="text-[11px] font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                              {language === 'bilingual' ? 'Demonstração do Cálculo de Carga / 货量流速测算步骤' : 'Step-by-Step Volume Calculation'}
+                                            </h4>
+
+                                            {/* Step 1 */}
+                                            <div className={`p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
+                                              theme === 'dark' ? 'bg-slate-800/40 border-slate-800' : 'bg-white border-slate-200/50 shadow-xs'
+                                            }`}>
+                                              <div className="flex flex-wrap items-center gap-1.5">
+                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-500">Etapa 1</span>
+                                                <span className="text-gray-600 dark:text-slate-300 font-semibold">
+                                                  {language === 'bilingual' ? 'Cálculo de Backlog Pátios:' : 'Stock Yards Backlog Sum:'}
+                                                </span>
+                                                <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-blue-600 dark:text-blue-400">
+                                                  {bondedVal.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Bonded</span>
+                                                </span>
+                                                <span className="text-gray-400 font-black">+</span>
+                                                <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-indigo-600 dark:text-indigo-400">
+                                                  {warehouseVal.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Warehouse</span>
+                                                </span>
+                                                <span className="text-gray-400 font-black">+</span>
+                                                <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-teal-600 dark:text-teal-400">
+                                                  {bufferVal.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">BYD Buffer</span>
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center gap-1 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-slate-800 pt-1.5 sm:pt-0 sm:pl-3">
+                                                <span className="text-[10px] text-gray-450 uppercase font-black font-sans">Backlog =</span>
+                                                <span className="font-mono font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[13px]">
+                                                  {inventoryBacklog.toLocaleString()}
+                                                </span>
+                                              </div>
+                                            </div>
+
+                                            {/* Step 2 */}
+                                            <div className={`p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
+                                              theme === 'dark' ? 'bg-slate-800/40 border-slate-800' : 'bg-white border-slate-200/50 shadow-xs'
+                                            }`}>
+                                              <div className="flex flex-wrap items-center gap-1.5">
+                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-purple-500/10 text-purple-500">Etapa 2</span>
+                                                <span className="text-gray-600 dark:text-slate-300 font-semibold">
+                                                  {language === 'bilingual' ? 'Carga Total para Escoar:' : 'Total Volume to Drain:'}
+                                                </span>
+                                                <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-amber-600 dark:text-amber-400">
+                                                  {inventoryBacklog.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Backlog</span>
+                                                </span>
+                                                <span className="text-gray-400 font-black">+</span>
+                                                <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-yellow-600 dark:text-yellow-400">
+                                                  {upcomingArrivals.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">ETA Arrivals</span>
+                                                </span>
+                                                {additionalBacklog > 0 && (
+                                                  <>
+                                                    <span className="text-gray-400 font-black">+</span>
+                                                    <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500">
+                                                      {additionalBacklog.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-450">Adj</span>
+                                                    </span>
+                                                  </>
+                                                )}
+                                              </div>
+                                              <div className="flex items-center gap-1 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-slate-800 pt-1.5 sm:pt-0 sm:pl-3">
+                                                <span className="text-[10px] text-gray-450 uppercase font-black font-sans">Total =</span>
+                                                <span className="font-mono font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded text-[13px]">
+                                                  {totalPendingVolume.toLocaleString()}
+                                                </span>
+                                              </div>
+                                            </div>
                                           </div>
 
-                                          <div>
-                                            <label className="text-[9.5px] text-gray-500 dark:text-gray-400 uppercase font-bold flex justify-between mb-1">
-                                              <span>{language === 'bilingual' ? 'Vazão de Entrega de Fábrica / 工厂发运能力' : 'Factory Delivery Rate'}</span>
-                                              <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{dailyDeliveryRate} cntrs/dia</span>
-                                            </label>
-                                            <input 
-                                              type="range"
-                                              min="50"
-                                              max="500"
-                                              step="10"
-                                              value={dailyDeliveryRate}
-                                              onChange={(e) => setDailyDeliveryRate(Number(e.target.value))}
-                                              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-550 dark:bg-slate-700"
-                                            />
+                                          {/* Fine Tuning Controls */}
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-dashed border-gray-200 dark:border-slate-800 pt-3">
+                                            <div>
+                                              <label className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-black flex justify-between mb-1.5">
+                                                <span>{language === 'bilingual' ? 'Ajuste Fino de Volume / 手动体积微调' : 'Manual Fine-Tuning Adjustment'}</span>
+                                                <span className="font-mono text-slate-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.2 rounded font-bold">+{additionalBacklog}</span>
+                                              </label>
+                                              <input 
+                                                type="range"
+                                                min="0"
+                                                max="1500"
+                                                step="50"
+                                                value={additionalBacklog}
+                                                onChange={(e) => setAdditionalBacklog(Number(e.target.value))}
+                                                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-slate-600 dark:bg-slate-700"
+                                              />
+                                              <span className="text-[8.5px] text-gray-400 block mt-1">
+                                                {language === 'bilingual' ? 'Simule volumes adicionais não listados nos pátios / 模拟未登记录入的额外库存体积' : 'Simulate custom additional loads'}
+                                              </span>
+                                            </div>
+
+                                            <div>
+                                              <label className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-black flex justify-between mb-1.5">
+                                                <span>{language === 'bilingual' ? 'Capacidade de Escoamento Diário / 工厂每日发运能力' : 'Daily Factory Delivery Rate'}</span>
+                                                <span className="font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded font-bold">{dailyDeliveryRate} cntrs/dia</span>
+                                              </label>
+                                              <input 
+                                                type="range"
+                                                min="50"
+                                                max="500"
+                                                step="10"
+                                                value={dailyDeliveryRate}
+                                                onChange={(e) => setDailyDeliveryRate(Number(e.target.value))}
+                                                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-550 dark:bg-slate-700"
+                                              />
+                                              <span className="text-[8.5px] text-gray-400 block mt-1">
+                                                {language === 'bilingual' ? 'Regule a taxa de carregamento de carretas na fábrica / 调节工厂集卡日出库平均流速' : 'Adjust average container truck exits per day'}
+                                              </span>
+                                            </div>
                                           </div>
                                         </div>
 
-                                        {/* Calculations Projection Banner */}
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-dashed border-gray-200 dark:border-slate-800 pt-3 gap-3">
-                                          <div className="flex flex-col">
-                                            <span className="text-[9px] text-gray-450 dark:text-gray-500 uppercase font-black tracking-wider leading-none">
-                                              {language === 'bilingual' ? 'Volume Total Pendente / 总待清算重箱 (Backlog + ETA)' : 'Total Pending Volume'}
-                                            </span>
-                                            <div className="flex items-baseline gap-1 mt-1">
-                                              <span className="text-xl font-extrabold text-slate-800 dark:text-white font-mono">
-                                                {totalPendingVolume.toLocaleString()}
+                                        {/* Visual Day Counter Ring / Widget (Right 4 columns) */}
+                                        <div className={`lg:col-span-4 p-4 rounded-xl border flex flex-col justify-center items-center text-center ${statusBgLight} border-dashed border-gray-300 dark:border-slate-700 relative overflow-hidden`}>
+                                          <span className="text-[9.5px] text-gray-450 dark:text-gray-400 uppercase font-black tracking-wider mb-2">
+                                            {language === 'bilingual' ? 'Tempo de Escoamento Projetado / 预计总库存出清周期' : 'Projected Drain Timeline'}
+                                          </span>
+
+                                          {/* Stunning Progress Ring Container */}
+                                          <div className="relative w-28 h-28 flex items-center justify-center my-1">
+                                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                              {/* Background circle */}
+                                              <circle
+                                                cx="50"
+                                                cy="50"
+                                                r="40"
+                                                className="stroke-gray-200 dark:stroke-slate-800"
+                                                strokeWidth="7"
+                                                fill="transparent"
+                                              />
+                                              {/* Progress circle */}
+                                              <circle
+                                                cx="50"
+                                                cy="50"
+                                                r="40"
+                                                className={`transition-all duration-500 ${progressColor}`}
+                                                strokeWidth="8"
+                                                strokeDasharray="251.2"
+                                                strokeDashoffset={Math.max(0, 251.2 - (Math.min(100, (drainTimeDays / 90) * 100) / 100) * 251.2)}
+                                                strokeLinecap="round"
+                                                fill="transparent"
+                                              />
+                                            </svg>
+                                            
+                                            {/* Centered Big Value */}
+                                            <div className="absolute flex flex-col items-center">
+                                              <span className="text-2xl font-black font-mono tracking-tight text-gray-800 dark:text-white leading-none">
+                                                {drainTimeDays.toFixed(1)}
                                               </span>
-                                              <span className="text-[10px] text-gray-450 font-bold">
-                                                {language === 'bilingual' ? 'Contêineres Cheios / 重箱' : 'Full Containers'}
+                                              <span className="text-[9px] text-gray-500 dark:text-gray-400 font-bold mt-1 uppercase">
+                                                {language === 'bilingual' ? 'Dias / 天' : 'Days'}
                                               </span>
                                             </div>
-                                            <span className="text-[8.5px] text-gray-400 dark:text-gray-500 font-mono mt-0.5">
-                                              ({currentBufferBacklog} buffer + {additionalBacklog} adicionais + {upcomingArrivals} navios)
-                                            </span>
                                           </div>
 
-                                          {/* Big Timer Indicator */}
-                                          <div className="flex items-center gap-3">
-                                            <div className="flex flex-col text-right">
-                                              <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-tight">
-                                                {language === 'bilingual' ? 'Tempo Estimado para Escoar / 预计出清耗时' : 'Est. Time to Drain'}
-                                              </span>
-                                              <div className="flex items-baseline gap-1 mt-0.5 justify-end">
-                                                <span className="text-2xl font-black text-[#2563eb] dark:text-blue-400 font-mono tracking-tight">
-                                                  {drainTimeDays.toFixed(1)}
-                                                </span>
-                                                <span className="text-xs text-gray-500 font-extrabold">
-                                                  {language === 'bilingual' ? 'Dias / 天' : 'Days'}
-                                                </span>
-                                              </div>
-                                              <span className={`inline-block text-[8px] px-1.5 py-0.5 rounded font-black mt-1 uppercase tracking-wider text-center ${statusColor}`}>
-                                                {statusLabel}
-                                              </span>
-                                            </div>
+                                          <div className="mt-2.5 flex flex-col items-center gap-1.5">
+                                            <span className={`inline-block text-[8.5px] px-2.5 py-0.5 rounded font-black uppercase tracking-wider text-center border ${statusColor}`}>
+                                              {statusLabel}
+                                            </span>
+                                            <p className="text-[9px] text-gray-400 max-w-[180px] leading-tight">
+                                              {language === 'bilingual' 
+                                                ? `Escoamento de ${totalPendingVolume.toLocaleString()} contêineres à média de ${dailyDeliveryRate}/dia.` 
+                                                : `Draining ${totalPendingVolume.toLocaleString()} cntrs at ${dailyDeliveryRate}/day.`
+                                              }
+                                            </p>
                                           </div>
                                         </div>
                                       </div>
