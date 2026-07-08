@@ -42,7 +42,10 @@ import {
   Info,
   Maximize2,
   Minimize2,
-  Filter
+  Filter,
+  Truck,
+  Calendar,
+  AlertTriangle
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -429,6 +432,24 @@ export default function App() {
   const [chartLeft, setChartLeft] = useState<ChartLeftItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_LEFT)));
   const [chartRight, setChartRight] = useState<ChartRightItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_RIGHT)));
   const [scenarioValue, setScenarioValue] = useState(210);
+
+  // ESTADOS DE BACKLOG DE FÁBRICA
+  const [dailyDeliveryRate, setDailyDeliveryRate] = useState<number>(() => {
+    const saved = localStorage.getItem('byd_daily_delivery_rate');
+    return saved ? Number(saved) : 140;
+  });
+  const [additionalBacklog, setAdditionalBacklog] = useState<number>(() => {
+    const saved = localStorage.getItem('byd_additional_backlog');
+    return saved ? Number(saved) : 0;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('byd_daily_delivery_rate', String(dailyDeliveryRate));
+  }, [dailyDeliveryRate]);
+
+  useEffect(() => {
+    localStorage.setItem('byd_additional_backlog', String(additionalBacklog));
+  }, [additionalBacklog]);
 
   // ESTADOS DE CONTÊINERES (Para detalhamento por área)
   const [selectedYardKey, setSelectedYardKey] = useState<string | null>(null);
@@ -3636,6 +3657,232 @@ export default function App() {
                                     {language === 'bilingual' ? 'Nenhum pátio de apoio regulador cadastrado. / 未记录缓冲/辅助堆场。' : 'Nenhum pátio de apoio cadastrado.'}
                                   </div>
                                 )}
+                              </div>
+
+                              {/* NEW SECTION: Factory Backlog Tracking & Delivery Projection */}
+                              <div className={`p-4 rounded-xl border relative transition-all ${
+                                theme === 'dark' 
+                                  ? 'bg-[#1e293b] border-slate-700 text-white' 
+                                  : 'bg-white border-slate-100 shadow-sm'
+                              }`}>
+                                <div className="flex items-center justify-between border-b pb-2 mb-3 border-gray-150/45 dark:border-slate-800">
+                                  <div className="flex items-center gap-2">
+                                    <div className="p-1.5 bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 rounded-lg">
+                                      <Truck className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                      <h3 className="font-extrabold text-[12px] text-gray-800 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
+                                        {language === 'bilingual' ? 'Rastreamento de Backlog e Projeção de Escoamento / 厂区积压与发运监控' : 'Factory Backlog Tracking'}
+                                      </h3>
+                                      <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-normal">
+                                        {language === 'bilingual' ? 'Cálculo de tempo de escoamento do buffer somado aos navios / 结合在途船舶数量计算库存出清周期' : 'Calculate buffer drain time projection.'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Dynamic calculations */}
+                                {(() => {
+                                  // 1. Current Buffer Backlog (Full Containers)
+                                  const currentBufferBacklog = bufferYards.reduce((sum, [_, y]) => sum + (y?.cheio || 0), 0);
+
+                                  // 2. ETA Panel Arrivals
+                                  const upcomingArrivals = vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0);
+
+                                  // 3. Total Pending Volume
+                                  const totalPendingVolume = currentBufferBacklog + additionalBacklog + upcomingArrivals;
+
+                                  // 4. Drain Time
+                                  const drainTimeDays = dailyDeliveryRate > 0 ? (totalPendingVolume / dailyDeliveryRate) : 0;
+
+                                  // Color coding for status
+                                  let statusColor = "text-emerald-500 dark:text-emerald-400 bg-emerald-500/10";
+                                  let statusLabel = language === 'bilingual' ? "Fluxo Seguro / 安全流速" : "Safe Flow";
+                                  if (drainTimeDays > 7.0) {
+                                    statusColor = "text-red-500 dark:text-red-400 bg-red-500/10 animate-pulse";
+                                    statusLabel = language === 'bilingual' ? "Gargalo Crítico / 严重积压" : "Severe Backlog";
+                                  } else if (drainTimeDays > 3.0) {
+                                    statusColor = "text-amber-500 dark:text-amber-400 bg-amber-500/10";
+                                    statusLabel = language === 'bilingual' ? "Alerta de Acúmulo / 积压警示" : "Warning Backlog";
+                                  }
+
+                                  return (
+                                    <div className="flex flex-col gap-4">
+                                      {/* Cards Grid */}
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        {/* STAT 1: Current Backlog */}
+                                        <div className={`p-2.5 rounded-lg border ${theme === 'dark' ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-slate-50/50 border-slate-100'} flex flex-col justify-between`}>
+                                          <span className="text-[8.5px] text-gray-450 dark:text-gray-500 uppercase font-black tracking-wider leading-none">
+                                            {language === 'bilingual' ? 'Backlog Buffer / 现存重箱 backlog' : 'Buffer Backlog'}
+                                          </span>
+                                          <div className="flex items-baseline gap-1 mt-1.5">
+                                            <span className="text-lg font-black text-blue-600 dark:text-blue-400 font-mono">
+                                              {currentBufferBacklog.toLocaleString()}
+                                            </span>
+                                            <span className="text-[9px] text-gray-450">CNTRs</span>
+                                          </div>
+                                        </div>
+
+                                        {/* STAT 2: Additional Backlog */}
+                                        <div className={`p-2.5 rounded-lg border ${theme === 'dark' ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-slate-50/50 border-slate-100'} flex flex-col justify-between`}>
+                                          <span className="text-[8.5px] text-gray-450 dark:text-gray-500 uppercase font-black tracking-wider leading-none flex items-center justify-between">
+                                            <span>{language === 'bilingual' ? 'Adicional / 额外待入库' : 'Additional'}</span>
+                                          </span>
+                                          <div className="flex items-center gap-1.5 mt-1.5 justify-between">
+                                            <div className="flex items-baseline gap-1">
+                                              <span className="text-lg font-black text-slate-700 dark:text-slate-300 font-mono">
+                                                {additionalBacklog.toLocaleString()}
+                                              </span>
+                                              <span className="text-[9px] text-gray-450">CNTRs</span>
+                                            </div>
+                                            {/* Small buttons to adjust additional */}
+                                            <div className="flex items-center gap-1">
+                                              <button 
+                                                onClick={() => setAdditionalBacklog(prev => Math.max(0, prev - 10))}
+                                                className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-800"
+                                                title="-10"
+                                              >
+                                                <ChevronDown className="w-3 h-3" />
+                                              </button>
+                                              <button 
+                                                onClick={() => setAdditionalBacklog(prev => prev + 10)}
+                                                className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-800"
+                                                title="+10"
+                                              >
+                                                <ChevronUp className="w-3 h-3" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* STAT 3: ETA Arrivals */}
+                                        <div className={`p-2.5 rounded-lg border ${theme === 'dark' ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-slate-50/50 border-slate-100'} flex flex-col justify-between`}>
+                                          <span className="text-[8.5px] text-gray-450 dark:text-gray-500 uppercase font-black tracking-wider leading-none">
+                                            {language === 'bilingual' ? 'Chegadas ETA / 预报在途' : 'ETA Arrivals'}
+                                          </span>
+                                          <div className="flex items-baseline gap-1 mt-1.5">
+                                            <span className="text-lg font-black text-amber-500 dark:text-amber-400 font-mono">
+                                              {upcomingArrivals.toLocaleString()}
+                                            </span>
+                                            <span className="text-[9px] text-gray-450">CNTRs</span>
+                                          </div>
+                                        </div>
+
+                                        {/* STAT 4: Daily Delivery Rate */}
+                                        <div className={`p-2.5 rounded-lg border ${theme === 'dark' ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-slate-50/50 border-slate-100'} flex flex-col justify-between`}>
+                                          <span className="text-[8.5px] text-gray-450 dark:text-gray-500 uppercase font-black tracking-wider leading-none flex items-center justify-between">
+                                            <span>{language === 'bilingual' ? 'Vazão Diária / 每日交付' : 'Daily Rate'}</span>
+                                          </span>
+                                          <div className="flex items-center gap-1.5 mt-1.5 justify-between">
+                                            <div className="flex items-baseline gap-1">
+                                              <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                                                {dailyDeliveryRate}
+                                              </span>
+                                              <span className="text-[9px] text-gray-450">/dia</span>
+                                            </div>
+                                            {/* Small buttons to adjust daily rate */}
+                                            <div className="flex items-center gap-1">
+                                              <button 
+                                                onClick={() => setDailyDeliveryRate(prev => Math.max(10, prev - 10))}
+                                                className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-800"
+                                                title="-10"
+                                              >
+                                                <ChevronDown className="w-3 h-3" />
+                                              </button>
+                                              <button 
+                                                onClick={() => setDailyDeliveryRate(prev => prev + 10)}
+                                                className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-800"
+                                                title="+10"
+                                              >
+                                                <ChevronUp className="w-3 h-3" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Main Calculation & Slider Section */}
+                                      <div className={`p-3 rounded-lg border ${
+                                        theme === 'dark' ? 'bg-slate-800/50 border-slate-700/60' : 'bg-amber-50/15 border-amber-100/40'
+                                      } flex flex-col gap-3`}>
+                                        {/* Slide Control Section */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          <div>
+                                            <label className="text-[9.5px] text-gray-500 dark:text-gray-400 uppercase font-bold flex justify-between mb-1">
+                                              <span>{language === 'bilingual' ? 'Ajuste Fino: Contêineres Adicionais / 额外待入库' : 'Additional Containers'}</span>
+                                              <span className="font-mono text-slate-700 dark:text-slate-300">+{additionalBacklog}</span>
+                                            </label>
+                                            <input 
+                                              type="range"
+                                              min="0"
+                                              max="1500"
+                                              step="50"
+                                              value={additionalBacklog}
+                                              onChange={(e) => setAdditionalBacklog(Number(e.target.value))}
+                                              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-slate-605 dark:bg-slate-700"
+                                            />
+                                          </div>
+
+                                          <div>
+                                            <label className="text-[9.5px] text-gray-500 dark:text-gray-400 uppercase font-bold flex justify-between mb-1">
+                                              <span>{language === 'bilingual' ? 'Vazão de Entrega de Fábrica / 工厂发运能力' : 'Factory Delivery Rate'}</span>
+                                              <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{dailyDeliveryRate} cntrs/dia</span>
+                                            </label>
+                                            <input 
+                                              type="range"
+                                              min="50"
+                                              max="500"
+                                              step="10"
+                                              value={dailyDeliveryRate}
+                                              onChange={(e) => setDailyDeliveryRate(Number(e.target.value))}
+                                              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-550 dark:bg-slate-700"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        {/* Calculations Projection Banner */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-dashed border-gray-200 dark:border-slate-800 pt-3 gap-3">
+                                          <div className="flex flex-col">
+                                            <span className="text-[9px] text-gray-450 dark:text-gray-500 uppercase font-black tracking-wider leading-none">
+                                              {language === 'bilingual' ? 'Volume Total Pendente / 总待清算重箱 (Backlog + ETA)' : 'Total Pending Volume'}
+                                            </span>
+                                            <div className="flex items-baseline gap-1 mt-1">
+                                              <span className="text-xl font-extrabold text-slate-800 dark:text-white font-mono">
+                                                {totalPendingVolume.toLocaleString()}
+                                              </span>
+                                              <span className="text-[10px] text-gray-450 font-bold">
+                                                {language === 'bilingual' ? 'Contêineres Cheios / 重箱' : 'Full Containers'}
+                                              </span>
+                                            </div>
+                                            <span className="text-[8.5px] text-gray-400 dark:text-gray-500 font-mono mt-0.5">
+                                              ({currentBufferBacklog} buffer + {additionalBacklog} adicionais + {upcomingArrivals} navios)
+                                            </span>
+                                          </div>
+
+                                          {/* Big Timer Indicator */}
+                                          <div className="flex items-center gap-3">
+                                            <div className="flex flex-col text-right">
+                                              <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-tight">
+                                                {language === 'bilingual' ? 'Tempo Estimado para Escoar / 预计出清耗时' : 'Est. Time to Drain'}
+                                              </span>
+                                              <div className="flex items-baseline gap-1 mt-0.5 justify-end">
+                                                <span className="text-2xl font-black text-[#2563eb] dark:text-blue-400 font-mono tracking-tight">
+                                                  {drainTimeDays.toFixed(1)}
+                                                </span>
+                                                <span className="text-xs text-gray-500 font-extrabold">
+                                                  {language === 'bilingual' ? 'Dias / 天' : 'Days'}
+                                                </span>
+                                              </div>
+                                              <span className={`inline-block text-[8px] px-1.5 py-0.5 rounded font-black mt-1 uppercase tracking-wider text-center ${statusColor}`}>
+                                                {statusLabel}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </div>
 
