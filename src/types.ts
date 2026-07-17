@@ -58,3 +58,14 @@ export interface BufferArea {
   cols: number;
   slots: BufferSlot[];
 }
+
+export interface Depot {
+  id: string;
+  name: string;
+  avgVolume: number;
+  maxCapacity: number;
+  currentGateIn: number;
+  status: 'Open' | 'Closed';
+  isAlert: boolean;
+}
+

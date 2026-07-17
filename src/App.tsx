@@ -265,6 +265,17 @@ export interface BufferArea {
   slots: BufferSlot[];
 }
 
+export interface Depot {
+  id: string;
+  name: string;
+  avgVolume: number;
+  maxCapacity: number;
+  currentGateIn: number;
+  status: 'Open' | 'Closed';
+  isAlert: boolean;
+}
+
+
 // DADOS INICIAIS DA IMAGEM ORIGINAL (Para restauração e estado inicial)
 const ORIGINAL_YARDS: YardsState = {
   tecon: { name: 'TECON', type: 'BONDED', capacity: 2000, cheio: 1643, vazio: 0, porto: 576, prontoColeta: 2253, delivered: 5535, previous_total: 1600 },
@@ -737,6 +748,59 @@ export default function App() {
   const [vesselNote2, setVesselNote2] = useState("Destaques operacionais dos navios (Ex: Prioridades de descarga BYD). / 船舶运营重点亮点 (例如：比亚迪重箱卸船优先顺序)。");
   const [chartNote1, setChartNote1] = useState("Comentários sobre o Backlog Projetado vs Capacidade de Entrega Semanal. / 预测积压量与周度交付能力的对比分析说明。");
   const [chartNote2, setChartNote2] = useState("Análise de gargalos e metas diárias garantidas (meta Gc de 140). / 关于每日进箱量与保证目标 (Gc 140) 的瓶颈分析和建议。");
+
+  // ESTADOS PARA CONTROLE E ALOCAÇÃO DE DEPÓSITOS (DEPOT CONTROL & ALLOCATION)
+  const [depots, setDepots] = useState<Depot[]>(() => {
+    const saved = localStorage.getItem('byd_depots_data');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.length > 0) return parsed;
+      } catch (e) { console.error(e); }
+    }
+    return [
+      { id: 'pontual', name: 'PONTUAL', avgVolume: 57, maxCapacity: 80, currentGateIn: 57, status: 'Open', isAlert: false },
+      { id: 'lechman', name: 'LECHMAN', avgVolume: 48, maxCapacity: 60, currentGateIn: 48, status: 'Open', isAlert: false },
+      { id: '3alog', name: '3ALOG', avgVolume: 26, maxCapacity: 40, currentGateIn: 26, status: 'Open', isAlert: false },
+      { id: 'jw', name: 'J&W', avgVolume: 24, maxCapacity: 30, currentGateIn: 24, status: 'Open', isAlert: false },
+      { id: 'ziran', name: 'ZIRAN', avgVolume: 23, maxCapacity: 35, currentGateIn: 23, status: 'Open', isAlert: false },
+      { id: 'wilson', name: 'WILSON SONS', avgVolume: 23, maxCapacity: 24, currentGateIn: 23, status: 'Open', isAlert: false },
+      { id: 'tecon', name: 'TECON', avgVolume: 14, maxCapacity: 20, currentGateIn: 14, status: 'Open', isAlert: false },
+      { id: 'vbr', name: 'VBR', avgVolume: 8, maxCapacity: 10, currentGateIn: 8, status: 'Open', isAlert: true },
+      { id: 'area23', name: 'AREA 23 - TECON', avgVolume: 7, maxCapacity: 5, currentGateIn: 7, status: 'Open', isAlert: true }
+    ];
+  });
+
+  const [depotMatrix, setDepotMatrix] = useState<Record<string, Record<string, 'Authorized' | 'Blocked' | 'Contract Only'>>>(() => {
+    const saved = localStorage.getItem('byd_depot_matrix');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && Object.keys(parsed).length > 0) return parsed;
+      } catch (e) { console.error(e); }
+    }
+    return {
+      'PONTUAL': { 'MSC': 'Authorized', 'Maersk': 'Authorized', 'CMA CGM': 'Contract Only', 'Hapag-Lloyd': 'Authorized', 'ONE': 'Blocked', 'COSCO': 'Authorized', 'Evergreen': 'Contract Only' },
+      'LECHMAN': { 'MSC': 'Authorized', 'Maersk': 'Contract Only', 'CMA CGM': 'Authorized', 'Hapag-Lloyd': 'Contract Only', 'ONE': 'Authorized', 'COSCO': 'Blocked', 'Evergreen': 'Authorized' },
+      '3ALOG': { 'MSC': 'Authorized', 'Maersk': 'Authorized', 'CMA CGM': 'Authorized', 'Hapag-Lloyd': 'Blocked', 'ONE': 'Authorized', 'COSCO': 'Contract Only', 'Evergreen': 'Authorized' },
+      'J&W': { 'MSC': 'Contract Only', 'Maersk': 'Authorized', 'CMA CGM': 'Blocked', 'Hapag-Lloyd': 'Authorized', 'ONE': 'Authorized', 'COSCO': 'Authorized', 'Evergreen': 'Blocked' },
+      'ZIRAN': { 'MSC': 'Blocked', 'Maersk': 'Authorized', 'CMA CGM': 'Authorized', 'Hapag-Lloyd': 'Contract Only', 'ONE': 'Blocked', 'COSCO': 'Authorized', 'Evergreen': 'Authorized' },
+      'WILSON SONS': { 'MSC': 'Authorized', 'Maersk': 'Blocked', 'CMA CGM': 'Authorized', 'Hapag-Lloyd': 'Authorized', 'ONE': 'Contract Only', 'COSCO': 'Authorized', 'Evergreen': 'Contract Only' },
+      'TECON': { 'MSC': 'Authorized', 'Maersk': 'Authorized', 'CMA CGM': 'Authorized', 'Hapag-Lloyd': 'Authorized', 'ONE': 'Authorized', 'COSCO': 'Authorized', 'Evergreen': 'Authorized' },
+      'VBR': { 'MSC': 'Blocked', 'Maersk': 'Contract Only', 'CMA CGM': 'Blocked', 'Hapag-Lloyd': 'Contract Only', 'ONE': 'Blocked', 'COSCO': 'Contract Only', 'Evergreen': 'Blocked' },
+      'AREA 23 - TECON': { 'MSC': 'Blocked', 'Maersk': 'Blocked', 'CMA CGM': 'Blocked', 'Hapag-Lloyd': 'Blocked', 'ONE': 'Blocked', 'COSCO': 'Contract Only', 'Evergreen': 'Contract Only' },
+    };
+  });
+
+  // Efeitos para salvar depot data no LocalStorage
+  useEffect(() => {
+    localStorage.setItem('byd_depots_data', JSON.stringify(depots));
+  }, [depots]);
+
+  useEffect(() => {
+    localStorage.setItem('byd_depot_matrix', JSON.stringify(depotMatrix));
+  }, [depotMatrix]);
+
   
   // IDIOMA ATIVO: 'pt' (Português) | 'zh' (Mandarim) | 'bilingual' (Ambos)
   const [language, setLanguage] = useState<string>('bilingual');
@@ -2627,7 +2691,7 @@ export default function App() {
 
       let pdfInstance: jsPDF | null = null;
 
-      for (let s = 0; s < 4; s++) {
+      for (let s = 0; s < 6; s++) {
         setCurrentSlide(s);
         // Aguarda a renderização do React a nível de DOM a cada página (250ms)
         await new Promise((resolve) => setTimeout(resolve, 250));
@@ -3117,6 +3181,13 @@ export default function App() {
           subPT: "Mapeamento em tempo real de posições, escoamento de contêineres e otimização de retirada rápida",
           subZH: "缓冲区堆位、放行流向与智能移箱优化监控",
         };
+      case 5:
+        return {
+          titlePT: "CONTROLE OPERACIONAL DE DEPÓSITOS & ALOCAÇÃO",
+          titleZH: "协议堆存容量动态配额与船东准入管理大盘",
+          subPT: "Gestão integrada de capacidades diárias, portões ativos e matriz de compatibilidade com armadores principais",
+          subZH: "实时动态管控协议堆场每日限额、口岸通道开闭及集装箱流向分配符合矩阵",
+        };
       default:
         return {
           titlePT: slideTitlePT,
@@ -3389,6 +3460,7 @@ export default function App() {
                 { index: 0, pt: "Visão Geral", zh: "综合大盘", icon: <Database className="w-3.5 h-3.5" /> },
                 { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", icon: <Building2 className="w-3.5 h-3.5" /> },
                 { index: 4, pt: "BYD Buffer", zh: "智能缓冲区", icon: <Layers className="w-3.5 h-3.5" /> },
+                { index: 5, pt: "Depósitos & Alocação", zh: "协议堆存及港口流向", icon: <FileSpreadsheet className="w-3.5 h-3.5" /> },
                 { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-3.5 h-3.5" /> },
                 { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-3.5 h-3.5" /> },
               ].map(s => (
@@ -3409,7 +3481,7 @@ export default function App() {
 
             <div className="flex items-center gap-2 text-[10.5px] text-gray-400 font-mono font-bold bg-slate-50 dark:bg-slate-800/55 border border-slate-250/20 px-2 py-1 rounded-lg">
               <span className="text-[9px] text-red-600 dark:text-red-400 font-black uppercase tracking-widest">{language === 'zh' ? '当前视图' : 'Visualização'}:</span>
-              <span className="text-slate-750 dark:text-gray-200 font-extrabold">{currentSlide + 1} / 5</span>
+              <span className="text-slate-750 dark:text-gray-200 font-extrabold">{currentSlide + 1} / 6</span>
             </div>
           </div>
           
@@ -5020,7 +5092,7 @@ export default function App() {
               );
             })()}
                 </div>
-              ) : (
+              ) : currentSlide === 4 ? (
                 /* SLIDE 5: BYD BUFFER (2D MAP GRID AND COORDINATE LAYOUT) */
                 <div id="slide-dashboard-grid-buffer" className="flex flex-col gap-4 w-full h-full min-h-[660px]">
                   
@@ -5451,6 +5523,296 @@ export default function App() {
                   </div>
 
                 </div>
+              ) : (
+                /* SLIDE 6: DEPOT CONTROL & ALLOCATION */
+                <div id="slide-dashboard-grid-depots" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
+                  
+                  {/* TOP CONTROL HUB FOR DEPOT ALLOCATION */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3`}>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
+                        <FileSpreadsheet className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
+                          {language === 'bilingual' ? 'DEPOT CONTROL & ALLOCATION / 协议堆存与港口流向动态调配' : language === 'zh' ? '协议堆存与港口流向动态调配' : 'DEPOT CONTROL & ALLOCATION'}
+                        </h3>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                          {language === 'zh' ? '每日流量平均监控、最大动态容量配额、与船东合作状态交叉管理矩阵' : 'Controle dinâmico de limites diários, capacidade sob contrato e compatibilidade de armadores.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] bg-red-600 text-white font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
+                        {language === 'zh' ? '高级物流架构板' : 'Senior Logistics Panel'}
+                      </span>
+                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold px-2 py-0.5 rounded border border-slate-200 dark:border-slate-750">
+                        UTC-3 LIVE
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* HIGH-LEVEL INTEGRATED LOGISTICS KPIs */}
+                  {(() => {
+                    const totalAvg = depots.reduce((sum, d) => sum + d.avgVolume, 0);
+                    const totalCap = depots.reduce((sum, d) => sum + d.maxCapacity, 0);
+                    const openGates = depots.filter(d => d.status === 'Open').length;
+                    const criticalCount = depots.filter(d => {
+                      const util = d.maxCapacity > 0 ? (d.avgVolume / d.maxCapacity) * 100 : 0;
+                      return d.isAlert || util > 95;
+                    }).length;
+                    
+                    const totalRemainingSlots = depots.reduce((sum, d) => {
+                      if (d.status === 'Closed') return sum;
+                      const remaining = d.maxCapacity - d.avgVolume;
+                      return sum + (remaining > 0 ? remaining : 0);
+                    }, 0);
+
+                    return (
+                      <div className="grid grid-cols-4 gap-3">
+                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '日常平均总吞吐量' : 'VOLUME DIÁRIO TOTAL (AVG)'}</span>
+                            <span className="text-gray-400 font-mono text-xs font-bold">AVG baseline</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">{totalAvg}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">TEU/Dia</span>
+                          </div>
+                        </div>
+
+                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '空余可用仓位数' : 'VAGAS DIÁRIAS DISPONÍVEIS'}</span>
+                            <span className="text-emerald-500 font-bold text-[10px] px-1 py-0.1 bg-emerald-50 dark:bg-emerald-950/20 rounded">Slots Livres</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">{totalRemainingSlots}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">TEU Slots</span>
+                          </div>
+                        </div>
+
+                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '通道开启比例' : 'SITUAÇÃO DE PORTÕES'}</span>
+                            <span className="text-blue-500 font-bold text-[10px] px-1 py-0.1 bg-blue-50 dark:bg-blue-950/20 rounded">Gates Status</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">{openGates} <span className="text-xs text-gray-400 font-bold">/ {depots.length}</span></span>
+                            <span className="text-xs text-emerald-600 dark:text-emerald-450 font-extrabold">{language === 'zh' ? '正常运营中' : 'Ativos'}</span>
+                          </div>
+                        </div>
+
+                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '高危受限/满载站点' : 'PONTOS CRÍTICOS / ALERTA'}</span>
+                            <span className="text-red-500 font-bold text-[10px] px-1 py-0.1 bg-red-50 dark:bg-red-950/20 rounded">Alert Count</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black font-mono tracking-tight text-red-600 dark:text-red-400">{criticalCount}</span>
+                            <span className="text-xs text-red-500 dark:text-red-400 font-bold uppercase">{language === 'zh' ? '严重红色限制' : 'Gargalos'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* BOTTOM WORKSPACE WORKGRID */}
+                  <div className="grid grid-cols-12 gap-4 flex-1">
+                    
+                    {/* LEFT WORKSPACE: MAIN DEPOT CAPACITY CONTROL TABLE */}
+                    <div className={`col-span-7 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
+                      <div className="space-y-3 flex-1">
+                        <div className="flex justify-between items-center border-b pb-2 border-gray-100 dark:border-slate-800">
+                          <div className="flex items-center gap-1.5">
+                            <Sliders className="w-4 h-4 text-slate-500" />
+                            <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                              {language === 'bilingual' ? 'CONTROLE DE CAPACIDADE DE DEPÓSITOS / 协议堆存容量监控大盘' : language === 'zh' ? '协议堆存容量监控大盘' : 'CONTROLE DE CAPACIDADE DE DEPÓSITOS'}
+                            </h4>
+                          </div>
+                          <span className="text-[9px] text-gray-400 font-mono font-bold">100% FORMULA ENGINE</span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-800/60 text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-800">
+                                <th className="p-2 pl-2.5">{language === 'zh' ? '堆存点名称' : 'DEPÓSITO'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '日均平均量' : 'AVG DIÁRIO'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '最大动态限制' : 'CAP. MÁXIMA'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '当前占用率' : 'OCUPAÇÃO %'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '剩余库位' : 'SLOTS DISP.'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '通道 portão' : 'PORTÃO'}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800 font-bold text-slate-850 dark:text-slate-200">
+                              {depots.map((depot) => {
+                                const utilPercent = depot.maxCapacity > 0 ? Math.round((depot.avgVolume / depot.maxCapacity) * 100) : 0;
+                                const remaining = depot.maxCapacity - depot.avgVolume;
+                                
+                                // COLOR CALCULATION: Green < 75%, Yellow 75-95%, Red > 95%
+                                let utilBg = 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-450';
+                                let utilBorder = 'border-emerald-200 dark:border-emerald-900/30';
+                                if (utilPercent > 95) {
+                                  utilBg = 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-450';
+                                  utilBorder = 'border-red-200 dark:border-red-900/30';
+                                } else if (utilPercent >= 75) {
+                                  utilBg = 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-450';
+                                  utilBorder = 'border-amber-200 dark:border-amber-900/30';
+                                }
+
+                                // HIGH ALERT STYLING (For VBR and AREA 23 - TECON)
+                                const isSpecialAlert = depot.isAlert;
+
+                                return (
+                                  <tr 
+                                    key={depot.id} 
+                                    className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all ${
+                                      isSpecialAlert 
+                                        ? 'bg-rose-50/30 dark:bg-red-950/5 border-l-4 border-l-rose-500' 
+                                        : ''
+                                    }`}
+                                  >
+                                    <td className="p-2.5 pl-2.5 font-sans">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="font-extrabold tracking-tight text-[11px]">{depot.name}</span>
+                                        {isSpecialAlert && (
+                                          <span className="text-[7.5px] font-black text-rose-600 bg-rose-100 dark:text-rose-450 dark:bg-rose-950/35 px-1 rounded uppercase tracking-wider animate-pulse flex items-center gap-0.5">
+                                            <AlertTriangle className="w-2 h-2" /> Alert
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="p-2 text-center font-mono text-gray-500 dark:text-slate-400 font-bold">{depot.avgVolume} TEU</td>
+                                    <td className="p-2 text-center font-mono text-slate-800 dark:text-slate-100">
+                                      {depot.maxCapacity} TEU
+                                    </td>
+                                    <td className="p-2 text-center font-mono">
+                                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${utilBg} ${utilBorder}`}>
+                                        {utilPercent}%
+                                      </span>
+                                    </td>
+                                    <td className="p-2 text-center font-mono">
+                                      {remaining <= 0 ? (
+                                        <span className="text-[9px] font-black text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-950/40 px-1.5 py-0.5 rounded">
+                                          LOTAÇÃO / FULL
+                                        </span>
+                                      ) : (
+                                        <span className={`font-bold ${remaining < 5 ? 'text-amber-600' : 'text-slate-700 dark:text-slate-200'}`}>
+                                          {remaining} TEU
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="p-2 text-center">
+                                      <span className={`text-[9.5px] px-2 py-0.5 rounded font-black border uppercase tracking-wider ${
+                                        depot.status === 'Open'
+                                          ? 'bg-emerald-100/10 border-emerald-300 text-emerald-600 dark:text-emerald-400'
+                                          : 'bg-red-100/10 border-red-300 text-red-600 dark:text-red-400'
+                                      }`}>
+                                        {depot.status === 'Open' ? 'Open' : 'Closed'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 font-bold flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <span>{language === 'zh' ? '💡 系统逻辑：绿仓表示空闲度高，黄仓为警戒装载，红仓（利用率超过95%）限制流入，VBR / AREA 23 在任何状态下均触发黄色警戒警告。' : '💡 Legenda do Motor de Regras: Utilização <75% Verde (Liberado), 75-95% Amarelo (Atenção), >95% Vermelho (Gargalo - Bloqueio de novos volumes).'}</span>
+                      </div>
+                    </div>
+
+                    {/* RIGHT WORKSPACE: DYNAMIC INTERACTIVE SHIPOWNER COMPATIBILITY MATRIX */}
+                    <div className={`col-span-5 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
+                      <div className="space-y-3 flex-1">
+                        <div className="flex justify-between items-center border-b pb-2 border-gray-100 dark:border-slate-800">
+                          <div className="flex items-center gap-1.5">
+                            <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                            <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                              {language === 'bilingual' ? 'MATRIZ DE COMPATIBILIDADE DE ARMADORES / 船东协议符合矩阵' : language === 'zh' ? '船东协议符合矩阵' : 'MATRIZ DE ARMADORES'}
+                            </h4>
+                          </div>
+                          <span className="text-[9px] text-emerald-600 font-black animate-pulse bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.2 rounded">Interactive</span>
+                        </div>
+
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                          {language === 'zh' ? '💡 点击矩阵中的任何状态可以直接循环切换：Authorized (授权) ➜ Blocked (锁定) ➜ Contract Only (特许合同)。' : '💡 Clique diretamente sobre qualquer status na matriz para alternar: Liberado (✅ Auth) ➜ Bloqueado (❌ Block) ➜ Contrato (📝 Contract).'}
+                        </p>
+
+                        <div className="overflow-x-auto mt-2">
+                          <table className="w-full text-center border-collapse text-[10.5px]">
+                            <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-800/60 text-[8.5px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-800">
+                                <th className="p-1.5 text-left pl-2 font-black">{language === 'zh' ? '堆存点' : 'DEPÓSITO'}</th>
+                                {['MSC', 'Maersk', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'COSCO', 'Evergreen'].map(armador => (
+                                  <th key={armador} className="p-1.5 font-black text-center text-slate-750 dark:text-gray-300">{armador}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-850 font-bold text-slate-800 dark:text-slate-200">
+                              {Object.keys(depotMatrix).map((depotName) => (
+                                <tr key={depotName} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
+                                  <td className="p-1.5 text-left pl-2 font-extrabold text-[10px] text-slate-750 dark:text-gray-300">{depotName}</td>
+                                  {['MSC', 'Maersk', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'COSCO', 'Evergreen'].map((armador) => {
+                                    const value = depotMatrix[depotName]?.[armador] || 'Authorized';
+                                    
+                                    // Visual color states
+                                    let cellStyle = 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/45 dark:text-emerald-400';
+                                    let cellText = 'AUTH';
+                                    if (value === 'Blocked') {
+                                      cellStyle = 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/45 dark:text-red-400';
+                                      cellText = 'LOCK';
+                                    } else if (value === 'Contract Only') {
+                                      cellStyle = 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/45 dark:text-amber-400';
+                                      cellText = 'CONT';
+                                    }
+
+                                    return (
+                                      <td key={armador} className="p-1 text-center">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            // Click interaction to toggle through Authorized -> Blocked -> Contract Only
+                                            const states: ('Authorized' | 'Blocked' | 'Contract Only')[] = ['Authorized', 'Blocked', 'Contract Only'];
+                                            const currentIndex = states.indexOf(value);
+                                            const nextState = states[(currentIndex + 1) % states.length];
+                                            setDepotMatrix(prev => ({
+                                              ...prev,
+                                              [depotName]: {
+                                                ...(prev[depotName] || {}),
+                                                [armador]: nextState
+                                              }
+                                            }));
+                                          }}
+                                          className={`px-1 py-0.5 text-[8.5px] font-extrabold rounded-md border tracking-tighter cursor-pointer select-none transition-all active:scale-95 ${cellStyle}`}
+                                          title={`${armador} @ ${depotName}: Clique para alterar status / 点击切换状态`}
+                                        >
+                                          {cellText}
+                                        </button>
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 font-bold flex items-center justify-between">
+                        <span>{language === 'zh' ? '💡 契约限制：VBR及TEON 23 默认锁定大多数直接放行，仅接受特定预约。' : '💡 AUTH: Liberado | LOCK: Bloqueado | CONT: Requer Contrato.'}</span>
+                        <span className="text-[8px] bg-emerald-500/10 text-emerald-600 px-1 rounded uppercase tracking-widest font-black">Excel Friendly</span>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
               )}
             </div> {/* END OF ZOOM SCALE WRAPPER */}
 
@@ -5531,6 +5893,16 @@ export default function App() {
                 className={`flex-1 py-3 text-[10px] font-black border-b-2 text-center cursor-pointer transition-all ${activeTab === 'charts' ? 'border-red-600 text-red-600 bg-white font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
                 {language === 'zh' ? '图表' : language === 'pt' ? 'Gráficos' : 'Gráficos / 图表'}
+              </button>
+              <button 
+                id="tab-btn-depots"
+                onClick={() => {
+                  setActiveTab('depots');
+                  setCurrentSlide(5); // Auto switch slide to Depots Slide when clicking sidebar Depots tab
+                }}
+                className={`flex-1 py-3 text-[10px] font-black border-b-2 text-center cursor-pointer transition-all ${activeTab === 'depots' ? 'border-red-600 text-red-600 bg-white font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                {language === 'zh' ? '协议堆存' : language === 'pt' ? 'Depósitos' : 'Depots / 协议堆存'}
               </button>
               <button 
                 id="tab-btn-config"
@@ -6489,6 +6861,133 @@ export default function App() {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* TAB: DEPÓSITOS */}
+              {activeTab === 'depots' && (
+                <div className="space-y-4 text-slate-800 dark:text-slate-200 font-sans">
+                  
+                  {/* DEPOTS LIST WITH CAPACITY CONTROLS */}
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/40 space-y-3">
+                    <div className="flex items-center gap-1.5 border-b pb-1.5 border-slate-200 dark:border-slate-800">
+                      <Sliders className="w-4 h-4 text-red-500" />
+                      <span className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase">
+                        {language === 'zh' ? '协议堆存容量与通道状态' : language === 'pt' ? 'Capacidade de Depósitos e Portões' : 'Capacidade & Portões'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
+                      {depots.map((depot, idx) => {
+                        const utilPercent = depot.maxCapacity > 0 ? Math.round((depot.avgVolume / depot.maxCapacity) * 100) : 0;
+                        const utilColor = utilPercent > 95 ? 'text-red-600 bg-red-50 dark:bg-red-950/35' : utilPercent > 75 ? 'text-amber-600 bg-amber-50 dark:bg-amber-950/35' : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/35';
+                        
+                        return (
+                          <div key={depot.id} className="p-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 space-y-1.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{depot.name}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] text-gray-400 font-bold uppercase">AVG: <strong className="text-slate-750 dark:text-gray-300 font-mono font-bold">{depot.avgVolume}</strong></span>
+                                <span className={`text-[10px] font-mono font-extrabold px-1.5 py-0.2 rounded-md ${utilColor}`}>{utilPercent}%</span>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[8px] text-gray-400 dark:text-gray-500 font-bold uppercase block mb-0.5">Cap. Máxima / 最大容量</label>
+                                <input 
+                                  type="number"
+                                  min="1"
+                                  value={depot.maxCapacity}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, Number(e.target.value));
+                                    const next = [...depots];
+                                    next[idx].maxCapacity = val;
+                                    setDepots(next);
+                                  }}
+                                  className="w-full text-xs font-bold border border-slate-200 dark:border-slate-700 rounded p-1 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-center font-mono focus:ring-1 focus:ring-red-500 outline-none"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[8px] text-gray-400 dark:text-gray-500 font-bold uppercase block mb-0.5">Portão / 通道状态</label>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = [...depots];
+                                    next[idx].status = next[idx].status === 'Open' ? 'Closed' : 'Open';
+                                    setDepots(next);
+                                  }}
+                                  className={`w-full py-1 text-xs font-black rounded text-center transition-colors border uppercase ${
+                                    depot.status === 'Open'
+                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/40 dark:text-emerald-400'
+                                      : 'bg-red-50 border-red-250 text-red-700 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400'
+                                  }`}
+                                >
+                                  {depot.status === 'Open' ? (language === 'zh' ? '开启 / OPEN' : 'Aberto') : (language === 'zh' ? '关闭 / CLOSED' : 'Fechado')}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* SHIPOWNER MATRIX EDITOR */}
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/40 space-y-3">
+                    <div className="flex items-center gap-1.5 border-b pb-1.5 border-slate-200 dark:border-slate-800">
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                      <span className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase">
+                        {language === 'zh' ? '船东协议配置 (矩阵)' : language === 'pt' ? 'Matriz de Compatibilidade (Armadores)' : 'Compatibilidade Armadores'}
+                      </span>
+                    </div>
+
+                    <p className="text-[9.5px] text-gray-500 dark:text-gray-400 leading-tight">
+                      {language === 'zh' ? '在下方矩阵中，直接选择各堆存点与船东的合作关系（授权、合约、禁止）。' : 'Selecione abaixo as regras de liberação de cada depósto para os principais armadores.'}
+                    </p>
+
+                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                      {Object.keys(depotMatrix).map((depotName) => (
+                        <div key={depotName} className="p-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 space-y-1.5">
+                          <span className="text-[11px] font-black text-slate-800 dark:text-slate-100 block border-b pb-1 border-slate-100 dark:border-slate-800">{depotName}</span>
+                          <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                            {['MSC', 'Maersk', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'COSCO', 'Evergreen'].map((armador) => {
+                              const currentVal = depotMatrix[depotName]?.[armador] || 'Authorized';
+                              return (
+                                <div key={armador} className="flex items-center justify-between gap-1 text-[10px]">
+                                  <span className="font-bold text-gray-600 dark:text-slate-350">{armador}</span>
+                                  <select
+                                    value={currentVal}
+                                    onChange={(e) => {
+                                      const nextVal = e.target.value as any;
+                                      setDepotMatrix(prev => ({
+                                        ...prev,
+                                        [depotName]: {
+                                          ...(prev[depotName] || {}),
+                                          [armador]: nextVal
+                                        }
+                                      }));
+                                    }}
+                                    className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border outline-none max-w-[90px] ${
+                                      currentVal === 'Authorized'
+                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/40 dark:text-emerald-400'
+                                        : currentVal === 'Blocked'
+                                        ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400'
+                                        : 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/40 dark:text-amber-400'
+                                    }`}
+                                  >
+                                    <option value="Authorized">✅ Auth</option>
+                                    <option value="Blocked">❌ Block</option>
+                                    <option value="Contract Only">📝 Contract</option>
+                                  </select>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
