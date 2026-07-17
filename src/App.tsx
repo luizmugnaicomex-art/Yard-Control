@@ -45,7 +45,9 @@ import {
   Filter,
   Truck,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Clock,
+  Activity
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -816,6 +818,32 @@ export default function App() {
   const [theme, setTheme] = useState('light'); // 'light' ou 'dark'
   const [pdfStatus, setPdfStatus] = useState<'idle' | 'rendering' | 'success' | 'error'>('idle');
   
+  // PARADIGMAS DE VISUALIZAÇÃO: 'website' (Estilo Site SaaS Fluido) ou 'ppt' (Apresentação Core)
+  const [viewParadigm, setViewParadigm] = useState<'ppt' | 'website'>(() => {
+    const saved = localStorage.getItem('byd_view_paradigm');
+    return (saved as 'ppt' | 'website') || 'website';
+  });
+  const [websiteLayout, setWebsiteLayout] = useState<'tabbed' | 'scroll'>(() => {
+    const saved = localStorage.getItem('byd_website_layout');
+    return (saved as 'tabbed' | 'scroll') || 'tabbed';
+  });
+  const [websiteWidth, setWebsiteWidth] = useState<'fluid' | 'balanced'>(() => {
+    const saved = localStorage.getItem('byd_website_width');
+    return (saved as 'fluid' | 'balanced') || 'balanced';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('byd_view_paradigm', viewParadigm);
+  }, [viewParadigm]);
+
+  useEffect(() => {
+    localStorage.setItem('byd_website_layout', websiteLayout);
+  }, [websiteLayout]);
+
+  useEffect(() => {
+    localStorage.setItem('byd_website_width', websiteWidth);
+  }, [websiteWidth]);
+
   // ESTADOS DE INTERFACE E EDIÇÃO
   const [isEditMode, setIsEditMode] = useState(true);
   const [activeTab, setActiveTab] = useState('yards'); // yards | vessels | charts | config
@@ -3240,27 +3268,74 @@ export default function App() {
     );
   };
 
+  // CÁLCULO DE MÉTRICAS OPERACIONAIS GLOBAIS EM TEMPO REAL PARA O WEBSITE HEADER
+  const yardsArrayForHeader = Object.values(yards) as Yard[];
+  const totalYardsCapForHeader = yardsArrayForHeader.reduce((sum, y) => sum + (y?.capacity || 0), 0);
+  const totalYardsCheioForHeader = yardsArrayForHeader.reduce((sum, y) => sum + (y?.cheio || 0), 0);
+  const totalYardsVazioForHeader = yardsArrayForHeader.reduce((sum, y) => sum + (y?.vazio || 0), 0);
+  const globalOccupancyPercentForHeader = totalYardsCapForHeader > 0 ? Math.round(((totalYardsCheioForHeader + totalYardsVazioForHeader) / totalYardsCapForHeader) * 100) : 0;
+  
+  const totalExpectedVesselsForHeader = vessels.length;
+  const totalExpectedContainersForHeader = vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0);
+  
+  const totalContractedDepotsCapForHeader = depots.reduce((sum, d) => sum + (d.maxCapacity || 0), 0);
+  const totalContractedDepotsVolumeForHeader = depots.reduce((sum, d) => sum + (d.avgVolume || 0), 0);
+  const depotsOccupancyPercentForHeader = totalContractedDepotsCapForHeader > 0 ? Math.round((totalContractedDepotsVolumeForHeader / totalContractedDepotsCapForHeader) * 100) : 0;
+
+  const getMaxWidthClass = () => {
+    if (viewParadigm === 'ppt') return 'max-w-[1400px]';
+    return websiteWidth === 'fluid' ? 'max-w-full px-4' : 'max-w-[1500px] px-2';
+  };
+
   return (
     <div id="app-root-container" className={`min-h-screen ${theme === 'dark' ? 'bg-[#111827] text-gray-100' : 'bg-[#F3F4F6] text-gray-800'} transition-colors duration-300 flex flex-col font-sans overflow-x-hidden`}>
       
       {/* BARRA DE MENU SUPERIOR DE CONTROLE (Ocultada em modo de apresentação limpo) */}
       {isEditMode && (
-        <header id="control-panel-header" className="bg-white border-b border-gray-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4 z-10 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="bg-red-600 text-white p-2 rounded-lg">
-              <Globe className="w-5 h-5 animate-spin-slow" />
-            </div>
-            <div>
-              <h1 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-                Portal BYD Logistics <span className="text-[10px] bg-red-100 text-red-800 font-extrabold px-2 py-0.5 rounded-full tracking-wider">CONTROL TOWER</span>
-              </h1>
-              <p className="text-xs text-gray-500">Sistema Integrado de Controle de Pátios, Escalas e Planejamento Operacional (Bilingue/Mandarim)</p>
+        <header id="control-panel-header" className="bg-white dark:bg-[#1e293b] border-b border-gray-200 dark:border-slate-800 px-6 py-3 flex flex-col xl:flex-row items-center justify-between gap-4 z-10 shadow-sm transition-colors duration-300">
+          <div className="flex items-center gap-3 w-full xl:w-auto justify-between xl:justify-start">
+            <div className="flex items-center gap-3">
+              <div className="bg-red-600 text-white p-2 rounded-lg shadow-sm">
+                <Globe className="w-5 h-5 animate-spin-slow" />
+              </div>
+              <div>
+                <h1 className="font-bold text-base md:text-lg text-gray-800 dark:text-white flex items-center gap-2 tracking-tight">
+                  Portal BYD Logistics <span className="text-[10px] bg-red-100 dark:bg-red-950/40 text-red-850 dark:text-red-400 font-extrabold px-2 py-0.5 rounded-full tracking-wider">CONTROL TOWER</span>
+                </h1>
+                <p className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400">Sistema Integrado de Controle de Pátios, Escalas e Planejamento Operacional (Bilingue/Mandarim)</p>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* MÓDULOS OPERACIONAIS (Navegação principal centralizada) */}
+          <div className="flex items-center gap-1.5 flex-wrap justify-center my-0.5">
+            {[
+              { index: 0, pt: "Visão Geral", zh: "综合大盘", icon: <Database className="w-3.5 h-3.5" /> },
+              { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", icon: <Building2 className="w-3.5 h-3.5" /> },
+              { index: 4, pt: "BYD Buffer", zh: "智能缓冲区", icon: <Layers className="w-3.5 h-3.5" /> },
+              { index: 5, pt: "Depósitos & Alocação", zh: "协议堆存及港口流向", icon: <FileSpreadsheet className="w-3.5 h-3.5" /> },
+              { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-3.5 h-3.5" /> },
+              { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-3.5 h-3.5" /> },
+            ].map(s => (
+              <button
+                key={s.index}
+                id={`nav-module-btn-${s.index}`}
+                onClick={() => setCurrentSlide(s.index)}
+                className={`px-3 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border rounded-lg ${
+                  currentSlide === s.index
+                    ? 'bg-red-600 text-white border-red-700 shadow-sm shadow-red-500/15'
+                    : 'bg-gray-50 dark:bg-slate-850 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                {s.icon}
+                <span>{language === 'zh' ? s.zh : language === 'pt' ? s.pt : `${s.pt} / ${s.zh}`}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap xl:w-auto justify-center xl:justify-end">
             {/* Status do Banco e Login do Google */}
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs mr-1 select-none">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs mr-1 select-none">
               <span className="flex items-center gap-1">
                 {dbStatus === 'online' ? (
                   <Wifi className="w-3.5 h-3.5 text-emerald-500" title="Banco Online Sincronizado" />
@@ -3269,23 +3344,23 @@ export default function App() {
                 ) : (
                   <WifiOff className="w-3.5 h-3.5 text-rose-400" title="Usando fallback Offline local" />
                 )}
-                <span className="text-[10px] font-mono font-bold uppercase text-slate-500">
+                <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">
                   {dbStatus === 'online' ? 'Online' : dbStatus === 'connecting' ? 'Sinc' : 'Offline'}
                 </span>
               </span>
 
-              <div className="h-4 w-px bg-slate-200 mx-1"></div>
+              <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
               {user ? (
                 <div id="firebase-logged-in-container" className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-bold">
-                    <UserIcon className="w-3 h-3 text-emerald-600" />
+                  <div className="flex items-center gap-1 text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
+                    <UserIcon className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                     <span>{user.displayName || user.email?.split('@')[0]}</span>
                   </div>
                   <button
                     id="btn-google-signout"
                     onClick={logoutUser}
-                    className="p-1 text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+                    className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer"
                     title="Desconectar do Firebase"
                   >
                     <LogOut className="w-3 h-3" />
@@ -3295,7 +3370,7 @@ export default function App() {
                 <button
                   id="btn-google-signin"
                   onClick={loginWithGoogle}
-                  className="flex items-center gap-1 text-[10px] bg-white border border-gray-200 hover:border-red-400 text-gray-700 font-extrabold px-2 py-0.5 rounded cursor-pointer transition-colors shadow-sm"
+                  className="flex items-center gap-1 text-[10px] bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-650 hover:border-red-400 dark:hover:border-red-400 text-gray-700 dark:text-gray-300 font-extrabold px-2 py-0.5 rounded cursor-pointer transition-colors shadow-sm"
                   title="Faça login com sua conta do Google para editar os dados online em tempo real!"
                 >
                   <Lock className="w-3 h-3 text-red-500" />
@@ -3441,59 +3516,79 @@ export default function App() {
         {/* VIEWPORT DO SLIDE (ESQUERDA) */}
         <div id="slide-viewport-container" className="flex-1 px-2 py-1 flex flex-col items-center justify-start overflow-y-auto w-full">
           
-          {/* NAVEGAÇÃO DE MÓDULOS - ESTILO WEBSITE CORPORATIVO */}
-          <div className="w-full max-w-[1400px] flex flex-col md:flex-row md:items-center justify-between bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-slate-800 rounded-xl px-4 py-3 mb-4 shadow-sm select-none transition-all gap-3">
-            <div className="flex items-center gap-2">
-              <div className="bg-red-50 dark:bg-red-950/30 p-1.5 rounded-lg text-red-600">
-                <Database className="w-4 h-4 text-red-600" />
+          {/* HEADER DO WEBSITE PORTAL (Apenas no Modo Website) */}
+          {viewParadigm === 'website' && (
+            <div className={`w-full ${getMaxWidthClass()} mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-slate-800 rounded-xl p-4 shadow-sm`}>
+              <div className="flex items-center gap-3">
+                <div className="bg-red-600 text-white p-3 rounded-xl shadow-md">
+                  <Globe className="w-6 h-6 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[9px] bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
+                      {language === 'zh' ? '比亚迪物流控制塔' : 'BYD Logistics Portal'}
+                    </span>
+                    <span className="flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-[9px] text-gray-400 dark:text-gray-500 font-mono font-bold">LIVE METRICS FEED</span>
+                  </div>
+                  <h2 className="text-xl font-black text-slate-850 dark:text-white tracking-tight">
+                    {language === 'zh' ? getDynamicSlideTitleAndSubtitle().titleZH : getDynamicSlideTitleAndSubtitle().titlePT}
+                  </h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-450 font-medium mt-0.5">
+                    {language === 'zh' ? getDynamicSlideTitleAndSubtitle().subZH : getDynamicSlideTitleAndSubtitle().subPT}
+                  </p>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black text-slate-800 dark:text-gray-200 uppercase tracking-widest block">
-                  {language === 'bilingual' ? 'Módulos Operacionais / 智能控制面板' : language === 'zh' ? '智能控制面板:' : 'Módulos Operacionais:'}
-                </span>
-                <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'zh' ? '实时控制台' : 'Console em tempo real'}</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2 flex-wrap">
-              {[
-                { index: 0, pt: "Visão Geral", zh: "综合大盘", icon: <Database className="w-3.5 h-3.5" /> },
-                { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", icon: <Building2 className="w-3.5 h-3.5" /> },
-                { index: 4, pt: "BYD Buffer", zh: "智能缓冲区", icon: <Layers className="w-3.5 h-3.5" /> },
-                { index: 5, pt: "Depósitos & Alocação", zh: "协议堆存及港口流向", icon: <FileSpreadsheet className="w-3.5 h-3.5" /> },
-                { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-3.5 h-3.5" /> },
-                { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-3.5 h-3.5" /> },
-              ].map(s => (
-                <button
-                  key={s.index}
-                  onClick={() => setCurrentSlide(s.index)}
-                  className={`px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-2 border rounded-lg ${
-                    currentSlide === s.index
-                      ? 'bg-red-600 text-white border-red-700 shadow-md shadow-red-550/20 dark:shadow-none'
-                      : 'bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  {s.icon}
-                  <span>{language === 'zh' ? s.zh : language === 'pt' ? s.pt : `${s.pt} / ${s.zh}`}</span>
-                </button>
-              ))}
-            </div>
 
-            <div className="flex items-center gap-2 text-[10.5px] text-gray-400 font-mono font-bold bg-slate-50 dark:bg-slate-800/55 border border-slate-250/20 px-2 py-1 rounded-lg">
-              <span className="text-[9px] text-red-600 dark:text-red-400 font-black uppercase tracking-widest">{language === 'zh' ? '当前视图' : 'Visualização'}:</span>
-              <span className="text-slate-750 dark:text-gray-200 font-extrabold">{currentSlide + 1} / 6</span>
+              {/* LIVE METRICS CARDS INSIDE THE HEADER */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-lg">
+                  <Activity className="w-3.5 h-3.5 text-red-600 animate-pulse" />
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'zh' ? '总堆存使用率' : 'Yards Occupancy'}</span>
+                    <span className="text-xs font-black text-slate-800 dark:text-white font-mono">{globalOccupancyPercentForHeader}%</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-lg">
+                  <Ship className="w-3.5 h-3.5 text-blue-500" />
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'zh' ? '活跃船舶到港' : 'Active Vessels'}</span>
+                    <span className="text-xs font-black text-slate-800 dark:text-white font-mono">{totalExpectedVesselsForHeader} <span className="text-[9px] text-gray-400 font-normal">({totalExpectedContainersForHeader} TEU)</span></span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-lg">
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'zh' ? '协议堆场平均流量' : 'Depots Volume'}</span>
+                    <span className="text-xs font-black text-slate-800 dark:text-white font-mono">{totalContractedDepotsVolumeForHeader} <span className="text-[9px] text-emerald-500">({depotsOccupancyPercentForHeader}%)</span></span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-lg font-mono text-[10px] text-gray-500 dark:text-gray-400">
+                  <Clock className="w-3.5 h-3.5 text-amber-500" />
+                  <span>UTC-3: <strong>10:17:48</strong></span>
+                </div>
+              </div>
             </div>
-          </div>
-          
+          )}
+
           {/* CONTAINER DO WEBSITE DASHBOARD (COMPARTIMENTO FLUIDO SEM ESCALONAMENTO INTERNO) */}
           <div 
             id="slide-capture-area" 
             className={`
-              w-full max-w-[1400px] shadow-lg rounded-2xl transition-all relative border overflow-visible
-              ${theme === 'dark' ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-[#FAFCFF] border-slate-100 text-slate-800'}
-              p-6 md:p-8
+              w-full transition-all relative overflow-visible
+              ${(viewParadigm === 'website' && pdfStatus !== 'rendering') 
+                ? 'shadow-none border-none bg-transparent p-0' 
+                : `shadow-lg rounded-2xl border p-6 md:p-8 ${theme === 'dark' ? 'bg-[#0f172a] border-slate-800 text-white' : 'bg-[#FAFCFF] border-slate-100 text-slate-800'}`
+              }
+              ${getMaxWidthClass()}
             `}
-            style={pdfStatus === 'rendering' ? {
+            style={(pdfStatus === 'rendering' || viewParadigm === 'ppt') ? {
               maxWidth: widescreenMode ? `${slideWidth}px` : '100%',
               aspectRatio: widescreenMode ? '16/9' : 'auto',
               minHeight: widescreenMode ? '720px' : 'auto',
@@ -3515,57 +3610,59 @@ export default function App() {
               }}
               className="flex flex-col justify-between"
             >
-              {/* CABEÇALHO DO SLIDE */}
-              <div id="slide-header" className={`flex justify-between items-start border-b border-dashed border-gray-200 dark:border-gray-800 ${widescreenMode ? 'mb-2 pb-1.5' : 'mb-4 pb-3'}`}>
-                <div className="w-4/5">
-                  {currentSlide !== 3 && (
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-red-600 dark:text-red-400 mb-1 tracking-widest uppercase">
-                      <span>{language === 'bilingual' ? `${TRANSLATIONS.systemTitle.pt} | ${TRANSLATIONS.systemTitle.zh}` : t('systemTitle')}</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
-                    </div>
-                  )}
-                  {currentSlide === 3 && <div className="mt-1"></div>}
-                  <div className="focus:ring-0 focus:outline-none w-full">
-                    {getSlideTitle()}
-                  </div>
-                  <div>{getSlideSubtitle()}</div>
-                </div>
-
-                {/* LOGO BYD estilizado em SVG */}
-                <div className="flex flex-col items-end">
-                  {currentSlide === 3 ? (
-                    <div className="flex items-center gap-2 mb-1 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                      <span className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">
-                        SCENARIO (/DAY):
-                      </span>
-                      <input
-                        type="number"
-                        value={scenarioValue}
-                        onChange={(e) => {
-                          const val = Number(e.target.value) || 0;
-                          setScenarioValue(val);
-                          updateGlobalDoc('scenarioValue', val);
-                        }}
-                        className="w-14 px-1 py-0.5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-750 text-slate-900 dark:text-white rounded text-[11px] text-center font-bold font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 font-bold tracking-widest text-lg text-red-600 dark:text-red-500">
-                      <span className="border-2 border-red-600 dark:border-red-500 px-1 py-0.5 rounded text-xs font-black">BYD</span>
-                      <span className="text-[11px] text-gray-400 dark:text-gray-500 font-sans tracking-normal">{t('logistics')}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1">
-                    {currentSlide === 3 && (
-                      <div className="flex items-center gap-0.5 font-bold tracking-widest text-[9px] text-red-605 dark:text-red-500 mr-1.5">
-                        <span className="border border-red-600 dark:border-red-500 px-0.5 py-0 rounded-[2px] text-[7px] font-black leading-none">BYD</span>
-                        <span className="text-[8px] text-gray-400 dark:text-gray-500 font-sans tracking-normal leading-none">{t('logistics')}</span>
+              {/* CABEÇALHO DO SLIDE (Apenas no Modo PPT ou ao gerar PDF) */}
+              {(viewParadigm === 'ppt' || pdfStatus === 'rendering') && (
+                <div id="slide-header" className={`flex justify-between items-start border-b border-dashed border-gray-200 dark:border-gray-800 ${widescreenMode ? 'mb-2 pb-1.5' : 'mb-4 pb-3'}`}>
+                  <div className="w-4/5">
+                    {currentSlide !== 3 && (
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-red-600 dark:text-red-400 mb-1 tracking-widest uppercase">
+                        <span>{language === 'bilingual' ? `${TRANSLATIONS.systemTitle.pt} | ${TRANSLATIONS.systemTitle.zh}` : t('systemTitle')}</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
                       </div>
                     )}
-                    <span className="text-[8px] text-gray-400 uppercase font-mono tracking-wider">{t('nationalOperations')}</span>
+                    {currentSlide === 3 && <div className="mt-1"></div>}
+                    <div className="focus:ring-0 focus:outline-none w-full">
+                      {getSlideTitle()}
+                    </div>
+                    <div>{getSlideSubtitle()}</div>
+                  </div>
+
+                  {/* LOGO BYD estilizado em SVG */}
+                  <div className="flex flex-col items-end">
+                    {currentSlide === 3 ? (
+                      <div className="flex items-center gap-2 mb-1 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <span className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">
+                          SCENARIO (/DAY):
+                        </span>
+                        <input
+                          type="number"
+                          value={scenarioValue}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0;
+                            setScenarioValue(val);
+                            updateGlobalDoc('scenarioValue', val);
+                          }}
+                          className="w-14 px-1 py-0.5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-750 text-slate-900 dark:text-white rounded text-[11px] text-center font-bold font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 font-bold tracking-widest text-lg text-red-600 dark:text-red-500">
+                        <span className="border-2 border-red-600 dark:border-red-500 px-1 py-0.5 rounded text-xs font-black">BYD</span>
+                        <span className="text-[11px] text-gray-400 dark:text-gray-500 font-sans tracking-normal">{t('logistics')}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1">
+                      {currentSlide === 3 && (
+                        <div className="flex items-center gap-0.5 font-bold tracking-widest text-[9px] text-red-605 dark:text-red-500 mr-1.5">
+                          <span className="border border-red-600 dark:border-red-500 px-0.5 py-0 rounded-[2px] text-[7px] font-black leading-none">BYD</span>
+                          <span className="text-[8px] text-gray-400 dark:text-gray-500 font-sans tracking-normal leading-none">{t('logistics')}</span>
+                        </div>
+                      )}
+                      <span className="text-[8px] text-gray-400 uppercase font-mono tracking-wider">{t('nationalOperations')}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* CONTEÚDO CONDICIONAL CONFORME O SLIDE ATIVO */}
               {currentSlide === 0 ? (
@@ -5817,7 +5914,7 @@ export default function App() {
             </div> {/* END OF ZOOM SCALE WRAPPER */}
 
             {/* MARCA D'ÁGUA PERSONALIZADA DE SLIDE CORPORATIVO */}
-            {showWatermark && (
+            {showWatermark && viewParadigm === 'ppt' && (
               <div className="absolute bottom-2.5 left-6 flex items-center gap-1.5 opacity-40 select-none pointer-events-none">
                 <span className="text-[9px] font-mono tracking-widest text-[#94a3b8]">
                   {watermarkText} • {language === 'bilingual' ? '比亚迪物流机密 / CONFIDENCIAL BYD' : t('confidential')}
