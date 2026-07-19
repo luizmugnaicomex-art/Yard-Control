@@ -867,6 +867,7 @@ export default function App() {
   const [demurrageFilterComponent, setDemurrageFilterComponent] = useState<string>("ALL");
   const [demurrageFilterCarrier, setDemurrageFilterCarrier] = useState<string>("ALL");
   const [demurrageFilterVessel, setDemurrageFilterVessel] = useState<string>("ALL");
+  const [selectedDemurrageRange, setSelectedDemurrageRange] = useState<{ label: string; col: 'buffer' | 'buffer-scheduled' | 'delivered' | 'outside' | 'total' } | null>(null);
 
   // CONFIGURAÇÕES VISUAIS DO SLIDE (Adaptativo com base no idioma)
   const [slideTitlePT, setSlideTitlePT] = useState("DASHBOARD OPERACIONAL & CAPACIDADE DE PÁTIOS");
@@ -6498,6 +6499,37 @@ export default function App() {
                       return diffDays;
                     };
 
+                    const getMatchingContainersForSelectedRange = () => {
+                      if (!selectedDemurrageRange) return [];
+                      const r = ranges.find(x => x.label === selectedDemurrageRange.label);
+                      if (!r) return [];
+
+                      return filteredContainersForDemurrage.filter(c => {
+                        const days = getDaysRemainingForContainer(c);
+                        if (days === null) return false;
+
+                        // First check range condition
+                        if (!r.filter(days)) return false;
+
+                        // Then check column condition
+                        const col = selectedDemurrageRange.col;
+                        if (col === 'buffer') {
+                          return c.yardId === 'buffer';
+                        }
+                        if (col === 'buffer-scheduled') {
+                          return c.yardId === 'buffer' && c.programacao && c.programacao.trim() !== '';
+                        }
+                        if (col === 'delivered') {
+                          return c.category === 'DELIVERED';
+                        }
+                        if (col === 'outside') {
+                          return c.yardId !== 'buffer';
+                        }
+                        // 'total' is all matching the range
+                        return true;
+                      });
+                    };
+
                     // Helper to calculate row metrics for Expiration Light aging ranges
                     const getRowMetrics = (filterFn: (days: number) => boolean) => {
                       let atBuffer = 0;
@@ -6588,18 +6620,12 @@ export default function App() {
                     
                     const bufCount = bufFull + bufEmpty;
 
-                    // Returned metric - sum of all delivered containers across yards (matching "Visão Geral")
-                    const returnedValue = (Object.values(yards) as Yard[]).reduce((sum: number, y) => sum + (y?.delivered || 0), 0) || 27983;
-
-                    // Total containers is sum of Returned + Pending Active containers
-                    const totalContainersValue = returnedValue + pendingCount;
-
-                    const pendingPct = totalContainersValue > 0 ? ((pendingCount / totalContainersValue) * 100).toFixed(2) : "0.00";
-                    const overduePct = totalContainersValue > 0 ? ((overdueCount / totalContainersValue) * 100).toFixed(2) : "0.00";
-                    const next15Pct = totalContainersValue > 0 ? ((next15Count / totalContainersValue) * 100).toFixed(2) : "0.00";
-                    const schedPct = totalContainersValue > 0 ? ((schedCount / totalContainersValue) * 100).toFixed(2) : "0.00";
-                    const bufPct = totalContainersValue > 0 ? ((bufCount / totalContainersValue) * 100).toFixed(2) : "0.00";
-                    const returnedPct = totalContainersValue > 0 ? ((returnedValue / totalContainersValue) * 100).toFixed(2) : "0.00";
+                    // Percentages calculated based on active uploaded (pending) containers
+                    const pendingPct = "100.00";
+                    const overduePct = pendingCount > 0 ? ((overdueCount / pendingCount) * 100).toFixed(2) : "0.00";
+                    const next15Pct = pendingCount > 0 ? ((next15Count / pendingCount) * 100).toFixed(2) : "0.00";
+                    const schedPct = pendingCount > 0 ? ((schedCount / pendingCount) * 100).toFixed(2) : "0.00";
+                    const bufPct = pendingCount > 0 ? ((bufCount / pendingCount) * 100).toFixed(2) : "0.00";
 
                     // 3. Process BLs with expired or free time expiring within 5 days
                     const blsMap: Record<string, { bl: string, lote: string, count: number, minFreeTime: string, eta: string }> = {};
@@ -6753,25 +6779,10 @@ export default function App() {
                           </div>
                         </div>
 
-                        {/* EXECUTIVE METRICS DASHBOARD (Cards exactly matching image style) */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                        {/* EXECUTIVE METRICS DASHBOARD (Only uploaded active tracking metrics) */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
                           
-                          {/* CARD 1: Total Containers */}
-                          <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-150'} flex flex-col justify-between text-center min-h-[105px]`}>
-                            <span className="text-[9px] text-gray-500 dark:text-gray-400 font-extrabold uppercase tracking-wider block">
-                              {language === 'zh' ? '集装箱总数 / Total' : 'Total Containers'}
-                            </span>
-                            <div className="my-1">
-                              <span className="text-2xl font-black font-mono tracking-tight text-slate-900 dark:text-white">
-                                {totalContainersValue.toLocaleString()}
-                              </span>
-                            </div>
-                            <span className="text-[9px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-800 py-0.5 rounded">
-                              100,00%
-                            </span>
-                          </div>
-
-                          {/* CARD 2: Return Pending */}
+                          {/* CARD 1: Return Pending */}
                           <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-red-950/40' : 'bg-white border-red-150'} flex flex-col justify-between min-h-[105px]`}>
                             <div className="text-center">
                               <span className="text-[9px] text-red-600 dark:text-red-400 font-extrabold uppercase tracking-wider block">
@@ -6795,7 +6806,7 @@ export default function App() {
                             </div>
                           </div>
 
-                          {/* CARD 3: Overdue */}
+                          {/* CARD 2: Overdue */}
                           <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-red-950/40' : 'bg-white border-red-150'} flex flex-col justify-between text-center min-h-[105px]`}>
                             <span className="text-[9px] text-red-600 dark:text-red-400 font-extrabold uppercase tracking-wider block">
                               {language === 'zh' ? '超期箱量 / Overdue' : 'Overdue'}
@@ -6811,7 +6822,7 @@ export default function App() {
                             </span>
                           </div>
 
-                          {/* CARD 4: Next 15 Days */}
+                          {/* CARD 3: Next 15 Days */}
                           <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-amber-950/40' : 'bg-white border-orange-150'} flex flex-col justify-between text-center min-h-[105px]`}>
                             <span className="text-[9px] text-amber-600 dark:text-amber-450 font-extrabold uppercase tracking-wider block">
                               {language === 'zh' ? '未来15天到期' : 'Next 15 Days'}
@@ -6826,7 +6837,7 @@ export default function App() {
                             </span>
                           </div>
 
-                          {/* CARD 5: Scheduled */}
+                          {/* CARD 4: Scheduled */}
                           <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-150'} flex flex-col justify-between text-center min-h-[105px]`}>
                             <span className="text-[9px] text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider block">
                               {language === 'zh' ? '已排程交付 / Scheduled' : 'Scheduled Delivery'}
@@ -6841,7 +6852,7 @@ export default function App() {
                             </span>
                           </div>
 
-                          {/* CARD 6: BYD Buffer */}
+                          {/* CARD 5: BYD Buffer */}
                           <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-sky-950' : 'bg-white border-sky-100'} flex flex-col justify-between min-h-[105px]`}>
                             <div className="text-center">
                               <span className="text-[9px] text-sky-600 dark:text-sky-450 font-extrabold uppercase tracking-wider block">
@@ -6863,21 +6874,6 @@ export default function App() {
                                 <span className="scale-90 opacity-70">Empty</span>
                               </div>
                             </div>
-                          </div>
-
-                          {/* CARD 7: Returned */}
-                          <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-emerald-950' : 'bg-white border-emerald-100'} flex flex-col justify-between text-center min-h-[105px]`}>
-                            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-extrabold uppercase tracking-wider block">
-                              {language === 'zh' ? '已退还空箱 / Returned' : 'Returned'}
-                            </span>
-                            <div className="my-1">
-                              <span className="text-2xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
-                                {returnedValue.toLocaleString()}
-                              </span>
-                            </div>
-                            <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 py-0.5 rounded">
-                              {returnedPct}%
-                            </span>
                           </div>
                         </div>
 
@@ -6909,29 +6905,75 @@ export default function App() {
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-slate-850 font-bold text-slate-700 dark:text-slate-300 font-mono">
-                                  {rangeMetrics.map((r, idx) => (
-                                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-all">
-                                      <td className="p-2 text-left pl-2 flex items-center gap-1.5 font-sans font-extrabold text-[11px]">
-                                        <span className={`h-2.5 w-2.5 rounded-full ${r.color} shrink-0`}></span>
-                                        <span>{language === 'zh' ? r.zh : r.label}</span>
-                                      </td>
-                                      <td className="p-2 text-center">
-                                        {r.metrics.atBuffer > 0 ? r.metrics.atBuffer : <span className="opacity-15">-</span>}
-                                      </td>
-                                      <td className="p-2 text-center">
-                                        {r.metrics.atBufferScheduled > 0 ? r.metrics.atBufferScheduled : <span className="opacity-15">-</span>}
-                                      </td>
-                                      <td className="p-2 text-center text-red-650 dark:text-rose-400">
-                                        {r.metrics.deliveredPending > 0 ? r.metrics.deliveredPending : <span className="opacity-15">-</span>}
-                                      </td>
-                                      <td className="p-2 text-center">
-                                        {r.metrics.outsideByd > 0 ? r.metrics.outsideByd : <span className="opacity-15">-</span>}
-                                      </td>
-                                      <td className="p-2 text-center text-slate-900 dark:text-white font-black bg-slate-50/30 dark:bg-slate-800/10">
-                                        {r.metrics.total > 0 ? r.metrics.total : <span className="opacity-15">-</span>}
-                                      </td>
-                                    </tr>
-                                  ))}
+                                  {rangeMetrics.map((r, idx) => {
+                                    const isRowSelected = selectedDemurrageRange && selectedDemurrageRange.label === r.label;
+                                    
+                                    const getCellClasses = (colType: 'buffer' | 'buffer-scheduled' | 'delivered' | 'outside' | 'total', val: number) => {
+                                      const isSelected = isRowSelected && selectedDemurrageRange.col === colType;
+                                      let base = "p-2 text-center cursor-pointer transition-all border text-xs ";
+                                      if (isSelected) {
+                                        base += "bg-red-500/10 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-300 dark:border-red-900 font-black shadow-inner scale-[1.02] relative z-10";
+                                      } else {
+                                        base += "border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-red-600 dark:hover:text-red-400";
+                                        if (colType === 'delivered') {
+                                          base += " text-red-650 dark:text-rose-400";
+                                        } else if (colType === 'total') {
+                                          base += " text-slate-900 dark:text-white font-black bg-slate-50/20 dark:bg-slate-800/5";
+                                        }
+                                      }
+                                      return base;
+                                    };
+
+                                    const handleCellClick = (colType: 'buffer' | 'buffer-scheduled' | 'delivered' | 'outside' | 'total') => {
+                                      if (selectedDemurrageRange && selectedDemurrageRange.label === r.label && selectedDemurrageRange.col === colType) {
+                                        setSelectedDemurrageRange(null);
+                                      } else {
+                                        setSelectedDemurrageRange({ label: r.label, col: colType });
+                                      }
+                                    };
+
+                                    return (
+                                      <tr key={idx} className="hover:bg-slate-50/20 dark:hover:bg-slate-850/10 transition-all">
+                                        <td 
+                                          onClick={() => handleCellClick('total')}
+                                          className={`p-2 text-left pl-2 flex items-center gap-1.5 font-sans font-extrabold text-[11px] cursor-pointer transition-all hover:bg-slate-100/50 dark:hover:bg-slate-800/40 ${isRowSelected && selectedDemurrageRange.col === 'total' ? 'text-red-600 dark:text-red-400 font-black bg-slate-100/30' : ''}`}
+                                        >
+                                          <span className={`h-2.5 w-2.5 rounded-full ${r.color} shrink-0`}></span>
+                                          <span>{language === 'zh' ? r.zh : r.label}</span>
+                                        </td>
+                                        <td 
+                                          onClick={() => handleCellClick('buffer')}
+                                          className={getCellClasses('buffer', r.metrics.atBuffer)}
+                                        >
+                                          {r.metrics.atBuffer > 0 ? r.metrics.atBuffer : <span className="opacity-15">-</span>}
+                                        </td>
+                                        <td 
+                                          onClick={() => handleCellClick('buffer-scheduled')}
+                                          className={getCellClasses('buffer-scheduled', r.metrics.atBufferScheduled)}
+                                        >
+                                          {r.metrics.atBufferScheduled > 0 ? r.metrics.atBufferScheduled : <span className="opacity-15">-</span>}
+                                        </td>
+                                        <td 
+                                          onClick={() => handleCellClick('delivered')}
+                                          className={getCellClasses('delivered', r.metrics.deliveredPending)}
+                                        >
+                                          {r.metrics.deliveredPending > 0 ? r.metrics.deliveredPending : <span className="opacity-15">-</span>}
+                                        </td>
+                                        <td 
+                                          onClick={() => handleCellClick('outside')}
+                                          className={getCellClasses('outside', r.metrics.outsideByd)}
+                                        >
+                                          {r.metrics.outsideByd > 0 ? r.metrics.outsideByd : <span className="opacity-15">-</span>}
+                                        </td>
+                                        <td 
+                                          onClick={() => handleCellClick('total')}
+                                          className={getCellClasses('total', r.metrics.total)}
+                                        >
+                                          {r.metrics.total > 0 ? r.metrics.total : <span className="opacity-15">-</span>}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
                                   <tr className="bg-slate-100/60 dark:bg-slate-800/40 text-slate-900 dark:text-white font-black border-t border-slate-200 dark:border-slate-700">
                                     <td className="p-2 text-left pl-2 font-sans font-extrabold uppercase">{language === 'zh' ? '总计' : 'Total'}</td>
                                     <td className="p-2 text-center">{sumAtBuffer}</td>
@@ -7036,6 +7078,136 @@ export default function App() {
                           </div>
 
                         </div>
+
+                        {/* DETAILED MATCHING CONTAINERS SECTION (Interactive based on clicked Expiration Light range/cell) */}
+                        {selectedDemurrageRange && (() => {
+                          const matchingContainers = getMatchingContainersForSelectedRange();
+                          const r = ranges.find(x => x.label === selectedDemurrageRange.label);
+                          
+                          // Column translation for header
+                          const colLabel = selectedDemurrageRange.col === 'buffer' ? (language === 'zh' ? '在缓冲区 / At BYD Buffer' : 'At BYD Buffer')
+                            : selectedDemurrageRange.col === 'buffer-scheduled' ? (language === 'zh' ? '缓冲区已排程 / At BYD Buffer - Scheduled' : 'At BYD Buffer - Scheduled')
+                            : selectedDemurrageRange.col === 'delivered' ? (language === 'zh' ? '已交付未还箱 / Delivered (Pending Return)' : 'Delivered (Pending Return)')
+                            : selectedDemurrageRange.col === 'outside' ? (language === 'zh' ? '在保税区/外部 / Outside BYD' : 'Outside BYD')
+                            : (language === 'zh' ? '全部 / Total' : 'Total');
+
+                          const rangeLabel = r ? (language === 'zh' ? r.zh : r.label) : selectedDemurrageRange.label;
+
+                          return (
+                            <div className={`p-4 rounded-xl border mt-4 transition-all ${theme === 'dark' ? 'bg-[#1e293b]/95 border-red-900/40 text-white' : 'bg-red-50/20 border-red-250/60 shadow-xs'}`}>
+                              <div className="flex justify-between items-center border-b pb-2.5 border-red-150/40 dark:border-slate-800 mb-3">
+                                <div>
+                                  <h4 className="font-extrabold text-xs text-red-700 dark:text-red-400 uppercase tracking-widest flex items-center gap-2">
+                                    <span className="h-2 w-2 rounded-full bg-red-600 animate-ping shrink-0"></span>
+                                    {language === 'bilingual' 
+                                      ? `Contêineres Filtrados: ${rangeLabel} (${colLabel}) / 筛选出的集装箱` 
+                                      : `Contêineres Filtrados: ${rangeLabel} (${colLabel})`}
+                                  </h4>
+                                  <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold mt-0.5">
+                                    {language === 'zh' 
+                                      ? `共 ${matchingContainers.length} 个匹配的集装箱。在这里，您可以直接更新“计划提货时间 (Programação)”和“运输公司 (Carrier)”，数据将自动同步更新，以协助及时归还空箱，避免产生超期滞期费。`
+                                      : `Mostrando ${matchingContainers.length} contêiner(es). Agende a retirada e devolução preenchendo as colunas abaixo para mitigar custos de demurrage.`}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => setSelectedDemurrageRange(null)}
+                                  className="px-2.5 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-950/40 dark:hover:bg-red-900/40 text-red-700 dark:text-red-400 font-extrabold text-[10px] rounded-md transition-all active:scale-95 border border-red-200 dark:border-red-900/30 cursor-pointer"
+                                >
+                                  {language === 'zh' ? '清除筛选 ✕' : 'Fechar Detalhes ✕'}
+                                </button>
+                              </div>
+
+                              <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                                <table className="w-full text-[11px] text-left border-collapse">
+                                  <thead>
+                                    <tr className="bg-slate-100 dark:bg-slate-800 text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-700">
+                                      <th className="p-2 pl-3">ID Container</th>
+                                      <th className="p-2">Batch / Lote</th>
+                                      <th className="p-2">Yard / Pátio</th>
+                                      <th className="p-2">Vessel / Navio</th>
+                                      <th className="p-2 text-center">ETA</th>
+                                      <th className="p-2 text-center">Free Time</th>
+                                      <th className="p-2 text-center">Dias Restantes</th>
+                                      <th className="p-2 text-center">Status / Devolução</th>
+                                      <th className="p-2 min-w-[130px] font-black text-red-700 dark:text-red-400 bg-red-100/40 dark:bg-red-950/20">📅 Programação (Agendamento)</th>
+                                      <th className="p-2 min-w-[130px] font-black text-slate-700 dark:text-slate-300">🚛 Transportadora (Carrier)</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-300">
+                                    {matchingContainers.map((c, i) => {
+                                      const days = getDaysRemainingForContainer(c);
+                                      const isOverdue = days !== null && days < 0;
+                                      const isUrgent = days !== null && days >= 0 && days <= 5;
+                                      
+                                      const daysBadgeColor = isOverdue ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-450'
+                                        : isUrgent ? 'bg-rose-105 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400'
+                                        : 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400';
+
+                                      return (
+                                        <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-all font-mono">
+                                          <td className="p-2 pl-3 font-bold text-slate-900 dark:text-white select-all">{c.id}</td>
+                                          <td className="p-2 font-sans font-bold">{c.lote || '-'}</td>
+                                          <td className="p-2 font-sans font-extrabold text-blue-600 dark:text-blue-400">{yards[c.yardId]?.name || c.yardId}</td>
+                                          <td className="p-2 font-sans truncate max-w-[120px]" title={c.vesselName}>{c.vesselName}</td>
+                                          <td className="p-2 text-center font-sans">{c.eta || '-'}</td>
+                                          <td className="p-2 text-center text-amber-600 dark:text-amber-450 font-bold">{c.freeTime || '-'}</td>
+                                          <td className="p-2 text-center">
+                                            {days !== null ? (
+                                              <span className={`px-2 py-0.5 border text-[10px] font-extrabold rounded-md ${daysBadgeColor}`}>
+                                                {days < 0 ? `${days} d (Atrasado)` : `${days} d`}
+                                              </span>
+                                            ) : (
+                                              <span className="text-gray-400">-</span>
+                                            )}
+                                          </td>
+                                          <td className="p-2 text-center font-sans">
+                                            {c.category === 'DELIVERED' ? (
+                                              <span className="px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 text-[9px] font-black rounded uppercase">
+                                                DELIVERED
+                                              </span>
+                                            ) : (
+                                              <span className="px-1.5 py-0.5 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200/50 text-[9px] font-black rounded uppercase">
+                                                PENDING
+                                              </span>
+                                            )}
+                                          </td>
+                                          {/* AGENDAMENTO FIELD */}
+                                          <td className="p-2 bg-red-100/10 dark:bg-red-950/5">
+                                            <input
+                                              type="text"
+                                              placeholder="Ex: 25/07/2026"
+                                              value={c.programacao || ''}
+                                              onChange={(e) => handleUpdateContainerField(c.id, 'programacao', e.target.value)}
+                                              className="w-full bg-white dark:bg-slate-800 p-1.5 border border-red-250 dark:border-red-900/50 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-md font-sans text-xs font-bold text-slate-800 dark:text-slate-100 text-center outline-none"
+                                            />
+                                          </td>
+                                          {/* TRANSPORTADORA FIELD */}
+                                          <td className="p-2">
+                                            <input
+                                              type="text"
+                                              placeholder="Ex: JSL"
+                                              value={c.transportadora || ''}
+                                              onChange={(e) => handleUpdateContainerField(c.id, 'transportadora', e.target.value)}
+                                              className="w-full bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-md font-sans text-xs font-bold text-slate-800 dark:text-slate-100 text-center outline-none"
+                                            />
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                    {matchingContainers.length === 0 && (
+                                      <tr>
+                                        <td colSpan={10} className="p-8 text-center text-gray-400 dark:text-gray-500 font-extrabold font-sans">
+                                          {language === 'zh' ? '没有在此分类下找到匹配的集装箱' : 'Nenhum contêiner correspondente encontrado para este filtro.'}
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
                       </>
                     );
                   })()}
