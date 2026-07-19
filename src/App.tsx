@@ -159,6 +159,7 @@ export interface LogisticsEntry {
   estimatedDepotDate?: string | Date;
   actualDepotReturnDate?: string | Date;
   storageDeadline?: string | Date;
+  deliveryModel?: string;                // DESCARGA, SWAP, PUT DOWN, RETURN EMPTY
   
   // Custos & Demurrage
   freeTime?: number;
@@ -971,7 +972,9 @@ export default function App() {
   const [sheetsRange, setSheetsRange] = useState("Engenharia CD");
 
   // ESTADOS DO NOVO FORM DE VINCULAR CONTAINER DOS PÁTIOS (WAREHOUSES)
+  const [ydScheduleMode, setYdScheduleMode] = useState<'container' | 'bl'>('container');
   const [selectedYdContainerId, setSelectedYdContainerId] = useState<string>("");
+  const [selectedYdBl, setSelectedYdBl] = useState<string>("");
   const [ydBl, setYdBl] = useState<string>("");
   const [ydVessel, setYdVessel] = useState<string>("");
   const [ydBatch, setYdBatch] = useState<string>("");
@@ -980,11 +983,15 @@ export default function App() {
   const [ydCarrier, setYdCarrier] = useState<string>("JSL");
   const [ydValue, setYdValue] = useState<number>(1200);
   const [ydStatus, setYdStatus] = useState<string>("PENDENTE");
+  const [ydDeliveryModel, setYdDeliveryModel] = useState<string>("DESCARGA");
+  const [ydOnSitePlaceOfDelivery, setYdOnSitePlaceOfDelivery] = useState<string>("WAREHOUSE 25");
+  const [collapsedDates, setCollapsedDates] = useState<Record<string, boolean>>({});
   
   // ESTADOS DO PAINEL DE ENTREGAS & CALENDÁRIO
   const [operationalMonth, setOperationalMonth] = useState("2026-07");
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<string | null>(null);
   const [selectedDayCalendar, setSelectedDayCalendar] = useState<string | null>(null);
+  const [calendarViewMode, setCalendarViewMode] = useState<'monthly' | 'shipment_info'>('shipment_info');
 
   // CONFIGURAÇÕES VISUAIS DO SLIDE (Adaptativo com base no idioma)
   const [slideTitlePT, setSlideTitlePT] = useState("DASHBOARD OPERACIONAL & CAPACIDADE DE PÁTIOS");
@@ -1467,6 +1474,51 @@ export default function App() {
     };
   }, [user]);
 
+  // FUNÇÃO AUXILIAR PARA NORMALIZAR DATAS
+  const normalizeDate = (dateStr: string | Date | undefined): string => {
+    if (!dateStr) return 'Sem Data';
+    const str = String(dateStr);
+    // If it's already YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+    // If it's DD/MM/YYYY
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+      const [d, m, y] = str.split('/');
+      return `${y}-${m}-${d}`;
+    }
+    return str;
+  };
+
+  // FUNÇÃO AUXILIAR PARA FORMATAR COLUNA DE DIA DO SHIPMENT INFORMATION
+  const formatDayColumn = (dateStr: string) => {
+    if (!dateStr || dateStr === 'Sem Data') return { date: 'Sem Data', dayOfWeek: '-' };
+    const normalized = normalizeDate(dateStr);
+    try {
+      const parts = normalized.split('-');
+      if (parts.length === 3) {
+        const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = parts[0];
+        const weekdayNames = [
+          language === 'zh' ? '星期日' : 'Sunday',
+          language === 'zh' ? '星期一' : 'Monday',
+          language === 'zh' ? '星期二' : 'Tuesday',
+          language === 'zh' ? '星期三' : 'Wednesday',
+          language === 'zh' ? '星期四' : 'Thursday',
+          language === 'zh' ? '星期五' : 'Friday',
+          language === 'zh' ? '星期六' : 'Saturday'
+        ];
+        return {
+          date: `${day}/${month}/${year}`,
+          dayOfWeek: weekdayNames[date.getDay()]
+        };
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return { date: dateStr, dayOfWeek: '-' };
+  };
+
   // FUNÇÃO AUXILIAR PARA ATUALIZAÇÃO DO CONFIG SINGLETON NO FIRESTORE
   const updateGlobalDoc = async (field: string, value: any) => {
     try {
@@ -1592,67 +1644,9 @@ export default function App() {
     }
   };
 
-  const handleSaveYdContainerLogistics = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedYdContainerId) {
-      alert(language === 'zh' ? '请选择一个集装箱' : 'Por favor, selecione um contêiner do pátio.');
-      return;
-    }
-    if (!ydDeliveryDate) {
-      alert(language === 'zh' ? '请选择交付排程日期' : 'Por favor, selecione uma data de entrega planejada.');
-      return;
-    }
-
-    try {
-      // Find if already exists in logisticsEntries
-      const existingEntry = logisticsEntries.find(entry => entry.cntrsOriginal === selectedYdContainerId);
-      
-      if (dbStatus === 'online') {
-        if (existingEntry && existingEntry.id) {
-          // Update existing
-          await updateDoc(doc(db, 'logisticsData', existingEntry.id), {
-            bl: ydBl || "PENDING-BL",
-            arrivalVessel: ydVessel || "N/A",
-            batch: ydBatch || "N/A",
-            bondedWarehouse: ydWarehouse || "CD PLANTA",
-            estimatedDeliveryDate: ydDeliveryDate,
-            carrier: ydCarrier || "JSL",
-            valuePerCntr: Number(ydValue) || 1200,
-            status: ydStatus
-          });
-        } else {
-          // Create new
-          const newRef = doc(collection(db, 'logisticsData'));
-          await setDoc(newRef, {
-            cntrsOriginal: selectedYdContainerId,
-            bl: ydBl || "PENDING-BL",
-            arrivalVessel: ydVessel || "N/A",
-            batch: ydBatch || "N/A",
-            bondedWarehouse: ydWarehouse || "CD PLANTA",
-            statusComex: "PENDENTE",
-            carrier: ydCarrier || "JSL",
-            estimatedDeliveryDate: ydDeliveryDate,
-            poSap: "N/A",
-            valuePerCntr: Number(ydValue) || 1200,
-            status: ydStatus
-          });
-        }
-
-        // Also update container record so they are perfectly integrated!
-        try {
-          await updateDoc(doc(db, 'containers', selectedYdContainerId), {
-            programacao: ydDeliveryDate,
-            transportadora: ydCarrier
-          });
-        } catch (err) {
-          console.warn("Erro ao atualizar data de programacao no container do patio:", err);
-        }
-      } else {
-        alert("Modo offline: Conecte ao Firebase para salvar.");
-      }
-
-      // Reset selection
-      setSelectedYdContainerId("");
+  const handleYdBlChange = (blVal: string) => {
+    setSelectedYdBl(blVal);
+    if (!blVal) {
       setYdBl("");
       setYdVessel("");
       setYdBatch("");
@@ -1661,8 +1655,124 @@ export default function App() {
       setYdCarrier("JSL");
       setYdValue(1200);
       setYdStatus("PENDENTE");
+      return;
+    }
+    const matching = containers.filter(item => item.bl === blVal);
+    if (matching.length > 0) {
+      setYdBl(blVal);
+      const first = matching[0];
+      setYdVessel(first.vesselName || "");
+      setYdBatch(first.lote ? String(first.lote) : "");
+      
+      const uniqueYards = Array.from(new Set(matching.map(c => yards[c.yardId]?.name || c.yardId || ""))).filter(Boolean);
+      setYdWarehouse(uniqueYards.join(", ") || "CD PLANTA");
+      
+      setYdDeliveryDate(first.programacao || first.eta || "2026-07-25");
+      setYdCarrier(first.transportadora || "JSL");
+      setYdValue(1200);
+      setYdStatus("PENDENTE");
+    }
+  };
 
-      alert(language === 'zh' ? '✅ 成功将仓库集装箱绑定并生成交付排程！' : '✅ Contêiner do pátio vinculado e agendado com sucesso!');
+  const handleSaveYdContainerLogistics = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (ydScheduleMode === 'container' && !selectedYdContainerId) {
+      alert(language === 'zh' ? '请选择一个集装箱' : 'Por favor, selecione um contêiner do pátio.');
+      return;
+    }
+    if (ydScheduleMode === 'bl' && !selectedYdBl) {
+      alert(language === 'zh' ? '请选择一个 BL' : 'Por favor, selecione um BL do pátio.');
+      return;
+    }
+    if (!ydDeliveryDate) {
+      alert(language === 'zh' ? '请选择交付排程日期' : 'Por favor, selecione uma data de entrega planejada.');
+      return;
+    }
+
+    try {
+      if (dbStatus === 'online') {
+        const batchOp = writeBatch(db);
+        
+        const targetContainers = ydScheduleMode === 'container'
+          ? containers.filter(c => c.id === selectedYdContainerId)
+          : containers.filter(c => c.bl === selectedYdBl);
+
+        if (targetContainers.length === 0) {
+          alert("Nenhum contêiner correspondente encontrado para o agendamento.");
+          return;
+        }
+
+        for (const c of targetContainers) {
+          const existingEntry = logisticsEntries.find(entry => entry.cntrsOriginal === c.id);
+          const yardName = yards[c.yardId]?.name || c.yardId || "";
+          
+          if (existingEntry && existingEntry.id) {
+            batchOp.update(doc(db, 'logisticsData', existingEntry.id), {
+              bl: ydBl || c.bl || "PENDING-BL",
+              arrivalVessel: ydVessel || c.vesselName || "N/A",
+              batch: ydBatch || (c.lote ? String(c.lote) : "N/A"),
+              bondedWarehouse: yardName || "CD PLANTA",
+              estimatedDeliveryDate: ydDeliveryDate,
+              carrier: ydCarrier || "JSL",
+              valuePerCntr: Number(ydValue) || 1200,
+              status: ydStatus,
+              deliveryModel: ydDeliveryModel,
+              onSitePlaceOfDelivery: ydOnSitePlaceOfDelivery
+            });
+          } else {
+            const newRef = doc(collection(db, 'logisticsData'));
+            batchOp.set(newRef, {
+              cntrsOriginal: c.id,
+              bl: ydBl || c.bl || "PENDING-BL",
+              arrivalVessel: ydVessel || c.vesselName || "N/A",
+              batch: ydBatch || (c.lote ? String(c.lote) : "N/A"),
+              bondedWarehouse: yardName || "CD PLANTA",
+              statusComex: "PENDENTE",
+              carrier: ydCarrier || "JSL",
+              estimatedDeliveryDate: ydDeliveryDate,
+              poSap: "N/A",
+              valuePerCntr: Number(ydValue) || 1200,
+              status: ydStatus,
+              deliveryModel: ydDeliveryModel,
+              onSitePlaceOfDelivery: ydOnSitePlaceOfDelivery
+            });
+          }
+
+          try {
+            batchOp.update(doc(db, 'containers', c.id), {
+              programacao: ydDeliveryDate,
+              transportadora: ydCarrier
+            });
+          } catch (err) {
+            console.warn("Nao foi possivel enfileirar atualizacao no doc container do patio:", err);
+          }
+        }
+
+        await batchOp.commit();
+      } else {
+        alert("Modo offline: Conecte ao Firebase para salvar.");
+        return;
+      }
+
+      // Reset selection
+      setSelectedYdContainerId("");
+      setSelectedYdBl("");
+      setYdBl("");
+      setYdVessel("");
+      setYdBatch("");
+      setYdWarehouse("");
+      setYdDeliveryDate("2026-07-25");
+      setYdCarrier("JSL");
+      setYdValue(1200);
+      setYdStatus("PENDENTE");
+      setYdDeliveryModel("DESCARGA");
+      setYdOnSitePlaceOfDelivery("WAREHOUSE 25");
+
+      const successMsg = ydScheduleMode === 'bl'
+        ? (language === 'zh' ? `✅ 成功绑定 BL 并在交付排程中创建了相关集装箱的交付！` : `✅ Todos os contêineres do BL ${ydBl} foram vinculados e agendados com sucesso no Painel de entregas!`)
+        : (language === 'zh' ? '✅ 成功将仓库集装箱绑定并生成交付排程！' : '✅ Contêiner do pátio vinculado e agendado com sucesso!');
+      
+      alert(successMsg);
     } catch (error) {
       console.error("Erro ao salvar agendamento do pátio:", error);
       alert("Houve um erro ao salvar o agendamento no banco de dados.");
@@ -8344,41 +8454,95 @@ export default function App() {
                     {/* LEFT WORKSPACE: LINK WAREHOUSE CONTAINERS */}
                     <div className={`lg:col-span-4 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between overflow-y-auto`}>
                       <form onSubmit={handleSaveYdContainerLogistics} className="space-y-3">
-                        <div className="flex items-center gap-2 border-b pb-2 border-gray-150/40 dark:border-slate-800">
-                          <Building2 className="w-4 h-4 text-red-500 shrink-0" />
-                          <h4 className="font-extrabold text-[12px] text-slate-800 dark:text-slate-100 uppercase tracking-tight">
-                            {language === 'zh' ? '绑定仓库集装箱 (保税/非保税)' : 'Vincular Container do Pátio'}
-                          </h4>
+                        <div className="flex flex-col gap-2 border-b pb-2 border-gray-150/40 dark:border-slate-800">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-4 h-4 text-red-500 shrink-0" />
+                            <h4 className="font-extrabold text-[12px] text-slate-800 dark:text-slate-100 uppercase tracking-tight">
+                              {language === 'zh' ? '绑定仓库集装箱 (保税/非保税)' : 'Vincular Container do Pátio'}
+                            </h4>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setYdScheduleMode('container');
+                                handleYdContainerChange("");
+                              }}
+                              className={`py-1 text-[9px] font-black uppercase rounded-md transition-all ${
+                                ydScheduleMode === 'container'
+                                  ? 'bg-red-650 text-white shadow-xs'
+                                  : 'text-gray-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-slate-200'
+                              }`}
+                            >
+                              {language === 'zh' ? '按集装箱排程' : 'Por Container'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setYdScheduleMode('bl');
+                                handleYdBlChange("");
+                              }}
+                              className={`py-1 text-[9px] font-black uppercase rounded-md transition-all ${
+                                ydScheduleMode === 'bl'
+                                  ? 'bg-red-650 text-white shadow-xs'
+                                  : 'text-gray-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-slate-200'
+                              }`}
+                            >
+                              {language === 'zh' ? '按整单 BL 排程' : 'Por BL Inteiro'}
+                            </button>
+                          </div>
                         </div>
 
                         <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-normal font-medium">
                           {language === 'zh' 
-                            ? '从保税堆场（TECON、INTERMARITIMA等）或一般仓库中选择已上传的集装箱进行交付排程。' 
-                            : 'Selecione um contêiner carregado nos pátios alfandegados ou não-alfandegados para criar uma programação de entrega.'}
+                            ? '从保税堆场（TECON、INTERMARITIMA等）或一般仓库中选择已上传的集装箱或整单 HBL (BL) 进行交付排程。' 
+                            : 'Selecione um contêiner ou um BL completo carregado nos pátios para criar uma programação de entrega.'}
                         </p>
 
                         <div className="space-y-2.5 text-xs">
-                          {/* Container Select */}
+                          {/* Container or BL Select */}
                           <div>
                             <label className="block text-[10px] font-black uppercase text-gray-500 dark:text-gray-450 mb-1">
-                              {language === 'zh' ? '选择仓库集装箱' : 'Selecionar Equipamento do Pátio'} *
+                              {ydScheduleMode === 'container'
+                                ? (language === 'zh' ? '选择仓库集装箱 *' : 'Selecionar Equipamento do Pátio *')
+                                : (language === 'zh' ? '选择整单 HBL (BL) *' : 'Selecionar BL do Pátio *')
+                              }
                             </label>
-                            <select 
-                              value={selectedYdContainerId} 
-                              onChange={(e) => handleYdContainerChange(e.target.value)}
-                              className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-2 rounded-lg font-mono font-bold text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-red-500"
-                            >
-                              <option value="">-- {language === 'zh' ? '请选择' : 'Selecione o Container'} --</option>
-                              {containers.map(c => {
-                                const yardName = yards[c.yardId]?.name || c.yardId;
-                                const isScheduled = logisticsEntries.some(le => le.cntrsOriginal === c.id);
-                                return (
-                                  <option key={c.id} value={c.id}>
-                                    {c.id} - {yardName} ({c.status}) {isScheduled ? '• [Scheduled]' : ''}
-                                  </option>
-                                );
-                              })}
-                            </select>
+                            {ydScheduleMode === 'container' ? (
+                              <select 
+                                value={selectedYdContainerId} 
+                                onChange={(e) => handleYdContainerChange(e.target.value)}
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-2 rounded-lg font-mono font-bold text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-red-500"
+                              >
+                                <option value="">-- {language === 'zh' ? '请选择集装箱' : 'Selecione o Container'} --</option>
+                                {containers.map(c => {
+                                  const yardName = yards[c.yardId]?.name || c.yardId;
+                                  const isScheduled = logisticsEntries.some(le => le.cntrsOriginal === c.id);
+                                  return (
+                                    <option key={c.id} value={c.id}>
+                                      {c.id} - {yardName} ({c.status}) {isScheduled ? '• [Scheduled]' : ''}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            ) : (
+                              <select 
+                                value={selectedYdBl} 
+                                onChange={(e) => handleYdBlChange(e.target.value)}
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-2 rounded-lg font-mono font-bold text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-red-500"
+                              >
+                                <option value="">-- {language === 'zh' ? '请选择 HBL (BL)' : 'Selecione o BL'} --</option>
+                                {Array.from(new Set(containers.map(c => c.bl).filter(Boolean))).map(blVal => {
+                                  const cntrsCount = containers.filter(c => c.bl === blVal).length;
+                                  const yardNames = Array.from(new Set(containers.filter(c => c.bl === blVal).map(c => yards[c.yardId]?.name || c.yardId || ""))).filter(Boolean);
+                                  return (
+                                    <option key={blVal} value={blVal}>
+                                      {blVal} ({cntrsCount} cntrs) - {yardNames.join(", ")}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            )}
                           </div>
 
                           {/* Grid for Quick Auto-fills */}
@@ -8470,6 +8634,37 @@ export default function App() {
                                 onChange={(e) => setYdValue(Number(e.target.value))}
                                 className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-mono text-[11px] text-slate-800 dark:text-white font-bold outline-none"
                               />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[9px] font-black uppercase text-red-500 mb-0.5">🚚 Modelo de Entrega (Delivery Model)</label>
+                              <select 
+                                value={ydDeliveryModel} 
+                                onChange={(e) => setYdDeliveryModel(e.target.value)}
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none focus:ring-1 focus:ring-red-500"
+                              >
+                                <option value="DESCARGA">DESCARGA (Unload)</option>
+                                <option value="SWAP">SWAP (Swap)</option>
+                                <option value="COLOCAR NO CHÃO">COLOCAR NO CHÃO (Put down)</option>
+                                <option value="DEVOLUÇÃO DE VAZIO">DEVOLUÇÃO DE VAZIO (Return empty)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-black uppercase text-red-500 mb-0.5">📍 Local de Entrega (Delivery Site)</label>
+                              <select 
+                                value={ydOnSitePlaceOfDelivery} 
+                                onChange={(e) => setYdOnSitePlaceOfDelivery(e.target.value)}
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none focus:ring-1 focus:ring-red-500"
+                              >
+                                <option value="WAREHOUSE 25">WAREHOUSE 25</option>
+                                <option value="WAREHOUSE 27">WAREHOUSE 27</option>
+                                <option value="BUFFER 10">BUFFER 10</option>
+                                <option value="WAREHOUSE 20">WAREHOUSE 20</option>
+                                <option value="WAREHOUSE 21">WAREHOUSE 21</option>
+                                <option value="GERAL">GERAL</option>
+                              </select>
                             </div>
                           </div>
 
@@ -8676,96 +8871,171 @@ export default function App() {
 
                   {/* ACTIVE WORKSPACE: ESTIMATED DELIVERY DATES PANELS */}
                   <div className="flex-1 overflow-y-auto max-h-[350px] space-y-3.5 pr-1">
-                    {Array.from(new Set(logisticsEntries.map(e => String(e.estimatedDeliveryDate || 'Sem Data')))).map(dateGroup => {
+                    {Array.from(new Set(logisticsEntries.map(e => String(e.estimatedDeliveryDate || 'Sem Data')))).map((dateGroup: string) => {
                       const groupEntries = logisticsEntries.filter(e => String(e.estimatedDeliveryDate || 'Sem Data') === dateGroup && (!deliveryStatusFilter || e.status === deliveryStatusFilter || (deliveryStatusFilter === 'PENDENTE' && !e.status)));
                       if (groupEntries.length === 0) return null;
+
+                      const isCollapsed = !!(collapsedDates as Record<string, boolean>)[dateGroup];
+
+                      // Calculate summary counts for delivery model
+                      const unloadCount = groupEntries.filter(e => e.deliveryModel === 'DESCARGA' || !e.deliveryModel).length;
+                      const swapCount = groupEntries.filter(e => e.deliveryModel === 'SWAP').length;
+                      const putDownCount = groupEntries.filter(e => e.deliveryModel === 'COLOCAR NO CHÃO').length;
+                      const returnEmptyCount = groupEntries.filter(e => e.deliveryModel === 'DEVOLUÇÃO DE VAZIO').length;
 
                       return (
                         <div key={dateGroup} className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-800' : 'bg-white border-slate-150 shadow-3xs'} space-y-3`}>
                           <div className="flex items-center justify-between border-b pb-2.5 border-gray-150/40 dark:border-slate-800">
                             <div className="flex items-center gap-2">
                               <Truck className="w-4 h-4 text-red-500 shrink-0" />
-                              <span className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase tracking-tight">
+                              <span className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase tracking-tight flex items-center">
                                 {language === 'zh' ? '计划交付厂内/CD时间：' : 'Data de Entrega Planejada:'} <strong className="font-mono text-red-600 dark:text-red-400 pl-1">{dateGroup}</strong>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCollapsedDates(prev => {
+                                      const copy = { ...prev } as Record<string, boolean>;
+                                      copy[dateGroup as string] = !copy[dateGroup as string];
+                                      return copy;
+                                    });
+                                  }}
+                                  className="p-1 text-slate-500 hover:text-red-500 rounded-md transition-all hover:bg-slate-100 dark:hover:bg-slate-800 ml-2 flex items-center justify-center cursor-pointer"
+                                  title={isCollapsed ? (language === 'zh' ? '展开' : 'Expandir') : (language === 'zh' ? '最小化' : 'Minimizar')}
+                                >
+                                  {isCollapsed ? <ChevronDown className="w-4 h-4 text-red-500" /> : <ChevronUp className="w-4 h-4 text-gray-500" />}
+                                </button>
                               </span>
                             </div>
-                            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">{groupEntries.length} Equipamentos</span>
+                            <div className="flex items-center gap-2">
+                              {isCollapsed && (
+                                <span className="hidden sm:inline-flex items-center gap-1.5 text-[9px] font-bold text-gray-400 mr-2">
+                                  [ Unload: {unloadCount} | Swap: {swapCount} | Down: {putDownCount} | Empty: {returnEmptyCount} ]
+                                </span>
+                              )}
+                              <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">{groupEntries.length} Equipamentos</span>
+                            </div>
                           </div>
 
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left text-[11px] border-collapse">
-                              <thead>
-                                <tr className="text-[9px] uppercase font-black text-slate-400 dark:text-slate-500 border-b border-gray-100 dark:border-slate-800 tracking-wider">
-                                  <th className="py-2 pl-2">ID Container</th>
-                                  <th className="py-2">HBL (BL)</th>
-                                  <th className="py-2">Lote (Batch) / SAP PO</th>
-                                  <th className="py-2">Status Operacional</th>
-                                  <th className="py-2 font-black text-red-700 dark:text-red-400 bg-red-100/40 dark:bg-red-950/20 text-center">📅 Alterar Data Entrega</th>
-                                  <th className="py-2">Transportadora (Carrier)</th>
-                                  <th className="py-2 text-right pr-2">Custo Unitário Frete</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800/60 font-medium text-slate-750 dark:text-slate-350 font-mono">
-                                {groupEntries.map(entry => (
-                                  <tr key={entry.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-all">
-                                    <td className="py-2 pl-2 font-bold text-slate-900 dark:text-white select-all">{entry.cntrsOriginal}</td>
-                                    <td className="py-2 font-semibold text-slate-500">{entry.bl}</td>
-                                    <td className="py-2 font-sans">{entry.batch} / <span className="text-blue-500 font-bold font-mono">{entry.poSap || 'N/A'}</span></td>
-                                    <td className="py-2">
-                                      <select 
-                                        value={entry.status || 'PENDENTE'} 
-                                        onChange={async (e) => { 
-                                          try {
-                                            await updateDoc(doc(db, 'logisticsData', entry.id || ''), { status: e.target.value }); 
-                                          } catch (err) {
-                                            handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
-                                          }
-                                        }}
-                                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1 text-[10px] font-black uppercase text-slate-800 dark:text-slate-100 outline-none"
-                                      >
-                                        <option value="PENDENTE">PENDENTE</option>
-                                        <option value="A CAMINHO">A CAMINHO</option>
-                                        <option value="ADIADO">ADIADO</option>
-                                        <option value="ENTREGUE">ENTREGUE</option>
-                                        <option value="CANCELADO">CANCELADO</option>
-                                      </select>
-                                    </td>
-                                    <td className="py-1 bg-red-100/10 dark:bg-red-950/5">
-                                      <input 
-                                        type="text" 
-                                        defaultValue={entry.estimatedDeliveryDate || ""} 
-                                        onBlur={async (e) => { 
-                                          try {
-                                            await updateDoc(doc(db, 'logisticsData', entry.id || ''), { estimatedDeliveryDate: e.target.value }); 
-                                          } catch (err) {
-                                            handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
-                                          }
-                                        }}
-                                        className="w-28 mx-auto bg-white dark:bg-slate-800 p-1 border border-red-250 dark:border-red-900/50 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-md font-sans text-[11px] font-bold text-slate-800 dark:text-slate-100 text-center outline-none"
-                                      />
-                                    </td>
-                                    <td className="py-2">
-                                      <input 
-                                        type="text" 
-                                        defaultValue={entry.carrier || "JSL"} 
-                                        onBlur={async (e) => { 
-                                          try {
-                                            await updateDoc(doc(db, 'logisticsData', entry.id || ''), { carrier: e.target.value }); 
-                                          } catch (err) {
-                                            handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
-                                          }
-                                        }}
-                                        className="bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 border border-transparent focus:border-gray-200 px-1 py-0.5 rounded outline-none w-24 text-[11px] font-bold font-sans text-slate-800 dark:text-slate-100"
-                                      />
-                                    </td>
-                                    <td className="py-2 text-right pr-2 font-black text-slate-800 dark:text-white">
-                                      R$ {(entry.valuePerCntr || 1200).toLocaleString()}
-                                    </td>
+                          {isCollapsed ? (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              <span className="text-[10px] bg-sky-50 text-sky-700 dark:bg-sky-950/25 dark:text-sky-400 px-2.5 py-1 rounded-md font-extrabold uppercase">
+                                📥 {language === 'zh' ? '卸货' : 'DESCARGA (Unload)'}: {unloadCount}
+                              </span>
+                              <span className="text-[10px] bg-purple-50 text-purple-700 dark:bg-purple-950/25 dark:text-purple-400 px-2.5 py-1 rounded-md font-extrabold uppercase">
+                                🔄 {language === 'zh' ? '交换' : 'SWAP (Swap)'}: {swapCount}
+                              </span>
+                              <span className="text-[10px] bg-amber-50 text-amber-700 dark:bg-amber-950/25 dark:text-amber-450 px-2.5 py-1 rounded-md font-extrabold uppercase">
+                                ⬇️ {language === 'zh' ? '落箱' : 'NO CHÃO (Put down)'}: {putDownCount}
+                              </span>
+                              <span className="text-[10px] bg-rose-50 text-rose-700 dark:bg-rose-950/25 dark:text-rose-450 px-2.5 py-1 rounded-md font-extrabold uppercase">
+                                ♻️ {language === 'zh' ? '退空' : 'DEVOLUÇÃO VAZIO (Return empty)'}: {returnEmptyCount}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-[11px] border-collapse">
+                                <thead>
+                                  <tr className="text-[9px] uppercase font-black text-slate-400 dark:text-slate-500 border-b border-gray-100 dark:border-slate-800 tracking-wider">
+                                    <th className="py-2 pl-2">ID Container / Item</th>
+                                    <th className="py-2">HBL (BL)</th>
+                                    <th className="py-2">Lote (Batch) / SAP PO</th>
+                                    <th className="py-2">Modelo de Entrega (Delivery Model)</th>
+                                    <th className="py-2">Status Operacional</th>
+                                    <th className="py-2 font-black text-red-700 dark:text-red-400 bg-red-100/40 dark:bg-red-950/20 text-center">📅 Alterar Data Entrega</th>
+                                    <th className="py-2">Transportadora (Carrier)</th>
+                                    <th className="py-2 text-right pr-2">Custo Unitário Frete</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                                </thead>
+                                <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800/60 font-medium text-slate-750 dark:text-slate-350 font-mono">
+                                  {groupEntries.map(entry => {
+                                    const matchedCntr = containers.find(c => c.id === entry.cntrsOriginal);
+                                    const scheduledItem = entry.component || (matchedCntr && matchedCntr.componente) || entry.description || (matchedCntr && matchedCntr.modelo) || 'Componente Não Especificado';
+                                    
+                                    return (
+                                      <tr key={entry.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-all">
+                                        <td className="py-2 pl-2">
+                                          <div className="font-bold text-slate-900 dark:text-white select-all">{entry.cntrsOriginal}</div>
+                                          <div className="text-[9px] text-slate-400 dark:text-slate-500 font-sans max-w-[150px] truncate" title={scheduledItem}>
+                                            📦 {scheduledItem}
+                                          </div>
+                                        </td>
+                                        <td className="py-2 font-semibold text-slate-500">{entry.bl}</td>
+                                        <td className="py-2 font-sans">{entry.batch} / <span className="text-blue-500 font-bold font-mono">{entry.poSap || 'N/A'}</span></td>
+                                        <td className="py-2 font-sans">
+                                          <select 
+                                            value={entry.deliveryModel || 'DESCARGA'} 
+                                            onChange={async (e) => { 
+                                              try {
+                                                await updateDoc(doc(db, 'logisticsData', entry.id || ''), { deliveryModel: e.target.value }); 
+                                              } catch (err) {
+                                                handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                              }
+                                            }}
+                                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1 text-[10px] font-black uppercase text-slate-800 dark:text-slate-100 outline-none focus:ring-1 focus:ring-red-500"
+                                          >
+                                            <option value="DESCARGA">DESCARGA (Unload)</option>
+                                            <option value="SWAP">SWAP (Swap)</option>
+                                            <option value="COLOCAR NO CHÃO">COLOCAR NO CHÃO (Put down)</option>
+                                            <option value="DEVOLUÇÃO DE VAZIO">DEVOLUÇÃO DE VAZIO (Return empty)</option>
+                                          </select>
+                                        </td>
+                                        <td className="py-2">
+                                          <select 
+                                            value={entry.status || 'PENDENTE'} 
+                                            onChange={async (e) => { 
+                                              try {
+                                                await updateDoc(doc(db, 'logisticsData', entry.id || ''), { status: e.target.value }); 
+                                              } catch (err) {
+                                                handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                              }
+                                            }}
+                                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1 text-[10px] font-black uppercase text-slate-800 dark:text-slate-100 outline-none"
+                                          >
+                                            <option value="PENDENTE">PENDENTE</option>
+                                            <option value="A CAMINHO">A CAMINHO</option>
+                                            <option value="ADIADO">ADIADO</option>
+                                            <option value="ENTREGUE">ENTREGUE</option>
+                                            <option value="CANCELADO">CANCELADO</option>
+                                          </select>
+                                        </td>
+                                        <td className="py-1 bg-red-100/10 dark:bg-red-950/5">
+                                          <input 
+                                            type="text" 
+                                            defaultValue={entry.estimatedDeliveryDate || ""} 
+                                            onBlur={async (e) => { 
+                                              try {
+                                                await updateDoc(doc(db, 'logisticsData', entry.id || ''), { estimatedDeliveryDate: e.target.value }); 
+                                              } catch (err) {
+                                                handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                              }
+                                            }}
+                                            className="w-28 mx-auto bg-white dark:bg-slate-800 p-1 border border-red-250 dark:border-red-900/50 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-md font-sans text-[11px] font-bold text-slate-800 dark:text-slate-100 text-center outline-none"
+                                          />
+                                        </td>
+                                        <td className="py-2">
+                                          <input 
+                                            type="text" 
+                                            defaultValue={entry.carrier || "JSL"} 
+                                            onBlur={async (e) => { 
+                                              try {
+                                                await updateDoc(doc(db, 'logisticsData', entry.id || ''), { carrier: e.target.value }); 
+                                              } catch (err) {
+                                                handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                              }
+                                            }}
+                                            className="bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 border border-transparent focus:border-gray-200 px-1 py-0.5 rounded outline-none w-24 text-[11px] font-bold font-sans text-slate-800 dark:text-slate-100"
+                                          />
+                                        </td>
+                                        <td className="py-2 text-right pr-2 font-black text-slate-800 dark:text-white">
+                                          R$ {(entry.valuePerCntr || 1200).toLocaleString()}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -8779,11 +9049,44 @@ export default function App() {
                   {/* WORKSPACE */}
                   <div className="grid grid-cols-12 gap-4 flex-1">
                     
-                    {/* LEFT WORKSPACE: MONTHLY CALENDAR GRID */}
-                    <div className={`col-span-12 lg:col-span-9 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
-                      <div className="space-y-4 flex-1">
-                        <div className="flex justify-between items-center border-b pb-2.5 border-gray-150/40 dark:border-slate-800">
-                          <span className="font-black uppercase text-xs text-slate-850 dark:text-slate-200 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-red-500 shrink-0" /> {language === 'zh' ? '月度工厂到货排程交付日历' : 'Calendário Mensal de Escoamento - CD Planta'}</span>
+                    {/* LEFT WORKSPACE: MONTHLY CALENDAR GRID / SHIPMENT INFO TABLE */}
+                    <div className={`col-span-12 lg:col-span-9 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between overflow-hidden`}>
+                      <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
+                        
+                        {/* Header controls with view toggler */}
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2.5 border-gray-150/40 dark:border-slate-800 gap-2 shrink-0">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="font-black uppercase text-xs text-slate-850 dark:text-slate-200 flex items-center gap-1.5">
+                              <Calendar className="w-4 h-4 text-red-500 shrink-0" /> 
+                              {language === 'zh' ? '交付排程日历 & Shipment Info' : 'Calendário de Entregas & Shipment Info'}
+                            </span>
+                            
+                            {/* VIEW TOGGLER */}
+                            <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                              <button
+                                type="button"
+                                onClick={() => setCalendarViewMode('monthly')}
+                                className={`px-2.5 py-1 text-[9px] font-black uppercase rounded-md transition-all cursor-pointer ${
+                                  calendarViewMode === 'monthly'
+                                    ? 'bg-red-600 text-white shadow-3xs'
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                }`}
+                              >
+                                {language === 'zh' ? '月视图' : 'Mensal'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCalendarViewMode('shipment_info')}
+                                className={`px-2.5 py-1 text-[9px] font-black uppercase rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                                  calendarViewMode === 'shipment_info'
+                                    ? 'bg-red-600 text-white shadow-3xs'
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                }`}
+                              >
+                                📋 {language === 'zh' ? '周度/日交付表 (Shipment Info)' : 'Shipment Info (Semanal/Diário)'}
+                              </button>
+                            </div>
+                          </div>
                           <div className="flex items-center gap-2">
                             <input 
                               type="month" 
@@ -8794,36 +9097,218 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black uppercase tracking-wider text-gray-400">
-                          <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
-                        </div>
+                        {calendarViewMode === 'monthly' ? (
+                          <div className="flex-1 flex flex-col justify-between">
+                            <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black uppercase tracking-wider text-gray-400 mb-2">
+                              <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+                            </div>
 
-                        {/* Calendar Grid Days */}
-                        <div className="grid grid-cols-7 gap-1.5 flex-1">
-                          {Array.from({ length: 31 }).map((_, d) => {
-                            const currentDayStr = `${operationalMonth}-${String(d + 1).padStart(2, '0')}`;
-                            const dayEntries = logisticsEntries.filter(e => String(e.estimatedDeliveryDate) === currentDayStr);
-                            
-                            return (
-                              <div 
-                                key={d} 
-                                onClick={() => { if (dayEntries.length > 0) setSelectedDayCalendar(currentDayStr); }}
-                                className={`min-h-[52px] p-2 rounded-lg border flex flex-col justify-between items-start transition-all ${
-                                  dayEntries.length > 0 
-                                    ? 'bg-red-50/40 border-red-350 hover:bg-red-100/40 dark:bg-red-950/20 dark:border-red-900 cursor-pointer active:scale-95 shadow-3xs' 
-                                    : 'border-gray-100 bg-slate-50/20 dark:border-slate-800/50 text-gray-400 opacity-60'
-                                }`}
-                              >
-                                <span className="font-mono font-black text-slate-900 dark:text-white text-xs leading-none">{d + 1}</span>
-                                {dayEntries.length > 0 && (
-                                  <span className="text-[8px] bg-red-600 text-white font-mono font-black px-1 py-0.2 rounded-xs self-end animate-pulse">
-                                    {dayEntries.length} EQ
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
+                            {/* Calendar Grid Days */}
+                            <div className="grid grid-cols-7 gap-1.5 flex-1">
+                              {Array.from({ length: 31 }).map((_, d) => {
+                                const currentDayStr = `${operationalMonth}-${String(d + 1).padStart(2, '0')}`;
+                                const dayEntries = logisticsEntries.filter(e => normalizeDate(String(e.estimatedDeliveryDate)) === currentDayStr);
+                                
+                                return (
+                                  <div 
+                                    key={d} 
+                                    onClick={() => { if (dayEntries.length > 0) setSelectedDayCalendar(currentDayStr); }}
+                                    className={`min-h-[52px] p-2 rounded-lg border flex flex-col justify-between items-start transition-all ${
+                                      dayEntries.length > 0 
+                                        ? 'bg-red-50/40 border-red-350 hover:bg-red-100/40 dark:bg-red-950/20 dark:border-red-900 cursor-pointer active:scale-95 shadow-3xs' 
+                                        : 'border-gray-100 bg-slate-50/20 dark:border-slate-800/50 text-gray-400 opacity-60'
+                                    }`}
+                                  >
+                                    <span className="font-mono font-black text-slate-900 dark:text-white text-xs leading-none">{d + 1}</span>
+                                    {dayEntries.length > 0 && (
+                                      <span className="text-[8px] bg-red-600 text-white font-mono font-black px-1 py-0.2 rounded-xs self-end animate-pulse">
+                                        {dayEntries.length} EQ
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          /* HIGH-FIDELITY SHIPMENT INFORMATION WEEK/DAILY PLAN (EXCEL INSPIRED) */
+                          <div className="flex-1 overflow-auto max-h-[460px] border border-slate-250 dark:border-slate-700 rounded-lg shadow-3xs">
+                            <table className="w-full text-left text-[11px] border-collapse bg-white dark:bg-[#0f172a]">
+                              <thead>
+                                {/* Main Excel Title row */}
+                                <tr className="bg-[#b3b3b3] dark:bg-slate-700 text-slate-900 dark:text-white border-b border-slate-350 dark:border-slate-600">
+                                  <th colSpan={10} className="py-2 text-center text-xs font-black uppercase tracking-widest font-sans border-b border-slate-350 dark:border-slate-600">
+                                    Shipment Information
+                                  </th>
+                                </tr>
+                                {/* Table headers */}
+                                <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-[9px] uppercase font-black tracking-wider text-center border-b border-slate-350 dark:border-slate-700">
+                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700 w-[110px]">Day</th>
+                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">BL</th>
+                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700 w-[170px]">Description</th>
+                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">PO</th>
+                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Batch</th>
+                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Container Quantity</th>
+                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Warehouse</th>
+                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Operation</th>
+                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Truck Company</th>
+                                  <th className="py-2 px-1.5">Delivery Site</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium font-mono text-slate-850 dark:text-slate-200 text-center">
+                                {(() => {
+                                  // Get all distinct sorted dates for the operationalMonth
+                                  const distinctDates = Array.from(new Set(logisticsEntries
+                                    .filter(e => String(e.estimatedDeliveryDate).startsWith(operationalMonth) && e.estimatedDeliveryDate !== 'Sem Data')
+                                    .map(e => String(e.estimatedDeliveryDate))
+                                  )).sort() as string[];
+
+                                  if (distinctDates.length === 0) {
+                                    return (
+                                      <tr>
+                                        <td colSpan={10} className="py-12 text-center text-gray-400 font-bold uppercase font-sans">
+                                          {language === 'zh' ? '当前月份没有排程的交付数据' : 'Nenhum agendamento encontrado para o mês selecionado.'}
+                                        </td>
+                                      </tr>
+                                    );
+                                  }
+
+                                  return distinctDates.flatMap(dateStr => {
+                                    const dayEntries = logisticsEntries.filter(e => String(e.estimatedDeliveryDate) === dateStr);
+                                    const formatted = formatDayColumn(dateStr);
+
+                                    return dayEntries.map((entry, idx) => {
+                                      const matchedCntr = containers.find(c => c.id === entry.cntrsOriginal);
+                                      const cntrQuantity = containers.filter(c => c.bl === entry.bl).length || 1;
+                                      const scheduledItem = entry.component || (matchedCntr && matchedCntr.componente) || entry.description || (matchedCntr && matchedCntr.modelo) || 'Componente Não Especificado';
+                                      const isFirst = idx === 0;
+
+                                      return (
+                                        <tr key={entry.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                                          {/* Day Column (merged cells per day group) */}
+                                          {isFirst && (
+                                            <td 
+                                              rowSpan={dayEntries.length} 
+                                              className="py-3 px-2 border-r border-b border-slate-250 dark:border-slate-700 bg-[#f4f4f5] dark:bg-[#1a2235] text-slate-900 dark:text-white font-black uppercase text-[10px] align-middle"
+                                            >
+                                              <div className="flex flex-col items-center justify-center text-center">
+                                                <span className="font-sans font-bold leading-tight tracking-tight text-slate-800 dark:text-slate-200">
+                                                  {formatted.date}
+                                                </span>
+                                                <span className="text-gray-400 my-0.5 font-sans">-</span>
+                                                <span className="text-[9px] tracking-wider text-red-600 dark:text-red-400 font-sans font-black uppercase">
+                                                  {formatted.dayOfWeek}
+                                                </span>
+                                              </div>
+                                            </td>
+                                          )}
+
+                                          {/* BL */}
+                                          <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white select-all text-[10px]">
+                                            {entry.bl || 'PENDING-BL'}
+                                          </td>
+
+                                          {/* Description */}
+                                          <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 text-left font-sans text-[9px] max-w-[170px] truncate" title={scheduledItem}>
+                                            {scheduledItem}
+                                          </td>
+
+                                          {/* PO */}
+                                          <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 font-bold text-blue-600 dark:text-blue-400 text-[10px]">
+                                            {entry.poSap || 'N/A'}
+                                          </td>
+
+                                          {/* Batch */}
+                                          <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 text-[10px]">
+                                            {entry.batch || 'N/A'}
+                                          </td>
+
+                                          {/* Container Quantity */}
+                                          <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 font-bold text-[10px]">
+                                            {cntrQuantity}
+                                          </td>
+
+                                          {/* Warehouse (Originating Yard) */}
+                                          <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 text-[10px]">
+                                            {entry.bondedWarehouse || 'CD PLANTA'}
+                                          </td>
+
+                                          {/* Operation */}
+                                          <td className="py-1 px-1 border-r border-slate-200 dark:border-slate-800">
+                                            <select 
+                                              value={entry.deliveryModel || 'DESCARGA'} 
+                                              onChange={async (e) => { 
+                                                try {
+                                                  await updateDoc(doc(db, 'logisticsData', entry.id || ''), { deliveryModel: e.target.value }); 
+                                                } catch (err) {
+                                                  handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                                }
+                                              }}
+                                              className="bg-transparent text-[10px] font-black uppercase text-slate-800 dark:text-slate-200 outline-none w-full text-center border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-red-500 rounded p-0.5"
+                                            >
+                                              <option value="DESCARGA">UNLOAD</option>
+                                              <option value="SWAP">SWAP</option>
+                                              <option value="COLOCAR NO CHÃO">PUT DOWN</option>
+                                              <option value="DEVOLUÇÃO DE VAZIO">RETURN EMPTY</option>
+                                            </select>
+                                          </td>
+
+                                          {/* Truck Company */}
+                                          <td className="py-1 px-1 border-r border-slate-200 dark:border-slate-800">
+                                            <select 
+                                              value={entry.carrier || 'JSL'} 
+                                              onChange={async (e) => { 
+                                                try {
+                                                  await updateDoc(doc(db, 'logisticsData', entry.id || ''), { carrier: e.target.value }); 
+                                                } catch (err) {
+                                                  handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                                }
+                                              }}
+                                              className="bg-transparent text-[10px] font-black uppercase text-slate-800 dark:text-slate-200 outline-none w-full text-center border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-red-500 rounded p-0.5"
+                                            >
+                                              <option value="TPC">TPC</option>
+                                              <option value="RECOM">RECOM</option>
+                                              <option value="TEGMA">TEGMA</option>
+                                              <option value="INTERMARÍTIMA">INTERMARÍTIMA</option>
+                                              <option value="LOGIC">LOGIC</option>
+                                              <option value="MULTILOG">MULTILOG</option>
+                                              <option value="TRANSPARANÁ">TRANSPARANÁ</option>
+                                              <option value="JSL">JSL</option>
+                                              <option value="BRILHANTE">BRILHANTE</option>
+                                            </select>
+                                          </td>
+
+                                          {/* Delivery Site */}
+                                          <td className="py-1 px-1">
+                                            <select 
+                                              value={entry.onSitePlaceOfDelivery || 'WAREHOUSE 25'} 
+                                              onChange={async (e) => { 
+                                                try {
+                                                  await updateDoc(doc(db, 'logisticsData', entry.id || ''), { onSitePlaceOfDelivery: e.target.value }); 
+                                                } catch (err) {
+                                                  handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                                }
+                                              }}
+                                              className="bg-transparent text-[10px] font-black uppercase text-slate-800 dark:text-slate-200 outline-none w-full text-center border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-red-500 rounded p-0.5"
+                                            >
+                                              <option value="WAREHOUSE 25">WAREHOUSE 25</option>
+                                              <option value="WAREHOUSE 27">WAREHOUSE 27</option>
+                                              <option value="BUFFER 10">BUFFER 10</option>
+                                              <option value="WAREHOUSE 20">WAREHOUSE 20</option>
+                                              <option value="WAREHOUSE 21">WAREHOUSE 21</option>
+                                              <option value="GERAL">GERAL</option>
+                                            </select>
+                                          </td>
+
+                                        </tr>
+                                      );
+                                    });
+                                  });
+                                })()}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -11391,7 +11876,7 @@ export default function App() {
                 </thead>
                 <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800/60 font-semibold text-slate-700 dark:text-slate-350">
                   {logisticsEntries
-                    .filter(e => String(e.estimatedDeliveryDate) === selectedDayCalendar)
+                    .filter(e => normalizeDate(String(e.estimatedDeliveryDate)) === selectedDayCalendar)
                     .map((entry, index) => {
                       const matchedCntr = containers.find(c => c.id === entry.cntrsOriginal);
                       const lotNumber = matchedCntr?.lote || entry.batch || '-';
