@@ -9236,21 +9236,24 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
 
                                       return (
                                         <tr key={key} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
-                                          {/* Day Column (always show date) */}
-                                          <td 
-                                            onClick={() => setSelectedDayCalendar(dateStr)}
-                                            className="py-3 px-2 border-r border-b border-slate-250 dark:border-slate-700 bg-[#f4f4f5] dark:bg-[#1a2235] text-slate-900 dark:text-white font-black uppercase text-[10px] align-middle cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                                          >
-                                            <div className="flex items-center justify-center text-center gap-1">
-                                              <span className="font-sans font-bold leading-tight tracking-tight text-slate-800 dark:text-slate-200">
-                                                {formatted.date}
-                                              </span>
-                                              <span className="text-gray-400 font-sans">-</span>
-                                              <span className="text-[9px] tracking-wider text-red-600 dark:text-red-400 font-sans font-black uppercase">
-                                                {formatted.dayOfWeek}
-                                              </span>
-                                            </div>
-                                          </td>
+                                          {/* Day Column (merged cells per day group) */}
+                                          {isFirst && (
+                                            <td 
+                                              rowSpan={dayEntries.length} 
+                                              onClick={() => setSelectedDayCalendar(dateStr)}
+                                              className="py-3 px-2 border-r border-b border-slate-250 dark:border-slate-700 bg-[#f4f4f5] dark:bg-[#1a2235] text-slate-900 dark:text-white font-black uppercase text-[10px] align-middle cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                            >
+                                              <div className="flex flex-col items-center justify-center text-center">
+                                                <span className="font-sans font-bold leading-tight tracking-tight text-slate-800 dark:text-slate-200">
+                                                  {formatted.date}
+                                                </span>
+                                                <span className="text-gray-400 my-0.5 font-sans">-</span>
+                                                <span className="text-[9px] tracking-wider text-red-600 dark:text-red-400 font-sans font-black uppercase">
+                                                  {formatted.dayOfWeek}
+                                                </span>
+                                              </div>
+                                            </td>
+                                          )}
 
                                           {/* BL */}
                                           <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white select-all text-[10px]">
