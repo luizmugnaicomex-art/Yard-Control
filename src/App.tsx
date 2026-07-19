@@ -969,6 +969,17 @@ export default function App() {
   const [sheetsModalOpen, setSheetsModalOpen] = useState(false);
   const [sheetsUrl, setSheetsUrl] = useState("");
   const [sheetsRange, setSheetsRange] = useState("Engenharia CD");
+
+  // ESTADOS DO NOVO FORM DE VINCULAR CONTAINER DOS PÁTIOS (WAREHOUSES)
+  const [selectedYdContainerId, setSelectedYdContainerId] = useState<string>("");
+  const [ydBl, setYdBl] = useState<string>("");
+  const [ydVessel, setYdVessel] = useState<string>("");
+  const [ydBatch, setYdBatch] = useState<string>("");
+  const [ydWarehouse, setYdWarehouse] = useState<string>("");
+  const [ydDeliveryDate, setYdDeliveryDate] = useState<string>("2026-07-25");
+  const [ydCarrier, setYdCarrier] = useState<string>("JSL");
+  const [ydValue, setYdValue] = useState<number>(1200);
+  const [ydStatus, setYdStatus] = useState<string>("PENDENTE");
   
   // ESTADOS DO PAINEL DE ENTREGAS & CALENDÁRIO
   const [operationalMonth, setOperationalMonth] = useState("2026-07");
@@ -1533,19 +1544,128 @@ export default function App() {
   }, []);
 
   // FUNÇÕES AUXILIARES DO NOVO MÓDULO DE LOGÍSTICA
-  const handleClearAllLogisticsData = async () => {
-    if (!window.confirm("Atenção! Isso removerá definitivamente todos os registros de logística cadastrados. Confirmar?")) return;
+  const handleClearAllLogisticsData = () => {
+    const title = language === 'zh' ? '清空全部物流数据' : 'Zerar Tudo / Limpar Dados';
+    const msg = language === 'zh'
+      ? '⚠️ 警告！这将永久删除所有已登记的集成物流记录。您确定要执行吗？'
+      : '⚠️ ATENÇÃO! Isso removerá definitivamente todos os registros de logística cadastrados no Firestore. Confirmar exclusão?';
+
+    requestConfirmation(title, msg, async () => {
+      try {
+        const batch = writeBatch(db);
+        logisticsEntries.forEach(entry => {
+          if (entry.id) {
+            batch.delete(doc(db, 'logisticsData', entry.id));
+          }
+        });
+        await batch.commit();
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, 'logisticsData_batch');
+      }
+    });
+  };
+
+  const handleYdContainerChange = (cntrId: string) => {
+    setSelectedYdContainerId(cntrId);
+    if (!cntrId) {
+      setYdBl("");
+      setYdVessel("");
+      setYdBatch("");
+      setYdWarehouse("");
+      setYdDeliveryDate("2026-07-25");
+      setYdCarrier("JSL");
+      setYdValue(1200);
+      setYdStatus("PENDENTE");
+      return;
+    }
+    const c = containers.find(item => item.id === cntrId);
+    if (c) {
+      setYdBl(c.bl || "");
+      setYdVessel(c.vesselName || "");
+      setYdBatch(c.lote ? String(c.lote) : "");
+      const yardName = yards[c.yardId]?.name || c.yardId || "";
+      setYdWarehouse(yardName);
+      setYdDeliveryDate(c.programacao || c.eta || "2026-07-25");
+      setYdCarrier(c.transportadora || "JSL");
+      setYdValue(1200);
+      setYdStatus("PENDENTE");
+    }
+  };
+
+  const handleSaveYdContainerLogistics = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedYdContainerId) {
+      alert(language === 'zh' ? '请选择一个集装箱' : 'Por favor, selecione um contêiner do pátio.');
+      return;
+    }
+    if (!ydDeliveryDate) {
+      alert(language === 'zh' ? '请选择交付排程日期' : 'Por favor, selecione uma data de entrega planejada.');
+      return;
+    }
+
     try {
-      const batch = writeBatch(db);
-      logisticsEntries.forEach(entry => {
-        if (entry.id) {
-          batch.delete(doc(db, 'logisticsData', entry.id));
+      // Find if already exists in logisticsEntries
+      const existingEntry = logisticsEntries.find(entry => entry.cntrsOriginal === selectedYdContainerId);
+      
+      if (dbStatus === 'online') {
+        if (existingEntry && existingEntry.id) {
+          // Update existing
+          await updateDoc(doc(db, 'logisticsData', existingEntry.id), {
+            bl: ydBl || "PENDING-BL",
+            arrivalVessel: ydVessel || "N/A",
+            batch: ydBatch || "N/A",
+            bondedWarehouse: ydWarehouse || "CD PLANTA",
+            estimatedDeliveryDate: ydDeliveryDate,
+            carrier: ydCarrier || "JSL",
+            valuePerCntr: Number(ydValue) || 1200,
+            status: ydStatus
+          });
+        } else {
+          // Create new
+          const newRef = doc(collection(db, 'logisticsData'));
+          await setDoc(newRef, {
+            cntrsOriginal: selectedYdContainerId,
+            bl: ydBl || "PENDING-BL",
+            arrivalVessel: ydVessel || "N/A",
+            batch: ydBatch || "N/A",
+            bondedWarehouse: ydWarehouse || "CD PLANTA",
+            statusComex: "PENDENTE",
+            carrier: ydCarrier || "JSL",
+            estimatedDeliveryDate: ydDeliveryDate,
+            poSap: "N/A",
+            valuePerCntr: Number(ydValue) || 1200,
+            status: ydStatus
+          });
         }
-      });
-      await batch.commit();
-      alert("Todos os registros de logística foram excluídos do banco de dados!");
+
+        // Also update container record so they are perfectly integrated!
+        try {
+          await updateDoc(doc(db, 'containers', selectedYdContainerId), {
+            programacao: ydDeliveryDate,
+            transportadora: ydCarrier
+          });
+        } catch (err) {
+          console.warn("Erro ao atualizar data de programacao no container do patio:", err);
+        }
+      } else {
+        alert("Modo offline: Conecte ao Firebase para salvar.");
+      }
+
+      // Reset selection
+      setSelectedYdContainerId("");
+      setYdBl("");
+      setYdVessel("");
+      setYdBatch("");
+      setYdWarehouse("");
+      setYdDeliveryDate("2026-07-25");
+      setYdCarrier("JSL");
+      setYdValue(1200);
+      setYdStatus("PENDENTE");
+
+      alert(language === 'zh' ? '✅ 成功将仓库集装箱绑定并生成交付排程！' : '✅ Contêiner do pátio vinculado e agendado com sucesso!');
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, 'logisticsData_batch');
+      console.error("Erro ao salvar agendamento do pátio:", error);
+      alert("Houve um erro ao salvar o agendamento no banco de dados.");
     }
   };
 
@@ -8211,15 +8331,161 @@ export default function App() {
                       </button>
                       <button 
                         onClick={handleClearAllLogisticsData} 
-                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-250 dark:bg-rose-950/20 dark:border-rose-900/40 dark:text-rose-400 font-extrabold text-[10px] rounded-lg flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 uppercase tracking-wider"
+                        className="px-4 py-1.5 bg-gradient-to-r from-red-50 to-rose-100 hover:from-rose-100 hover:to-rose-200 text-rose-700 border border-rose-300 dark:from-red-950/40 dark:to-rose-900/20 dark:border-rose-900/60 dark:text-rose-350 font-extrabold text-[10px] rounded-lg shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 uppercase tracking-wider hover:shadow-md hover:shadow-rose-100/30 dark:hover:shadow-none"
                       >
                         <Trash2 className="w-3.5 h-3.5" /> {language === 'zh' ? '清空全部数据' : 'Zerar Tudo'}
                       </button>
                     </div>
                   </div>
 
-                  {/* FILTERS AND TABLE WORKSPACE */}
-                  <div className={`flex-1 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between overflow-hidden`}>
+                  {/* SPLIT WORKSPACE GRID */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 overflow-hidden mt-1">
+                    
+                    {/* LEFT WORKSPACE: LINK WAREHOUSE CONTAINERS */}
+                    <div className={`lg:col-span-4 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between overflow-y-auto`}>
+                      <form onSubmit={handleSaveYdContainerLogistics} className="space-y-3">
+                        <div className="flex items-center gap-2 border-b pb-2 border-gray-150/40 dark:border-slate-800">
+                          <Building2 className="w-4 h-4 text-red-500 shrink-0" />
+                          <h4 className="font-extrabold text-[12px] text-slate-800 dark:text-slate-100 uppercase tracking-tight">
+                            {language === 'zh' ? '绑定仓库集装箱 (保税/非保税)' : 'Vincular Container do Pátio'}
+                          </h4>
+                        </div>
+
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-normal font-medium">
+                          {language === 'zh' 
+                            ? '从保税堆场（TECON、INTERMARITIMA等）或一般仓库中选择已上传的集装箱进行交付排程。' 
+                            : 'Selecione um contêiner carregado nos pátios alfandegados ou não-alfandegados para criar uma programação de entrega.'}
+                        </p>
+
+                        <div className="space-y-2.5 text-xs">
+                          {/* Container Select */}
+                          <div>
+                            <label className="block text-[10px] font-black uppercase text-gray-500 dark:text-gray-450 mb-1">
+                              {language === 'zh' ? '选择仓库集装箱' : 'Selecionar Equipamento do Pátio'} *
+                            </label>
+                            <select 
+                              value={selectedYdContainerId} 
+                              onChange={(e) => handleYdContainerChange(e.target.value)}
+                              className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-2 rounded-lg font-mono font-bold text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-red-500"
+                            >
+                              <option value="">-- {language === 'zh' ? '请选择' : 'Selecione o Container'} --</option>
+                              {containers.map(c => {
+                                const yardName = yards[c.yardId]?.name || c.yardId;
+                                const isScheduled = logisticsEntries.some(le => le.cntrsOriginal === c.id);
+                                return (
+                                  <option key={c.id} value={c.id}>
+                                    {c.id} - {yardName} ({c.status}) {isScheduled ? '• [Scheduled]' : ''}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </div>
+
+                          {/* Grid for Quick Auto-fills */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">HBL (BL)</label>
+                              <input 
+                                type="text"
+                                value={ydBl}
+                                onChange={(e) => setYdBl(e.target.value)}
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">Navio (Vessel)</label>
+                              <input 
+                                type="text"
+                                value={ydVessel}
+                                onChange={(e) => setYdVessel(e.target.value)}
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">Batch / Lote</label>
+                              <input 
+                                type="text"
+                                value={ydBatch}
+                                onChange={(e) => setYdBatch(e.target.value)}
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">Pátio Origem</label>
+                              <input 
+                                type="text"
+                                value={ydWarehouse}
+                                disabled
+                                className="w-full bg-slate-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-1.5 rounded-md font-sans text-[11px] text-gray-500 font-bold outline-none cursor-not-allowed"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Delivery Schedule Inputs */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[9px] font-black uppercase text-red-500 mb-0.5">📅 Data CD Planta *</label>
+                              <input 
+                                type="text"
+                                value={ydDeliveryDate}
+                                onChange={(e) => setYdDeliveryDate(e.target.value)}
+                                placeholder="YYYY-MM-DD"
+                                className="w-full bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900 p-1.5 rounded-md font-mono text-[11px] text-slate-800 dark:text-white font-bold outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">Status Entrega</label>
+                              <select 
+                                value={ydStatus} 
+                                onChange={(e) => setYdStatus(e.target.value)}
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none"
+                              >
+                                <option value="PENDENTE">PENDENTE</option>
+                                <option value="A CAMINHO">A CAMINHO</option>
+                                <option value="ADIADO">ADIADO</option>
+                                <option value="ENTREGUE">ENTREGUE</option>
+                                <option value="CANCELADO">CANCELADO</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">Transportadora</label>
+                              <input 
+                                type="text"
+                                value={ydCarrier}
+                                onChange={(e) => setYdCarrier(e.target.value)}
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">Valor Frete (R$)</label>
+                              <input 
+                                type="number"
+                                value={ydValue}
+                                onChange={(e) => setYdValue(Number(e.target.value))}
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-mono text-[11px] text-slate-800 dark:text-white font-bold outline-none"
+                              />
+                            </div>
+                          </div>
+
+                        </div>
+
+                        <button 
+                          type="submit"
+                          className="w-full py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-black text-[10px] rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer uppercase tracking-wider flex items-center justify-center gap-1.5 mt-2"
+                        >
+                          <Truck className="w-3.5 h-3.5" /> {language === 'zh' ? '确认排程并同步' : 'Vincular e Agendar'}
+                        </button>
+                      </form>
+                    </div>
+
+                    {/* RIGHT WORKSPACE: FILTERS AND TABLE WORKSPACE */}
+                    <div className="lg:col-span-8 p-4 rounded-xl border bg-white border-slate-150 dark:bg-[#1e293b] dark:border-slate-700 flex flex-col justify-between overflow-hidden">
                     <div className="flex flex-col md:flex-row gap-3 items-center justify-between mb-4">
                       <div className="relative w-full max-w-sm">
                         <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
@@ -8300,16 +8566,22 @@ export default function App() {
                                 <td className="p-2 font-sans font-bold">{entry.carrier || 'N/A'}</td>
                                 <td className="p-2 text-right pr-3 font-sans">
                                   <button 
-                                    onClick={async () => { 
-                                      if (window.confirm("Remover entrada logística definitiva do Firestore?")) {
+                                    onClick={() => { 
+                                      const title = language === 'zh' ? '删除物流记录' : 'Excluir Entrada';
+                                      const msg = language === 'zh'
+                                        ? `您确定要从 Firestore 中删除集装箱 ${entry.cntrsOriginal} 的物流记录吗？`
+                                        : `Deseja realmente remover a entrada logística do contêiner ${entry.cntrsOriginal} do Firestore?`;
+                                      
+                                      requestConfirmation(title, msg, async () => {
                                         try {
                                           await deleteDoc(doc(db, 'logisticsData', entry.id || '')); 
                                         } catch (error) {
                                           handleFirestoreError(error, OperationType.DELETE, `logisticsData/${entry.id}`);
                                         }
-                                      }
+                                      });
                                     }} 
-                                    className="p-1 text-gray-400 hover:text-rose-600 rounded transition-all active:scale-90 cursor-pointer"
+                                    className="p-1.5 text-red-500 hover:text-white hover:bg-red-600 rounded-lg border border-transparent hover:border-red-600 transition-all active:scale-90 cursor-pointer shadow-xs hover:shadow-md"
+                                    title={language === 'zh' ? '删除' : 'Excluir'}
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -8352,6 +8624,8 @@ export default function App() {
                   </div>
 
                 </div>
+
+              </div>
               ) : currentSlide === 8 ? (
                 /* SLIDE 8: PAINEL EXECUTIVO DE ENTREGAS CD */
                 <div id="slide-delivery-panel" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
