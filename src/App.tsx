@@ -8636,15 +8636,6 @@ export default function App() {
                                 className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none"
                               />
                             </div>
-                            <div>
-                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">Valor Frete (R$)</label>
-                              <input 
-                                type="number"
-                                value={ydValue}
-                                onChange={(e) => setYdValue(Number(e.target.value))}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-mono text-[11px] text-slate-800 dark:text-white font-bold outline-none"
-                              />
-                            </div>
                           </div>
 
                           <div className="grid grid-cols-2 gap-2">
@@ -8953,7 +8944,6 @@ export default function App() {
                                     <th className="py-2">Status Operacional</th>
                                     <th className="py-2 font-black text-red-700 dark:text-red-400 bg-red-100/40 dark:bg-red-950/20 text-center">📅 Alterar Data Entrega</th>
                                     <th className="py-2">Transportadora (Carrier)</th>
-                                    <th className="py-2 text-right pr-2">Custo Unitário Frete</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800/60 font-medium text-slate-750 dark:text-slate-350 font-mono">
@@ -9036,9 +9026,6 @@ export default function App() {
                                             className="bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 border border-transparent focus:border-gray-200 px-1 py-0.5 rounded outline-none w-24 text-[11px] font-bold font-sans text-slate-800 dark:text-slate-100"
                                           />
                                         </td>
-                                        <td className="py-2 text-right pr-2 font-black text-slate-800 dark:text-white">
-                                          R$ {(entry.valuePerCntr || 1200).toLocaleString()}
-                                        </td>
                                       </tr>
                                     );
                                   })}
@@ -9060,7 +9047,7 @@ export default function App() {
                   <div className="grid grid-cols-12 gap-4 flex-1">
                     
                     {/* LEFT WORKSPACE: MONTHLY CALENDAR GRID / SHIPMENT INFO TABLE */}
-                    <div className={`col-span-12 lg:col-span-9 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between overflow-hidden`}>
+                    <div className={`col-span-12 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between overflow-hidden`}>
                       <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
                         
                         {/* Header controls with view toggler */}
@@ -9167,7 +9154,7 @@ export default function App() {
                                   <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700 w-[170px]">Description</th>
                                   <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">PO</th>
                                   <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Batch</th>
-                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Container Quantity</th>
+                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">CNTR QTY</th>
                                   <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Warehouse</th>
                                   <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Operation</th>
                                   <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Truck Company</th>
@@ -9197,7 +9184,7 @@ export default function App() {
                                       }
                                       acc[key].entries.push(entry);
                                       return acc;
-                                    }, {} as Record<string, any>);
+                                                                        }, {} as Record<string, { entries: any[], bl: string, date: string, [key: string]: any }>);
 
                                   const sortedKeys = Object.keys(groupedEntries).sort();
 
@@ -9211,15 +9198,17 @@ export default function App() {
                                     );
                                   }
 
-                                  return sortedKeys.map((key) => {
-                                    const group = groupedEntries[key];
+                                                                                                      return sortedKeys.map((key) => {
+                                    const group = groupedEntries[key] as any;
                                     const dateStr = group.date;
-                                    const dayEntries = Object.values(groupedEntries).filter(g => g.date === dateStr);
+                                                                        const dayEntries = (Object.values(groupedEntries as any) as any[]).filter(g => g.date === dateStr);
                                     const entryIdx = dayEntries.findIndex(g => g.bl === group.bl);
                                     const isFirst = entryIdx === 0;
 
-                                    const cntrQuantity = group.entries.reduce((sum: number, e: any) => sum + (containers.filter(c => c.bl === e.bl).length || 1), 0);
-                                    const scheduledItem = group.component || group.description || 'Componente Não Especificado';
+                                    const cntrQuantity = group.entries.reduce((sum: number, e: any) => sum + (Number(e.quantity) || 1), 0);
+                                    const firstEntry = group.entries[0];
+const matchedCntr = containers.find(c => c.id === firstEntry.cntrsOriginal);
+const scheduledItem = matchedCntr?.modelo || group.component || group.description || 'Componente Não Especificado';
                                     const formatted = formatDayColumn(dateStr);
 
                                       return (
@@ -9348,38 +9337,6 @@ export default function App() {
                             </table>
                           </div>
                         )}
-                      </div>
-                    </div>
-
-                    {/* RIGHT WORKSPACE: WEEKLY ANALYSIS & STATS */}
-                    <div className={`col-span-12 lg:col-span-3 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
-                      <div className="space-y-4">
-                        <div className="border-b pb-2 border-gray-100 dark:border-slate-800">
-                          <span className="font-black uppercase tracking-wider text-[10px] text-gray-400 block">{language === 'zh' ? '周度货柜到货预测分析' : 'Resumo Semanal de Capacidade'}</span>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="p-3 bg-slate-50 dark:bg-slate-800/45 rounded-lg border dark:border-slate-800">
-                            <span className="text-[9px] text-gray-400 uppercase font-black block">{language === 'zh' ? '当月累计交付计划' : 'Capacidade Total Planejada'}</span>
-                            <span className="font-mono text-base font-black text-slate-800 dark:text-white block mt-0.5">
-                              {logisticsEntries.filter(e => String(e.estimatedDeliveryDate).startsWith(operationalMonth)).length} Containers
-                            </span>
-                          </div>
-
-                          <div className="p-3 bg-slate-50 dark:bg-slate-800/45 rounded-lg border dark:border-slate-800">
-                            <span className="text-[9px] text-gray-400 uppercase font-black block">{language === 'zh' ? '预计产生总运费 faturamento' : 'Faturamento Estimado'}</span>
-                            <span className="font-mono text-base font-black text-emerald-600 dark:text-emerald-400 block mt-0.5">
-                              R$ {logisticsEntries
-                                .filter(e => String(e.estimatedDeliveryDate).startsWith(operationalMonth))
-                                .reduce((sum, e) => sum + (e.valuePerCntr || 1200), 0)
-                                .toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-[8px] font-mono text-gray-400 uppercase text-center font-bold tracking-tight border-t border-dashed border-gray-200 dark:border-slate-800 pt-3">
-                        📊 INTEGRATED LOGISTICS AGENT v1.0
                       </div>
                     </div>
 
@@ -10355,16 +10312,6 @@ export default function App() {
                             onChange={(e) => setNewDeliveryDate(e.target.value)}
                             required
                             placeholder="21/05"
-                            className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
-                          />
-                        </div>
-                        <div className="space-y-0.5">
-                          <label className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase block">{language === 'zh' ? '交付值' : 'Qtd / Valor'}</label>
-                          <input 
-                            type="number"
-                            value={newDeliveryValue}
-                            onChange={(e) => setNewDeliveryValue(Math.max(0, Number(e.target.value)))}
-                            required
                             className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
                           />
                         </div>
@@ -11910,7 +11857,6 @@ export default function App() {
                     <th className="p-2.5">Process / Status</th>
                     <th className="p-2.5">Status Entrega</th>
                     <th className="p-2.5">Transportadora (Carrier)</th>
-                    <th className="p-2.5 text-right pr-3">Valor de Frete</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800/60 font-semibold text-slate-700 dark:text-slate-350">
@@ -11940,7 +11886,6 @@ export default function App() {
                             </span>
                           </td>
                           <td className="p-2 font-sans font-bold">{entry.carrier || 'N/A'}</td>
-                          <td className="p-2 text-right pr-3 font-black text-slate-900 dark:text-white">R$ {(entry.valuePerCntr || 1200).toLocaleString()}</td>
                         </tr>
                       );
                     })}
