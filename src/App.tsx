@@ -989,6 +989,7 @@ export default function App() {
   
   // ESTADOS DO PAINEL DE ENTREGAS & CALENDÁRIO
   const [operationalMonth, setOperationalMonth] = useState("2026-07");
+  const [selectedWeek, setSelectedWeek] = useState("2026-W29");
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<string | null>(null);
   const [selectedDayCalendar, setSelectedDayCalendar] = useState<string | null>(null);
   const [calendarViewMode, setCalendarViewMode] = useState<'monthly' | 'shipment_info'>('shipment_info');
@@ -1473,6 +1474,15 @@ export default function App() {
       unsubLogistics();
     };
   }, [user]);
+
+  // FUNÇÃO AUXILIAR PARA OBTER ISO WEEK
+  const getISOWeek = (date: Date): string => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+  };
 
   // FUNÇÃO AUXILIAR PARA NORMALIZAR DATAS
   const normalizeDate = (dateStr: string | Date | undefined): string => {
@@ -9088,12 +9098,21 @@ export default function App() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <input 
-                              type="month" 
-                              value={operationalMonth} 
-                              onChange={(e) => setOperationalMonth(e.target.value)} 
-                              className="bg-slate-50 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 text-xs font-bold rounded px-2 py-1 text-slate-800 dark:text-white outline-none" 
-                            />
+                            {calendarViewMode === 'shipment_info' ? (
+                              <input
+                                type="week"
+                                value={selectedWeek}
+                                onChange={(e) => setSelectedWeek(e.target.value)}
+                                className="bg-slate-50 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 text-xs font-bold rounded px-2 py-1 text-slate-800 dark:text-white outline-none"
+                              />
+                            ) : (
+                              <input 
+                                type="month" 
+                                value={operationalMonth} 
+                                onChange={(e) => setOperationalMonth(e.target.value)} 
+                                className="bg-slate-50 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 text-xs font-bold rounded px-2 py-1 text-slate-800 dark:text-white outline-none" 
+                              />
+                            )}
                           </div>
                         </div>
 
@@ -9157,34 +9176,54 @@ export default function App() {
                               </thead>
                               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium font-mono text-slate-850 dark:text-slate-200 text-center">
                                 {(() => {
-                                  // Get all distinct sorted dates for the operationalMonth
-                                  const distinctDates = Array.from(new Set(logisticsEntries
-                                    .filter(e => String(e.estimatedDeliveryDate).startsWith(operationalMonth) && e.estimatedDeliveryDate !== 'Sem Data')
-                                    .map(e => String(e.estimatedDeliveryDate))
-                                  )).sort() as string[];
+                                  // Agrupar entries por data e BL
+                                  const groupedEntries = logisticsEntries
+                                    .filter(e => {
+                                      const normalized = normalizeDate(String(e.estimatedDeliveryDate));
+                                      if (normalized === 'Sem Data') return false;
+                                      if (calendarViewMode === 'shipment_info') {
+                                        const parts = normalized.split('-');
+                                        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                                        return getISOWeek(d) === selectedWeek;
+                                      }
+                                      return normalized.startsWith(operationalMonth);
+                                    })
+                                    .reduce((acc, entry) => {
+                                      const date = normalizeDate(String(entry.estimatedDeliveryDate));
+                                      const bl = entry.bl || 'PENDING-BL';
+                                      const key = `${date}|${bl}`;
+                                      if (!acc[key]) {
+                                        acc[key] = { ...entry, bl, date, entries: [] };
+                                      }
+                                      acc[key].entries.push(entry);
+                                      return acc;
+                                    }, {} as Record<string, any>);
 
-                                  if (distinctDates.length === 0) {
+                                  const sortedKeys = Object.keys(groupedEntries).sort();
+
+                                  if (sortedKeys.length === 0) {
                                     return (
                                       <tr>
                                         <td colSpan={10} className="py-12 text-center text-gray-400 font-bold uppercase font-sans">
-                                          {language === 'zh' ? '当前月份没有排程的交付数据' : 'Nenhum agendamento encontrado para o mês selecionado.'}
+                                          {language === 'zh' ? '当前月份没有排程的交付数据' : 'Nenhum agendamento encontrado.'}
                                         </td>
                                       </tr>
                                     );
                                   }
 
-                                  return distinctDates.flatMap(dateStr => {
-                                    const dayEntries = logisticsEntries.filter(e => String(e.estimatedDeliveryDate) === dateStr);
+                                  return sortedKeys.map((key) => {
+                                    const group = groupedEntries[key];
+                                    const dateStr = group.date;
+                                    const dayEntries = Object.values(groupedEntries).filter(g => g.date === dateStr);
+                                    const entryIdx = dayEntries.findIndex(g => g.bl === group.bl);
+                                    const isFirst = entryIdx === 0;
+
+                                    const cntrQuantity = group.entries.reduce((sum: number, e: any) => sum + (containers.filter(c => c.bl === e.bl).length || 1), 0);
+                                    const scheduledItem = group.component || group.description || 'Componente Não Especificado';
                                     const formatted = formatDayColumn(dateStr);
 
-                                    return dayEntries.map((entry, idx) => {
-                                      const matchedCntr = containers.find(c => c.id === entry.cntrsOriginal);
-                                      const cntrQuantity = containers.filter(c => c.bl === entry.bl).length || 1;
-                                      const scheduledItem = entry.component || (matchedCntr && matchedCntr.componente) || entry.description || (matchedCntr && matchedCntr.modelo) || 'Componente Não Especificado';
-                                      const isFirst = idx === 0;
-
                                       return (
-                                        <tr key={entry.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                                        <tr key={key} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
                                           {/* Day Column (merged cells per day group) */}
                                           {isFirst && (
                                             <td 
@@ -9205,7 +9244,7 @@ export default function App() {
 
                                           {/* BL */}
                                           <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white select-all text-[10px]">
-                                            {entry.bl || 'PENDING-BL'}
+                                            {group.bl || 'PENDING-BL'}
                                           </td>
 
                                           {/* Description */}
@@ -9215,12 +9254,12 @@ export default function App() {
 
                                           {/* PO */}
                                           <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 font-bold text-blue-600 dark:text-blue-400 text-[10px]">
-                                            {entry.poSap || 'N/A'}
+                                            {group.poSap || 'N/A'}
                                           </td>
 
                                           {/* Batch */}
                                           <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 text-[10px]">
-                                            {entry.batch || 'N/A'}
+                                            {group.batch || 'N/A'}
                                           </td>
 
                                           {/* Container Quantity */}
@@ -9230,18 +9269,19 @@ export default function App() {
 
                                           {/* Warehouse (Originating Yard) */}
                                           <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 text-[10px]">
-                                            {entry.bondedWarehouse || 'CD PLANTA'}
+                                            {group.bondedWarehouse || 'CD PLANTA'}
                                           </td>
 
                                           {/* Operation */}
                                           <td className="py-1 px-1 border-r border-slate-200 dark:border-slate-800">
                                             <select 
-                                              value={entry.deliveryModel || 'DESCARGA'} 
+                                              value={group.deliveryModel || 'DESCARGA'} 
                                               onChange={async (e) => { 
                                                 try {
-                                                  await updateDoc(doc(db, 'logisticsData', entry.id || ''), { deliveryModel: e.target.value }); 
+                                                  // Update all entries in this group
+                                                  await Promise.all(group.entries.map((entry: any) => updateDoc(doc(db, 'logisticsData', entry.id || ''), { deliveryModel: e.target.value }))); 
                                                 } catch (err) {
-                                                  handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                                  handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${group.id}`);
                                                 }
                                               }}
                                               className="bg-transparent text-[10px] font-black uppercase text-slate-800 dark:text-slate-200 outline-none w-full text-center border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-red-500 rounded p-0.5"
@@ -9256,12 +9296,12 @@ export default function App() {
                                           {/* Truck Company */}
                                           <td className="py-1 px-1 border-r border-slate-200 dark:border-slate-800">
                                             <select 
-                                              value={entry.carrier || 'JSL'} 
+                                              value={group.carrier || 'JSL'} 
                                               onChange={async (e) => { 
                                                 try {
-                                                  await updateDoc(doc(db, 'logisticsData', entry.id || ''), { carrier: e.target.value }); 
+                                                  await Promise.all(group.entries.map((entry: any) => updateDoc(doc(db, 'logisticsData', entry.id || ''), { carrier: e.target.value }))); 
                                                 } catch (err) {
-                                                  handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                                  handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${group.id}`);
                                                 }
                                               }}
                                               className="bg-transparent text-[10px] font-black uppercase text-slate-800 dark:text-slate-200 outline-none w-full text-center border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-red-500 rounded p-0.5"
@@ -9281,12 +9321,12 @@ export default function App() {
                                           {/* Delivery Site */}
                                           <td className="py-1 px-1">
                                             <select 
-                                              value={entry.onSitePlaceOfDelivery || 'WAREHOUSE 25'} 
+                                              value={group.onSitePlaceOfDelivery || 'WAREHOUSE 25'} 
                                               onChange={async (e) => { 
                                                 try {
-                                                  await updateDoc(doc(db, 'logisticsData', entry.id || ''), { onSitePlaceOfDelivery: e.target.value }); 
+                                                  await Promise.all(group.entries.map((entry: any) => updateDoc(doc(db, 'logisticsData', entry.id || ''), { onSitePlaceOfDelivery: e.target.value }))); 
                                                 } catch (err) {
-                                                  handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                                  handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${group.id}`);
                                                 }
                                               }}
                                               className="bg-transparent text-[10px] font-black uppercase text-slate-800 dark:text-slate-200 outline-none w-full text-center border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-red-500 rounded p-0.5"
@@ -9302,9 +9342,8 @@ export default function App() {
 
                                         </tr>
                                       );
-                                    });
-                                  });
-                                })()}
+                                    })
+                                  })()}
                               </tbody>
                             </table>
                           </div>
