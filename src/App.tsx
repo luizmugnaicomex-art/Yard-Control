@@ -49,6 +49,7 @@ import {
   Clock,
   Activity,
   LayoutGrid,
+  List,
   Search
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -872,6 +873,7 @@ export default function App() {
   });
 
   const [activeBufferId, setActiveBufferId] = useState<string>('buffer-e');
+  const [bufferViewMode, setBufferViewMode] = useState<'map' | 'list'>('map');
   const [editingSlot, setEditingSlot] = useState<BufferSlot | null>(null);
   const [editingSlotAreaId, setEditingSlotAreaId] = useState<string | null>(null);
   const [editingStackIndex, setEditingStackIndex] = useState<number>(0);
@@ -6985,6 +6987,24 @@ export default function App() {
 
                     {/* SELECT BUFFER AREA DROPDOWN & EXPORT ACTIONS */}
                     <div className="flex flex-wrap items-center gap-2">
+                      {/* VIEW MODE TOGGLE */}
+                      <div className="flex bg-slate-100 dark:bg-slate-900 rounded-lg p-1 border border-slate-200 dark:border-slate-800">
+                        <button
+                          onClick={() => setBufferViewMode('map')}
+                          className={`px-3 py-1.5 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all ${bufferViewMode === 'map' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                        >
+                          <LayoutGrid className="w-3.5 h-3.5" />
+                          {language === 'zh' ? '地图视图' : 'Cards'}
+                        </button>
+                        <button
+                          onClick={() => setBufferViewMode('list')}
+                          className={`px-3 py-1.5 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all ${bufferViewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                        >
+                          <List className="w-3.5 h-3.5" />
+                          {language === 'zh' ? '列表视图' : 'List'}
+                        </button>
+                      </div>
+
                       <select 
                         value={activeBufferId}
                         onChange={(e) => setActiveBufferId(e.target.value)}
@@ -7037,6 +7057,7 @@ export default function App() {
                   </div>
 
                   {/* STATS AND GRID MAP WRAPPER */}
+                  {bufferViewMode === 'map' ? (
                   <div className="grid grid-cols-12 gap-4">
                     
                     {/* STATS PANEL (LEFT COLUMN / 3 SPAN) */}
@@ -7393,6 +7414,34 @@ export default function App() {
 
                   </div>
 
+                ) : (
+                  <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg min-h-[400px]">
+                    <table className="w-full text-xs text-left">
+                      <thead className="text-gray-500 uppercase font-bold border-b dark:border-slate-700">
+                        <tr>
+                          <th className="p-2">Area</th>
+                          <th className="p-2">Slot</th>
+                          <th className="p-2">Contêiner</th>
+                          <th className="p-2">Tipo</th>
+                          <th className="p-2">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y dark:divide-slate-700">
+                        {bufferAreas.flatMap(area =>
+                          area.slots.filter(s => s.containerNo).map((slot, idx) => (
+                            <tr key={`${area.id}-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800">
+                              <td className="p-2">{area.name}</td>
+                              <td className="p-2 font-mono">{getSlotCoordsLabel(slot.row, slot.col)}</td>
+                              <td className="p-2 font-mono font-bold text-slate-800 dark:text-white">{slot.containerNo}</td>
+                              <td className="p-2">{slot.cargoType}</td>
+                              <td className="p-2">{slot.status}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
                 </div>
               ) : currentSlide === 6 ? (
                 /* SLIDE 7: DEMURRAGE & OVERDUE MONITORING DASHBOARD (HIGH FIDELITY) */
