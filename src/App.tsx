@@ -4860,7 +4860,7 @@ export default function App() {
               <div className="flex flex-col">
                 <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '活跃船舶到港' : 'Active Vessels'}</span>
                 <span className="text-xs font-black text-slate-800 dark:text-white font-mono">
-                  {totalExpectedVesselsForHeader} <span className="text-[9.5px] text-slate-400 font-normal">({totalExpectedContainersForHeader} TEU)</span>
+                  {totalExpectedVesselsForHeader} <span className="text-[9.5px] text-slate-400 font-normal">({totalExpectedContainersForHeader} FEU)</span>
                 </span>
               </div>
             </div>
@@ -4940,7 +4940,7 @@ export default function App() {
                   <Ship className="w-3.5 h-3.5 text-blue-500" />
                   <div className="flex flex-col">
                     <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'zh' ? '活跃船舶到港' : 'Active Vessels'}</span>
-                    <span className="text-xs font-black text-slate-800 dark:text-white font-mono">{totalExpectedVesselsForHeader} <span className="text-[9px] text-gray-400 font-normal">({totalExpectedContainersForHeader} TEU)</span></span>
+                    <span className="text-xs font-black text-slate-800 dark:text-white font-mono">{totalExpectedVesselsForHeader} <span className="text-[9px] text-gray-400 font-normal">({totalExpectedContainersForHeader} FEU)</span></span>
                   </div>
                 </div>
 
@@ -5102,12 +5102,12 @@ export default function App() {
                               <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border dark:border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs">
                                 <div className="flex flex-col">
                                   <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Capacidade / 容量' : 'Capacidade'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bondedSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">TEU</span></span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bondedSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">FEU</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col">
                                   <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Ocupado / 已用' : 'Ocupado'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bondedSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">TEU</span></span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bondedSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">FEU</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col items-center">
@@ -5170,12 +5170,12 @@ export default function App() {
                               <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border dark:border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs">
                                 <div className="flex flex-col">
                                   <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Capacidade / 容量' : 'Capacidade'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(warehouseSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">TEU</span></span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(warehouseSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">FEU</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col">
                                   <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Ocupado / 已用' : 'Ocupado'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(warehouseSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">TEU</span></span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(warehouseSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">FEU</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col items-center">
@@ -5238,12 +5238,12 @@ export default function App() {
                               <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border dark:border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs">
                                 <div className="flex flex-col">
                                   <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Capacidade Buffer / 缓冲容量' : 'Buffer'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bufferSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">TEU</span></span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bufferSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">FEU</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col">
                                   <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Ocupado Buffer / 缓冲已用' : 'Ocupado'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bufferSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">TEU</span></span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bufferSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">FEU</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col items-center">
@@ -8187,7 +8187,7 @@ export default function App() {
                           </div>
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">{totalAvg}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">TEU/Dia</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">FEU/Dia</span>
                           </div>
                         </div>
 
@@ -8198,7 +8198,7 @@ export default function App() {
                           </div>
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">{totalRemainingSlots}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">TEU Slots</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">FEU Slots</span>
                           </div>
                         </div>
 
@@ -8293,9 +8293,9 @@ export default function App() {
                                         )}
                                       </div>
                                     </td>
-                                    <td className="p-2 text-center font-mono text-gray-500 dark:text-slate-400 font-bold">{depot.avgVolume} TEU</td>
+                                    <td className="p-2 text-center font-mono text-gray-500 dark:text-slate-400 font-bold">{depot.avgVolume} FEU</td>
                                     <td className="p-2 text-center font-mono text-slate-800 dark:text-slate-100">
-                                      {depot.maxCapacity} TEU
+                                      {depot.maxCapacity} FEU
                                     </td>
                                     <td className="p-2 text-center font-mono">
                                       <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${utilBg} ${utilBorder}`}>
@@ -8309,7 +8309,7 @@ export default function App() {
                                         </span>
                                       ) : (
                                         <span className={`font-bold ${remaining < 5 ? 'text-amber-600' : 'text-slate-700 dark:text-slate-200'}`}>
-                                          {remaining} TEU
+                                          {remaining} FEU
                                         </span>
                                       )}
                                     </td>
@@ -9482,7 +9482,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                       <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
                         <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Capacidade Total / 总容量' : language === 'zh' ? '总容量' : 'Capacidade Total'}</span>
                         <span className="font-mono text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">
-                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.capacity) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">TEU</span>
+                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.capacity) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">FEU</span>
                         </span>
                       </div>
                       <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
@@ -9507,13 +9507,13 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                       <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
                         <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Total Cheios / 重箱总量' : language === 'zh' ? '重箱总量' : 'Total Cheios'}</span>
                         <span className="font-mono text-xs font-black text-blue-600 mt-0.5">
-                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.cheio) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">TEU</span>
+                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.cheio) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">FEU</span>
                         </span>
                       </div>
                       <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
                         <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Pronto Coleta / 待提总量' : language === 'zh' ? '待提总量' : 'Pronto Coleta'}</span>
                         <span className="font-mono text-xs font-black text-emerald-600 mt-0.5">
-                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.prontoColeta) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">TEU</span>
+                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.prontoColeta) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">FEU</span>
                         </span>
                       </div>
                     </div>
@@ -9589,7 +9589,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-blue-600 dark:text-blue-400 font-black uppercase block mb-1">Cheio / 重箱 (TEU)</label>
+                            <label className="text-[9px] text-blue-600 dark:text-blue-400 font-black uppercase block mb-1">Cheio / 重箱 (FEU)</label>
                             <input 
                               type="number" 
                               value={yard.cheio} 
@@ -9598,7 +9598,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Vazio / 空箱 (TEU)</label>
+                            <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Vazio / 空箱 (FEU)</label>
                             <input 
                               type="number" 
                               value={yard.vazio} 
@@ -9607,7 +9607,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Porto / 港口 (TEU)</label>
+                            <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Porto / 港口 (FEU)</label>
                             <input 
                               type="number" 
                               value={yard.porto} 
@@ -9634,7 +9634,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             />
                           </div>
                           <div className="col-span-2">
-                            <label className="text-[9px] text-rose-600 dark:text-rose-400 font-black uppercase block mb-1">Prev Total / 上期总量 (TEU)</label>
+                            <label className="text-[9px] text-rose-600 dark:text-rose-400 font-black uppercase block mb-1">Prev Total / 上期总量 (FEU)</label>
                             <input 
                               type="number" 
                               value={yard.previous_total !== undefined ? yard.previous_total : 0} 
@@ -9762,7 +9762,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                         </div>
 
                         <div>
-                          <label className="text-[8px] text-rose-500 dark:text-rose-400 font-bold uppercase block mb-0.5">Prev Total / 上期总量 (TEU)</label>
+                          <label className="text-[8px] text-rose-500 dark:text-rose-400 font-bold uppercase block mb-0.5">Prev Total / 上期总量 (FEU)</label>
                           <input 
                             type="number" 
                             placeholder="1000"
@@ -11162,7 +11162,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4 border-b dark:border-slate-800 bg-blue-50/20 dark:bg-[#111827]/40 text-xs">
                 <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Capacidade / 容量' : 'Capacidade'}</span>
-                  <span className="font-mono text-base font-black text-slate-700 dark:text-slate-150 mt-1">{selectedYard.capacity.toLocaleString()} <span className="text-xs text-gray-400 font-normal">TEU</span></span>
+                  <span className="font-mono text-base font-black text-slate-700 dark:text-slate-150 mt-1">{selectedYard.capacity.toLocaleString()} <span className="text-xs text-gray-400 font-normal">FEU</span></span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Ocupação / 占用率' : 'Ocupação'}</span>
@@ -11174,20 +11174,20 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                           ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300' 
                           : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
                     }`}>{yardOcupacao}%</span>
-                    <span className="text-[10px] text-gray-400 font-bold">({(selectedYard.cheio + selectedYard.vazio).toLocaleString()} TEU)</span>
+                    <span className="text-[10px] text-gray-400 font-bold">({(selectedYard.cheio + selectedYard.vazio).toLocaleString()} FEU)</span>
                   </div>
                 </div>
                 <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Cheios / 重箱' : 'Cheios'}</span>
-                  <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 mt-1">{selectedYard.cheio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">TEU</span></span>
+                  <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 mt-1">{selectedYard.cheio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">FEU</span></span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Vazios / 空箱' : 'Vazios'}</span>
-                  <span className="font-mono text-sm font-bold text-gray-500 mt-1">{selectedYard.vazio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">TEU</span></span>
+                  <span className="font-mono text-sm font-bold text-gray-500 mt-1">{selectedYard.vazio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">FEU</span></span>
                 </div>
                 <div className="col-span-2 md:col-span-1 p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Pronto Coleta / 待收箱' : 'Pronto Coleta'}</span>
-                  <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-450 mt-1">{(selectedYard.prontoColeta || 0).toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">TEU</span></span>
+                  <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-450 mt-1">{(selectedYard.prontoColeta || 0).toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">FEU</span></span>
                 </div>
               </div>
 
