@@ -2558,11 +2558,25 @@ export default function App() {
             if (areaId.includes('-b') && maxRow < 13) maxRow = 13;
             if (areaId.includes('-b') && maxCol < 6) maxCol = 6;
 
-            // Find if area already exists
+            // Find if area already exists, or create new if not
             let areaIndex = updatedAreas.findIndex(a => a.id === areaId);
             const areaPrefix = areaId.split('-')[1].toUpperCase();
-            const areaName = `BYD Buffer ${areaPrefix} (Zona ${areaPrefix} / ${areaPrefix}区 - Ativo)`;
-
+            
+            if (areaIndex === -1) {
+              updatedAreas.push({
+                id: areaId,
+                name: `BYD Buffer ${areaPrefix} (Zona ${areaPrefix} / ${areaPrefix}区 - Ativo)`,
+                rows: maxRow,
+                cols: maxCol,
+                slots: []
+              });
+              areaIndex = updatedAreas.length - 1;
+            } else {
+              // Update dimensions if new data exceeds existing area
+              if (maxRow > updatedAreas[areaIndex].rows) updatedAreas[areaIndex].rows = maxRow;
+              if (maxCol > updatedAreas[areaIndex].cols) updatedAreas[areaIndex].cols = maxCol;
+            }
+            
             const slots: BufferSlot[] = [];
 
             // Process slots and stacks
