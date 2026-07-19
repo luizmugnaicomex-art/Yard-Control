@@ -986,6 +986,16 @@ export default function App() {
   const [theme, setTheme] = useState('light'); // 'light' ou 'dark'
   const [pdfStatus, setPdfStatus] = useState<'idle' | 'rendering' | 'success' | 'error'>('idle');
   
+  // Controle de Menu Lateral Recolhível / Ocultável
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    const saved = localStorage.getItem('byd_sidebar_collapsed');
+    return saved === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('byd_sidebar_collapsed', String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
+  
   // PARADIGMAS DE VISUALIZAÇÃO: 'website' (Estilo Site SaaS Fluido) ou 'ppt' (Apresentação Core)
   const [viewParadigm, setViewParadigm] = useState<'ppt' | 'website'>(() => {
     const saved = localStorage.getItem('byd_view_paradigm');
@@ -1056,6 +1066,33 @@ export default function App() {
   const [newDeliveryDate, setNewDeliveryDate] = useState('21/06');
   const [newDeliveryValue, setNewDeliveryValue] = useState<number>(200);
   const [newDeliveryType, setNewDeliveryType] = useState('A');
+
+  // CÁLCULO DE METRICAS DO HEADER / HEADER STATS
+  const totalYardsCapacity = (Object.values(yards) as Yard[]).reduce((acc, y) => acc + (y?.capacity || 0), 0);
+  const totalYardsCheio = (Object.values(yards) as Yard[]).reduce((acc, y) => acc + (y?.cheio || 0), 0);
+  const globalOccupancyPercentForHeader = totalYardsCapacity > 0 ? Math.round((totalYardsCheio / totalYardsCapacity) * 100) : 0;
+
+  const totalExpectedVesselsForHeader = vessels.filter(v => v && !v.arrived).length;
+  const totalExpectedContainersForHeader = vessels.filter(v => v && !v.arrived).reduce((acc, v) => acc + (v.cntrs || 0), 0);
+
+  const totalContractedDepotsVolumeForHeader = depots.reduce((acc, d) => acc + (d.currentGateIn || 0), 0);
+  const totalContractedDepotsCapacity = depots.reduce((acc, d) => acc + (d.maxCapacity || 0), 0);
+  const depotsOccupancyPercentForHeader = totalContractedDepotsCapacity > 0 ? Math.round((totalContractedDepotsVolumeForHeader / totalContractedDepotsCapacity) * 100) : 0;
+
+  const getMaxWidthClass = () => {
+    return websiteWidth === 'fluid' ? 'max-w-full px-4' : 'max-w-7xl mx-auto px-6 md:px-8';
+  };
+
+  const getSlideSubtitle = () => {
+    const dyn = getDynamicSlideTitleAndSubtitle();
+    if (language === 'pt') return <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans">{dyn.subPT}</p>;
+    if (language === 'zh') return <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans tracking-wide">{dyn.subZH}</p>;
+    return (
+      <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans">
+        {dyn.subPT} / {dyn.subZH}
+      </p>
+    );
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -3977,57 +4014,319 @@ export default function App() {
     }
     if (language === 'pt') return <span className="text-xl font-black">{dyn.titlePT}</span>;
     if (language === 'zh') return <span className="text-2xl font-black font-sans tracking-wide">{dyn.titleZH}</span>;
-    return (
-      <div className="flex flex-col text-left mb-1">
-        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">{dyn.titlePT}</span>
-        <span className="text-2xl font-black text-slate-950 dark:text-white font-sans tracking-tight leading-tight block">{dyn.titleZH}</span>
-      </div>
-    );
-  };
-
-  const getSlideSubtitle = () => {
-    const dyn = getDynamicSlideTitleAndSubtitle();
-    if (currentSlide === 3) {
-      return (
-        <div className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wide mt-1 pl-3">
-          {dyn.subPT}
-        </div>
-      );
-    }
-    if (language === 'pt') return dyn.subPT;
-    if (language === 'zh') return dyn.subZH;
-    return (
-      <div className="flex flex-col text-left leading-normal mt-1 border-t border-gray-100 dark:border-gray-800/60 pt-1">
-        <span className="text-[9.5px] text-gray-500 dark:text-gray-400 font-bold tracking-tight">{dyn.subPT}</span>
-        <span className="text-[11.5px] text-gray-400 dark:text-gray-500 font-medium font-sans block">{dyn.subZH}</span>
-      </div>
-    );
-  };
-
-  // CÁLCULO DE MÉTRICAS OPERACIONAIS GLOBAIS EM TEMPO REAL PARA O WEBSITE HEADER
-  const yardsArrayForHeader = Object.values(yards) as Yard[];
-  const totalYardsCapForHeader = yardsArrayForHeader.reduce((sum, y) => sum + (y?.capacity || 0), 0);
-  const totalYardsCheioForHeader = yardsArrayForHeader.reduce((sum, y) => sum + (y?.cheio || 0), 0);
-  const totalYardsVazioForHeader = yardsArrayForHeader.reduce((sum, y) => sum + (y?.vazio || 0), 0);
-  const globalOccupancyPercentForHeader = totalYardsCapForHeader > 0 ? Math.round(((totalYardsCheioForHeader + totalYardsVazioForHeader) / totalYardsCapForHeader) * 100) : 0;
-  
-  const totalExpectedVesselsForHeader = vessels.length;
-  const totalExpectedContainersForHeader = vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0);
-  
-  const totalContractedDepotsCapForHeader = depots.reduce((sum, d) => sum + (d.maxCapacity || 0), 0);
-  const totalContractedDepotsVolumeForHeader = depots.reduce((sum, d) => sum + (d.avgVolume || 0), 0);
-  const depotsOccupancyPercentForHeader = totalContractedDepotsCapForHeader > 0 ? Math.round((totalContractedDepotsVolumeForHeader / totalContractedDepotsCapForHeader) * 100) : 0;
-
-  const getMaxWidthClass = () => {
-    if (viewParadigm === 'ppt') return 'max-w-[1400px]';
-    return websiteWidth === 'fluid' ? 'max-w-full px-4' : 'max-w-[1500px] px-2';
+    return <span className="text-xl font-black">{dyn.titlePT}</span>;
   };
 
   return (
-    <div id="app-root-container" className={`min-h-screen ${theme === 'dark' ? 'bg-[#111827] text-gray-100' : 'bg-[#F3F4F6] text-gray-800'} transition-colors duration-300 flex flex-col font-sans overflow-x-hidden`}>
-      
-      {/* BARRA DE MENU SUPERIOR DE CONTROLE (Ocultada em modo de apresentação limpo) */}
-      {isEditMode && (
+    <div className={`h-screen w-screen flex overflow-hidden ${theme === 'dark' ? 'bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+      {/* 1. ESQUERDA: PORTAL NAVIGATION SIDEBAR (Apenas no Modo Website) */}
+      {viewParadigm === 'website' && (
+        <aside 
+          id="portal-sidebar" 
+          className={`h-full shrink-0 border-r flex flex-col justify-between transition-all duration-300 z-20 ${
+            isSidebarCollapsed ? 'w-0 overflow-hidden border-r-0 opacity-0 pointer-events-none' : 'w-72 opacity-100'
+          } ${
+            theme === 'dark' ? 'bg-[#111827] border-slate-800 text-gray-100 shadow-2xl' : 'bg-white border-slate-150 text-slate-800 shadow-lg'
+          }`}
+        >
+          {/* Branding / Logo */}
+          <div className="p-5 border-b border-gray-150/40 dark:border-slate-800/80 flex flex-col gap-3 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="bg-gradient-to-br from-red-600 to-rose-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-black tracking-widest shadow-md">BYD</span>
+                <div>
+                  <span className="text-xs font-black uppercase text-slate-900 dark:text-white leading-none block tracking-wide">
+                    INBOUND PORTAL
+                  </span>
+                  <span className="text-[9px] text-red-600 dark:text-red-400 font-mono font-extrabold uppercase tracking-widest block mt-0.5">
+                    CONTROL TOWER
+                  </span>
+                </div>
+              </div>
+
+              {/* Sidebar Collapse Button inside branding header */}
+              <button
+                onClick={() => setIsSidebarCollapsed(true)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0"
+                title="Ocultar Menu Lateral"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Pulsing indicator */}
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200/40 dark:border-slate-800/60 text-[10px] text-gray-500 dark:text-gray-400 font-bold select-none shadow-3xs">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="font-mono uppercase text-[8.5px] tracking-wider text-slate-450 dark:text-slate-400">CONTROL TOWER STATUS: LIVE</span>
+            </div>
+          </div>
+
+          {/* Dynamic Navigation Links & System Controls */}
+          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1.5 scrollbar-thin">
+            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider block px-3.5 mb-2">
+              {language === 'zh' ? '导航菜单' : 'MÓDULOS DO PORTAL'}
+            </span>
+            {[
+              { index: 0, pt: "Visão Geral", zh: "综合大盘", icon: <Database className="w-4 h-4" /> },
+              { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", icon: <Building2 className="w-4 h-4" /> },
+              { index: 4, pt: "BYD Buffer", zh: "智能缓冲区", icon: <Layers className="w-4 h-4" /> },
+              { index: 5, pt: "Depósitos & Alocação", zh: "协议堆存及港口流向", icon: <FileSpreadsheet className="w-4 h-4" /> },
+              { index: 6, pt: "Demurrage & Overdue", zh: "滞期费监控", icon: <Clock className="w-4 h-4" /> },
+              { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-4 h-4" /> },
+              { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-4 h-4" /> },
+              { index: 7, pt: "Módulo Logística", zh: "物流管理模块", icon: <Package className="w-4 h-4" /> },
+              { index: 8, pt: "Painel de Entregas", zh: "交货监控面板", icon: <Truck className="w-4 h-4" /> },
+              { index: 9, pt: "Calendário", zh: "交付日历", icon: <Calendar className="w-4 h-4" /> },
+            ].map(s => {
+              const isActive = currentSlide === s.index;
+              return (
+                <button
+                  key={s.index}
+                  onClick={() => setCurrentSlide(s.index)}
+                  className={`w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center gap-3.5 cursor-pointer transform active:scale-98 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-500/20'
+                      : theme === 'dark' 
+                        ? 'text-slate-400 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-800' 
+                        : 'text-slate-600 hover:text-slate-850 hover:bg-slate-50 border border-transparent hover:border-slate-100'
+                  }`}
+                >
+                  <span className={`transition-transform duration-300 shrink-0 ${isActive ? 'text-white scale-110' : 'text-slate-400 dark:text-slate-500'}`}>
+                    {s.icon}
+                  </span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="truncate tracking-wide">{language === 'zh' ? s.zh : s.pt}</span>
+                    <span className="text-[8.5px] opacity-60 truncate font-normal tracking-wider uppercase mt-0.5">
+                      {language === 'zh' ? s.pt : s.zh}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+
+            {/* CONTROLES DO SISTEMA INTEGRADO (Movidos do Topbar para limpar a visualização) */}
+            <div className="pt-4 border-t border-slate-200/50 dark:border-slate-800/50 mt-4 space-y-2">
+              <span className="text-[9px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider block px-3.5 mb-2">
+                {language === 'zh' ? '系统快捷控制' : 'AÇÕES DO SISTEMA'}
+              </span>
+
+              {/* Sincronizar Google Sheets */}
+              <button
+                onClick={() => setSheetsModalOpen(true)}
+                className="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-950/10 border border-gray-150 dark:border-slate-800 hover:border-red-200 dark:hover:border-red-900 cursor-pointer bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300"
+                title="Sincronizar com a Planilha de Entregas do Google Sheets"
+              >
+                <RefreshCw className="w-4 h-4 text-red-600 animate-spin-slow shrink-0" />
+                <div className="flex flex-col min-w-0">
+                  <span className="truncate">{language === 'zh' ? '同步谷歌表格' : 'Sinc Google Sheets'}</span>
+                  <span className="text-[8.5px] text-red-600 dark:text-red-400 opacity-85 truncate font-normal tracking-wider uppercase">
+                    {language === 'zh' ? '实时更新数据' : 'INTEGRAÇÃO PLANILHA'}
+                  </span>
+                </div>
+              </button>
+
+              {/* Editar Pátio Toggle */}
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-3 border cursor-pointer ${
+                  isEditMode
+                    ? 'bg-slate-800 text-white border-slate-950 dark:bg-slate-800 dark:border-slate-700'
+                    : 'bg-white dark:bg-slate-900 border-gray-150 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-755 dark:text-slate-300'
+                }`}
+                title="Alternar entre visualização limpa e edição ativa dos pátios"
+              >
+                <Sliders className={`w-4 h-4 shrink-0 ${isEditMode ? 'text-yellow-400' : 'text-red-500'}`} />
+                <div className="flex flex-col min-w-0">
+                  <span className="truncate">
+                    {isEditMode 
+                      ? (language === 'zh' ? '关闭编辑模式' : 'Fechar Edição') 
+                      : (language === 'zh' ? '编辑堆场容量' : 'Editar Pátio')}
+                  </span>
+                  <span className="text-[8.5px] opacity-60 truncate font-normal tracking-wider">
+                    {language === 'zh' ? '堆场控制' : 'YARD MANAGEMENT'}
+                  </span>
+                </div>
+              </button>
+
+              {/* Excel Template & Import Section */}
+              <div className="space-y-1.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-150 dark:border-slate-800/60">
+                <span className="text-[8.5px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider block px-1.5">
+                  {language === 'zh' ? '库存数据导入' : 'IMPORTAÇÃO DE ESTOQUE'}
+                </span>
+                
+                <div className="flex gap-1.5">
+                  {/* Upload Excel */}
+                  <label className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 px-2.5 rounded-lg text-[11px] cursor-pointer transition-all shadow-sm active:scale-95">
+                    <Upload className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{language === 'zh' ? '上传库存' : 'Importar'}</span>
+                    <input
+                      id="sidebar_excel_upload_input"
+                      type="file"
+                      accept=".xlsx, .xls"
+                      onChange={handleImportGlobalStockExcel}
+                      className="hidden"
+                    />
+                  </label>
+                  
+                  {/* Download template */}
+                  <button
+                    onClick={handleDownloadGlobalStockTemplate}
+                    className="p-2 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-350 border border-slate-200 dark:border-slate-700 rounded-lg transition-all cursor-pointer active:scale-95"
+                    title="Baixar Modelo de Planilha de Estoque"
+                  >
+                    <Download className="w-3.5 h-3.5 text-blue-500" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Relatório PDF */}
+              <button
+                onClick={handleDownloadPDF}
+                disabled={pdfStatus === 'rendering'}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-3 border cursor-pointer ${
+                  pdfStatus === 'rendering'
+                    ? 'bg-slate-100 dark:bg-slate-850 text-slate-400 border-slate-200 dark:border-slate-800 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-red-600 to-rose-600 text-white border-red-500 hover:from-red-700 hover:to-rose-700 shadow-md shadow-red-500/10'
+                }`}
+                title="Exportar Painel Ativo para Relatório PDF"
+              >
+                {pdfStatus === 'rendering' ? (
+                  <RefreshCw className="w-4 h-4 animate-spin text-white shrink-0" />
+                ) : (
+                  <Download className="w-4 h-4 text-white shrink-0" />
+                )}
+                <div className="flex flex-col min-w-0">
+                  <span className="truncate">
+                    {pdfStatus === 'rendering'
+                      ? (language === 'zh' ? '正在生成 PDF...' : 'Gerando PDF...')
+                      : (language === 'zh' ? '导出 PDF 报告' : 'Relatório PDF')}
+                  </span>
+                  <span className="text-[8.5px] opacity-80 truncate font-normal tracking-wider">
+                    {language === 'zh' ? 'PDF 导出' : 'DOWNLOAD REPORT'}
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Sidebar Config / Footer */}
+          <div className="p-4 border-t border-gray-150/40 dark:border-slate-800/80 space-y-3.5 bg-slate-50/50 dark:bg-slate-900/40 shrink-0">
+            
+            {/* Database & Google Login Info */}
+            <div className="flex flex-col gap-2 p-3 rounded-xl border bg-white dark:bg-slate-900 border-gray-150 dark:border-slate-800 text-xs shadow-3xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider">DATABASE STATUS</span>
+                <span className="flex items-center gap-1">
+                  {dbStatus === 'online' ? (
+                    <Wifi className="w-3 h-3 text-emerald-500" />
+                  ) : dbStatus === 'connecting' ? (
+                    <RefreshCw className="w-3 h-3 animate-spin text-amber-500" />
+                  ) : (
+                    <WifiOff className="w-3 h-3 text-rose-400" />
+                  )}
+                  <span className={`text-[9.5px] font-mono font-black uppercase tracking-wider ${
+                    dbStatus === 'online' ? 'text-emerald-500' : dbStatus === 'connecting' ? 'text-amber-500' : 'text-rose-400'
+                  }`}>
+                    {dbStatus === 'online' ? 'Online' : dbStatus === 'connecting' ? 'Sinc' : 'Offline'}
+                  </span>
+                </span>
+              </div>
+
+              <div className="h-px bg-gray-100 dark:bg-slate-800 my-0.5"></div>
+
+              {user ? (
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <UserIcon className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span className="truncate text-[10px] text-slate-700 dark:text-slate-300 font-black leading-none">{user.displayName || user.email?.split('@')[0]}</span>
+                  </div>
+                  <button
+                    onClick={logoutUser}
+                    className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer shrink-0"
+                    title="Desconectar do Firebase"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={loginWithGoogle}
+                  className="w-full flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-extrabold py-1.5 px-2 rounded-lg text-[9px] uppercase tracking-wider cursor-pointer transition-colors shadow-3xs"
+                  title="Conectar com o Google"
+                >
+                  <Lock className="w-3 h-3 text-red-500" />
+                  <span>Conectar Firebase</span>
+                </button>
+              )}
+            </div>
+
+            {/* Language Segmented Control */}
+            <div className="bg-white dark:bg-slate-900 p-0.5 rounded-lg flex items-center border border-gray-150 dark:border-slate-800 shadow-3xs">
+              {[
+                { id: 'pt', label: '🇧🇷 PT' },
+                { id: 'zh', label: '🇨🇳 中文' },
+                { id: 'bilingual', label: '🌐 PT/ZH' }
+              ].map(lang => (
+                <button
+                  key={lang.id}
+                  onClick={() => { setLanguage(lang.id); updateGlobalDoc('language', lang.id); }}
+                  className={`flex-1 py-1.5 text-[10px] font-black rounded-md transition-all cursor-pointer ${
+                    language === lang.id 
+                      ? 'bg-red-50 dark:bg-slate-800 shadow-3xs text-red-600 dark:text-red-400' 
+                      : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  {lang.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Theme & Paradigm Switches */}
+            <div className="flex gap-2.5">
+              <button
+                onClick={() => { const val = theme === 'light' ? 'dark' : 'light'; setTheme(val); updateGlobalDoc('theme', val); }}
+                className={`flex-1 py-2 rounded-lg border flex items-center justify-center gap-1.5 text-[9.5px] uppercase tracking-wider font-extrabold transition-all cursor-pointer shadow-3xs ${
+                  theme === 'dark'
+                    ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-yellow-400'
+                    : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-600'
+                }`}
+                title="Alternar Tema (Claro / Escuro)"
+              >
+                {theme === 'light' ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
+                <span>{theme === 'light' ? 'Escuro' : 'Claro'}</span>
+              </button>
+
+              <button
+                onClick={() => setViewParadigm('ppt')}
+                className={`flex-1 py-2 rounded-lg border flex items-center justify-center gap-1.5 text-[9.5px] uppercase tracking-wider font-extrabold transition-all cursor-pointer shadow-3xs bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-red-600 dark:text-red-400`}
+                title="Mudar para Visualização PPT Slideshow"
+              >
+                <Tv className="w-3.5 h-3.5" />
+                <span>PPT Slides</span>
+              </button>
+            </div>
+
+            {/* Reset System Trigger */}
+            <button
+              onClick={resetToOriginal}
+              className="w-full py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-lg text-[9.5px] uppercase tracking-widest font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-3xs"
+              title="Resetar todos os dados do sistema"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Resetar Sistema</span>
+            </button>
+          </div>
+        </aside>
+      )}
+
+      {/* DIREITA: APP WORKSPACE WRAPPER (Acomoda os conteúdos de ambas as visões) */}
+      <div className={`flex-1 flex flex-col overflow-hidden ${viewParadigm === 'website' ? 'h-full' : 'min-h-screen'}`}>
+        
+        {/* BARRA DE MENU SUPERIOR DE CONTROLE (Ocultada em modo de apresentação limpo ou em modo de portal) */}
+        {isEditMode && viewParadigm === 'ppt' && (
         <header id="control-panel-header" className="bg-white dark:bg-[#1e293b] border-b border-gray-200 dark:border-slate-800 px-6 py-3 flex flex-col xl:flex-row items-center justify-between gap-4 z-10 shadow-sm transition-colors duration-300">
           <div className="flex items-center gap-3 w-full xl:w-auto justify-between xl:justify-start">
             <div className="flex items-center gap-3">
@@ -4239,7 +4538,7 @@ export default function App() {
       )}
 
       {/* BOTÕES FLUTUANTES NO MODO APRESENTAÇÃO */}
-      {!isEditMode && (
+      {!isEditMode && viewParadigm === 'ppt' && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
           {/* Exportar PDF Flutuante */}
           <button
@@ -4275,14 +4574,93 @@ export default function App() {
         </div>
       )}
 
+      {/* 2. TOPBAR HEADER (Apenas no Modo Website) */}
+      {viewParadigm === 'website' && (
+        <header className={`px-6 py-4.5 border-b flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 z-10 transition-colors duration-300 shrink-0 ${
+          theme === 'dark' ? 'bg-[#111827] border-slate-800' : 'bg-white border-slate-150'
+        }`}>
+          <div className="flex items-start gap-4">
+            {isSidebarCollapsed && (
+              <button
+                onClick={() => setIsSidebarCollapsed(false)}
+                className="mt-1 p-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-slate-800 dark:hover:bg-slate-750 text-red-600 dark:text-red-400 border border-red-200/40 dark:border-slate-700 cursor-pointer transition-all shrink-0 shadow-xs flex items-center justify-center"
+                title="Mostrar Menu Lateral"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-[9px] bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
+                  {language === 'zh' ? '比亚迪物流控制塔' : 'BYD Inbound Portal'}
+                </span>
+                <span className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider">MODERN LOGISTICS PORTAL VIEW</span>
+              </div>
+              <h2 className="text-xl font-black text-slate-850 dark:text-white tracking-tight leading-none">
+                {language === 'zh' ? getDynamicSlideTitleAndSubtitle().titleZH : getDynamicSlideTitleAndSubtitle().titlePT}
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-1.5">
+                {language === 'zh' ? getDynamicSlideTitleAndSubtitle().subZH : getDynamicSlideTitleAndSubtitle().subPT}
+              </p>
+            </div>
+          </div>
+
+          {/* Telemetry Metrics on the Right Side of Topbar */}
+          <div className="flex flex-wrap items-center gap-3 text-xs select-none">
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-3xs transition-transform hover:scale-101 duration-300">
+              <Activity className="w-3.5 h-3.5 text-red-600 animate-pulse" />
+              <div className="flex flex-col">
+                <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '总堆存使用率' : 'Yards Occupancy'}</span>
+                <span className="text-xs font-black text-slate-800 dark:text-white font-mono">{globalOccupancyPercentForHeader}%</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-3xs transition-transform hover:scale-101 duration-300">
+              <Ship className="w-3.5 h-3.5 text-blue-500 animate-bounce-slow" />
+              <div className="flex flex-col">
+                <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '活跃船舶到港' : 'Active Vessels'}</span>
+                <span className="text-xs font-black text-slate-800 dark:text-white font-mono">
+                  {totalExpectedVesselsForHeader} <span className="text-[9.5px] text-slate-400 font-normal">({totalExpectedContainersForHeader} TEU)</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-3xs transition-transform hover:scale-101 duration-300">
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+              <div className="flex flex-col">
+                <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '协议堆场平均流量' : 'Depots Volume'}</span>
+                <span className="text-xs font-black text-slate-800 dark:text-white font-mono">
+                  {totalContractedDepotsVolumeForHeader} <span className="text-[9.5px] text-emerald-500">({depotsOccupancyPercentForHeader}%)</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-3xs font-mono text-[10px] text-slate-500 dark:text-slate-400 shrink-0">
+              <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+              <span>UTC-3: <strong>{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</strong></span>
+            </div>
+          </div>
+        </header>
+      )}
+
       {/* ÁREA PRINCIPAL DA INTERFACE */}
-      <main id="main-content-area" className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+      <main 
+        id="main-content-area" 
+        className={`flex-1 flex overflow-hidden relative ${
+          viewParadigm === 'website' ? 'flex-col lg:flex-row w-full h-full bg-slate-50 dark:bg-[#0b0f19]' : 'flex-col md:flex-row'
+        }`}
+      >
         
         {/* VIEWPORT DO SLIDE (ESQUERDA) */}
-        <div id="slide-viewport-container" className="flex-1 px-2 py-1 flex flex-col items-center justify-start overflow-y-auto w-full">
+        <div 
+          id="slide-viewport-container" 
+          className={`flex-1 flex flex-col items-center justify-start overflow-y-auto w-full transition-all duration-300 ${
+            viewParadigm === 'website' ? 'p-6 h-full' : 'px-2 py-1'
+          }`}
+        >
           
-          {/* HEADER DO WEBSITE PORTAL (Apenas no Modo Website) */}
-          {viewParadigm === 'website' && (
+          {/* HEADER DO WEBSITE PORTAL (Apenas no Modo Website - Ocultado pois agora temos o Topbar global) */}
+          {viewParadigm === 'website' && false && (
             <div className={`w-full ${getMaxWidthClass()} mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-slate-800 rounded-xl p-4 shadow-sm`}>
               <div className="flex items-center gap-3">
                 <div className="bg-red-600 text-white p-3 rounded-xl shadow-md">
@@ -11026,6 +11404,7 @@ export default function App() {
         </div>
       )}
 
+      </div> {/* Closing right-side workspace wrapper */}
     </div>
   );
 }
