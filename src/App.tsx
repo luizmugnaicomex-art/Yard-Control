@@ -9086,12 +9086,25 @@ export default function App() {
                           </div>
                           <div className="flex items-center gap-2">
                             {calendarViewMode === 'shipment_info' ? (
-                              <input
-                                type="week"
-                                value={selectedWeek}
-                                onChange={(e) => setSelectedWeek(e.target.value)}
-                                className="bg-slate-50 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 text-xs font-bold rounded px-2 py-1 text-slate-800 dark:text-white outline-none"
-                              />
+                              <div className="flex gap-1">
+                                <input
+                                  type="week"
+                                  value={selectedWeek}
+                                  onChange={(e) => {
+                                    setSelectedWeek(e.target.value);
+                                    setSelectedDayCalendar(null);
+                                  }}
+                                  className="bg-slate-50 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 text-xs font-bold rounded px-2 py-1 text-slate-800 dark:text-white outline-none"
+                                />
+                                <input
+                                  type="date"
+                                  value={selectedDayCalendar || ''}
+                                  onChange={(e) => {
+                                    setSelectedDayCalendar(e.target.value);
+                                  }}
+                                  className="bg-slate-50 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 text-xs font-bold rounded px-2 py-1 text-slate-800 dark:text-white outline-none"
+                                />
+                              </div>
                             ) : (
                               <input 
                                 type="month" 
@@ -9144,12 +9157,17 @@ export default function App() {
                                 {/* Main Excel Title row */}
                                 <tr className="bg-[#b3b3b3] dark:bg-slate-700 text-slate-900 dark:text-white border-b border-slate-350 dark:border-slate-600">
                                   <th colSpan={10} className="py-2 text-center text-xs font-black uppercase tracking-widest font-sans border-b border-slate-350 dark:border-slate-600">
-                                    Shipment Information
+                                    Shipment Information {selectedDayCalendar ? ` - ${selectedDayCalendar}` : ''}
                                   </th>
                                 </tr>
                                 {/* Table headers */}
                                 <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-[9px] uppercase font-black tracking-wider text-center border-b border-slate-350 dark:border-slate-700">
-                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700 w-[110px]">Day</th>
+                                    <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700 w-[110px] cursor-pointer group" onClick={() => setSelectedDayCalendar(null)}>
+                                      Day
+                                      {selectedDayCalendar && (
+                                        <button className="block mx-auto mt-1 px-2 py-0.5 bg-red-100 text-red-700 rounded text-[8px] hover:bg-red-200">Clear</button>
+                                      )}
+                                    </th>
                                   <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">BL</th>
                                   <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700 w-[170px]">Description</th>
                                   <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">PO</th>
@@ -9168,6 +9186,11 @@ export default function App() {
                                     .filter(e => {
                                       const normalized = normalizeDate(String(e.estimatedDeliveryDate));
                                       if (normalized === 'Sem Data') return false;
+                                      // Filter by selected day
+                                      if (selectedDayCalendar) {
+                                        return normalized === selectedDayCalendar;
+                                      }
+
                                       if (calendarViewMode === 'shipment_info') {
                                         const parts = normalized.split('-');
                                         const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
@@ -9213,23 +9236,21 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
 
                                       return (
                                         <tr key={key} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
-                                          {/* Day Column (merged cells per day group) */}
-                                          {isFirst && (
-                                            <td 
-                                              rowSpan={dayEntries.length} 
-                                              className="py-3 px-2 border-r border-b border-slate-250 dark:border-slate-700 bg-[#f4f4f5] dark:bg-[#1a2235] text-slate-900 dark:text-white font-black uppercase text-[10px] align-middle"
-                                            >
-                                              <div className="flex flex-col items-center justify-center text-center">
-                                                <span className="font-sans font-bold leading-tight tracking-tight text-slate-800 dark:text-slate-200">
-                                                  {formatted.date}
-                                                </span>
-                                                <span className="text-gray-400 my-0.5 font-sans">-</span>
-                                                <span className="text-[9px] tracking-wider text-red-600 dark:text-red-400 font-sans font-black uppercase">
-                                                  {formatted.dayOfWeek}
-                                                </span>
-                                              </div>
-                                            </td>
-                                          )}
+                                          {/* Day Column (always show date) */}
+                                          <td 
+                                            onClick={() => setSelectedDayCalendar(dateStr)}
+                                            className="py-3 px-2 border-r border-b border-slate-250 dark:border-slate-700 bg-[#f4f4f5] dark:bg-[#1a2235] text-slate-900 dark:text-white font-black uppercase text-[10px] align-middle cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                          >
+                                            <div className="flex items-center justify-center text-center gap-1">
+                                              <span className="font-sans font-bold leading-tight tracking-tight text-slate-800 dark:text-slate-200">
+                                                {formatted.date}
+                                              </span>
+                                              <span className="text-gray-400 font-sans">-</span>
+                                              <span className="text-[9px] tracking-wider text-red-600 dark:text-red-400 font-sans font-black uppercase">
+                                                {formatted.dayOfWeek}
+                                              </span>
+                                            </div>
+                                          </td>
 
                                           {/* BL */}
                                           <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white select-all text-[10px]">
