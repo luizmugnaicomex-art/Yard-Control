@@ -878,9 +878,48 @@ export default function App() {
   const [isBufferMapMaximized, setIsBufferMapMaximized] = useState<boolean>(false);
   const [bufferStatusFilter, setBufferStatusFilter] = useState<'ALL' | 'CHEIO' | 'VAZIO'>('ALL');
   
-  // Efeito para salvar buffers no LocalStorage
+  // Efeito para salvar buffers no LocalStorage e sincronizar com yards
   useEffect(() => {
     localStorage.setItem('byd_buffer_areas', JSON.stringify(bufferAreas));
+
+    let totalFull = 0;
+    let totalEmpty = 0;
+    bufferAreas.forEach(area => {
+      area.slots.forEach(slot => {
+        if (!slot.containerNo) return;
+        if (slot.stack && slot.stack.length > 0) {
+          slot.stack.forEach(stackedSlot => {
+            const status = (stackedSlot.status || 'CHEIO').toUpperCase();
+            if (status.includes('VAZIO') || status.includes('EMP')) {
+              totalEmpty++;
+            } else {
+              totalFull++;
+            }
+          });
+        } else {
+          const status = (slot.status || 'CHEIO').toUpperCase();
+          if (status.includes('VAZIO') || status.includes('EMP')) {
+            totalEmpty++;
+          } else {
+            totalFull++;
+          }
+        }
+      });
+    });
+
+    setYards(prev => {
+        if (prev.buffer && (prev.buffer.cheio === totalFull && prev.buffer.vazio === totalEmpty)) {
+            return prev;
+        }
+        return {
+          ...prev,
+          buffer: {
+            ...prev.buffer,
+            cheio: totalFull,
+            vazio: totalEmpty
+          }
+        };
+    });
   }, [bufferAreas]);
 
   // NAVEGAÇÃO DE SLIDES E COMENTÁRIOS DAS NOVAS PÁGINAS
