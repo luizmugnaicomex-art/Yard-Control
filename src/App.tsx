@@ -61,7 +61,6 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { 
   collection, 
   doc, 
-  onSnapshot, 
   setDoc, 
   updateDoc, 
   deleteDoc, 
@@ -1296,225 +1295,147 @@ export default function App() {
   useEffect(() => {
     setDbStatus('connecting');
     
-    // Yards
-    const unsubYards = onSnapshot(collection(db, 'yards'), async (snapshot) => {
-      setDbStatus('online');
-      if (snapshot.empty) {
-        try {
-          const configDoc = await getDoc(doc(db, 'config', 'global'));
-          if (!configDoc.exists()) {
-            initializeYardsInDb();
-          } else {
-            setYards({});
-          }
-        } catch (e) {
-          console.warn("Erro ao verificar config para yards:", e);
-        }
-        return;
-      }
-      const newYards: YardsState = {};
-      snapshot.forEach((docSnap) => {
-        newYards[docSnap.id] = docSnap.data() as Yard;
-      });
-      setYards(newYards);
-    }, (err) => {
-      console.warn("Falha ao ler yards do Firestore; usando fallback local offline:", err);
-      setDbStatus('offline');
-    });
-
-    // Vessels
-    const unsubVessels = onSnapshot(collection(db, 'vessels'), async (snapshot) => {
-      if (snapshot.empty) {
-        try {
-          const configDoc = await getDoc(doc(db, 'config', 'global'));
-          if (!configDoc.exists()) {
-            initializeVesselsInDb();
-          } else {
-            setVessels([]);
-          }
-        } catch (e) {
-          console.warn("Erro ao verificar config para vessels:", e);
-        }
-        return;
-      }
-      const newVessels: Vessel[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        newVessels.push({
-          id: Number(docSnap.id) || Date.now(),
-          name: data.name,
-          eta: data.eta,
-          cntrs: Number(data.cntrs) || 0,
-          order: data.order !== undefined ? Number(data.order) : undefined
+    // Data Polling
+    const fetchData = async () => {
+      try {
+        // Yards
+        const yardsSnapshot = await getDocs(collection(db, 'yards'));
+        const newYards: YardsState = {};
+        yardsSnapshot.forEach((docSnap) => {
+          newYards[docSnap.id] = docSnap.data() as Yard;
         });
-      });
-      newVessels.sort((a, b) => {
-        const orderA = a.order !== undefined ? a.order : a.id;
-        const orderB = b.order !== undefined ? b.order : b.id;
-        return orderA - orderB;
-      });
-      setVessels(newVessels);
-    }, (err) => {
-      console.warn("Falha ao ler vessels do Firestore:", err);
-    });
+        setYards(newYards);
 
-    // ChartLeft
-    const unsubChartLeft = onSnapshot(collection(db, 'chartLeft'), async (snapshot) => {
-      if (snapshot.empty) {
-        try {
-          const configDoc = await getDoc(doc(db, 'config', 'global'));
-          if (!configDoc.exists()) {
-            initializeChartLeftInDb();
-          } else {
-            setChartLeft([]);
-          }
-        } catch (e) {
-          console.warn("Erro ao verificar config para chartLeft:", e);
-        }
-        return;
-      }
-      const newChartLeft: ChartLeftItem[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        newChartLeft.push({
-          docId: docSnap.id,
-          week: data.week,
-          arrivals: Number(data.arrivals) || 0,
-          backlog: Number(data.backlog) || 0
+        // Vessels
+        const vesselsSnapshot = await getDocs(collection(db, 'vessels'));
+        const newVessels: Vessel[] = [];
+        vesselsSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          newVessels.push({
+            id: Number(docSnap.id) || Date.now(),
+            name: data.name,
+            eta: data.eta,
+            cntrs: Number(data.cntrs) || 0,
+            order: data.order !== undefined ? Number(data.order) : undefined
+          });
         });
-      });
-      newChartLeft.sort((a, b) => {
-        const numA = parseInt(a.week.replace('W', '')) || 0;
-        const numB = parseInt(b.week.replace('W', '')) || 0;
-        return numA - numB;
-      });
-      setChartLeft(newChartLeft);
-    }, (err) => {
-      console.warn("Falha ao ler chartLeft do Firestore:", err);
-    });
+        newVessels.sort((a, b) => {
+          const orderA = a.order !== undefined ? a.order : a.id;
+          const orderB = b.order !== undefined ? b.order : b.id;
+          return orderA - orderB;
+        });
+        setVessels(newVessels);
 
-    // ChartRight
-    const unsubChartRight = onSnapshot(collection(db, 'chartRight'), async (snapshot) => {
-      if (snapshot.empty) {
-        try {
-          const configDoc = await getDoc(doc(db, 'config', 'global'));
-          if (!configDoc.exists()) {
-            initializeChartRightInDb();
-          } else {
-            setChartRight([]);
-          }
-        } catch (e) {
-          console.warn("Erro ao verificar config para chartRight:", e);
-        }
-        return;
-      }
-      const newChartRight: { index: string, item: ChartRightItem }[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        newChartRight.push({
-          index: docSnap.id,
-          item: {
+        // ChartLeft
+        const chartLeftSnapshot = await getDocs(collection(db, 'chartLeft'));
+        const newChartLeft: ChartLeftItem[] = [];
+        chartLeftSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          newChartLeft.push({
             docId: docSnap.id,
-            date: data.date,
-            value: Number(data.value) || 0,
-            type: data.type
-          }
+            week: data.week,
+            arrivals: Number(data.arrivals) || 0,
+            backlog: Number(data.backlog) || 0
+          });
         });
-      });
-      newChartRight.sort((a, b) => a.index.localeCompare(b.index));
-      setChartRight(newChartRight.map(x => x.item));
-    }, (err) => {
-      console.warn("Falha ao ler chartRight do Firestore:", err);
-    });
+        newChartLeft.sort((a, b) => {
+          const numA = parseInt(a.week.replace('W', '')) || 0;
+          const numB = parseInt(b.week.replace('W', '')) || 0;
+          return numA - numB;
+        });
+        setChartLeft(newChartLeft);
 
-    // Global Config
-    const unsubConfig = onSnapshot(doc(db, 'config', 'global'), (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        if (data.language !== undefined) setLanguage(data.language);
-        if (data.slideTitlePT !== undefined) setSlideTitlePT(data.slideTitlePT);
-        if (data.slideTitleZH !== undefined) setSlideTitleZH(data.slideTitleZH);
-        if (data.watermarkText !== undefined) setWatermarkText(data.watermarkText);
-        if (data.showWatermark !== undefined) setShowWatermark(data.showWatermark);
-        if (data.theme !== undefined) setTheme(data.theme);
-        if (data.widescreenMode !== undefined) setWidescreenMode(data.widescreenMode);
-        if (data.slideWidth !== undefined) setSlideWidth(data.slideWidth);
-        if (data.yardsComment !== undefined) setYardsComment(data.yardsComment);
-        if (data.vesselNote1 !== undefined) setVesselNote1(data.vesselNote1);
-        if (data.vesselNote2 !== undefined) setVesselNote2(data.vesselNote2);
-        if (data.chartNote1 !== undefined) setChartNote1(data.chartNote1);
-        if (data.chartNote2 !== undefined) setChartNote2(data.chartNote2);
-        if (data.scenarioValue !== undefined) setScenarioValue(data.scenarioValue);
-      } else {
-        initializeConfigInDb();
+        // ChartRight
+        const chartRightSnapshot = await getDocs(collection(db, 'chartRight'));
+        const newChartRight: { index: string, item: ChartRightItem }[] = [];
+        chartRightSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          newChartRight.push({
+            index: docSnap.id,
+            item: {
+              docId: docSnap.id,
+              date: data.date,
+              value: Number(data.value) || 0,
+              type: data.type
+            }
+          });
+        });
+        newChartRight.sort((a, b) => a.index.localeCompare(b.index));
+        setChartRight(newChartRight.map(x => x.item));
+
+        // Containers
+        const containersSnapshot = await getDocs(collection(db, 'containers'));
+        const newContainers: Container[] = [];
+        containersSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          newContainers.push({
+            id: docSnap.id,
+            yardId: data.yardId || "",
+            vesselName: data.vesselName || "N/A",
+            size: data.size || "40' HC",
+            status: data.status || "CHEIO",
+            category: data.category || "GERAL",
+            bl: data.bl || "",
+            eta: formatExcelDateIfNeeded(data.eta),
+            freeTime: formatExcelDateIfNeeded(data.freeTime),
+            componente: data.componente || "",
+            modelo: data.modelo || "",
+            lote: data.lote || "",
+            programacao: formatExcelDateIfNeeded(data.programacao),
+            transportadora: data.transportadora || ""
+          });
+        });
+        setContainers(newContainers);
+
+        // Logistics
+        const logisticsSnapshot = await getDocs(collection(db, 'logisticsData'));
+        const data: LogisticsEntry[] = [];
+        logisticsSnapshot.forEach(docSnap => {
+          data.push({ id: docSnap.id, ...docSnap.data() } as LogisticsEntry);
+        });
+        setLogisticsEntries(data);
+        
+        setDbStatus('online');
+      } catch (err) {
+        console.warn("Falha ao ler dados do Firestore:", err);
+        setDbStatus('offline');
       }
-    }, (err) => {
-      console.warn("Falha ao ler config global do Firestore:", err);
-    });
-
-    // Containers
-    const unsubContainers = onSnapshot(collection(db, 'containers'), async (snapshot) => {
-      if (snapshot.empty) {
-        try {
-          const configDoc = await getDoc(doc(db, 'config', 'global'));
-          if (!configDoc.exists()) {
-            initializeContainersInDb();
-          } else {
-            setContainers([]);
-          }
-        } catch (e) {
-          console.warn("Erro ao verificar config para containers:", e);
+    };
+    
+    // Initial fetch for everything (including config)
+    const fetchInitial = async () => {
+        // Global Config
+        const configDoc = await getDoc(doc(db, 'config', 'global'));
+        if (configDoc.exists()) {
+          const data = configDoc.data();
+          if (data.language !== undefined) setLanguage(data.language);
+          if (data.slideTitlePT !== undefined) setSlideTitlePT(data.slideTitlePT);
+          if (data.slideTitleZH !== undefined) setSlideTitleZH(data.slideTitleZH);
+          if (data.watermarkText !== undefined) setWatermarkText(data.watermarkText);
+          if (data.showWatermark !== undefined) setShowWatermark(data.showWatermark);
+          if (data.theme !== undefined) setTheme(data.theme);
+          if (data.widescreenMode !== undefined) setWidescreenMode(data.widescreenMode);
+          if (data.slideWidth !== undefined) setSlideWidth(data.slideWidth);
+          if (data.yardsComment !== undefined) setYardsComment(data.yardsComment);
+          if (data.vesselNote1 !== undefined) setVesselNote1(data.vesselNote1);
+          if (data.vesselNote2 !== undefined) setVesselNote2(data.vesselNote2);
+          if (data.chartNote1 !== undefined) setChartNote1(data.chartNote1);
+          if (data.chartNote2 !== undefined) setChartNote2(data.chartNote2);
+          if (data.scenarioValue !== undefined) setScenarioValue(data.scenarioValue);
+        } else {
+          initializeConfigInDb();
         }
-        return;
-      }
-      const newContainers: Container[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        newContainers.push({
-          id: docSnap.id,
-          yardId: data.yardId || "",
-          vesselName: data.vesselName || "N/A",
-          size: data.size || "40' HC",
-          status: data.status || "CHEIO",
-          category: data.category || "GERAL",
-          bl: data.bl || "",
-          eta: formatExcelDateIfNeeded(data.eta),
-          freeTime: formatExcelDateIfNeeded(data.freeTime),
-          componente: data.componente || "",
-          modelo: data.modelo || "",
-          lote: data.lote || "",
-          programacao: formatExcelDateIfNeeded(data.programacao),
-          transportadora: data.transportadora || ""
-        });
-      });
-      setContainers(newContainers);
-    }, (err) => {
-      console.warn("Falha ao ler containers do Firestore:", err);
-    });
-
-    // Logistics Entries
-    const unsubLogistics = onSnapshot(collection(db, 'logisticsData'), (snapshot) => {
-      if (snapshot.empty) {
-        setLogisticsEntries([]);
-        return;
-      }
-      const data: LogisticsEntry[] = [];
-      snapshot.forEach(docSnap => {
-        data.push({ id: docSnap.id, ...docSnap.data() } as LogisticsEntry);
-      });
-      setLogisticsEntries(data);
-    }, (err) => {
-      console.warn("Falha ao ler logisticsData do Firestore:", err);
-    });
+        fetchData();
+    };
+    
+    fetchInitial();
+    // const intervalData = setInterval(async () => {
+    //   if (dbStatus === 'offline') return;
+    //   await fetchData();
+    // }, 3600000); // 1 hour
 
     return () => {
-      unsubYards();
-      unsubVessels();
-      unsubChartLeft();
-      unsubChartRight();
-      unsubConfig();
-      unsubContainers();
-      unsubLogistics();
+      // clearInterval(intervalData);
     };
   }, [user]);
 
@@ -2484,7 +2405,11 @@ export default function App() {
           const cIdx = colNum - 1;
 
           // Resolve area ID and Area Name
-          const areaId = `buffer-${areaPrefix.toLowerCase()}`;
+          let areaIdPrefix = areaPrefix.toLowerCase();
+          if (areaPrefix === 'A23' || areaPrefix === 'TPS') {
+              areaIdPrefix = 'intermaritima';
+          }
+          const areaId = `buffer-${areaIdPrefix}`;
 
           let rawType = typeIdx !== -1 && row[typeIdx] ? String(row[typeIdx]).trim() : 'Cheio';
           let statusStr = rawType.toLowerCase().includes('vaz') || rawType.toLowerCase().includes('emp') ? 'VAZIO' : 'CHEIO';
@@ -2562,10 +2487,15 @@ export default function App() {
             let areaIndex = updatedAreas.findIndex(a => a.id === areaId);
             const areaPrefix = areaId.split('-')[1].toUpperCase();
             
+            let areaName = `BYD Buffer ${areaPrefix} (Zona ${areaPrefix} / ${areaPrefix}区 - Ativo)`;
+            if (areaId === 'buffer-intermaritima') {
+                areaName = 'BYD Buffer Intermaritima (Ativo)';
+            }
+
             if (areaIndex === -1) {
               updatedAreas.push({
                 id: areaId,
-                name: `BYD Buffer ${areaPrefix} (Zona ${areaPrefix} / ${areaPrefix}区 - Ativo)`,
+                name: areaName,
                 rows: maxRow,
                 cols: maxCol,
                 slots: []
@@ -2923,7 +2853,9 @@ export default function App() {
 
   const handleAddContainer = async (e: React.FormEvent) => {
     e.preventDefault();
-    const activeYardKey = selectedYardKey || stockSelectedYardKey;
+    let rawYardKey = selectedYardKey || stockSelectedYardKey;
+    const activeYardKey = (rawYardKey === 'a23' || rawYardKey === 'tps') ? 'intermaritima' : rawYardKey;
+    
     if (!newContainerId.trim() || !activeYardKey) return;
     const cId = newContainerId.trim().toUpperCase();
     
@@ -3292,7 +3224,7 @@ export default function App() {
         const getYardKeyFromWarehouseName = (name: string): string | null => {
           const clean = String(name || '').trim().toLowerCase();
           if (clean.includes('tecon')) return 'tecon';
-          if (clean.includes('intermaritima') || clean.includes('intermar') || clean.includes('inter') || clean.includes('maritima')) return 'intermaritima';
+          if (clean.includes('intermaritima') || clean.includes('intermar') || clean.includes('inter') || clean.includes('maritima') || clean.includes('a23') || clean.includes('tps')) return 'intermaritima';
           if (clean.includes('tpc')) return 'tpc';
           if (clean.includes('clia') || clean.includes('emporio')) return 'clia';
           if (clean.includes('ag') || clean.includes('cdex')) return 'ag';
@@ -9101,7 +9033,8 @@ export default function App() {
                                         <td className="py-2 font-sans">
                                           <select 
                                             value={entry.deliveryModel || 'DESCARGA'} 
-                                            onChange={async (e) => { 
+                                            onBlur={async (e) => { 
+                                              if (e.target.value === entry.deliveryModel) return;
                                               try {
                                                 await updateDoc(doc(db, 'logisticsData', entry.id || ''), { deliveryModel: e.target.value }); 
                                               } catch (err) {
@@ -9119,7 +9052,8 @@ export default function App() {
                                         <td className="py-2">
                                           <select 
                                             value={entry.status || 'PENDENTE'} 
-                                            onChange={async (e) => { 
+                                            onBlur={async (e) => { 
+                                              if (e.target.value === entry.status) return;
                                               try {
                                                 await updateDoc(doc(db, 'logisticsData', entry.id || ''), { status: e.target.value }); 
                                               } catch (err) {
