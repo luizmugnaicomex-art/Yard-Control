@@ -7284,19 +7284,33 @@ export default function App() {
                     const bufPct = pendingCount > 0 ? ((bufCount / pendingCount) * 100).toFixed(2) : "0.00";
 
                     // 3. Process BLs with expired or free time expiring within 5 days
-                    const blsMap: Record<string, { bl: string, lote: string, count: number, minFreeTime: string, eta: string }> = {};
+                    const blsMap: Record<string, { bl: string, lote: string, count: number, minFreeTime: string, eta: string, warehouse: string, model: string }> = {};
                     filteredContainersForDemurrage.forEach(c => {
                       const d = getDaysRemainingForContainer(c);
                       if (d !== null && d <= 5) {
                         const blKey = c.bl || 'N/A';
+                        const wName = yards[c.yardId]?.name || c.yardId || '-';
+                        const mName = c.modelo || '-';
                         if (!blsMap[blKey]) {
                           blsMap[blKey] = {
                             bl: blKey,
                             lote: String(c.lote || '-'),
                             count: 0,
                             minFreeTime: c.freeTime || '-',
-                            eta: c.eta || c.programacao || '-'
+                            eta: c.eta || c.programacao || '-',
+                            warehouse: wName,
+                            model: mName
                           };
+                        } else {
+                          if (c.lote && !blsMap[blKey].lote.split(', ').includes(String(c.lote))) {
+                            blsMap[blKey].lote = blsMap[blKey].lote === '-' ? String(c.lote) : `${blsMap[blKey].lote}, ${c.lote}`;
+                          }
+                          if (wName && !blsMap[blKey].warehouse.split(', ').includes(wName)) {
+                            blsMap[blKey].warehouse = blsMap[blKey].warehouse === '-' ? wName : `${blsMap[blKey].warehouse}, ${wName}`;
+                          }
+                          if (mName && !blsMap[blKey].model.split(', ').includes(mName)) {
+                            blsMap[blKey].model = blsMap[blKey].model === '-' ? mName : `${blsMap[blKey].model}, ${mName}`;
+                          }
                         }
                         blsMap[blKey].count++;
                       }
@@ -7658,33 +7672,43 @@ export default function App() {
                               </div>
 
                               <div className="overflow-y-auto max-h-[175px]">
-                                <table className="w-full text-[10px] border-collapse">
+                                <table className="w-full text-[10px] border-collapse font-sans">
                                   <thead>
                                     <tr className="bg-red-700 text-white uppercase text-[8px] tracking-wider font-black">
-                                      <th className="p-1 text-left pl-2">BL</th>
-                                      <th className="p-1 text-center">BATCH</th>
-                                      <th className="p-1 text-center">CNTR</th>
-                                      <th className="p-1 text-center">FREE TIME</th>
-                                      <th className="p-1 text-right pr-2">DELIVERY / ETA</th>
+                                      <th className="p-1.5 text-left pl-2">BL</th>
+                                      <th className="p-1.5 text-center">Lot/Batch</th>
+                                      <th className="p-1.5 text-center">Warehouse</th>
+                                      <th className="p-1.5 text-center">Free Time</th>
+                                      <th className="p-1.5 text-center">Model</th>
+                                      <th className="p-1.5 text-right pr-2">CNTR</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-gray-100 dark:divide-slate-850 font-bold text-slate-700 dark:text-slate-300 font-mono">
-                                    {blsList.slice(0, 8).map((item, i) => (
+                                  <tbody className="divide-y divide-gray-100 dark:divide-slate-850 font-bold text-slate-700 dark:text-slate-300 font-mono text-[9.5px]">
+                                    {blsList.slice(0, 12).map((item, i) => (
                                       <tr key={i} className="hover:bg-red-50/20 dark:hover:bg-red-950/10 transition-all">
-                                        <td className="p-1 text-left pl-2 font-black text-slate-900 dark:text-white truncate max-w-[85px]" title={item.bl}>
+                                        <td className="p-1.5 text-left pl-2 font-black text-slate-900 dark:text-white truncate max-w-[85px]" title={item.bl}>
                                           {item.bl}
                                         </td>
-                                        <td className="p-1 text-center">{item.lote}</td>
-                                        <td className="p-1 text-center text-red-600 dark:text-red-400 font-black">{item.count}</td>
-                                        <td className="p-1 text-center text-amber-600 dark:text-amber-400">{item.minFreeTime}</td>
-                                        <td className="p-1 text-right pr-2 text-gray-500 truncate max-w-[75px]" title={item.eta}>
-                                          {item.eta}
+                                        <td className="p-1.5 text-center text-gray-500 dark:text-gray-400 truncate max-w-[80px]" title={item.lote}>
+                                          {item.lote}
+                                        </td>
+                                        <td className="p-1.5 text-center text-blue-600 dark:text-blue-450 font-extrabold truncate max-w-[100px]" title={item.warehouse}>
+                                          {item.warehouse}
+                                        </td>
+                                        <td className="p-1.5 text-center text-amber-600 dark:text-amber-400 font-black">
+                                          {item.minFreeTime}
+                                        </td>
+                                        <td className="p-1.5 text-center text-emerald-600 dark:text-emerald-400 font-extrabold truncate max-w-[90px]" title={item.model}>
+                                          {item.model}
+                                        </td>
+                                        <td className="p-1.5 text-right pr-2 text-red-600 dark:text-red-400 font-black">
+                                          {item.count}
                                         </td>
                                       </tr>
                                     ))}
                                     {blsList.length === 0 && (
                                       <tr>
-                                        <td colSpan={5} className="p-4 text-center text-gray-400 font-bold font-sans">
+                                        <td colSpan={6} className="p-4 text-center text-gray-400 font-bold font-sans">
                                           {language === 'zh' ? '暂无临近到期或超期提单' : 'Nenhum BL crítico encontrado para os filtros ativos.'}
                                         </td>
                                       </tr>
@@ -11082,9 +11106,10 @@ export default function App() {
                   <tr className="bg-slate-50 dark:bg-slate-800 text-[9px] uppercase text-gray-500 border-b border-gray-150 dark:border-slate-800 font-black">
                     <th className="p-2.5 pl-3">ID Container</th>
                     <th className="p-2.5">BL</th>
-                    <th className="p-2.5">Batch</th>
-                    <th className="p-2.5">Bonded Warehouse</th>
-                    <th className="p-2.5">Status Comex</th>
+                    <th className="p-2.5">Batch / Lote</th>
+                    <th className="p-2.5">Warehouse / Pátio</th>
+                    <th className="p-2.5">Model / Modelo</th>
+                    <th className="p-2.5">Process / Status</th>
                     <th className="p-2.5">Status Entrega</th>
                     <th className="p-2.5">Transportadora (Carrier)</th>
                     <th className="p-2.5 text-right pr-3">Valor de Frete</th>
@@ -11093,26 +11118,34 @@ export default function App() {
                 <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800/60 font-semibold text-slate-700 dark:text-slate-350">
                   {logisticsEntries
                     .filter(e => String(e.estimatedDeliveryDate) === selectedDayCalendar)
-                    .map((entry, index) => (
-                      <tr key={entry.id || index} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                        <td className="p-2 pl-3 font-bold text-slate-900 dark:text-white select-all">{entry.cntrsOriginal}</td>
-                        <td className="p-2">{entry.bl}</td>
-                        <td className="p-2 font-sans font-bold">{entry.batch}</td>
-                        <td className="p-2 font-sans uppercase text-[10.5px]">{entry.bondedWarehouse}</td>
-                        <td className="p-2 font-sans uppercase">
-                          <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-black ${entry.statusComex === 'CARGO DELIVERED' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/20'}`}>
-                            {entry.statusComex}
-                          </span>
-                        </td>
-                        <td className="p-2 font-sans uppercase">
-                          <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-black ${entry.status === 'ENTREGUE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'}`}>
-                            {entry.status || 'PENDENTE'}
-                          </span>
-                        </td>
-                        <td className="p-2 font-sans font-bold">{entry.carrier || 'N/A'}</td>
-                        <td className="p-2 text-right pr-3 font-black text-slate-900 dark:text-white">R$ {(entry.valuePerCntr || 1200).toLocaleString()}</td>
-                      </tr>
-                    ))}
+                    .map((entry, index) => {
+                      const matchedCntr = containers.find(c => c.id === entry.cntrsOriginal);
+                      const lotNumber = matchedCntr?.lote || entry.batch || '-';
+                      const warehouseName = matchedCntr ? (yards[matchedCntr.yardId]?.name || matchedCntr.yardId) : entry.bondedWarehouse;
+                      const modelName = matchedCntr?.modelo || entry.component || '-';
+                      
+                      return (
+                        <tr key={entry.id || index} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
+                          <td className="p-2 pl-3 font-bold text-slate-900 dark:text-white select-all">{entry.cntrsOriginal}</td>
+                          <td className="p-2">{entry.bl}</td>
+                          <td className="p-2 font-sans font-bold">{lotNumber}</td>
+                          <td className="p-2 font-sans uppercase text-[10.5px]">{warehouseName}</td>
+                          <td className="p-2 font-sans font-extrabold text-blue-600 dark:text-blue-400">{modelName}</td>
+                          <td className="p-2 font-sans uppercase">
+                            <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-black ${entry.statusComex === 'CARGO DELIVERED' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/20'}`}>
+                              {entry.statusComex}
+                            </span>
+                          </td>
+                          <td className="p-2 font-sans uppercase">
+                            <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-black ${entry.status === 'ENTREGUE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'}`}>
+                              {entry.status || 'PENDENTE'}
+                            </span>
+                          </td>
+                          <td className="p-2 font-sans font-bold">{entry.carrier || 'N/A'}</td>
+                          <td className="p-2 text-right pr-3 font-black text-slate-900 dark:text-white">R$ {(entry.valuePerCntr || 1200).toLocaleString()}</td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
