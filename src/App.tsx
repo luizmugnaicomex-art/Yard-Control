@@ -874,6 +874,8 @@ export default function App() {
 
   const [activeBufferId, setActiveBufferId] = useState<string>('buffer-e');
   const [bufferViewMode, setBufferViewMode] = useState<'map' | 'list'>('map');
+  const [bufferSearch, setBufferSearch] = useState("");
+  const [bufferLoteFilter, setBufferLoteFilter] = useState("ALL");
   const [editingSlot, setEditingSlot] = useState<BufferSlot | null>(null);
   const [editingSlotAreaId, setEditingSlotAreaId] = useState<string | null>(null);
   const [editingStackIndex, setEditingStackIndex] = useState<number>(0);
@@ -7005,6 +7007,28 @@ export default function App() {
                         </button>
                       </div>
 
+                      {bufferViewMode === 'list' && (
+                        <>
+                          <input
+                            type="text"
+                            placeholder="Buscar contêiner..."
+                            value={bufferSearch}
+                            onChange={(e) => setBufferSearch(e.target.value)}
+                            className="px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-800 text-[11px] bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-red-500"
+                          />
+                          <select
+                            value={bufferLoteFilter}
+                            onChange={(e) => setBufferLoteFilter(e.target.value)}
+                            className="px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-800 text-[11px] bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-red-500"
+                          >
+                            <option value="ALL">Todos Lotes</option>
+                            {Array.from(new Set(bufferAreas.flatMap(a => a.slots.map(s => s.loteNo).filter(Boolean)))).sort().map(lote => (
+                              <option key={lote} value={lote}>{lote}</option>
+                            ))}
+                          </select>
+                        </>
+                      )}
+
                       <select 
                         value={activeBufferId}
                         onChange={(e) => setActiveBufferId(e.target.value)}
@@ -7424,17 +7448,28 @@ export default function App() {
                           <th className="p-2">Contêiner</th>
                           <th className="p-2">Tipo</th>
                           <th className="p-2">Status</th>
+                          <th className="p-2">Lote</th>
+                          <th className="p-2">Data Entrada</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y dark:divide-slate-700">
                         {bufferAreas.flatMap(area =>
-                          area.slots.filter(s => s.containerNo).map((slot, idx) => (
+                          area.slots
+                            .filter(s => {
+                              if (!s.containerNo) return false;
+                              if (bufferSearch && !s.containerNo.toLowerCase().includes(bufferSearch.toLowerCase())) return false;
+                              if (bufferLoteFilter !== 'ALL' && String(s.loteNo || '') !== bufferLoteFilter) return false;
+                              return true;
+                            })
+                            .map((slot, idx) => (
                             <tr key={`${area.id}-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800">
                               <td className="p-2">{area.name}</td>
                               <td className="p-2 font-mono">{getSlotCoordsLabel(slot.row, slot.col)}</td>
                               <td className="p-2 font-mono font-bold text-slate-800 dark:text-white">{slot.containerNo}</td>
                               <td className="p-2">{slot.cargoType}</td>
                               <td className="p-2">{slot.status}</td>
+                              <td className="p-2">{slot.loteNo}</td>
+                              <td className="p-2">{slot.entryTime}</td>
                             </tr>
                           ))
                         )}
