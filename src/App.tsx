@@ -47,7 +47,9 @@ import {
   Calendar,
   AlertTriangle,
   Clock,
-  Activity
+  Activity,
+  LayoutGrid,
+  Search
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -216,6 +218,14 @@ export interface Container {
   size: string;
   status: 'CHEIO' | 'VAZIO';
   category: 'PORTO' | 'PRONTO_COLETA' | 'DELIVERED' | 'GERAL';
+  bl?: string;
+  eta?: string;
+  freeTime?: string;
+  componente?: string;
+  modelo?: string;
+  lote?: string | number;
+  programacao?: string;
+  transportadora?: string;
 }
 
 export interface Vessel {
@@ -433,6 +443,46 @@ const ORIGINAL_CHART_RIGHT: ChartRightItem[] = [
   { date: '22/06', value: 226, type: 'C' },
   { date: '25/06', value: 200, type: 'A' }
 ];
+
+// Helper to parse dates from Excel, handling numeric serial numbers and standard formats nicely
+function formatExcelDateIfNeeded(val: any): string {
+  if (val === undefined || val === null) return "";
+  const str = String(val).trim();
+  if (!str) return "";
+  
+  // If it is a number or a string containing only digits (Excel serial number)
+  const num = Number(str);
+  if (!isNaN(num) && num > 30000 && num < 60000) {
+    try {
+      // Excel epoch starts on 1899-12-30 due to 1900 leap year bug
+      const date = new Date(Math.round((num - 25569) * 86400 * 1000));
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const year = date.getUTCFullYear();
+      return `${day}/${month}/${year}`;
+    } catch (err) {
+      return str;
+    }
+  }
+  
+  // Support ISO date format translation (e.g., 2026-06-18 -> 18/06/2026)
+  const matchIso = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (matchIso) {
+    return `${matchIso[3]}/${matchIso[2]}/${matchIso[1]}`;
+  }
+  
+  const matchIsoTime = str.match(/^(\d{4})-(\d{2})-(\d{2})T/);
+  if (matchIsoTime) {
+    return `${matchIsoTime[3]}/${matchIsoTime[2]}/${matchIsoTime[1]}`;
+  }
+
+  const matchIsoSpace = str.match(/^(\d{4})-(\d{2})-(\d{2})\s/);
+  if (matchIsoSpace) {
+    return `${matchIsoSpace[3]}/${matchIsoSpace[2]}/${matchIsoSpace[1]}`;
+  }
+  
+  return str;
+}
 
 export default function App() {
   // ESTADOS PRINCIPAIS
@@ -806,6 +856,17 @@ export default function App() {
   
   // IDIOMA ATIVO: 'pt' (Português) | 'zh' (Mandarim) | 'bilingual' (Ambos)
   const [language, setLanguage] = useState<string>('bilingual');
+  const [yardsViewMode, setYardsViewMode] = useState<'cards' | 'spreadsheet'>('cards');
+  const [globalStockSearch, setGlobalStockSearch] = useState("");
+  const [globalStockWarehouseFilter, setGlobalStockWarehouseFilter] = useState("ALL");
+  const [globalStockLoteFilter, setGlobalStockLoteFilter] = useState("ALL");
+
+  // ESTADOS PARA O CONTROLE DE DEMURRAGE (DEMURRAGE & OVERDUE CONTROL)
+  const [demurrageRefDate, setDemurrageRefDate] = useState<string>("2026-07-19");
+  const [demurrageFilterDelivered, setDemurrageFilterDelivered] = useState<string>("ALL");
+  const [demurrageFilterComponent, setDemurrageFilterComponent] = useState<string>("ALL");
+  const [demurrageFilterCarrier, setDemurrageFilterCarrier] = useState<string>("ALL");
+  const [demurrageFilterVessel, setDemurrageFilterVessel] = useState<string>("ALL");
 
   // CONFIGURAÇÕES VISUAIS DO SLIDE (Adaptativo com base no idioma)
   const [slideTitlePT, setSlideTitlePT] = useState("DASHBOARD OPERACIONAL & CAPACIDADE DE PÁTIOS");
@@ -1209,7 +1270,15 @@ export default function App() {
           vesselName: data.vesselName || "N/A",
           size: data.size || "40' HC",
           status: data.status || "CHEIO",
-          category: data.category || "GERAL"
+          category: data.category || "GERAL",
+          bl: data.bl || "",
+          eta: formatExcelDateIfNeeded(data.eta),
+          freeTime: formatExcelDateIfNeeded(data.freeTime),
+          componente: data.componente || "",
+          modelo: data.modelo || "",
+          lote: data.lote || "",
+          programacao: formatExcelDateIfNeeded(data.programacao),
+          transportadora: data.transportadora || ""
         });
       });
       setContainers(newContainers);
@@ -2522,6 +2591,390 @@ export default function App() {
     reader.readAsBinaryString(file);
   };
 
+  const handleDownloadGlobalStockTemplate = () => {
+    const headers = [
+      "BL", 
+      "CONTAINER", 
+      "Warehouse", 
+      "Navio", 
+      "ETA", 
+      "Free Time", 
+      "Component", 
+      "Modelo", 
+      "Lote", 
+      "Programação", 
+      "Transportadora"
+    ];
+    
+    const sampleData = [
+      [
+        "BL123456789", 
+        "BYDU9876543", 
+        "TPC", 
+        "COSCO SHIPPING BRAZIL", 
+        "2026-07-20", 
+        "7 Dias", 
+        "CKD", 
+        "BYD SONG PLUS", 
+        "LOTE 01", 
+        "2026-07-25", 
+        "SADA"
+      ],
+      [
+        "BL987654321", 
+        "BYDU4567890", 
+        "TECON", 
+        "MSC SINDY", 
+        "2026-07-22", 
+        "10 Dias", 
+        "SKD", 
+        "BYD DOLPHIN MINI", 
+        "LOTE 02", 
+        "2026-07-27", 
+        "TEGMA"
+      ]
+    ];
+    
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleData]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Modelo_Estoque");
+    
+    const instructions = [
+      ["INSTRUÇÕES PARA PREENCHIMENTO / 填写说明"],
+      ["1. Não altere o nome das colunas do cabeçalho. / 请勿更改表头列名。"],
+      ["2. Coluna 'Warehouse' suporta os seguintes valores (case-insensitive): / 'Warehouse'列支持以下值:"],
+      ["   - TECON (Bonded / 保税)"],
+      ["   - INTERMARITIMA (Bonded / 保税)"],
+      ["   - TPC (Warehouse / 仓库)"],
+      ["   - CLIA (Warehouse / 仓库)"],
+      ["   - AG (Warehouse / 仓库)"],
+      ["   - CTS (Warehouse / 仓库)"],
+      ["3. Coluna 'CONTAINER' é obrigatória. / 'CONTAINER'列为必填项。"],
+      ["4. Carga importada será inserida como Cheio (CHEIO) por padrão. / 导入货物默认设置为重箱(CHEIO)。"]
+    ];
+    const ws2 = XLSX.utils.aoa_to_sheet(instructions);
+    XLSX.utils.book_append_sheet(wb, ws2, "Instrucoes");
+    
+    XLSX.writeFile(wb, "modelo_atualizacao_estoque.xlsx");
+  };
+
+  const handleImportGlobalStockExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        if (!bstr) return;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        
+        const sheetName = wb.SheetNames[0];
+        const ws = wb.Sheets[sheetName];
+        
+        const data: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        
+        if (data.length <= 1) {
+          alert(language === 'zh' ? '表格为空或无数据！' : 'Planilha vazia ou sem dados!');
+          return;
+        }
+        
+        const headers = data[0].map(h => String(h || '').trim().toLowerCase());
+        
+        const blIdx = headers.findIndex(h => h === 'bl' || h.includes('conhecimento') || h.includes('bill of lading'));
+        const containerIdx = headers.findIndex(h => h.includes('container') || h.includes('contêiner') || h.includes('conteiner') || h.includes('box') || h.includes('箱号') || h === 'cntr');
+        const warehouseIdx = headers.findIndex(h => h.includes('warehouse') || h.includes('armazem') || h.includes('armando') || h.includes('pátio') || h.includes('patio') || h.includes('local') || h.includes('仓库') || h.includes('堆场'));
+        const navioIdx = headers.findIndex(h => h.includes('navio') || h.includes('vessel') || h.includes('ship') || h.includes('船舶'));
+        const etaIdx = headers.findIndex(h => h === 'eta' || h.includes('chegada') || h.includes('prev'));
+        const freeTimeIdx = headers.findIndex(h => h.includes('free time') || h.includes('freetime') || h.includes('demo') || h.includes('validade'));
+        const componenteIdx = headers.findIndex(h => h.includes('comp') || h.includes('kd') || h.includes('skd'));
+        const modeloIdx = headers.findIndex(h => h.includes('model') || h.includes('modelo') || h.includes('veiculo') || h.includes('车型'));
+        const loteIdx = headers.findIndex(h => h.includes('lote') || h.includes('lot') || h.includes('batch'));
+        const progIdx = headers.findIndex(h => h.includes('prog') || h.includes('date') || h.includes('sched') || h.includes('data') || h.includes('entrega') || h.includes('saida'));
+        const transIdx = headers.findIndex(h => h.includes('transp') || h.includes('carrier') || h.includes('logistica'));
+
+        if (containerIdx === -1) {
+          alert(language === 'zh'
+            ? '未找到“CONTAINER / 箱号”列！请检查表格格式。'
+            : 'Coluna "CONTAINER" não encontrada! Certifique-se de que a planilha possui a coluna "CONTAINER".');
+          return;
+        }
+
+        const getYardKeyFromWarehouseName = (name: string): string | null => {
+          const clean = String(name || '').trim().toLowerCase();
+          if (clean.includes('tecon')) return 'tecon';
+          if (clean.includes('intermaritima') || clean.includes('intermar') || clean.includes('inter') || clean.includes('maritima')) return 'intermaritima';
+          if (clean.includes('tpc')) return 'tpc';
+          if (clean.includes('clia') || clean.includes('emporio')) return 'clia';
+          if (clean.includes('ag') || clean.includes('cdex')) return 'ag';
+          if (clean.includes('cts') || clean.includes('pontual')) return 'cts';
+          return null;
+        };
+
+        let successCount = 0;
+        let unknownYardsCount = 0;
+
+        const yardsInExcel = new Set<string>();
+        const parsedContainers: Container[] = [];
+
+        const yardStatsMap: { [key: string]: { total: number; porto: number; pronto: number } } = {
+          tecon: { total: 0, porto: 0, pronto: 0 },
+          intermaritima: { total: 0, porto: 0, pronto: 0 },
+          tpc: { total: 0, porto: 0, pronto: 0 },
+          clia: { total: 0, porto: 0, pronto: 0 },
+          ag: { total: 0, porto: 0, pronto: 0 },
+          cts: { total: 0, porto: 0, pronto: 0 }
+        };
+
+        for (let i = 1; i < data.length; i++) {
+          const row = data[i];
+          if (!row || row.length === 0) continue;
+
+          const rawId = row[containerIdx];
+          if (rawId === undefined || rawId === null || String(rawId).trim() === '') continue;
+
+          const id = String(rawId).trim().toUpperCase();
+          if (!id) continue;
+
+          const rawWh = warehouseIdx !== -1 ? row[warehouseIdx] : '';
+          const yardKey = getYardKeyFromWarehouseName(String(rawWh));
+
+          if (!yardKey) {
+            unknownYardsCount++;
+            continue;
+          }
+
+          yardsInExcel.add(yardKey);
+
+          const bl = blIdx !== -1 && row[blIdx] !== undefined && row[blIdx] !== null ? String(row[blIdx]).trim() : "";
+          const vesselName = navioIdx !== -1 && row[navioIdx] !== undefined && row[navioIdx] !== null ? String(row[navioIdx]).trim() : "N/A";
+          const eta = etaIdx !== -1 && row[etaIdx] !== undefined && row[etaIdx] !== null ? formatExcelDateIfNeeded(row[etaIdx]) : "";
+          const freeTime = freeTimeIdx !== -1 && row[freeTimeIdx] !== undefined && row[freeTimeIdx] !== null ? formatExcelDateIfNeeded(row[freeTimeIdx]) : "";
+          const componente = componenteIdx !== -1 && row[componenteIdx] !== undefined && row[componenteIdx] !== null ? String(row[componenteIdx]).trim() : "KD";
+          const modelo = modeloIdx !== -1 && row[modeloIdx] !== undefined && row[modeloIdx] !== null ? String(row[modeloIdx]).trim() : "";
+          const lote = loteIdx !== -1 && row[loteIdx] !== undefined && row[loteIdx] !== null ? String(row[loteIdx]).trim() : "";
+          const programacao = progIdx !== -1 && row[progIdx] !== undefined && row[progIdx] !== null ? formatExcelDateIfNeeded(row[progIdx]) : "";
+          const transportadora = transIdx !== -1 && row[transIdx] !== undefined && row[transIdx] !== null ? String(row[transIdx]).trim() : "";
+
+          const category = (yards[yardKey]?.type === 'BONDED' ? 'PRONTO_COLETA' : 'GERAL') as 'PORTO' | 'PRONTO_COLETA' | 'DELIVERED' | 'GERAL';
+
+          if (yardStatsMap[yardKey]) {
+            yardStatsMap[yardKey].total++;
+            if (category === 'PORTO') yardStatsMap[yardKey].porto++;
+            else yardStatsMap[yardKey].pronto++;
+          }
+
+          parsedContainers.push({
+            id,
+            yardId: yardKey,
+            vesselName: vesselName || "N/A",
+            size: "40' HC",
+            status: "CHEIO",
+            category,
+            bl,
+            eta,
+            freeTime,
+            componente,
+            modelo,
+            lote,
+            programacao,
+            transportadora
+          });
+
+          successCount++;
+        }
+
+        setContainers(prev => {
+          const kept = prev.filter(c => !yardsInExcel.has(c.yardId));
+          return [...kept, ...parsedContainers];
+        });
+
+        setYards(prev => {
+          const updated = { ...prev };
+          yardsInExcel.forEach(yardKey => {
+            if (updated[yardKey]) {
+              const stats = yardStatsMap[yardKey];
+              updated[yardKey] = {
+                ...updated[yardKey],
+                cheio: stats.total,
+                vazio: 0,
+                porto: stats.porto,
+                prontoColeta: stats.pronto
+              };
+            }
+          });
+          return updated;
+        });
+
+        if (dbStatus === 'online') {
+          const batch = writeBatch(db);
+
+          const containersSnap = await getDocs(collection(db, 'containers'));
+          containersSnap.forEach(dSnap => {
+            const cData = dSnap.data();
+            if (cData.yardId && yardsInExcel.has(cData.yardId)) {
+              batch.delete(doc(db, 'containers', dSnap.id));
+            }
+          });
+
+          parsedContainers.forEach(c => {
+            batch.set(doc(db, 'containers', c.id), {
+              id: c.id,
+              yardId: c.yardId,
+              vesselName: c.vesselName,
+              size: c.size,
+              status: c.status,
+              category: c.category,
+              bl: c.bl,
+              eta: c.eta,
+              freeTime: c.freeTime,
+              componente: c.componente,
+              modelo: c.modelo,
+              lote: c.lote,
+              programacao: c.programacao,
+              transportadora: c.transportadora
+            });
+          });
+
+          for (const yardKey of Array.from(yardsInExcel)) {
+            const stats = yardStatsMap[yardKey];
+            const yardRef = doc(db, 'yards', yardKey);
+            if (stats && yards[yardKey]) {
+              batch.update(yardRef, {
+                cheio: stats.total,
+                vazio: 0,
+                porto: stats.porto,
+                prontoColeta: stats.pronto
+              });
+            }
+          }
+
+          await batch.commit();
+        }
+
+        let alertMsg = '';
+        if (language === 'zh') {
+          alertMsg = `🎉 库存成功更新！\n- 导入集装箱数量: ${successCount}\n- 覆盖更新了 ${yardsInExcel.size} 个堆场/仓库。\n- 忽略了 ${unknownYardsCount} 行无法匹配堆场的行。`;
+        } else {
+          alertMsg = `🎉 Estoque atualizado com sucesso!\n- Contêineres importados: ${successCount}\n- Pátios/Armaréns atualizados: ${Array.from(yardsInExcel).map(k => yards[k]?.name || k).join(', ')}\n- Linhas com recintos desconhecidos ignoradas: ${unknownYardsCount}`;
+        }
+        alert(alertMsg);
+
+        const gInput = document.getElementById('global_excel_upload_input') as HTMLInputElement;
+        if (gInput) gInput.value = '';
+
+      } catch (err) {
+        console.error("Erro ao processar planilha global:", err);
+        alert(language === 'zh'
+          ? "处理 Excel 时出错，请检查格式是否正确！"
+          : "Erro ao processar arquivo Excel. Verifique se o formato está correto.");
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleUpdateContainerField = async (containerId: string, field: keyof Container, value: string) => {
+    setContainers(prev => prev.map(c => c.id === containerId ? { ...c, [field]: value } : c));
+    
+    if (dbStatus === 'online') {
+      try {
+        await updateDoc(doc(db, 'containers', containerId), {
+          [field]: value
+        });
+      } catch (err) {
+        console.warn("Erro ao salvar alteração de célula no Firestore:", err);
+      }
+    }
+  };
+
+  const handleDeleteContainerFromStock = async (containerId: string) => {
+    const c = containers.find(x => x.id === containerId);
+    if (!c) return;
+
+    if (!window.confirm(`Deseja realmente remover o contêiner ${containerId} do estoque?`)) {
+      return;
+    }
+
+    setContainers(prev => prev.filter(x => x.id !== containerId));
+
+    const yardKey = c.yardId;
+    if (yardKey && yards[yardKey]) {
+      setYards(prev => {
+        const updated = { ...prev };
+        if (updated[yardKey]) {
+          updated[yardKey].cheio = Math.max(0, (updated[yardKey].cheio || 0) - 1);
+        }
+        return updated;
+      });
+    }
+
+    if (dbStatus === 'online') {
+      try {
+        await deleteDoc(doc(db, 'containers', containerId));
+        if (yardKey && yards[yardKey]) {
+          await updateDoc(doc(db, 'yards', yardKey), {
+            cheio: Math.max(0, (yards[yardKey].cheio || 0) - 1)
+          });
+        }
+      } catch (err) {
+        console.warn("Erro ao deletar contêiner no Firestore:", err);
+      }
+    }
+  };
+
+  const handleExportStockToExcel = () => {
+    const headers = [
+      "BL", 
+      "CONTAINER", 
+      "Warehouse", 
+      "Navio", 
+      "ETA", 
+      "Free Time", 
+      "Component", 
+      "Modelo", 
+      "Lote", 
+      "Programação", 
+      "Transportadora"
+    ];
+    
+    // We filter containers that belong to active non-buffer yards
+    const stockList = containers.filter(c => {
+      const yard = yards[c.yardId];
+      if (!yard || yard.type === 'BUFFER') return false;
+      if (globalStockWarehouseFilter !== 'ALL' && c.yardId !== globalStockWarehouseFilter) return false;
+      if (globalStockLoteFilter !== 'ALL' && String(c.lote || '') !== globalStockLoteFilter) return false;
+      if (globalStockSearch.trim()) {
+        const q = globalStockSearch.trim().toLowerCase();
+        const matchId = c.id.toLowerCase().includes(q);
+        const matchBl = (c.bl || '').toLowerCase().includes(q);
+        const matchVessel = (c.vesselName || '').toLowerCase().includes(q);
+        const matchModelo = (c.modelo || '').toLowerCase().includes(q);
+        const matchLote = String(c.lote || '').toLowerCase().includes(q);
+        if (!matchId && !matchBl && !matchVessel && !matchModelo && !matchLote) return false;
+      }
+      return true;
+    });
+
+    const rows = stockList.map(c => [
+      c.bl || "",
+      c.id,
+      yards[c.yardId]?.name || c.yardId,
+      c.vesselName || "N/A",
+      c.eta || "",
+      c.freeTime || "",
+      c.componente || "KD",
+      c.modelo || "",
+      c.lote || "",
+      c.programacao || "",
+      c.transportadora || ""
+    ]);
+    
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Estoque_Atual");
+    XLSX.writeFile(wb, "estoque_patio_armazens_byd.xlsx");
+  };
+
   // HELPER PARA CONVERSÃO DE CORES OKLCH / OKLAB PARA COR RESPEITADA PELO HTML2CANVAS
   const convertColorToRgb = (colorStr: string): string => {
     if (!colorStr) return colorStr;
@@ -3216,6 +3669,13 @@ export default function App() {
           subPT: "Gestão integrada de capacidades diárias, portões ativos e matriz de compatibilidade com armadores principais",
           subZH: "实时动态管控协议堆场每日限额、口岸通道开闭及集装箱流向分配符合矩阵",
         };
+      case 6:
+        return {
+          titlePT: "1. GENERAL OVERVIEW - DEMURRAGE & OVERDUE CONTROL",
+          titleZH: "1. 综合大盘 - 滞期费与集装箱超期监控塔",
+          subPT: "Painel de controle de vencimento de free time, contêineres retidos e custos de demurrage",
+          subZH: "集装箱免费期到期预警、堆场滞期超期监控及异常滞箱控制面板",
+        };
       default:
         return {
           titlePT: slideTitlePT,
@@ -3314,6 +3774,7 @@ export default function App() {
               { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", icon: <Building2 className="w-3.5 h-3.5" /> },
               { index: 4, pt: "BYD Buffer", zh: "智能缓冲区", icon: <Layers className="w-3.5 h-3.5" /> },
               { index: 5, pt: "Depósitos & Alocação", zh: "协议堆存及港口流向", icon: <FileSpreadsheet className="w-3.5 h-3.5" /> },
+              { index: 6, pt: "Demurrage & Overdue", zh: "滞期费监控", icon: <Clock className="w-3.5 h-3.5" /> },
               { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-3.5 h-3.5" /> },
               { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-3.5 h-3.5" /> },
             ].map(s => (
@@ -3427,6 +3888,31 @@ export default function App() {
               <RotateCcw className="w-4 h-4" />
               Reset
             </button>
+
+            {/* Atualizar Estoque Geral (Excel) */}
+            <div className="flex items-center gap-1.5 border-l border-gray-200 dark:border-slate-800 pl-2">
+              <button
+                id="btn-download-stock-template"
+                onClick={handleDownloadGlobalStockTemplate}
+                className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
+                title={language === 'zh' ? '下载库存导入模板' : 'Baixar modelo de importação de estoque'}
+              >
+                <Download className="w-3.5 h-3.5 text-blue-500" />
+                <span className="hidden sm:inline">{language === 'zh' ? '模板' : 'Modelo'}</span>
+              </button>
+
+              <label className="px-2.5 py-1.5 bg-emerald-550 bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700 border border-emerald-700 rounded-lg text-xs font-black flex items-center gap-1 cursor-pointer transition-all shadow-xs">
+                <Upload className="w-3.5 h-3.5" />
+                <span>{language === 'zh' ? '上传库存' : 'Atualizar Estoque'}</span>
+                <input
+                  id="global_excel_upload_input"
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={handleImportGlobalStockExcel}
+                  className="hidden"
+                />
+              </label>
+            </div>
 
             {/* Salvar PDF */}
             <button
@@ -4636,52 +5122,404 @@ export default function App() {
                 /* SLIDE 2: PÁTIOS (YARDS ONLY) COM OBSERVAÇÕES AMPLAS */
                 <div id="slide-dashboard-grid-yards" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
                   
-                  {/* Cards de Pátio expandidos horizontalmente */}
-                  <div className={`flex flex-col ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
-                    {bondedYards.length > 0 && (
-                      <div className={`grid grid-cols-2 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
-                        {bondedYards.map(([key, yard]) => (
-                          <YardCard 
-                            key={key} 
-                            yard={yard} 
-                            ocupacao={getYardOcupacao(yard)} 
-                            isEdit={isEditMode} 
-                            theme={theme} 
-                            t={t} 
-                            language={language} 
-                            renderLabel={renderLabel} 
-                            widescreenMode={widescreenMode} 
-                            onClick={() => setSelectedYardKey(key)}
-                          />
-                        ))}
+                  {/* BARRA DE CONTROLE LOCAL DE PÁTIOS / SPREADSHEET */}
+                  <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-slate-800 shadow-xs mb-2">
+                    <div className="flex items-center gap-2">
+                      <LayoutGrid className="w-4 h-4 text-red-500 animate-pulse" />
+                      <div>
+                        <h4 className="font-extrabold text-xs text-gray-850 dark:text-gray-150 uppercase tracking-tight">
+                          {language === 'zh' ? '视图与数据管理' : 'Modo de Visualização & Gestão de Dados'}
+                        </h4>
+                        <p className="text-[10px] text-gray-400">
+                          {language === 'zh' ? '在经典的模块网格和数据表视图之间进行选择' : 'Alterne entre cartões executivos e planilha detalhada de estoque.'}
+                        </p>
                       </div>
-                    )}
-                    {nonBondedYards.length > 0 && (
-                      <div className={`grid ${widescreenMode ? 'grid-cols-4 gap-1.5' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5'}`}>
-                        {nonBondedYards.map(([key, yard]) => (
-                          <YardCard 
-                            key={key} 
-                            yard={yard} 
-                            ocupacao={getYardOcupacao(yard)} 
-                            isEdit={isEditMode} 
-                            theme={theme} 
-                            isSmall 
-                            t={t} 
-                            language={language} 
-                            renderLabel={renderLabel} 
-                            widescreenMode={widescreenMode} 
-                            onClick={() => {
-                              if (yard.type === 'BUFFER') {
-                                setCurrentSlide(4);
-                              } else {
-                                setSelectedYardKey(key);
-                              }
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {/* Toggle Buttons */}
+                      <button
+                        onClick={() => setYardsViewMode('cards')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${
+                          yardsViewMode === 'cards'
+                            ? 'bg-red-600 text-white shadow-sm shadow-red-500/10'
+                            : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                        <span>{language === 'zh' ? '卡片模式' : 'Visualização em Cards'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => setYardsViewMode('spreadsheet')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${
+                          yardsViewMode === 'spreadsheet'
+                            ? 'bg-red-600 text-white shadow-sm shadow-red-500/10'
+                            : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                        <span>{language === 'zh' ? '全功能电子表格' : 'Planilha Geral de Estoque'}</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {yardsViewMode === 'cards' ? (
+                    /* Cards de Pátio expandidos horizontalmente */
+                    <div className={`flex flex-col ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                      {bondedYards.length > 0 && (
+                        <div className={`grid grid-cols-2 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
+                          {bondedYards.map(([key, yard]) => (
+                            <YardCard 
+                              key={key} 
+                              yard={yard} 
+                              ocupacao={getYardOcupacao(yard)} 
+                              isEdit={isEditMode} 
+                              theme={theme} 
+                              t={t} 
+                              language={language} 
+                              renderLabel={renderLabel} 
+                              widescreenMode={widescreenMode} 
+                              onClick={() => setSelectedYardKey(key)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {nonBondedYards.length > 0 && (
+                        <div className={`grid ${widescreenMode ? 'grid-cols-4 gap-1.5' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5'}`}>
+                          {nonBondedYards.map(([key, yard]) => (
+                            <YardCard 
+                              key={key} 
+                              yard={yard} 
+                              ocupacao={getYardOcupacao(yard)} 
+                              isEdit={isEditMode} 
+                              theme={theme} 
+                              isSmall 
+                              t={t} 
+                              language={language} 
+                              renderLabel={renderLabel} 
+                              widescreenMode={widescreenMode} 
+                              onClick={() => {
+                                if (yard.type === 'BUFFER') {
+                                  setCurrentSlide(4);
+                                } else {
+                                  setSelectedYardKey(key);
+                                }
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* PLANILHA DETALHADA E INTERATIVA DE ESTOQUE */
+                    (() => {
+                      const uniqueLots = Array.from(new Set(
+                        containers
+                          .filter(c => {
+                            const yard = yards[c.yardId];
+                            return yard && yard.type !== 'BUFFER' && c.lote;
+                          })
+                          .map(c => String(c.lote))
+                      )).sort();
+
+                      const filteredStockContainers = containers.filter(c => {
+                        const yard = yards[c.yardId];
+                        if (!yard || yard.type === 'BUFFER') return false;
+                        
+                        // Warehouse Filter
+                        if (globalStockWarehouseFilter !== 'ALL' && c.yardId !== globalStockWarehouseFilter) {
+                          return false;
+                        }
+                        
+                        // Lot Filter
+                        if (globalStockLoteFilter !== 'ALL' && String(c.lote || '') !== globalStockLoteFilter) {
+                          return false;
+                        }
+                        
+                        // Search Filter
+                        if (globalStockSearch.trim()) {
+                          const q = globalStockSearch.trim().toLowerCase();
+                          const matchId = c.id.toLowerCase().includes(q);
+                          const matchBl = (c.bl || '').toLowerCase().includes(q);
+                          const matchVessel = (c.vesselName || '').toLowerCase().includes(q);
+                          const matchModelo = (c.modelo || '').toLowerCase().includes(q);
+                          const matchLote = String(c.lote || '').toLowerCase().includes(q);
+                          if (!matchId && !matchBl && !matchVessel && !matchModelo && !matchLote) {
+                            return false;
+                          }
+                        }
+                        
+                        return true;
+                      });
+
+                      return (
+                        <div className={`p-4 rounded-xl border flex flex-col gap-3.5 ${
+                          theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'
+                        } flex-1 min-h-[420px]`}>
+                          
+                          {/* Toolbar da Planilha */}
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50 dark:bg-[#152033]/60 p-3 rounded-lg border dark:border-slate-800">
+                            <div className="flex items-center gap-2 flex-wrap flex-1">
+                              {/* Search */}
+                              <div className="relative min-w-[200px]">
+                                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400" />
+                                <input
+                                  type="text"
+                                  value={globalStockSearch}
+                                  onChange={(e) => setGlobalStockSearch(e.target.value)}
+                                  placeholder={language === 'zh' ? '搜索箱号, BL, 船舶...' : 'Buscar Contêiner, BL, Navio, Lote...'}
+                                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-1 focus:ring-red-500 font-sans"
+                                />
+                              </div>
+
+                              {/* Warehouse Filter */}
+                              <select
+                                value={globalStockWarehouseFilter}
+                                onChange={(e) => setGlobalStockWarehouseFilter(e.target.value)}
+                                className="p-1.5 text-xs font-bold rounded-lg border dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-hidden"
+                              >
+                                <option value="ALL">{language === 'zh' ? '所有堆场' : 'Todos os Pátios / Armaréns'}</option>
+                                {Object.entries(yards).filter(([_, y]) => y && (y as any).type !== 'BUFFER').map(([key, y]) => (
+                                  <option key={key} value={key}>{(y as any).name}</option>
+                                ))}
+                              </select>
+
+                              {/* Lot Filter */}
+                              <select
+                                value={globalStockLoteFilter}
+                                onChange={(e) => setGlobalStockLoteFilter(e.target.value)}
+                                className="p-1.5 text-xs font-bold rounded-lg border dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-hidden"
+                              >
+                                <option value="ALL">{language === 'zh' ? '所有批次' : 'Todos os Lotes'}</option>
+                                {uniqueLots.map(l => (
+                                  <option key={l} value={l}>{l}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* Export Stock Button */}
+                            <div className="flex items-center gap-2 self-end md:self-auto">
+                              <span className="text-[10px] font-mono font-bold text-slate-400">
+                                {filteredStockContainers.length} cntr(s)
+                              </span>
+                              <button
+                                onClick={handleExportStockToExcel}
+                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>{language === 'zh' ? '导出表格' : 'Exportar Excel'}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Tabela Interativa de Estoque */}
+                          <div className="overflow-auto max-h-[360px] border dark:border-slate-800 rounded-lg">
+                            <table className="w-full text-left text-xs table-fixed min-w-[1200px]">
+                              <thead className={`sticky top-0 z-10 font-bold uppercase tracking-wider text-[9px] ${
+                                theme === 'dark' ? 'bg-[#0f172a] text-gray-400 border-b border-slate-850' : 'bg-gray-100 text-gray-500 border-b border-gray-200'
+                              }`}>
+                                <tr>
+                                  <th className="p-2.5 w-[110px]">BL</th>
+                                  <th className="p-2.5 w-[120px]">CONTAINER</th>
+                                  <th className="p-2.5 w-[140px]">Warehouse</th>
+                                  <th className="p-2.5 w-[160px]">Navio</th>
+                                  <th className="p-2.5 w-[90px]">ETA</th>
+                                  <th className="p-2.5 w-[90px]">Free Time</th>
+                                  <th className="p-2.5 w-[80px]">Component</th>
+                                  <th className="p-2.5 w-[140px]">Modelo</th>
+                                  <th className="p-2.5 w-[100px]">Lote</th>
+                                  <th className="p-2.5 w-[100px]">Programação</th>
+                                  <th className="p-2.5 w-[120px]">Transportadora</th>
+                                  {isEditMode && <th className="p-2.5 w-[60px] text-center">Ação</th>}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100 dark:divide-slate-800 font-medium">
+                                {filteredStockContainers.map((c) => (
+                                  <tr 
+                                    key={c.id} 
+                                    className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors ${
+                                      theme === 'dark' ? 'text-slate-200' : 'text-slate-700'
+                                    }`}
+                                  >
+                                    {/* BL */}
+                                    <td className="p-1 truncate">
+                                      {isEditMode ? (
+                                        <input
+                                          type="text"
+                                          value={c.bl || ''}
+                                          onChange={(e) => handleUpdateContainerField(c.id, 'bl', e.target.value)}
+                                          className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans"
+                                        />
+                                      ) : (
+                                        <span className="p-1 block truncate">{c.bl || '-'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* CONTAINER */}
+                                    <td className="p-2.5 font-mono font-bold text-gray-900 dark:text-gray-100 select-all truncate">
+                                      {c.id}
+                                    </td>
+
+                                    {/* Warehouse / Yard */}
+                                    <td className="p-1 truncate">
+                                      {isEditMode ? (
+                                        <select
+                                          value={c.yardId}
+                                          onChange={(e) => handleUpdateContainerField(c.id, 'yardId', e.target.value)}
+                                          className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs font-bold text-slate-800 dark:text-slate-100"
+                                        >
+                                          {Object.entries(yards).filter(([_, y]) => y && (y as any).type !== 'BUFFER').map(([key, y]) => (
+                                            <option key={key} value={key}>{(y as any).name}</option>
+                                          ))}
+                                        </select>
+                                      ) : (
+                                        <span className="p-1 block truncate text-[11px] font-extrabold text-blue-600 dark:text-blue-400">
+                                          {yards[c.yardId]?.name || c.yardId}
+                                        </span>
+                                      )}
+                                    </td>
+
+                                    {/* Navio */}
+                                    <td className="p-1 truncate">
+                                      {isEditMode ? (
+                                        <input
+                                          type="text"
+                                          value={c.vesselName || ''}
+                                          onChange={(e) => handleUpdateContainerField(c.id, 'vesselName', e.target.value)}
+                                          className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans"
+                                        />
+                                      ) : (
+                                        <span className="p-1 block truncate">{c.vesselName || '-'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* ETA */}
+                                    <td className="p-1 truncate">
+                                      {isEditMode ? (
+                                        <input
+                                          type="text"
+                                          value={c.eta || ''}
+                                          onChange={(e) => handleUpdateContainerField(c.id, 'eta', e.target.value)}
+                                          className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                        />
+                                      ) : (
+                                        <span className="p-1 block truncate text-xs">{c.eta || '-'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Free Time */}
+                                    <td className="p-1 truncate">
+                                      {isEditMode ? (
+                                        <input
+                                          type="text"
+                                          value={c.freeTime || ''}
+                                          onChange={(e) => handleUpdateContainerField(c.id, 'freeTime', e.target.value)}
+                                          className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                        />
+                                      ) : (
+                                        <span className="p-1 block truncate text-xs font-mono font-bold text-amber-600 dark:text-amber-400">{c.freeTime || '-'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Component */}
+                                    <td className="p-1 truncate">
+                                      {isEditMode ? (
+                                        <input
+                                          type="text"
+                                          value={c.componente || ''}
+                                          onChange={(e) => handleUpdateContainerField(c.id, 'componente', e.target.value)}
+                                          className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                        />
+                                      ) : (
+                                        <span className="p-1 block truncate text-xs">{c.componente || '-'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Modelo */}
+                                    <td className="p-1 truncate">
+                                      {isEditMode ? (
+                                        <input
+                                          type="text"
+                                          value={c.modelo || ''}
+                                          onChange={(e) => handleUpdateContainerField(c.id, 'modelo', e.target.value)}
+                                          className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                        />
+                                      ) : (
+                                        <span className="p-1 block truncate text-xs font-bold text-slate-550 dark:text-slate-300">{c.modelo || '-'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Lote */}
+                                    <td className="p-1 truncate">
+                                      {isEditMode ? (
+                                        <input
+                                          type="text"
+                                          value={c.lote || ''}
+                                          onChange={(e) => handleUpdateContainerField(c.id, 'lote', e.target.value)}
+                                          className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                        />
+                                      ) : (
+                                        <span className="p-1 block truncate text-xs text-blue-500 dark:text-blue-400 font-bold">{c.lote || '-'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Programação */}
+                                    <td className="p-1 truncate">
+                                      {isEditMode ? (
+                                        <input
+                                          type="text"
+                                          value={c.programacao || ''}
+                                          onChange={(e) => handleUpdateContainerField(c.id, 'programacao', e.target.value)}
+                                          className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                        />
+                                      ) : (
+                                        <span className="p-1 block truncate text-xs">{c.programacao || '-'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Transportadora */}
+                                    <td className="p-1 truncate">
+                                      {isEditMode ? (
+                                        <input
+                                          type="text"
+                                          value={c.transportadora || ''}
+                                          onChange={(e) => handleUpdateContainerField(c.id, 'transportadora', e.target.value)}
+                                          className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                        />
+                                      ) : (
+                                        <span className="p-1 block truncate text-xs">{c.transportadora || '-'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Actions */}
+                                    {isEditMode && (
+                                      <td className="p-1 text-center">
+                                        <button
+                                          onClick={() => handleDeleteContainerFromStock(c.id)}
+                                          className="p-1 hover:bg-red-100 text-red-500 hover:text-red-700 dark:hover:bg-red-950/40 rounded transition-colors cursor-pointer"
+                                          title={language === 'zh' ? '删除集装箱' : 'Remover contêiner'}
+                                        >
+                                          <Trash2 className="w-4 h-4 mx-auto" />
+                                        </button>
+                                      </td>
+                                    )}
+                                  </tr>
+                                ))}
+                                {filteredStockContainers.length === 0 && (
+                                  <tr>
+                                    <td colSpan={isEditMode ? 12 : 11} className="py-12 text-center text-sm text-gray-400">
+                                      {language === 'zh' ? '没有匹配的集装箱记录。' : 'Nenhum contêiner registrado para as buscas atuais.'}
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  )}
 
                   {/* Campo de Escrita Livre para Pátios */}
                   <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex-1 mt-2 flex flex-col justify-between min-h-[140px]`}>
@@ -5619,6 +6457,588 @@ export default function App() {
 
                   </div>
 
+                </div>
+              ) : currentSlide === 6 ? (
+                /* SLIDE 7: DEMURRAGE & OVERDUE MONITORING DASHBOARD (HIGH FIDELITY) */
+                <div id="slide-dashboard-demurrage" className="flex flex-col gap-4 w-full">
+                  {(() => {
+                    // 1. Dynamic filtering logic
+                    const componentsListOptions = Array.from(new Set(containers.map(c => c.componente).filter(Boolean)));
+                    const carrierListOptions = Array.from(new Set(containers.map(c => c.transportadora).filter(Boolean)));
+                    const vesselListOptions = Array.from(new Set(containers.map(c => c.vesselName).filter(v => v && v !== 'N/A')));
+
+                    const filteredContainersForDemurrage = containers.filter(c => {
+                      if (demurrageFilterDelivered === 'DELIVERED' && c.category !== 'DELIVERED') return false;
+                      if (demurrageFilterDelivered === 'NOT_DELIVERED' && c.category === 'DELIVERED') return false;
+                      if (demurrageFilterComponent !== 'ALL' && c.componente !== demurrageFilterComponent) return false;
+                      if (demurrageFilterCarrier !== 'ALL' && c.transportadora !== demurrageFilterCarrier) return false;
+                      if (demurrageFilterVessel !== 'ALL' && c.vesselName !== demurrageFilterVessel) return false;
+                      return true;
+                    });
+
+                    // Helper to compute days remaining dynamically based on freeTime and the selected demurrageRefDate
+                    const getDaysRemainingForContainer = (c: Container) => {
+                      if (!c.freeTime) return null;
+                      const parts = c.freeTime.split('/');
+                      if (parts.length < 2) return null;
+                      const day = parseInt(parts[0], 10);
+                      const month = parseInt(parts[1], 10) - 1;
+                      const year = parts.length === 3 ? parseInt(parts[2], 10) : 2026;
+                      const freeTimeDate = new Date(year, month, day);
+
+                      const refParts = demurrageRefDate.split('-');
+                      if (refParts.length < 3) return null;
+                      const refYear = parseInt(refParts[0], 10);
+                      const refMonth = parseInt(refParts[1], 10) - 1;
+                      const refDay = parseInt(refParts[2], 10);
+                      const referenceDate = new Date(refYear, refMonth, refDay);
+
+                      const diffTime = freeTimeDate.getTime() - referenceDate.getTime();
+                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                      return diffDays;
+                    };
+
+                    // Helper to calculate row metrics for Expiration Light aging ranges
+                    const getRowMetrics = (filterFn: (days: number) => boolean) => {
+                      let atBuffer = 0;
+                      let atBufferScheduled = 0;
+                      let deliveredPending = 0;
+                      let outsideByd = 0;
+
+                      filteredContainersForDemurrage.forEach(c => {
+                        const days = getDaysRemainingForContainer(c);
+                        if (days === null) return;
+
+                        if (filterFn(days)) {
+                          if (c.yardId === 'buffer') {
+                            atBuffer++;
+                            if (c.programacao && c.programacao.trim() !== '') {
+                              atBufferScheduled++;
+                            }
+                          } else {
+                            outsideByd++;
+                          }
+
+                          if (c.category === 'DELIVERED') {
+                            deliveredPending++;
+                          }
+                        }
+                      });
+
+                      return {
+                        atBuffer,
+                        atBufferScheduled,
+                        deliveredPending,
+                        outsideByd,
+                        total: atBuffer + atBufferScheduled + deliveredPending + outsideByd
+                      };
+                    };
+
+                    // Define Expiration Light Ranges (mockup color codes)
+                    const ranges = [
+                      { label: 'Overdue', zh: '已超期', color: 'bg-[#EF4444]', filter: (d: number) => d < 0 },
+                      { label: '1-5 days', zh: '1-5 天', color: 'bg-[#F43F5E]', filter: (d: number) => d >= 0 && d <= 5 },
+                      { label: '6-10 days', zh: '6-10 天', color: 'bg-[#F97316]', filter: (d: number) => d >= 6 && d <= 10 },
+                      { label: '11-15 days', zh: '11-15 天', color: 'bg-[#F59E0B]', filter: (d: number) => d >= 11 && d <= 15 },
+                      { label: '16-20 days', zh: '16-20 天', color: 'bg-[#EAB308]', filter: (d: number) => d >= 16 && d <= 20 },
+                      { label: '21-25 days', zh: '21-25 天', color: 'bg-[#Y9D308] bg-yellow-400', filter: (d: number) => d >= 21 && d <= 25 },
+                      { label: '26-30 days', zh: '26-30 天', color: 'bg-[#34D399]', filter: (d: number) => d >= 26 && d <= 30 },
+                      { label: '31-35 days', zh: '31-35 天', color: 'bg-[#10B981]', filter: (d: number) => d >= 31 && d <= 35 },
+                      { label: '>35 days', zh: '>35 天', color: 'bg-[#14B8A6]', filter: (d: number) => d > 35 }
+                    ];
+
+                    // Process Expiration Light range values
+                    const rangeMetrics = ranges.map(r => ({
+                      ...r,
+                      metrics: getRowMetrics(r.filter)
+                    }));
+
+                    const sumAtBuffer = rangeMetrics.reduce((sum, r) => sum + r.metrics.atBuffer, 0);
+                    const sumAtBufferScheduled = rangeMetrics.reduce((sum, r) => sum + r.metrics.atBufferScheduled, 0);
+                    const sumDeliveredPending = rangeMetrics.reduce((sum, r) => sum + r.metrics.deliveredPending, 0);
+                    const sumOutsideByd = rangeMetrics.reduce((sum, r) => sum + r.metrics.outsideByd, 0);
+                    const sumTotal = sumAtBuffer + sumAtBufferScheduled + sumDeliveredPending + sumOutsideByd;
+
+                    // 2. Compute dynamic KPIs
+                    const pendingCount = filteredContainersForDemurrage.length;
+                    
+                    const delCount = filteredContainersForDemurrage.filter(c => c.category === 'DELIVERED').length;
+                    const notDelCount = pendingCount - delCount;
+
+                    const overdueCount = filteredContainersForDemurrage.filter(c => {
+                      const d = getDaysRemainingForContainer(c);
+                      return d !== null && d < 0;
+                    }).length;
+
+                    const next15Count = filteredContainersForDemurrage.filter(c => {
+                      const d = getDaysRemainingForContainer(c);
+                      return d !== null && d >= 0 && d <= 15;
+                    }).length;
+
+                    const schedCount = filteredContainersForDemurrage.filter(c => c.programacao && c.programacao.trim() !== '').length;
+
+                    // Buffer metrics - dynamically matching "Visão Geral" and "BYD Buffer"
+                    const bufFull = yards.buffer && (yards.buffer.cheio > 0)
+                      ? yards.buffer.cheio 
+                      : filteredContainersForDemurrage.filter(c => c.yardId === 'buffer' && c.status === 'CHEIO').length;
+                    
+                    const bufEmpty = yards.buffer && (yards.buffer.vazio > 0)
+                      ? yards.buffer.vazio 
+                      : filteredContainersForDemurrage.filter(c => c.yardId === 'buffer' && c.status === 'VAZIO').length;
+                    
+                    const bufCount = bufFull + bufEmpty;
+
+                    // Returned metric - sum of all delivered containers across yards (matching "Visão Geral")
+                    const returnedValue = (Object.values(yards) as Yard[]).reduce((sum: number, y) => sum + (y?.delivered || 0), 0) || 27983;
+
+                    // Total containers is sum of Returned + Pending Active containers
+                    const totalContainersValue = returnedValue + pendingCount;
+
+                    const pendingPct = totalContainersValue > 0 ? ((pendingCount / totalContainersValue) * 100).toFixed(2) : "0.00";
+                    const overduePct = totalContainersValue > 0 ? ((overdueCount / totalContainersValue) * 100).toFixed(2) : "0.00";
+                    const next15Pct = totalContainersValue > 0 ? ((next15Count / totalContainersValue) * 100).toFixed(2) : "0.00";
+                    const schedPct = totalContainersValue > 0 ? ((schedCount / totalContainersValue) * 100).toFixed(2) : "0.00";
+                    const bufPct = totalContainersValue > 0 ? ((bufCount / totalContainersValue) * 100).toFixed(2) : "0.00";
+                    const returnedPct = totalContainersValue > 0 ? ((returnedValue / totalContainersValue) * 100).toFixed(2) : "0.00";
+
+                    // 3. Process BLs with expired or free time expiring within 5 days
+                    const blsMap: Record<string, { bl: string, lote: string, count: number, minFreeTime: string, eta: string }> = {};
+                    filteredContainersForDemurrage.forEach(c => {
+                      const d = getDaysRemainingForContainer(c);
+                      if (d !== null && d <= 5) {
+                        const blKey = c.bl || 'N/A';
+                        if (!blsMap[blKey]) {
+                          blsMap[blKey] = {
+                            bl: blKey,
+                            lote: String(c.lote || '-'),
+                            count: 0,
+                            minFreeTime: c.freeTime || '-',
+                            eta: c.eta || c.programacao || '-'
+                          };
+                        }
+                        blsMap[blKey].count++;
+                      }
+                    });
+                    const blsList = Object.values(blsMap);
+
+                    // 4. Process component counts
+                    const componentsMap: Record<string, number> = {};
+                    filteredContainersForDemurrage.forEach(c => {
+                      const compKey = c.componente || 'GERAL';
+                      componentsMap[compKey] = (componentsMap[compKey] || 0) + 1;
+                    });
+                    const componentsList = Object.entries(componentsMap).map(([name, count]) => ({ name, count }));
+                    componentsList.sort((a, b) => b.count - a.count);
+
+                    return (
+                      <>
+                        {/* TOP CONTROLS AND INTERACTIVE FILTERS */}
+                        <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col gap-4`}>
+                          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
+                                <Clock className="w-6 h-6 animate-pulse" />
+                              </div>
+                              <div>
+                                <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
+                                  {language === 'bilingual' ? '1. General Overview - Demurrage Control / 集装箱滞期费超期监控大盘' : language === 'zh' ? '1. 集装箱滞期费超期监控大盘' : '1. General Overview - Demurrage Control'}
+                                </h3>
+                                <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                  {language === 'zh' ? '管理保税堆场、仓库、比亚迪智能缓冲区中所有集装箱的免费期、超期滞留状态' : 'Gestão integrada de free time, tempo de estadia de contêineres e devolução rápida.'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Reference date picker */}
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs">
+                              <span className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[10px]">
+                                {language === 'zh' ? '计算基准日 / Data de Referência:' : 'Data de Referência:'}
+                              </span>
+                              <input 
+                                type="date"
+                                value={demurrageRefDate}
+                                onChange={(e) => setDemurrageRefDate(e.target.value)}
+                                className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg font-bold font-mono text-xs text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 cursor-pointer"
+                              />
+                              <button 
+                                onClick={() => setDemurrageRefDate("2026-07-19")}
+                                className="px-2 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30 text-[10px] font-extrabold rounded-md transition-all active:scale-95"
+                                title="Restaurar data original (19/07/2026) / 恢复原始日期"
+                              >
+                                Reset
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* FILTERS PANEL */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                            
+                            {/* Filter 1: Delivered Status */}
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9.5px] font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest">
+                                {language === 'zh' ? '交付状态 / Delivered Status' : 'Status de Entrega'}
+                              </label>
+                              <select
+                                value={demurrageFilterDelivered}
+                                onChange={(e) => setDemurrageFilterDelivered(e.target.value)}
+                                className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none cursor-pointer focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
+                              >
+                                <option value="ALL">{language === 'zh' ? '全部 / Todos' : 'Todos os Status'}</option>
+                                <option value="DELIVERED">{language === 'zh' ? '已收货待还箱 / Delivered' : 'Entregue (Pendente Devolução)'}</option>
+                                <option value="NOT_DELIVERED">{language === 'zh' ? '未出货在港口/堆场 / Not Delivered' : 'Não Entregue (No Porto/Pátio)'}</option>
+                              </select>
+                            </div>
+
+                            {/* Filter 2: Component */}
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9.5px] font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest">
+                                {language === 'zh' ? '零部件类别 / Component' : 'Componente'}
+                              </label>
+                              <select
+                                value={demurrageFilterComponent}
+                                onChange={(e) => setDemurrageFilterComponent(e.target.value)}
+                                className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none cursor-pointer focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
+                              >
+                                <option value="ALL">{language === 'zh' ? '全部零件 / Todos' : 'Todos'}</option>
+                                {componentsListOptions.map(comp => (
+                                  <option key={comp} value={comp}>{comp}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* Filter 3: Carrier */}
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9.5px] font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest">
+                                {language === 'zh' ? '运输公司 / Carrier' : 'Transportadora'}
+                              </label>
+                              <select
+                                value={demurrageFilterCarrier}
+                                onChange={(e) => setDemurrageFilterCarrier(e.target.value)}
+                                className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none cursor-pointer focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
+                              >
+                                <option value="ALL">{language === 'zh' ? '全部运输公司 / Todos' : 'Todas'}</option>
+                                {carrierListOptions.map(carrier => (
+                                  <option key={carrier} value={carrier}>{carrier}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* Filter 4: Vessel Name */}
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9.5px] font-black text-gray-400 dark:text-slate-400 uppercase tracking-widest">
+                                {language === 'zh' ? '船东或船舶 / Shipowner / Vessel' : 'Navio / Armador'}
+                              </label>
+                              <select
+                                value={demurrageFilterVessel}
+                                onChange={(e) => setDemurrageFilterVessel(e.target.value)}
+                                className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none cursor-pointer focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
+                              >
+                                <option value="ALL">{language === 'zh' ? '全部船舶 / Todos' : 'Todos'}</option>
+                                {vesselListOptions.map(vessel => (
+                                  <option key={vessel} value={vessel}>{vessel}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* Info panel */}
+                            <div className="flex items-center justify-end h-full pt-4 pr-1">
+                              <div className="text-right text-[10px] font-bold text-gray-400 dark:text-slate-500">
+                                {language === 'zh' ? '当前过滤数:' : 'Filtrados:'}{' '}
+                                <span className="font-mono text-xs font-black text-red-600 dark:text-red-400">
+                                  {filteredContainersForDemurrage.length}
+                                </span>{' '}
+                                / {containers.length}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* EXECUTIVE METRICS DASHBOARD (Cards exactly matching image style) */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                          
+                          {/* CARD 1: Total Containers */}
+                          <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-150'} flex flex-col justify-between text-center min-h-[105px]`}>
+                            <span className="text-[9px] text-gray-500 dark:text-gray-400 font-extrabold uppercase tracking-wider block">
+                              {language === 'zh' ? '集装箱总数 / Total' : 'Total Containers'}
+                            </span>
+                            <div className="my-1">
+                              <span className="text-2xl font-black font-mono tracking-tight text-slate-900 dark:text-white">
+                                {totalContainersValue.toLocaleString()}
+                              </span>
+                            </div>
+                            <span className="text-[9px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-800 py-0.5 rounded">
+                              100,00%
+                            </span>
+                          </div>
+
+                          {/* CARD 2: Return Pending */}
+                          <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-red-950/40' : 'bg-white border-red-150'} flex flex-col justify-between min-h-[105px]`}>
+                            <div className="text-center">
+                              <span className="text-[9px] text-red-600 dark:text-red-400 font-extrabold uppercase tracking-wider block">
+                                {language === 'zh' ? '未还空待退 / Pending' : 'Return Pending'}
+                              </span>
+                              <div className="my-0.5">
+                                <span className="text-2xl font-black font-mono tracking-tight text-red-600 dark:text-red-400">
+                                  {pendingCount.toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex justify-between gap-1 border-t border-dashed border-red-100 dark:border-rose-950/20 pt-1 text-[8px] font-black text-gray-500 dark:text-slate-400 leading-none">
+                              <div className="flex flex-col items-center flex-1 border-r border-slate-100 dark:border-slate-800">
+                                <span className="text-slate-700 dark:text-slate-300 font-bold">{delCount}</span>
+                                <span className="scale-90 opacity-70">Delivered</span>
+                              </div>
+                              <div className="flex flex-col items-center flex-1">
+                                <span className="text-slate-700 dark:text-slate-300 font-bold">{notDelCount}</span>
+                                <span className="scale-90 opacity-70">Not Del.</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* CARD 3: Overdue */}
+                          <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-red-950/40' : 'bg-white border-red-150'} flex flex-col justify-between text-center min-h-[105px]`}>
+                            <span className="text-[9px] text-red-600 dark:text-red-400 font-extrabold uppercase tracking-wider block">
+                              {language === 'zh' ? '超期箱量 / Overdue' : 'Overdue'}
+                            </span>
+                            <div className="my-1 flex items-center justify-center gap-1">
+                              <span className="h-2 w-2 rounded-full bg-red-600 animate-pulse"></span>
+                              <span className="text-2xl font-black font-mono tracking-tight text-red-600 dark:text-red-400">
+                                {overdueCount}
+                              </span>
+                            </div>
+                            <span className="text-[9px] font-bold text-red-600 bg-red-50 dark:bg-red-950/20 py-0.5 rounded">
+                              {overduePct}%
+                            </span>
+                          </div>
+
+                          {/* CARD 4: Next 15 Days */}
+                          <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-amber-950/40' : 'bg-white border-orange-150'} flex flex-col justify-between text-center min-h-[105px]`}>
+                            <span className="text-[9px] text-amber-600 dark:text-amber-450 font-extrabold uppercase tracking-wider block">
+                              {language === 'zh' ? '未来15天到期' : 'Next 15 Days'}
+                            </span>
+                            <div className="my-1">
+                              <span className="text-2xl font-black font-mono tracking-tight text-amber-600 dark:text-amber-450">
+                                {next15Count.toLocaleString()}
+                              </span>
+                            </div>
+                            <span className="text-[9px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/20 py-0.5 rounded">
+                              {next15Pct}%
+                            </span>
+                          </div>
+
+                          {/* CARD 5: Scheduled */}
+                          <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-150'} flex flex-col justify-between text-center min-h-[105px]`}>
+                            <span className="text-[9px] text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider block">
+                              {language === 'zh' ? '已排程交付 / Scheduled' : 'Scheduled Delivery'}
+                            </span>
+                            <div className="my-1">
+                              <span className="text-2xl font-black font-mono tracking-tight text-slate-900 dark:text-white">
+                                {schedCount.toLocaleString()}
+                              </span>
+                            </div>
+                            <span className="text-[9px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-800 py-0.5 rounded">
+                              {schedPct}%
+                            </span>
+                          </div>
+
+                          {/* CARD 6: BYD Buffer */}
+                          <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-sky-950' : 'bg-white border-sky-100'} flex flex-col justify-between min-h-[105px]`}>
+                            <div className="text-center">
+                              <span className="text-[9px] text-sky-600 dark:text-sky-450 font-extrabold uppercase tracking-wider block">
+                                {language === 'zh' ? '缓冲区存箱 / Buffer' : 'BYD Buffer'}
+                              </span>
+                              <div className="my-0.5">
+                                <span className="text-2xl font-black font-mono tracking-tight text-sky-600 dark:text-sky-400">
+                                  {bufCount.toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex justify-between gap-1 border-t border-dashed border-sky-100 dark:border-sky-950/20 pt-1 text-[8px] font-black text-sky-600 dark:text-sky-400 leading-none">
+                              <div className="flex flex-col items-center flex-1 border-r border-slate-100 dark:border-slate-800">
+                                <span className="font-bold">{bufFull}</span>
+                                <span className="scale-90 opacity-70">Full</span>
+                              </div>
+                              <div className="flex flex-col items-center flex-1">
+                                <span className="font-bold">{bufEmpty}</span>
+                                <span className="scale-90 opacity-70">Empty</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* CARD 7: Returned */}
+                          <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-emerald-950' : 'bg-white border-emerald-100'} flex flex-col justify-between text-center min-h-[105px]`}>
+                            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-extrabold uppercase tracking-wider block">
+                              {language === 'zh' ? '已退还空箱 / Returned' : 'Returned'}
+                            </span>
+                            <div className="my-1">
+                              <span className="text-2xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
+                                {returnedValue.toLocaleString()}
+                              </span>
+                            </div>
+                            <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 py-0.5 rounded">
+                              {returnedPct}%
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* DOUBLE BLOCK: EXPIRATION LIGHT & CRITICAL LISTINGS */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                          
+                          {/* LEFT PANEL: ENVELHECIMENTO FREE TIME (7 cols) */}
+                          <div className={`col-span-1 lg:col-span-7 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-150 shadow-xs'}`}>
+                            <div className="flex justify-between items-center border-b pb-2 border-gray-150 dark:border-slate-800">
+                              <h4 className="font-extrabold text-[11px] text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-1.5">
+                                <span className="h-2 w-2 rounded-full bg-red-600"></span>
+                                {language === 'bilingual' ? 'Matriz Expiration Light / 免费期剩余天数精细管控灯' : 'Expiration Light'}
+                              </h4>
+                              <span className="text-[9px] text-red-600 font-black tracking-wider uppercase bg-red-50 dark:bg-red-950/20 px-2 py-0.5 rounded">
+                                aging control
+                              </span>
+                            </div>
+
+                            <div className="overflow-x-auto mt-3">
+                              <table className="w-full text-center border-collapse text-xs">
+                                <thead>
+                                  <tr className="bg-slate-50 dark:bg-slate-800/60 text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-800">
+                                    <th className="p-2 text-left pl-2 font-black">{language === 'zh' ? '范围 / Range' : 'Range'}</th>
+                                    <th className="p-2 font-black text-center">{language === 'zh' ? '缓冲区 / At BYD Buffer' : 'At BYD Buffer'}</th>
+                                    <th className="p-2 font-black text-center">{language === 'zh' ? '缓冲区已排程 / At BYD Buffer - Scheduled' : 'At BYD Buffer - Scheduled'}</th>
+                                    <th className="p-2 font-black text-center">{language === 'zh' ? '已交付未还箱 / Delivered/No EIR' : 'Delivered (Pending Return)'}</th>
+                                    <th className="p-2 font-black text-center">{language === 'zh' ? '在保税区/外部 / Outside BYD' : 'Outside BYD'}</th>
+                                    <th className="p-2 font-black text-center text-slate-800 dark:text-slate-100">{language === 'zh' ? '共计' : 'Total'}</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-slate-850 font-bold text-slate-700 dark:text-slate-300 font-mono">
+                                  {rangeMetrics.map((r, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-all">
+                                      <td className="p-2 text-left pl-2 flex items-center gap-1.5 font-sans font-extrabold text-[11px]">
+                                        <span className={`h-2.5 w-2.5 rounded-full ${r.color} shrink-0`}></span>
+                                        <span>{language === 'zh' ? r.zh : r.label}</span>
+                                      </td>
+                                      <td className="p-2 text-center">
+                                        {r.metrics.atBuffer > 0 ? r.metrics.atBuffer : <span className="opacity-15">-</span>}
+                                      </td>
+                                      <td className="p-2 text-center">
+                                        {r.metrics.atBufferScheduled > 0 ? r.metrics.atBufferScheduled : <span className="opacity-15">-</span>}
+                                      </td>
+                                      <td className="p-2 text-center text-red-650 dark:text-rose-400">
+                                        {r.metrics.deliveredPending > 0 ? r.metrics.deliveredPending : <span className="opacity-15">-</span>}
+                                      </td>
+                                      <td className="p-2 text-center">
+                                        {r.metrics.outsideByd > 0 ? r.metrics.outsideByd : <span className="opacity-15">-</span>}
+                                      </td>
+                                      <td className="p-2 text-center text-slate-900 dark:text-white font-black bg-slate-50/30 dark:bg-slate-800/10">
+                                        {r.metrics.total > 0 ? r.metrics.total : <span className="opacity-15">-</span>}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                  <tr className="bg-slate-100/60 dark:bg-slate-800/40 text-slate-900 dark:text-white font-black border-t border-slate-200 dark:border-slate-700">
+                                    <td className="p-2 text-left pl-2 font-sans font-extrabold uppercase">{language === 'zh' ? '总计' : 'Total'}</td>
+                                    <td className="p-2 text-center">{sumAtBuffer}</td>
+                                    <td className="p-2 text-center">{sumAtBufferScheduled}</td>
+                                    <td className="p-2 text-center text-red-600 dark:text-red-400 font-extrabold">{sumDeliveredPending}</td>
+                                    <td className="p-2 text-center">{sumOutsideByd}</td>
+                                    <td className="p-2 text-center text-red-600 dark:text-red-400 font-black text-xs">{sumTotal}</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          {/* RIGHT PANEL: CRITICAL BL LIST & COMPONENT CHART (5 cols) */}
+                          <div className="col-span-1 lg:col-span-5 flex flex-col gap-4">
+                            
+                            {/* BL table */}
+                            <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-150 shadow-xs'} flex-1`}>
+                              <div className="flex justify-between items-center border-b pb-1.5 border-gray-150 dark:border-slate-800 mb-2">
+                                <h5 className="font-extrabold text-[10.5px] text-slate-800 dark:text-slate-100 uppercase tracking-tight">
+                                  {language === 'bilingual' ? 'BLs Críticos (Free Time Expiring ≤ 5 dias) / 5天内到期紧急提单' : 'BLs Críticos'}
+                                </h5>
+                                <span className="text-[8px] bg-red-600 text-white font-black px-1.5 py-0.2 rounded font-mono">
+                                  {blsList.length}
+                                </span>
+                              </div>
+
+                              <div className="overflow-y-auto max-h-[175px]">
+                                <table className="w-full text-[10px] border-collapse">
+                                  <thead>
+                                    <tr className="bg-red-700 text-white uppercase text-[8px] tracking-wider font-black">
+                                      <th className="p-1 text-left pl-2">BL</th>
+                                      <th className="p-1 text-center">BATCH</th>
+                                      <th className="p-1 text-center">CNTR</th>
+                                      <th className="p-1 text-center">FREE TIME</th>
+                                      <th className="p-1 text-right pr-2">DELIVERY / ETA</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100 dark:divide-slate-850 font-bold text-slate-700 dark:text-slate-300 font-mono">
+                                    {blsList.slice(0, 8).map((item, i) => (
+                                      <tr key={i} className="hover:bg-red-50/20 dark:hover:bg-red-950/10 transition-all">
+                                        <td className="p-1 text-left pl-2 font-black text-slate-900 dark:text-white truncate max-w-[85px]" title={item.bl}>
+                                          {item.bl}
+                                        </td>
+                                        <td className="p-1 text-center">{item.lote}</td>
+                                        <td className="p-1 text-center text-red-600 dark:text-red-400 font-black">{item.count}</td>
+                                        <td className="p-1 text-center text-amber-600 dark:text-amber-400">{item.minFreeTime}</td>
+                                        <td className="p-1 text-right pr-2 text-gray-500 truncate max-w-[75px]" title={item.eta}>
+                                          {item.eta}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                    {blsList.length === 0 && (
+                                      <tr>
+                                        <td colSpan={5} className="p-4 text-center text-gray-400 font-bold font-sans">
+                                          {language === 'zh' ? '暂无临近到期或超期提单' : 'Nenhum BL crítico encontrado para os filtros ativos.'}
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+
+                            {/* Component Chart */}
+                            <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-150 shadow-xs'}`}>
+                              <h5 className="font-extrabold text-[10.5px] text-slate-800 dark:text-slate-100 uppercase tracking-tight border-b pb-1.5 border-gray-150 dark:border-slate-800 mb-2">
+                                {language === 'bilingual' ? 'Distribuição de Pendentes por Componente / 待交付集装箱分类占比' : 'Pendentes por Componente'}
+                              </h5>
+
+                              <div className="relative h-[110px] w-full flex items-end">
+                                {componentsList.length > 0 ? (
+                                  <div className="flex justify-around items-end w-full h-[95px] font-mono text-[8.5px] font-bold">
+                                    {componentsList.slice(0, 5).map((comp, idx) => {
+                                      const maxCount = Math.max(...componentsList.map(c => c.count), 1);
+                                      const heightPercent = (comp.count / maxCount) * 65; // ensure it fits safely
+                                      return (
+                                        <div key={idx} className="flex flex-col items-center gap-1 w-1/5 group">
+                                          <span className="text-slate-900 dark:text-white font-black scale-90">
+                                            {comp.count}
+                                          </span>
+                                          <div 
+                                            style={{ height: `${heightPercent}px` }}
+                                            className="w-8 bg-[#10B981] hover:bg-emerald-600 dark:bg-emerald-650 rounded-t transition-all cursor-pointer shadow-xs"
+                                            title={`${comp.name}: ${comp.count}`}
+                                          />
+                                          <span className="text-gray-400 dark:text-gray-500 font-sans font-black truncate max-w-[45px] text-center" title={comp.name}>
+                                            {comp.name}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <div className="text-center w-full text-gray-400 font-bold py-4">
+                                    {language === 'zh' ? '暂无零件分布数据' : 'Sem dados para o gráfico de componentes.'}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                          </div>
+
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               ) : (
                 /* SLIDE 6: DEPOT CONTROL & ALLOCATION */
@@ -8022,7 +9442,7 @@ export default function App() {
                   <div className={`flex-1 overflow-auto rounded-xl border ${
                     theme === 'dark' ? 'border-slate-800 bg-[#0f172a]/30' : 'border-slate-100 bg-slate-50/20'
                   }`}>
-                    <table className="w-full text-left text-xs font-sans min-w-[500px]">
+                    <table className="w-full text-left text-xs font-sans min-w-[1200px]">
                       <thead>
                         <tr className={`border-b font-extrabold uppercase text-[9.5px] tracking-wider text-gray-400 sticky top-0 z-10 ${
                           theme === 'dark' ? 'border-slate-800 bg-[#1e293b]' : 'border-gray-150 bg-slate-50'
@@ -8043,12 +9463,18 @@ export default function App() {
                               className="rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
                             />
                           </th>
-                          <th className="p-3 font-mono">{language === 'bilingual' ? 'Identificação / 箱号' : 'Identificação'}</th>
-                          <th className="p-3 text-center">{language === 'bilingual' ? 'Tamanho / 尺寸' : 'Tamanho'}</th>
-                          <th className="p-3 text-center">Status</th>
-                          <th className="p-3 text-center">{language === 'bilingual' ? 'Categoria / 类别' : 'Categoria'}</th>
-                          <th className="p-3">{language === 'bilingual' ? 'Navio / 船舶' : 'Navio'}</th>
-                          <th className="p-3 text-right">{language === 'bilingual' ? 'Ação / 操作' : 'Ação'}</th>
+                          <th className="p-3 w-[110px]">BL</th>
+                          <th className="p-3 w-[120px] font-mono">CONTAINER</th>
+                          <th className="p-3 w-[140px]">Warehouse</th>
+                          <th className="p-3 w-[160px]">Navio</th>
+                          <th className="p-3 w-[90px]">ETA</th>
+                          <th className="p-3 w-[90px]">Free Time</th>
+                          <th className="p-3 w-[100px]">Componente</th>
+                          <th className="p-3 w-[140px]">Modelo</th>
+                          <th className="p-3 w-[100px]">Lote</th>
+                          <th className="p-3 w-[100px]">Programação</th>
+                          <th className="p-3 w-[120px]">Transportadora</th>
+                          {isEditMode && <th className="p-3 w-[60px] text-right">Ação</th>}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 dark:divide-slate-800/60 font-semibold text-slate-700 dark:text-gray-300">
@@ -8071,47 +9497,174 @@ export default function App() {
                                   className="rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
                                 />
                               </td>
-                              <td className="p-3 font-mono font-black text-slate-900 dark:text-slate-100">{container.id}</td>
-                              <td className="p-3 text-center font-mono">{container.size}</td>
-                              <td className="p-3 text-center">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
-                                  container.status === 'CHEIO' 
-                                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' 
-                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                                  }`}>
-                                  {container.status === 'CHEIO' ? 'CHEIO / 重' : 'VAZIO / 空'}
-                                </span>
+                              
+                              {/* BL */}
+                              <td className="p-1 truncate">
+                                {isEditMode ? (
+                                  <input
+                                    type="text"
+                                    value={container.bl || ''}
+                                    onChange={(e) => handleUpdateContainerField(container.id, 'bl', e.target.value)}
+                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans"
+                                  />
+                                ) : (
+                                  <span className="p-1 block truncate text-xs">{container.bl || '-'}</span>
+                                )}
                               </td>
-                              <td className="p-3 text-center">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                  container.category === 'PORTO' 
-                                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300' 
-                                    : container.category === 'PRONTO_COLETA'
-                                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
-                                      : container.category === 'DELIVERED'
-                                        ? 'bg-emerald-150 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                                }`}>
-                                  {container.category}
-                                </span>
+
+                              {/* CONTAINER */}
+                              <td className="p-3 font-mono font-black text-slate-900 dark:text-slate-100 select-all truncate">
+                                {container.id}
                               </td>
-                              <td className="p-3 max-w-[130px] truncate text-xs font-extrabold text-slate-800 dark:text-slate-200">
-                                {container.vesselName || "N/A"}
+
+                              {/* Warehouse */}
+                              <td className="p-1 truncate">
+                                {isEditMode ? (
+                                  <select
+                                    value={container.yardId}
+                                    onChange={(e) => handleUpdateContainerField(container.id, 'yardId', e.target.value)}
+                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs font-bold text-slate-800 dark:text-slate-100"
+                                  >
+                                    {Object.entries(yards).filter(([_, y]) => y && (y as any).type !== 'BUFFER').map(([key, y]) => (
+                                      <option key={key} value={key}>{(y as any).name}</option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <span className="p-1 block truncate text-[11px] font-extrabold text-blue-600 dark:text-blue-400">
+                                    {yards[container.yardId]?.name || container.yardId}
+                                  </span>
+                                )}
                               </td>
-                              <td className="p-3 text-right">
-                                <button 
-                                  onClick={() => handleDeleteContainer(container)}
-                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 p-1.5 rounded-lg transition-all"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
+
+                              {/* Navio */}
+                              <td className="p-1 truncate">
+                                {isEditMode ? (
+                                  <input
+                                    type="text"
+                                    value={container.vesselName || ''}
+                                    onChange={(e) => handleUpdateContainerField(container.id, 'vesselName', e.target.value)}
+                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans"
+                                  />
+                                ) : (
+                                  <span className="p-1 block truncate text-xs">{container.vesselName || '-'}</span>
+                                )}
                               </td>
+
+                              {/* ETA */}
+                              <td className="p-1 truncate">
+                                {isEditMode ? (
+                                  <input
+                                    type="text"
+                                    value={container.eta || ''}
+                                    onChange={(e) => handleUpdateContainerField(container.id, 'eta', e.target.value)}
+                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                  />
+                                ) : (
+                                  <span className="p-1 block truncate text-xs">{container.eta || '-'}</span>
+                                )}
+                              </td>
+
+                              {/* Free Time */}
+                              <td className="p-1 truncate">
+                                {isEditMode ? (
+                                  <input
+                                    type="text"
+                                    value={container.freeTime || ''}
+                                    onChange={(e) => handleUpdateContainerField(container.id, 'freeTime', e.target.value)}
+                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                  />
+                                ) : (
+                                  <span className="p-1 block truncate text-xs font-mono font-bold text-amber-600 dark:text-amber-400">{container.freeTime || '-'}</span>
+                                )}
+                              </td>
+
+                              {/* Componente */}
+                              <td className="p-1 truncate">
+                                {isEditMode ? (
+                                  <input
+                                    type="text"
+                                    value={container.componente || ''}
+                                    onChange={(e) => handleUpdateContainerField(container.id, 'componente', e.target.value)}
+                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                  />
+                                ) : (
+                                  <span className="p-1 block truncate text-xs">{container.componente || '-'}</span>
+                                )}
+                              </td>
+
+                              {/* Modelo */}
+                              <td className="p-1 truncate">
+                                {isEditMode ? (
+                                  <input
+                                    type="text"
+                                    value={container.modelo || ''}
+                                    onChange={(e) => handleUpdateContainerField(container.id, 'modelo', e.target.value)}
+                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                  />
+                                ) : (
+                                  <span className="p-1 block truncate text-xs font-bold text-slate-550 dark:text-slate-300">{container.modelo || '-'}</span>
+                                )}
+                              </td>
+
+                              {/* Lote */}
+                              <td className="p-1 truncate">
+                                {isEditMode ? (
+                                  <input
+                                    type="text"
+                                    value={container.lote || ''}
+                                    onChange={(e) => handleUpdateContainerField(container.id, 'lote', e.target.value)}
+                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                  />
+                                ) : (
+                                  <span className="p-1 block truncate text-xs text-blue-500 dark:text-blue-400 font-bold">{container.lote || '-'}</span>
+                                )}
+                              </td>
+
+                              {/* Programação */}
+                              <td className="p-1 truncate">
+                                {isEditMode ? (
+                                  <input
+                                    type="text"
+                                    value={container.programacao || ''}
+                                    onChange={(e) => handleUpdateContainerField(container.id, 'programacao', e.target.value)}
+                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                  />
+                                ) : (
+                                  <span className="p-1 block truncate text-xs">{container.programacao || '-'}</span>
+                                )}
+                              </td>
+
+                              {/* Transportadora */}
+                              <td className="p-1 truncate">
+                                {isEditMode ? (
+                                  <input
+                                    type="text"
+                                    value={container.transportadora || ''}
+                                    onChange={(e) => handleUpdateContainerField(container.id, 'transportadora', e.target.value)}
+                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
+                                  />
+                                ) : (
+                                  <span className="p-1 block truncate text-xs">{container.transportadora || '-'}</span>
+                                )}
+                              </td>
+
+                              {/* Actions */}
+                              {isEditMode && (
+                                <td className="p-3 text-right">
+                                  <button 
+                                    onClick={() => handleDeleteContainer(container)}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 p-1.5 rounded-lg transition-all"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              )}
                             </tr>
                           );
                         })}
                         {filteredContainers.length === 0 && (
                           <tr>
-                            <td colSpan={7} className="text-center py-8 text-gray-400">
+                            <td colSpan={isEditMode ? 13 : 12} className="text-center py-8 text-gray-400">
                               {language === 'bilingual'
                                 ? 'Nenhum contêiner correspondente encontrado. / 未找到匹配的集装箱。'
                                 : 'Nenhum contêiner correspondente encontrado.'}
