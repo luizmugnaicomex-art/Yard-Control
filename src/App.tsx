@@ -77,6 +77,95 @@ import {
   handleFirestoreError 
 } from './firebase';
 
+// ==========================================
+// NOVAS ENUMS E INTERFACES (CONTRATO LOGÍSTICA)
+// ==========================================
+export enum ComexStatus {
+  CargoDelivered = 'CARGO DELIVERED',
+  Pending = 'PENDENTE',
+  Default = 'N/A',
+}
+
+export enum CntrWarehouseStatus {
+  Loaded = 'LOADED',
+  Pending = 'PENDENTE',
+  SemInfo = 'SEM INFO',
+  Default = 'N/A',
+}
+
+export enum DepotStatus {
+  Entregue = 'ENTREGUE',
+  Pendente = 'PENDENTE',
+}
+
+export interface LogisticsEntry {
+  id?: string;
+  cntrsOriginal: string;         // Chave obrigatória do Container ou 'PENDING-BL-[numero]'
+  isPlaceholder?: boolean;       // Flag para linhas sem equipamento/container definido ainda
+  shipper?: string;
+  freightForwarder?: string;
+  shipowner?: string;
+  bondedWarehouse?: string;      // Porto Seco / Armazém Alfandegado
+  bl?: string;                   // Bill of Lading (Conhecimento de Embarque)
+  responsibleAnalyst?: string;
+  poSap?: string;                // Ordem de Compra SAP
+  batch?: string;                // Lote (Batch)
+  component?: string;
+  description?: string;
+  typeOfCargo?: string;
+  costCenter?: string;
+  comexSponsor?: string;
+  quantity?: number;
+
+  // Status & Fluxo de Trabalho
+  statusComex?: string;          // CARGO DELIVERED, CARGO CLEARED, IN TRANSIT, etc.
+  status?: string;               // Status de Entrega: PENDENTE, A CAMINHO, ADIADO, ENTREGUE, CANCELADO
+  statusDepot?: string;
+  statusCntrWarehouse?: string;
+  damageStatus?: string;
+  pendingDepotReturn?: string;
+
+  // Aduana e Financeiro
+  di?: string;                   // Declaração de Importação
+  notaFiscal?: string;
+  dateNotaFiscal?: string | Date;
+  parametrization?: string;      // Canal Verde, Amarelo, Vermelho, Cinza
+  channelDate?: string | Date;
+  valuePerCntr?: number;         // Valor Unitário da Diária / Frete
+  incoterm?: string;
+
+  // Transporte & Entrega Física
+  carrier?: string;              // Transportadora
+  typeOfTruck?: string;
+  tmsDespatchNo?: string;
+  onSitePlaceOfDelivery?: string;
+  depot?: string;                // Terminal de Devolução de Vazio
+  voyage?: string;
+  cargoPresence?: string;
+  dsa?: string;                  // Declaração de Trânsito Aduaneiro (DSA / DTA)
+  cntrBbkAir?: string;
+  operationScope?: string;
+  
+  // Datas e Cronogramas
+  arrivalVessel?: string;        // Navio de Chegada
+  ata?: string | Date;           // Actual Time of Arrival
+  cargoReadyDate?: string | Date;
+  deadlinePickUpDsa?: string | Date;
+  desembaracoDeadlineReturnCntr?: string | Date;
+  deadlineReturnCntr?: string | Date; // Free Time Limit Date (Devolução de Container)
+  unloadDate?: string | Date;
+  estimatedDeliveryDate?: string | Date; // Data agendada para entrega na Planta
+  deliveryDateAtByd?: string | Date;     // Data real de entrega na Planta
+  estimatedDepotDate?: string | Date;
+  actualDepotReturnDate?: string | Date;
+  storageDeadline?: string | Date;
+  
+  // Custos & Demurrage
+  freeTime?: number;
+  demurrageStarted1Periodo?: string | Date;
+  daysDemurrage1Period?: number;
+}
+
 // STYLES & DICTIONARY TYPES
 interface TranslationItem {
   pt: string;
@@ -869,6 +958,23 @@ export default function App() {
   const [demurrageFilterVessel, setDemurrageFilterVessel] = useState<string>("ALL");
   const [selectedDemurrageRange, setSelectedDemurrageRange] = useState<{ label: string; col: 'buffer' | 'buffer-scheduled' | 'delivered' | 'outside' | 'total' } | null>(null);
 
+  // ESTADOS DO NOVO MÓDULO DE LOGÍSTICA & ENTREGAS
+  const [logisticsEntries, setLogisticsEntries] = useState<LogisticsEntry[]>([]);
+  const [logisticsPage, setLogisticsPage] = useState(1);
+  const [logisticsSearch, setLogisticsPageSearch] = useState("");
+  const [logisticsFilterComex, setLogisticsFilterComex] = useState("ALL");
+  const [logisticsFilterWarehouse, setLogisticsFilterWarehouse] = useState("ALL");
+  const [logisticsFilterVessel, setLogisticsFilterVessel] = useState("ALL");
+  const [logisticsOnlyPending, setLogisticsOnlyPending] = useState(false);
+  const [sheetsModalOpen, setSheetsModalOpen] = useState(false);
+  const [sheetsUrl, setSheetsUrl] = useState("");
+  const [sheetsRange, setSheetsRange] = useState("Engenharia CD");
+  
+  // ESTADOS DO PAINEL DE ENTREGAS & CALENDÁRIO
+  const [operationalMonth, setOperationalMonth] = useState("2026-07");
+  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<string | null>(null);
+  const [selectedDayCalendar, setSelectedDayCalendar] = useState<string | null>(null);
+
   // CONFIGURAÇÕES VISUAIS DO SLIDE (Adaptativo com base no idioma)
   const [slideTitlePT, setSlideTitlePT] = useState("DASHBOARD OPERACIONAL & CAPACIDADE DE PÁTIOS");
   const [slideTitleZH, setSlideTitleZH] = useState("堆场运营与容量监控看板");
@@ -1287,6 +1393,21 @@ export default function App() {
       console.warn("Falha ao ler containers do Firestore:", err);
     });
 
+    // Logistics Entries
+    const unsubLogistics = onSnapshot(collection(db, 'logisticsData'), (snapshot) => {
+      if (snapshot.empty) {
+        setLogisticsEntries([]);
+        return;
+      }
+      const data: LogisticsEntry[] = [];
+      snapshot.forEach(docSnap => {
+        data.push({ id: docSnap.id, ...docSnap.data() } as LogisticsEntry);
+      });
+      setLogisticsEntries(data);
+    }, (err) => {
+      console.warn("Falha ao ler logisticsData do Firestore:", err);
+    });
+
     return () => {
       unsubYards();
       unsubVessels();
@@ -1294,6 +1415,7 @@ export default function App() {
       unsubChartRight();
       unsubConfig();
       unsubContainers();
+      unsubLogistics();
     };
   }, [user]);
 
@@ -1364,14 +1486,146 @@ export default function App() {
       }
       
       if (e.key === 'ArrowRight' || e.key === 'PageDown') {
-        setCurrentSlide(prev => (prev + 1) % 5);
+        setCurrentSlide(prev => (prev + 1) % 10);
       } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-        setCurrentSlide(prev => (prev - 1 + 5) % 5);
+        setCurrentSlide(prev => (prev - 1 + 10) % 10);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // FUNÇÕES AUXILIARES DO NOVO MÓDULO DE LOGÍSTICA
+  const handleClearAllLogisticsData = async () => {
+    if (!window.confirm("Atenção! Isso removerá definitivamente todos os registros de logística cadastrados. Confirmar?")) return;
+    try {
+      const batch = writeBatch(db);
+      logisticsEntries.forEach(entry => {
+        if (entry.id) {
+          batch.delete(doc(db, 'logisticsData', entry.id));
+        }
+      });
+      await batch.commit();
+      alert("Todos os registros de logística foram excluídos do banco de dados!");
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'logisticsData_batch');
+    }
+  };
+
+  const handleImportParsedRows = async (rows: any[]) => {
+    try {
+      const batch = writeBatch(db);
+      let count = 0;
+      
+      rows.forEach((row: any) => {
+        // Encontrar as chaves dos dados de forma robusta e flexível (case-insensitive e traduzida)
+        const getVal = (possibleKeys: string[], defaultVal: any = "") => {
+          for (const key of Object.keys(row)) {
+            const normalizedKey = key.toLowerCase().trim();
+            if (possibleKeys.some(pk => normalizedKey === pk.toLowerCase() || normalizedKey.includes(pk.toLowerCase()))) {
+              return row[key];
+            }
+          }
+          return defaultVal;
+        };
+
+        const container = String(getVal(['container', 'original', 'equipamento', 'cntr', 'equip']) || '').trim();
+        if (!container) return; // Pula linhas sem identificação de container
+
+        const bl = String(getVal(['bl', 'bill of lading', 'conhecimento', 'hbl']) || '').trim();
+        const vessel = String(getVal(['vessel', 'navio', 'ship', 'arrival']) || '').trim();
+        const batchNo = String(getVal(['batch', 'lote']) || '').trim();
+        const warehouse = String(getVal(['bonded', 'warehouse', 'porto seco', 'armazem', 'alfandegado']) || '').trim();
+        const carrier = String(getVal(['carrier', 'transportadora', 'transp']) || '').trim();
+        const comex = String(getVal(['comex', 'status comex', 'status_comex']) || 'PENDENTE').trim().toUpperCase();
+        const deliveryDate = getVal(['delivery', 'estimated', 'entrega', 'agendada', 'agendamento']);
+        const sap = String(getVal(['sap', 'po', 'sap po', 'sap_po']) || '').trim();
+        const value = Number(getVal(['value', 'val', 'frete', 'unitario', 'valor'])) || 0;
+
+        // Formatação de data simples YYYY-MM-DD
+        let formattedDate = "";
+        if (deliveryDate) {
+          if (typeof deliveryDate === 'number') {
+            // Se for data numérica serial do Excel
+            const dateObj = XLSX.SSF.parse_date_code(deliveryDate);
+            formattedDate = `${dateObj.y}-${String(dateObj.m).padStart(2, '0')}-${String(dateObj.d).padStart(2, '0')}`;
+          } else {
+            const dateStr = String(deliveryDate).trim();
+            if (dateStr.includes('/')) {
+              const pts = dateStr.split('/');
+              if (pts.length === 3) {
+                formattedDate = `${pts[2]}-${pts[1].padStart(2, '0')}-${pts[0].padStart(2, '0')}`;
+              }
+            } else if (dateStr.includes('-')) {
+              formattedDate = dateStr.slice(0, 10);
+            } else {
+              formattedDate = dateStr;
+            }
+          }
+        }
+        if (!formattedDate) {
+          formattedDate = "2026-07-25"; // Data default de exemplo
+        }
+
+        const newEntryRef = doc(collection(db, 'logisticsData'));
+        batch.set(newEntryRef, {
+          cntrsOriginal: container,
+          bl: bl || "PENDING-BL",
+          arrivalVessel: vessel || "N/A",
+          batch: batchNo || "N/A",
+          bondedWarehouse: warehouse || "CD PLANTA",
+          statusComex: comex || "PENDENTE",
+          carrier: carrier || "JSL",
+          estimatedDeliveryDate: formattedDate,
+          poSap: sap || "N/A",
+          valuePerCntr: value || 1200,
+          status: "PENDENTE"
+        });
+        count++;
+      });
+
+      if (count > 0) {
+        await batch.commit();
+        alert(`${count} registros de logística foram importados e salvos no banco de dados com sucesso!`);
+      } else {
+        alert("Nenhum registro válido contendo identificador de Container foi encontrado na planilha.");
+      }
+    } catch (error) {
+      console.error("Erro na importação logística:", error);
+      alert("Houve um erro ao processar ou salvar os dados de logística no Firestore.");
+    }
+  };
+
+  const handleSyncGoogleSheets = async () => {
+    if (!sheetsUrl) {
+      alert("Por favor, informe a URL publicada da planilha Google Sheets.");
+      return;
+    }
+    try {
+      // Converte URL de visualização padrão do Sheets em exportação CSV se necessário
+      let fetchUrl = sheetsUrl.trim();
+      if (fetchUrl.includes("/edit")) {
+        fetchUrl = fetchUrl.replace(/\/edit.*$/, "/export?format=csv");
+      } else if (!fetchUrl.includes("format=csv")) {
+        fetchUrl += (fetchUrl.includes("?") ? "&" : "?") + "format=csv";
+      }
+
+      const res = await fetch(fetchUrl);
+      if (!res.ok) throw new Error("Erro de resposta HTTP ao obter planilha.");
+      const csvText = await res.text();
+
+      // Parse CSV usando XLSX
+      const wb = XLSX.read(csvText, { type: 'string' });
+      const firstSheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+      await handleImportParsedRows(rows);
+      setSheetsModalOpen(false);
+    } catch (error) {
+      console.error("Erro na sincronização:", error);
+      alert("Erro ao conectar e sincronizar dados da planilha online. Certifique-se de publicar a planilha na web como CSV e habilitar permissões de acesso público.");
+    }
+  };
 
   // Estado para novo Navio
   const [newVesselName, setNewVesselName] = useState('');
@@ -3677,6 +3931,27 @@ export default function App() {
           subPT: "Painel de controle de vencimento de free time, contêineres retidos e custos de demurrage",
           subZH: "集装箱免费期到期预警、堆场滞期超期监控及异常滞箱控制面板",
         };
+      case 7:
+        return {
+          titlePT: "MÓDULO DE GESTÃO LOGÍSTICA CRUDS",
+          titleZH: "比亚迪外贸进出口单证及集成物流控制大盘",
+          subPT: "Cadastro integrado de equipamentos, containers WMS e importador Sheets",
+          subZH: "数据流控制中心",
+        };
+      case 8:
+        return {
+          titlePT: "PAINEL EXECUTIVO DE ENTREGAS CD",
+          titleZH: "每日工厂到货及运输节点控制台",
+          subPT: "Controle de status operacionais diários, transportadores e fretes",
+          subZH: "运输管理",
+        };
+      case 9:
+        return {
+          titlePT: "CALENDÁRIO MENSAL DE DISTRIBUIÇÃO",
+          titleZH: "月度交付日历与班轮吞吐预测",
+          subPT: "Agrupamento inteligente por House BL e volumes consolidados semanais",
+          subZH: "日历看板",
+        };
       default:
         return {
           titlePT: slideTitlePT,
@@ -3778,6 +4053,9 @@ export default function App() {
               { index: 6, pt: "Demurrage & Overdue", zh: "滞期费监控", icon: <Clock className="w-3.5 h-3.5" /> },
               { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-3.5 h-3.5" /> },
               { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-3.5 h-3.5" /> },
+              { index: 7, pt: "Módulo Logística", zh: "物流管理模块", icon: <Package className="w-3.5 h-3.5" /> },
+              { index: 8, pt: "Painel de Entregas", zh: "交货监控面板", icon: <Truck className="w-3.5 h-3.5" /> },
+              { index: 9, pt: "Calendário", zh: "交付日历", icon: <Calendar className="w-3.5 h-3.5" /> },
             ].map(s => (
               <button
                 key={s.index}
@@ -7212,7 +7490,7 @@ export default function App() {
                     );
                   })()}
                 </div>
-              ) : (
+              ) : currentSlide === 5 ? (
                 /* SLIDE 6: DEPOT CONTROL & ALLOCATION */
                 <div id="slide-dashboard-grid-depots" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
                   
@@ -7502,7 +7780,413 @@ export default function App() {
                   </div>
 
                 </div>
-              )}
+              ) : currentSlide === 7 ? (
+                /* SLIDE 7: MÓDULO DE GESTÃO LOGÍSTICA CRUDS */
+                <div id="slide-logistics-cruds" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
+                  
+                  {/* TOP CONTROL HUB FOR LOGISTICS */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3`}>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
+                        <Package className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
+                          {language === 'bilingual' ? 'LOGISTICS MANAGEMENT MODULE / 比亚迪外贸进出口单证及集成物流控制' : language === 'zh' ? '比亚迪外贸进出口单证及集成物流控制' : 'LOGISTICS MANAGEMENT'}
+                        </h3>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                          {language === 'zh' ? '在此大盘管理您的全部物流集装箱数据、进行增删改查操作，并连接在线表格进行实时刷新' : 'Módulo CRUD central de equipamentos, BLs, ordem de compra SAP e importador automático.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setSheetsModalOpen(true)} 
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 uppercase tracking-wider"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5" /> {language === 'zh' ? 'Google Sheets 同步' : 'Google Sheets Sync'}
+                      </button>
+                      <button 
+                        onClick={handleClearAllLogisticsData} 
+                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-250 dark:bg-rose-950/20 dark:border-rose-900/40 dark:text-rose-400 font-extrabold text-[10px] rounded-lg flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 uppercase tracking-wider"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> {language === 'zh' ? '清空全部数据' : 'Zerar Tudo'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* FILTERS AND TABLE WORKSPACE */}
+                  <div className={`flex-1 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between overflow-hidden`}>
+                    <div className="flex flex-col md:flex-row gap-3 items-center justify-between mb-4">
+                      <div className="relative w-full max-w-sm">
+                        <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
+                        <input 
+                          type="text" 
+                          value={logisticsSearch} 
+                          onChange={(e) => setLogisticsPageSearch(e.target.value)}
+                          placeholder={language === 'zh' ? "搜索 Container, BL, 船名..." : "Buscar por Container, BL, Navio..."} 
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 pl-8 pr-3 py-1.5 rounded-lg outline-none text-slate-800 dark:text-white text-xs font-bold"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <select 
+                          value={logisticsFilterComex} 
+                          onChange={(e) => setLogisticsFilterComex(e.target.value)} 
+                          className="bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-lg text-xs font-bold outline-none"
+                        >
+                          <option value="ALL">{language === 'zh' ? '全部 Comex 状态' : 'Status Comex: Todos'}</option>
+                          <option value="CARGO DELIVERED">CARGO DELIVERED</option>
+                          <option value="PENDENTE">PENDENTE</option>
+                        </select>
+
+                        <label className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400 cursor-pointer text-xs font-bold select-none">
+                          <input 
+                            type="checkbox" 
+                            checked={logisticsOnlyPending} 
+                            onChange={(e) => setLogisticsOnlyPending(e.target.checked)} 
+                            className="rounded text-red-600 focus:ring-red-500 w-4 h-4 cursor-pointer" 
+                          />
+                          <span>{language === 'zh' ? '仅显示未交付' : 'Apenas Pendentes'}</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto flex-1 max-h-[380px] overflow-y-auto">
+                      <table className="w-full text-left text-[11px] border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 dark:bg-slate-800 text-[9px] uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-slate-700 font-black tracking-wider">
+                            <th className="p-2.5 pl-3">ID Container</th>
+                            <th className="p-2.5">Conhecimento (HBL)</th>
+                            <th className="p-2.5">Vessel (Navio)</th>
+                            <th className="p-2.5">Lote (Batch)</th>
+                            <th className="p-2.5 text-center">Data Agendada CD</th>
+                            <th className="p-2.5">Bonded Warehouse</th>
+                            <th className="p-2.5 text-center">Status Comex</th>
+                            <th className="p-2.5">Carrier</th>
+                            <th className="p-2.5 text-right pr-3">Ação</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-300">
+                          {logisticsEntries
+                            .filter(e => {
+                              if (logisticsSearch) {
+                                const searchLower = logisticsSearch.toLowerCase();
+                                if (!e.cntrsOriginal.toLowerCase().includes(searchLower) && 
+                                    !e.bl?.toLowerCase().includes(searchLower) && 
+                                    !e.arrivalVessel?.toLowerCase().includes(searchLower)) return false;
+                              }
+                              if (logisticsFilterComex !== 'ALL' && e.statusComex !== logisticsFilterComex) return false;
+                              if (logisticsOnlyPending && e.status === 'ENTREGUE') return false;
+                              return true;
+                            })
+                            .slice((logisticsPage - 1) * 8, logisticsPage * 8)
+                            .map((entry, index) => (
+                              <tr key={entry.id || index} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 font-mono">
+                                <td className="p-2 pl-3 font-bold text-slate-900 dark:text-white select-all">{entry.cntrsOriginal}</td>
+                                <td className="p-2 font-bold">{entry.bl}</td>
+                                <td className="p-2 font-sans">{entry.arrivalVessel}</td>
+                                <td className="p-2 text-blue-600 dark:text-blue-400 font-sans font-bold">{entry.batch}</td>
+                                <td className="p-2 text-center font-bold text-red-600 dark:text-red-400">{entry.estimatedDeliveryDate || '-'}</td>
+                                <td className="p-2 font-sans truncate max-w-[120px]" title={entry.bondedWarehouse}>{entry.bondedWarehouse || 'N/A'}</td>
+                                <td className="p-2 text-center">
+                                  <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${entry.statusComex === 'CARGO DELIVERED' ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/40' : 'bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/40'}`}>
+                                    {entry.statusComex || 'PENDENTE'}
+                                  </span>
+                                </td>
+                                <td className="p-2 font-sans font-bold">{entry.carrier || 'N/A'}</td>
+                                <td className="p-2 text-right pr-3 font-sans">
+                                  <button 
+                                    onClick={async () => { 
+                                      if (window.confirm("Remover entrada logística definitiva do Firestore?")) {
+                                        try {
+                                          await deleteDoc(doc(db, 'logisticsData', entry.id || '')); 
+                                        } catch (error) {
+                                          handleFirestoreError(error, OperationType.DELETE, `logisticsData/${entry.id}`);
+                                        }
+                                      }
+                                    }} 
+                                    className="p-1 text-gray-400 hover:text-rose-600 rounded transition-all active:scale-90 cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          {logisticsEntries.length === 0 && (
+                            <tr>
+                              <td colSpan={9} className="p-8 text-center text-gray-400 dark:text-gray-500 font-extrabold font-sans">
+                                {language === 'zh' ? '暂无数据。请点击右上方 Google Sheets 同步或进行本地文件拖拽。' : 'Nenhum registro de container ou HBL importado ainda.'}
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination */}
+                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-150/40 dark:border-slate-800 text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                      <span>Total de {logisticsEntries.length} containers logísticos importados</span>
+                      <div className="flex items-center gap-1">
+                        <button 
+                          disabled={logisticsPage === 1} 
+                          onClick={() => setLogisticsPage(p => Math.max(p - 1, 1))}
+                          className="px-2 py-1 bg-slate-100 dark:bg-slate-800 disabled:opacity-50 text-slate-800 dark:text-white rounded-md cursor-pointer"
+                        >
+                          ◄ Anterior
+                        </button>
+                        <span className="px-2">{logisticsPage} / {Math.ceil(logisticsEntries.length / 8) || 1}</span>
+                        <button 
+                          disabled={logisticsPage >= Math.ceil(logisticsEntries.length / 8)} 
+                          onClick={() => setLogisticsPage(p => p + 1)}
+                          className="px-2 py-1 bg-slate-100 dark:bg-slate-800 disabled:opacity-50 text-slate-800 dark:text-white rounded-md cursor-pointer"
+                        >
+                          Próximo ►
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              ) : currentSlide === 8 ? (
+                /* SLIDE 8: PAINEL EXECUTIVO DE ENTREGAS CD */
+                <div id="slide-delivery-panel" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
+                  
+                  {/* HEADER PANEL */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3`}>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
+                        <Truck className="w-6 h-6 animate-pulse" />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
+                          {language === 'bilingual' ? 'DELIVERY MONITORING STATION / CD 厂内卸货、运输状态及实时交期控制' : language === 'zh' ? 'CD 厂内卸货、运输状态及实时交期控制' : 'DELIVERY STATION'}
+                        </h3>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                          {language === 'zh' ? '控制运输途中、延期、已交付到厂的集装箱节点，协助进行全流程时效管理，降低滞箱费风险' : 'Gestão executiva de status operacionais, faturamento de fretes, transportadoras ativas e reprogramações.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] bg-red-600 text-white font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
+                        CD PLANTA DISPATCH
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* SUMMARY CARDS GRID */}
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                    {[
+                      { status: 'ALL', label: 'Geral', color: 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-800 dark:text-white', count: logisticsEntries.length },
+                      { status: 'PENDENTE', label: 'Pendente', color: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-800/40 dark:text-gray-400', count: logisticsEntries.filter(e => e.status === 'PENDENTE' || !e.status).length },
+                      { status: 'A CAMINHO', label: 'A Caminho', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400', count: logisticsEntries.filter(e => e.status === 'A CAMINHO').length },
+                      { status: 'ADIADO', label: 'Adiado', color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-450', count: logisticsEntries.filter(e => e.status === 'ADIADO').length },
+                      { status: 'ENTREGUE', label: 'Entregue', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400', count: logisticsEntries.filter(e => e.status === 'ENTREGUE').length },
+                      { status: 'CANCELADO', label: 'Cancelado', color: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-450', count: logisticsEntries.filter(e => e.status === 'CANCELADO').length },
+                    ].map(card => (
+                      <div 
+                        key={card.status}
+                        onClick={() => setDeliveryStatusFilter(card.status === 'ALL' ? null : card.status)}
+                        className={`p-3 rounded-xl border hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer shadow-3xs flex flex-col justify-between select-none ${card.color} ${deliveryStatusFilter === card.status ? 'ring-2 ring-red-500' : ''}`}
+                      >
+                        <span className="text-[10px] uppercase font-black tracking-wider block opacity-75">{card.label}</span>
+                        <span className="font-mono text-lg font-black block mt-1">{card.count} <span className="text-[10px] font-normal font-sans opacity-80">EQ</span></span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ACTIVE WORKSPACE: ESTIMATED DELIVERY DATES PANELS */}
+                  <div className="flex-1 overflow-y-auto max-h-[350px] space-y-3.5 pr-1">
+                    {Array.from(new Set(logisticsEntries.map(e => String(e.estimatedDeliveryDate || 'Sem Data')))).map(dateGroup => {
+                      const groupEntries = logisticsEntries.filter(e => String(e.estimatedDeliveryDate || 'Sem Data') === dateGroup && (!deliveryStatusFilter || e.status === deliveryStatusFilter || (deliveryStatusFilter === 'PENDENTE' && !e.status)));
+                      if (groupEntries.length === 0) return null;
+
+                      return (
+                        <div key={dateGroup} className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-800' : 'bg-white border-slate-150 shadow-3xs'} space-y-3`}>
+                          <div className="flex items-center justify-between border-b pb-2.5 border-gray-150/40 dark:border-slate-800">
+                            <div className="flex items-center gap-2">
+                              <Truck className="w-4 h-4 text-red-500 shrink-0" />
+                              <span className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase tracking-tight">
+                                {language === 'zh' ? '计划交付厂内/CD时间：' : 'Data de Entrega Planejada:'} <strong className="font-mono text-red-600 dark:text-red-400 pl-1">{dateGroup}</strong>
+                              </span>
+                            </div>
+                            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">{groupEntries.length} Equipamentos</span>
+                          </div>
+
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-[11px] border-collapse">
+                              <thead>
+                                <tr className="text-[9px] uppercase font-black text-slate-400 dark:text-slate-500 border-b border-gray-100 dark:border-slate-800 tracking-wider">
+                                  <th className="py-2 pl-2">ID Container</th>
+                                  <th className="py-2">HBL (BL)</th>
+                                  <th className="py-2">Lote (Batch) / SAP PO</th>
+                                  <th className="py-2">Status Operacional</th>
+                                  <th className="py-2 font-black text-red-700 dark:text-red-400 bg-red-100/40 dark:bg-red-950/20 text-center">📅 Alterar Data Entrega</th>
+                                  <th className="py-2">Transportadora (Carrier)</th>
+                                  <th className="py-2 text-right pr-2">Custo Unitário Frete</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800/60 font-medium text-slate-750 dark:text-slate-350 font-mono">
+                                {groupEntries.map(entry => (
+                                  <tr key={entry.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-all">
+                                    <td className="py-2 pl-2 font-bold text-slate-900 dark:text-white select-all">{entry.cntrsOriginal}</td>
+                                    <td className="py-2 font-semibold text-slate-500">{entry.bl}</td>
+                                    <td className="py-2 font-sans">{entry.batch} / <span className="text-blue-500 font-bold font-mono">{entry.poSap || 'N/A'}</span></td>
+                                    <td className="py-2">
+                                      <select 
+                                        value={entry.status || 'PENDENTE'} 
+                                        onChange={async (e) => { 
+                                          try {
+                                            await updateDoc(doc(db, 'logisticsData', entry.id || ''), { status: e.target.value }); 
+                                          } catch (err) {
+                                            handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                          }
+                                        }}
+                                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1 text-[10px] font-black uppercase text-slate-800 dark:text-slate-100 outline-none"
+                                      >
+                                        <option value="PENDENTE">PENDENTE</option>
+                                        <option value="A CAMINHO">A CAMINHO</option>
+                                        <option value="ADIADO">ADIADO</option>
+                                        <option value="ENTREGUE">ENTREGUE</option>
+                                        <option value="CANCELADO">CANCELADO</option>
+                                      </select>
+                                    </td>
+                                    <td className="py-1 bg-red-100/10 dark:bg-red-950/5">
+                                      <input 
+                                        type="text" 
+                                        defaultValue={entry.estimatedDeliveryDate || ""} 
+                                        onBlur={async (e) => { 
+                                          try {
+                                            await updateDoc(doc(db, 'logisticsData', entry.id || ''), { estimatedDeliveryDate: e.target.value }); 
+                                          } catch (err) {
+                                            handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                          }
+                                        }}
+                                        className="w-28 mx-auto bg-white dark:bg-slate-800 p-1 border border-red-250 dark:border-red-900/50 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-md font-sans text-[11px] font-bold text-slate-800 dark:text-slate-100 text-center outline-none"
+                                      />
+                                    </td>
+                                    <td className="py-2">
+                                      <input 
+                                        type="text" 
+                                        defaultValue={entry.carrier || "JSL"} 
+                                        onBlur={async (e) => { 
+                                          try {
+                                            await updateDoc(doc(db, 'logisticsData', entry.id || ''), { carrier: e.target.value }); 
+                                          } catch (err) {
+                                            handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
+                                          }
+                                        }}
+                                        className="bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 border border-transparent focus:border-gray-200 px-1 py-0.5 rounded outline-none w-24 text-[11px] font-bold font-sans text-slate-800 dark:text-slate-100"
+                                      />
+                                    </td>
+                                    <td className="py-2 text-right pr-2 font-black text-slate-800 dark:text-white">
+                                      R$ {(entry.valuePerCntr || 1200).toLocaleString()}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                </div>
+              ) : currentSlide === 9 ? (
+                /* SLIDE 9: CALENDÁRIO MENSAL DE DISTRIBUIÇÃO */
+                <div id="slide-delivery-calendar" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
+                  
+                  {/* WORKSPACE */}
+                  <div className="grid grid-cols-12 gap-4 flex-1">
+                    
+                    {/* LEFT WORKSPACE: MONTHLY CALENDAR GRID */}
+                    <div className={`col-span-12 lg:col-span-9 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
+                      <div className="space-y-4 flex-1">
+                        <div className="flex justify-between items-center border-b pb-2.5 border-gray-150/40 dark:border-slate-800">
+                          <span className="font-black uppercase text-xs text-slate-850 dark:text-slate-200 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-red-500 shrink-0" /> {language === 'zh' ? '月度工厂到货排程交付日历' : 'Calendário Mensal de Escoamento - CD Planta'}</span>
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="month" 
+                              value={operationalMonth} 
+                              onChange={(e) => setOperationalMonth(e.target.value)} 
+                              className="bg-slate-50 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 text-xs font-bold rounded px-2 py-1 text-slate-800 dark:text-white outline-none" 
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black uppercase tracking-wider text-gray-400">
+                          <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+                        </div>
+
+                        {/* Calendar Grid Days */}
+                        <div className="grid grid-cols-7 gap-1.5 flex-1">
+                          {Array.from({ length: 31 }).map((_, d) => {
+                            const currentDayStr = `${operationalMonth}-${String(d + 1).padStart(2, '0')}`;
+                            const dayEntries = logisticsEntries.filter(e => String(e.estimatedDeliveryDate) === currentDayStr);
+                            
+                            return (
+                              <div 
+                                key={d} 
+                                onClick={() => { if (dayEntries.length > 0) setSelectedDayCalendar(currentDayStr); }}
+                                className={`min-h-[52px] p-2 rounded-lg border flex flex-col justify-between items-start transition-all ${
+                                  dayEntries.length > 0 
+                                    ? 'bg-red-50/40 border-red-350 hover:bg-red-100/40 dark:bg-red-950/20 dark:border-red-900 cursor-pointer active:scale-95 shadow-3xs' 
+                                    : 'border-gray-100 bg-slate-50/20 dark:border-slate-800/50 text-gray-400 opacity-60'
+                                }`}
+                              >
+                                <span className="font-mono font-black text-slate-900 dark:text-white text-xs leading-none">{d + 1}</span>
+                                {dayEntries.length > 0 && (
+                                  <span className="text-[8px] bg-red-600 text-white font-mono font-black px-1 py-0.2 rounded-xs self-end animate-pulse">
+                                    {dayEntries.length} EQ
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* RIGHT WORKSPACE: WEEKLY ANALYSIS & STATS */}
+                    <div className={`col-span-12 lg:col-span-3 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
+                      <div className="space-y-4">
+                        <div className="border-b pb-2 border-gray-100 dark:border-slate-800">
+                          <span className="font-black uppercase tracking-wider text-[10px] text-gray-400 block">{language === 'zh' ? '周度货柜到货预测分析' : 'Resumo Semanal de Capacidade'}</span>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="p-3 bg-slate-50 dark:bg-slate-800/45 rounded-lg border dark:border-slate-800">
+                            <span className="text-[9px] text-gray-400 uppercase font-black block">{language === 'zh' ? '当月累计交付计划' : 'Capacidade Total Planejada'}</span>
+                            <span className="font-mono text-base font-black text-slate-800 dark:text-white block mt-0.5">
+                              {logisticsEntries.filter(e => String(e.estimatedDeliveryDate).startsWith(operationalMonth)).length} Containers
+                            </span>
+                          </div>
+
+                          <div className="p-3 bg-slate-50 dark:bg-slate-800/45 rounded-lg border dark:border-slate-800">
+                            <span className="text-[9px] text-gray-400 uppercase font-black block">{language === 'zh' ? '预计产生总运费 faturamento' : 'Faturamento Estimado'}</span>
+                            <span className="font-mono text-base font-black text-emerald-600 dark:text-emerald-400 block mt-0.5">
+                              R$ {logisticsEntries
+                                .filter(e => String(e.estimatedDeliveryDate).startsWith(operationalMonth))
+                                .reduce((sum, e) => sum + (e.valuePerCntr || 1200), 0)
+                                .toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-[8px] font-mono text-gray-400 uppercase text-center font-bold tracking-tight border-t border-dashed border-gray-200 dark:border-slate-800 pt-3">
+                        📊 INTEGRATED LOGISTICS AGENT v1.0
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              ) : null}
             </div> {/* END OF ZOOM SCALE WRAPPER */}
 
             {/* MARCA D'ÁGUA PERSONALIZADA DE SLIDE CORPORATIVO */}
@@ -9899,6 +10583,160 @@ export default function App() {
               >
                 {language === 'bilingual' ? 'Confirmar / 确认' : 'Confirmar'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: GOOGLE SHEETS & LOCAL EXCEL IMPORT SYNC */}
+      {sheetsModalOpen && (
+        <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`relative rounded-2xl shadow-2xl w-full max-w-lg p-6 border transition-all ${
+            theme === 'dark' 
+              ? 'bg-[#1e293b] border-slate-700 text-white' 
+              : 'bg-white border-slate-100 text-slate-800'
+          }`}>
+            <div className="flex justify-between items-center border-b pb-3 mb-4 border-slate-100 dark:border-slate-800">
+              <h3 className="text-sm font-black uppercase flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-emerald-600 shrink-0" />
+                {language === 'zh' ? '集成数据源：在线 Google Sheets 与本地 Excel/CSV' : 'Importador e Sincronizador de Logística'}
+              </h3>
+              <button 
+                onClick={() => setSheetsModalOpen(false)} 
+                className="text-gray-400 hover:text-rose-600 p-1 rounded-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs font-bold">
+              {/* Opção A: Sincronizador de Link do Google Sheets */}
+              <div className="space-y-2">
+                <span className="text-[10px] text-emerald-600 uppercase tracking-widest block">Opção A: Sincronizar link da Planilha Google (Publicado)</span>
+                <input 
+                  type="text" 
+                  value={sheetsUrl} 
+                  onChange={(e) => setSheetsUrl(e.target.value)}
+                  placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv" 
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-2.5 rounded-lg text-xs font-semibold outline-none"
+                />
+                <button 
+                  onClick={handleSyncGoogleSheets}
+                  className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black uppercase tracking-wider cursor-pointer"
+                >
+                  Sincronizar Planilha Online
+                </button>
+              </div>
+
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
+                <span className="flex-shrink mx-4 text-gray-400 uppercase text-[9px] tracking-widest font-black">ou</span>
+                <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
+              </div>
+
+              {/* Opção B: Drag and Drop Local Excel/CSV File Loader */}
+              <div className="space-y-2">
+                <span className="text-[10px] text-blue-600 uppercase tracking-widest block">Opção B: Carregar arquivo Excel/CSV local</span>
+                <div className="border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl p-6 text-center hover:bg-slate-50 dark:hover:bg-slate-800/35 transition-all cursor-pointer relative">
+                  <input 
+                    type="file" 
+                    accept=".xlsx, .xls, .csv" 
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const reader = new FileReader();
+                        reader.onload = async (evt) => {
+                          const bstr = evt.target?.result;
+                          const wb = XLSX.read(bstr, { type: 'binary' });
+                          const firstSheet = wb.Sheets[wb.SheetNames[0]];
+                          const rows = XLSX.utils.sheet_to_json(firstSheet);
+                          await handleImportParsedRows(rows);
+                          setSheetsModalOpen(false);
+                        };
+                        reader.readAsBinaryString(file);
+                      } catch (err) {
+                        console.error(err);
+                        alert("Erro ao ler o arquivo selecionado.");
+                      }
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="bg-blue-100 text-blue-600 dark:bg-blue-950 p-2.5 rounded-full">
+                      <FileSpreadsheet className="w-6 h-6" />
+                    </div>
+                    <span className="text-xs font-black">{language === 'zh' ? '拖拽或点击上传本地 Excel / CSV' : 'Arraste ou clique para selecionar arquivo local'}</span>
+                    <span className="text-[9.5px] text-gray-400 font-bold">Aceita .XLSX, .XLS, .CSV contendo colunas: Container, BL, Lote, Navio...</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: MONTHLY CALENDAR DAY DETAILS */}
+      {selectedDayCalendar && (
+        <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`relative rounded-2xl shadow-2xl w-full max-w-4xl p-6 border transition-all ${
+            theme === 'dark' 
+              ? 'bg-[#1e293b] border-slate-700 text-white' 
+              : 'bg-white border-slate-100 text-slate-800'
+          }`}>
+            <div className="flex justify-between items-center border-b pb-3 mb-4 border-slate-100 dark:border-slate-800">
+              <h3 className="text-sm font-black uppercase flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-red-600 shrink-0" />
+                {language === 'zh' ? `到货清单详情 - ${selectedDayCalendar}` : `Equipamentos Agendados para: ${selectedDayCalendar}`}
+              </h3>
+              <button 
+                onClick={() => setSelectedDayCalendar(null)} 
+                className="text-gray-400 hover:text-rose-600 p-1 rounded-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-x-auto max-h-[300px]">
+              <table className="w-full text-left text-xs border-collapse font-mono">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800 text-[9px] uppercase text-gray-500 border-b border-gray-150 dark:border-slate-800 font-black">
+                    <th className="p-2.5 pl-3">ID Container</th>
+                    <th className="p-2.5">BL</th>
+                    <th className="p-2.5">Batch</th>
+                    <th className="p-2.5">Bonded Warehouse</th>
+                    <th className="p-2.5">Status Comex</th>
+                    <th className="p-2.5">Status Entrega</th>
+                    <th className="p-2.5">Transportadora (Carrier)</th>
+                    <th className="p-2.5 text-right pr-3">Valor de Frete</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800/60 font-semibold text-slate-700 dark:text-slate-350">
+                  {logisticsEntries
+                    .filter(e => String(e.estimatedDeliveryDate) === selectedDayCalendar)
+                    .map((entry, index) => (
+                      <tr key={entry.id || index} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
+                        <td className="p-2 pl-3 font-bold text-slate-900 dark:text-white select-all">{entry.cntrsOriginal}</td>
+                        <td className="p-2">{entry.bl}</td>
+                        <td className="p-2 font-sans font-bold">{entry.batch}</td>
+                        <td className="p-2 font-sans uppercase text-[10.5px]">{entry.bondedWarehouse}</td>
+                        <td className="p-2 font-sans uppercase">
+                          <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-black ${entry.statusComex === 'CARGO DELIVERED' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/20'}`}>
+                            {entry.statusComex}
+                          </span>
+                        </td>
+                        <td className="p-2 font-sans uppercase">
+                          <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-black ${entry.status === 'ENTREGUE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'}`}>
+                            {entry.status || 'PENDENTE'}
+                          </span>
+                        </td>
+                        <td className="p-2 font-sans font-bold">{entry.carrier || 'N/A'}</td>
+                        <td className="p-2 text-right pr-3 font-black text-slate-900 dark:text-white">R$ {(entry.valuePerCntr || 1200).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
