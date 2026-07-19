@@ -1437,7 +1437,7 @@ export default function App() {
     return () => {
       // clearInterval(intervalData);
     };
-  }, [user]);
+  }, []);
 
   // FUNÇÃO AUXILIAR PARA OBTER ISO WEEK
   const getISOWeek = (date: Date): string => {
@@ -7577,11 +7577,11 @@ export default function App() {
                     // Buffer metrics - dynamically matching "Visão Geral" and "BYD Buffer"
                     const bufFull = yards.buffer && (yards.buffer.cheio > 0)
                       ? yards.buffer.cheio 
-                      : filteredContainersForDemurrage.filter(c => c.yardId === 'buffer' && c.status === 'CHEIO').length;
+                      : filteredContainersForDemurrage.filter(c => (c.yardId === 'buffer' || c.yardId === 'intermaritima') && c.status === 'CHEIO').length;
                     
                     const bufEmpty = yards.buffer && (yards.buffer.vazio > 0)
                       ? yards.buffer.vazio 
-                      : filteredContainersForDemurrage.filter(c => c.yardId === 'buffer' && c.status === 'VAZIO').length;
+                      : filteredContainersForDemurrage.filter(c => (c.yardId === 'buffer' || c.yardId === 'intermaritima') && c.status === 'VAZIO').length;
                     
                     const bufCount = bufFull + bufEmpty;
 
