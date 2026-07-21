@@ -4767,8 +4767,18 @@ export default function App() {
       )}
 
       {/* BOTÕES FLUTUANTES NO MODO APRESENTAÇÃO */}
-      {!isEditMode && viewParadigm === 'ppt' && (
+      {viewParadigm === 'ppt' && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
+          <button
+            id="btn-back-to-portal"
+            onClick={() => setViewParadigm('website')}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 font-black transition-all hover:scale-105 border border-red-500 cursor-pointer"
+            title="Retornar para o Inbound Portal"
+          >
+            <LayoutGrid className="w-5 h-5 text-white" />
+            <span>Retornar ao Inbound Portal</span>
+          </button>
+
           {/* Exportar PDF Flutuante */}
           <button
             id="btn-presentation-pdf"
@@ -4792,14 +4802,16 @@ export default function App() {
             </span>
           </button>
 
-          <button
-            id="btn-back-to-editor"
-            onClick={() => setIsEditMode(true)}
-            className="bg-[#1e293b] text-white hover:bg-slate-800 px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 font-semibold transition-all hover:scale-105 border border-slate-700"
-          >
-            <Sliders className="w-5 h-5 text-emerald-400" />
-            <span>Voltar ao Editor</span>
-          </button>
+          {!isEditMode && (
+            <button
+              id="btn-back-to-editor"
+              onClick={() => setIsEditMode(true)}
+              className="bg-[#1e293b] text-white hover:bg-slate-800 px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 font-semibold transition-all hover:scale-105 border border-slate-700"
+            >
+              <Sliders className="w-5 h-5 text-emerald-400" />
+              <span>Voltar ao Editor</span>
+            </button>
+          )}
         </div>
       )}
 
