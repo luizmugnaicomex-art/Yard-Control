@@ -680,6 +680,23 @@ export default function App() {
     return result;
   };
 
+  const matchContainerSearch = (c: Container, rawQuery: string) => {
+    if (!rawQuery) return true;
+    const q = rawQuery.trim().toLowerCase();
+    if (q.startsWith('lot ') || q.startsWith('lote ')) {
+      const lotTerm = q.replace(/^(lot|lote)\s+/, '').trim();
+      if (!lotTerm) return true;
+      const clote = String(c.lote || '').toLowerCase();
+      return clote.includes(lotTerm);
+    }
+    const cid = String(c.id || '').toLowerCase();
+    const cbl = String(c.bl || '').toLowerCase();
+    const clote = String(c.lote || '').toLowerCase();
+    const cmodel = String(c.modelo || '').toLowerCase();
+    const ccomp = String(c.componente || '').toLowerCase();
+    return cid.includes(q) || cbl.includes(q) || clote.includes(q) || cmodel.includes(q) || ccomp.includes(q);
+  };
+
   // ESTADOS DE CONTÊINERES (Para detalhamento por área)
   const [globalFilterQuery, setGlobalFilterQuery] = useState("");
   const [selectedYardKey, setSelectedYardKey] = useState<string | null>(null);
@@ -1016,6 +1033,7 @@ export default function App() {
 
   // ESTADOS DO NOVO FORM DE VINCULAR CONTAINER DOS PÁTIOS (WAREHOUSES)
   const [ydScheduleMode, setYdScheduleMode] = useState<'container' | 'bl'>('container');
+  const [ydSearchFilter, setYdSearchFilter] = useState<string>("");
   const [selectedYdContainerId, setSelectedYdContainerId] = useState<string>("");
   const [selectedYdBl, setSelectedYdBl] = useState<string>("");
   const [ydBl, setYdBl] = useState<string>("");
@@ -5107,21 +5125,13 @@ export default function App() {
                               type="text"
                               value={globalFilterQuery}
                               onChange={(e) => setGlobalFilterQuery(e.target.value)}
-                              placeholder={language === 'bilingual' ? '🔍 Digite BL, Container (ex: MSCU...) ou Lote (ex: EQEKL...) para ver o armazém...' : '🔍 Digite BL, Nº do Container ou Lote para localizar o armazém instantaneamente...'}
+                              placeholder={language === 'bilingual' ? '🔍 Digite BL, Container ou Lote (ex: lot 442) para ver o armazém...' : '🔍 Digite BL, Nº do Container ou Lote (ex: lot 442) para localizar o armazém...'}
                               className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-red-500 transition-all font-mono"
                             />
                           </div>
 
                           {globalFilterQuery.trim() !== '' && (() => {
-                            const q = globalFilterQuery.trim().toLowerCase();
-                            const matchedContainers = containers.filter(c => {
-                              const cid = String(c.id || '').toLowerCase();
-                              const cbl = String(c.bl || '').toLowerCase();
-                              const clote = String(c.lote || '').toLowerCase();
-                              const cmodel = String(c.modelo || '').toLowerCase();
-                              const ccomp = String(c.componente || '').toLowerCase();
-                              return cid.includes(q) || cbl.includes(q) || clote.includes(q) || cmodel.includes(q) || ccomp.includes(q);
-                            });
+                            const matchedContainers = containers.filter(c => matchContainerSearch(c, globalFilterQuery));
 
                             return (
                               <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -8695,7 +8705,7 @@ export default function App() {
                         </p>
 
                         <div className="space-y-2.5 text-xs">
-                          {/* Container or BL Select */}
+                          {/* Container or BL Select with Search Input */}
                           <div>
                             <label className="block text-[10px] font-black uppercase text-gray-500 dark:text-gray-450 mb-1">
                               {ydScheduleMode === 'container'
@@ -8703,6 +8713,19 @@ export default function App() {
                                 : (language === 'zh' ? '选择整单 HBL (BL) *' : 'Selecionar BL do Pátio *')
                               }
                             </label>
+
+                            {/* Search Filter Input */}
+                            <div className="mb-1.5 relative">
+                              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-gray-400" />
+                              <input
+                                type="text"
+                                value={ydSearchFilter}
+                                onChange={(e) => setYdSearchFilter(e.target.value)}
+                                placeholder={language === 'zh' ? (ydScheduleMode === 'container' ? '🔍 搜索集装箱号或批次(如 lot 442)...' : '🔍 搜索 BL / 提单或批次(如 lot 442)...') : (ydScheduleMode === 'container' ? '🔍 Digite container ou lote (ex: lot 442)...' : '🔍 Digite BL ou lote (ex: lot 442)...')}
+                                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono font-bold text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-red-500"
+                              />
+                            </div>
+
                             {ydScheduleMode === 'container' ? (
                               <select 
                                 value={selectedYdContainerId} 
@@ -8710,12 +8733,15 @@ export default function App() {
                                 className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-2 rounded-lg font-mono font-bold text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-red-500"
                               >
                                 <option value="">-- {language === 'zh' ? '请选择集装箱' : 'Selecione o Container'} --</option>
-                                {containers.map(c => {
+                                {containers.filter(c => {
+                                  if (!ydSearchFilter) return true;
+                                  return matchContainerSearch(c, ydSearchFilter);
+                                }).map(c => {
                                   const yardName = yards[c.yardId]?.name || c.yardId;
                                   const isScheduled = logisticsEntries.some(le => le.cntrsOriginal === c.id);
                                   return (
                                     <option key={c.id} value={c.id}>
-                                      {c.id} - {yardName} ({c.status}) {isScheduled ? '• [Scheduled]' : ''}
+                                      {c.id} {c.lote ? `[Lote: ${c.lote}]` : ''} - {yardName} ({c.status}) {isScheduled ? '• [Scheduled]' : ''}
                                     </option>
                                   );
                                 })}
@@ -8727,7 +8753,15 @@ export default function App() {
                                 className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-2 rounded-lg font-mono font-bold text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-red-500"
                               >
                                 <option value="">-- {language === 'zh' ? '请选择 HBL (BL)' : 'Selecione o BL'} --</option>
-                                {Array.from(new Set(containers.map(c => c.bl).filter(Boolean))).map(blVal => {
+                                {Array.from(new Set(containers.map(c => c.bl).filter(Boolean))).filter(blVal => {
+                                  if (!ydSearchFilter) return true;
+                                  const q = ydSearchFilter.trim().toLowerCase();
+                                  if (q.startsWith('lot ') || q.startsWith('lote ')) {
+                                    const lotTerm = q.replace(/^(lot|lote)\s+/, '').trim();
+                                    return containers.some(c => c.bl === blVal && String(c.lote || '').toLowerCase().includes(lotTerm));
+                                  }
+                                  return String(blVal).toLowerCase().includes(q) || containers.some(c => c.bl === blVal && (c.id.toLowerCase().includes(q) || (c.lote && String(c.lote).toLowerCase().includes(q))));
+                                }).map(blVal => {
                                   const cntrsCount = containers.filter(c => c.bl === blVal).length;
                                   const yardNames = Array.from(new Set(containers.filter(c => c.bl === blVal).map(c => yards[c.yardId]?.name || c.yardId || ""))).filter(Boolean);
                                   return (
@@ -11295,8 +11329,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
         const filteredContainers = containers.filter(c => {
           if (c.yardId !== selectedYardKey) return false;
           if (containerSearch.trim()) {
-            const s = containerSearch.trim().toLowerCase();
-            if (!c.id.toLowerCase().includes(s)) return false;
+            if (!matchContainerSearch(c, containerSearch)) return false;
           }
           if (containerStatusFilter !== 'ALL' && c.status !== containerStatusFilter) return false;
           if (containerCategoryFilter !== 'ALL' && c.category !== containerCategoryFilter) return false;
