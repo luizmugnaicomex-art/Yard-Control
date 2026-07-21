@@ -681,6 +681,7 @@ export default function App() {
   };
 
   // ESTADOS DE CONTÊINERES (Para detalhamento por área)
+  const [globalFilterQuery, setGlobalFilterQuery] = useState("");
   const [selectedYardKey, setSelectedYardKey] = useState<string | null>(null);
   const [containers, setContainers] = useState<Container[]>(() => JSON.parse(JSON.stringify(INITIAL_CONTAINERS)));
   
@@ -5074,6 +5075,109 @@ export default function App() {
                     return (
                       <div className="flex flex-col gap-6">
                         
+                        {/* GLOBAL QUICK FILTER FOR BL, CONTAINER, LOT */}
+                        <div className="bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/60 p-4 rounded-xl shadow-sm flex flex-col gap-3">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 bg-red-500/10 dark:bg-red-500/20 text-red-600 rounded-lg">
+                                <Search className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <h4 className="font-extrabold text-xs text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                                  {language === 'bilingual' ? 'Pesquisa Rápida Global (BL, Container, Lote) / 全局快速检索 (提单, 集装箱号, 批次)' : 'Pesquisa Rápida Global (BL, Container, Lote)'}
+                                </h4>
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                  {language === 'bilingual' ? 'Digite para localizar instantaneamente em qual pátio/armazém o contêiner, BL ou lote está / 输入以实时定位集装箱、提单或批次所在的仓库/堆场' : 'Digite para localizar instantaneamente em qual pátio ou armazém o item está alocado.'}
+                                </p>
+                              </div>
+                            </div>
+                            {globalFilterQuery && (
+                              <button
+                                onClick={() => setGlobalFilterQuery("")}
+                                className="text-[11px] font-bold text-red-600 hover:text-red-700 bg-red-50 dark:bg-red-950/40 px-2.5 py-1 rounded-lg cursor-pointer transition-all"
+                              >
+                                {language === 'bilingual' ? 'Limpar Filtro / 清除筛选' : 'Limpar Filtro'}
+                              </button>
+                            )}
+                          </div>
+                          
+                          <div className="relative">
+                            <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+                            <input
+                              type="text"
+                              value={globalFilterQuery}
+                              onChange={(e) => setGlobalFilterQuery(e.target.value)}
+                              placeholder={language === 'bilingual' ? '🔍 Digite BL, Container (ex: MSCU...) ou Lote (ex: EQEKL...) para ver o armazém...' : '🔍 Digite BL, Nº do Container ou Lote para localizar o armazém instantaneamente...'}
+                              className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-red-500 transition-all font-mono"
+                            />
+                          </div>
+
+                          {globalFilterQuery.trim() !== '' && (() => {
+                            const q = globalFilterQuery.trim().toLowerCase();
+                            const matchedContainers = containers.filter(c => {
+                              const cid = String(c.id || '').toLowerCase();
+                              const cbl = String(c.bl || '').toLowerCase();
+                              const clote = String(c.lote || '').toLowerCase();
+                              const cmodel = String(c.modelo || '').toLowerCase();
+                              const ccomp = String(c.componente || '').toLowerCase();
+                              return cid.includes(q) || cbl.includes(q) || clote.includes(q) || cmodel.includes(q) || ccomp.includes(q);
+                            });
+
+                            return (
+                              <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center justify-between text-[11px] font-bold text-gray-600 dark:text-gray-400">
+                                  <span>{language === 'bilingual' ? `Resultados encontrados: ${matchedContainers.length} contêiner(es) / 找到结果: ${matchedContainers.length} 个集装箱` : `Resultados encontrados: ${matchedContainers.length} contêiner(es)`}</span>
+                                  <span className="text-red-600 font-mono text-[10px]">{language === 'bilingual' ? 'Clique no pátio para abrir / 点击堆场打开' : 'Clique no botão para abrir o pátio'}</span>
+                                </div>
+                                {matchedContainers.length === 0 ? (
+                                  <div className="text-center py-4 text-xs text-gray-400 font-medium bg-slate-50 dark:bg-slate-800/40 rounded-lg">
+                                    {language === 'bilingual' ? 'Nenhum contêiner, BL ou lote encontrado com este termo. / 未找到匹配的集装箱、提单或批次。' : 'Nenhum contêiner, BL ou lote encontrado com este termo.'}
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[280px] overflow-y-auto pr-1">
+                                    {matchedContainers.map((mc, idx) => {
+                                      const yardObj = yards[mc.yardId];
+                                      const yardName = yardObj ? yardObj.name : mc.yardId;
+                                      return (
+                                        <div key={mc.id || idx} className="bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 p-2.5 rounded-lg flex flex-col justify-between gap-2 shadow-xs hover:border-red-500 transition-all">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div>
+                                              <span className="font-mono font-black text-xs text-slate-900 dark:text-white select-all">{mc.id}</span>
+                                              <div className="text-[10px] text-gray-500 dark:text-gray-400 font-mono">BL: <span className="font-bold text-slate-700 dark:text-slate-300">{mc.bl || 'N/A'}</span></div>
+                                            </div>
+                                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${mc.status === 'CHEIO' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}`}>
+                                              {mc.status || 'CHEIO'}
+                                            </span>
+                                          </div>
+                                          <div className="text-[10.5px] font-sans flex flex-col gap-0.5 border-t border-slate-200/60 dark:border-slate-700/60 pt-1.5">
+                                            <div className="flex justify-between">
+                                              <span className="text-gray-400">{language === 'bilingual' ? 'Lote / 批次:' : 'Lote:'}</span>
+                                              <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">{mc.lote || '-'}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                              <span className="text-gray-400">{language === 'bilingual' ? 'Armazém / 仓库:' : 'Warehouse / Pátio:'}</span>
+                                              <span className="font-extrabold text-blue-600 dark:text-blue-400 uppercase text-[10px] truncate max-w-[140px]" title={yardName}>{yardName}</span>
+                                            </div>
+                                          </div>
+                                          <button
+                                            onClick={() => {
+                                              setSelectedYardKey(mc.yardId);
+                                              setGlobalFilterQuery("");
+                                            }}
+                                            className="mt-1 w-full bg-red-600 hover:bg-red-700 text-white text-[10px] font-black py-1.5 rounded transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+                                          >
+                                            <span>{language === 'bilingual' ? `Ir para ${yardName} / 打开该堆场` : `Abrir Pátio (${yardName})`}</span>
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
                         {/* MAIN TITLE BLOCK */}
                         <div className="flex items-center gap-2 border-b pb-1.5 border-gray-200 dark:border-slate-800">
                           <Database className="w-4 h-4 text-red-500 animate-pulse" />
