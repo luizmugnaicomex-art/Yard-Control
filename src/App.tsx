@@ -945,6 +945,7 @@ export default function App() {
 
   // NAVEGAÇÃO DE SLIDES E COMENTÁRIOS DAS NOVAS PÁGINAS
   const [currentSlide, setCurrentSlide] = useState(0); // 0: Geral, 1: Pátios, 2: Navios, 3: Gráficos
+  const [chartTab, setChartTab] = useState<'drain' | 'space'>('space');
   const [yardsComment, setYardsComment] = useState("Inserir comentários sobre a capacidade e ocupação dos pátios de forma bilíngue aqui. / 在此输入关于堆场容量、占用比率的双语说明。");
   const [vesselNote1, setVesselNote1] = useState("Escala regular de navios ativa - Monitoramento detalhado das janelas de atracação. / 常规活跃船舶靠泊计划 - 详细监控和管理泊位窗口。");
   const [vesselNote2, setVesselNote2] = useState("Destaques operacionais dos navios (Ex: Prioridades de descarga BYD). / 船舶运营重点亮点 (例如：比亚迪重箱卸船优先顺序)。");
@@ -6694,17 +6695,36 @@ export default function App() {
                               <TrendingUp className="w-5 h-5" />
                             </div>
                             <div>
-                              <h3 className="font-extrabold text-[12px] text-gray-800 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
-                                {language === 'bilingual' ? 'Simulador de Escoamento de Carga / 货量流速仿真模拟器' : 'Cargo Drain Simulation'}
-                              </h3>
+                              <div className="flex items-center gap-3 mb-1">
+                                <h3 className="font-extrabold text-[12px] text-gray-800 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
+                                  {language === 'bilingual' ? 'Simulação de Escoamento / 仿真模拟器' : 'Cargo Drain Simulation'}
+                                </h3>
+                                <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                                  <button
+                                    onClick={() => setChartTab('drain')}
+                                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${chartTab === 'drain' ? 'bg-white dark:bg-slate-700 text-amber-600 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
+                                  >
+                                    {language === 'zh' ? '流速模拟' : 'Drain'}
+                                  </button>
+                                  <button
+                                    onClick={() => setChartTab('space')}
+                                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${chartTab === 'space' ? 'bg-white dark:bg-slate-700 text-amber-600 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
+                                  >
+                                    {language === 'zh' ? '空间占用' : 'Space'}
+                                  </button>
+                                </div>
+                              </div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 font-sans">
-                                {language === 'bilingual' ? 'Ajuste os cenários e capacidades para recalcular o gráfico de backlog / 调节不同发运场景与每日交付能力，实时重算积压出清曲线' : 'Adjust scenarios and rates to dynamically recalculate the backlog burn-down.'}
+                                {chartTab === 'drain' 
+                                  ? (language === 'bilingual' ? 'Ajuste os cenários e capacidades para recalcular o gráfico de backlog / 调节不同发运场景与每日交付能力，实时重算积压出清曲线' : 'Adjust scenarios and rates to dynamically recalculate the backlog burn-down.')
+                                  : (language === 'bilingual' ? 'Análise visual de capacidade vs ocupação nos terminais / 各堆场/仓库容量及当前占用率的可视化分析' : 'Visual analysis of capacity vs occupancy across yards.')}
                               </p>
                             </div>
                           </div>
 
-                          {/* Toggles & Sliders */}
-                          <div className="flex flex-wrap items-center gap-4">
+                          {/* Toggles & Sliders (Only show if on drain tab) */}
+                          {chartTab === 'drain' && (
+                            <div className="flex flex-wrap items-center gap-4">
                             {/* Scenario Selector */}
                             <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 p-0.5 bg-slate-50 dark:bg-slate-800">
                               <button 
@@ -6780,10 +6800,13 @@ export default function App() {
                               </span>
                             </div>
                           </div>
+                          )}
                         </div>
 
-                        {/* Metade Superior: Gráficos Lado a Lado em Escala Maior */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1">
+                        {chartTab === 'drain' ? (
+                          <>
+                            {/* Metade Superior: Gráficos Lado a Lado em Escala Maior */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1">
                           
                           {/* Gráfico 1 Expandido */}
                           <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 font-sans' : 'bg-white border-slate-100 shadow-sm font-sans'} flex flex-col justify-between h-[270px]`}>
@@ -7035,6 +7058,117 @@ export default function App() {
                     </div>
 
                   </div>
+                          </>
+                        ) : (
+                          <div className="flex-1 flex flex-col mt-2">
+                            <div className={`p-5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col flex-1 min-h-[400px]`}>
+                              <h4 className="text-[12px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                                <Package className="w-5 h-5 text-indigo-500" />
+                                {language === 'bilingual' ? 'Distribuição de Ocupação nos Pátios e CDs / 各堆场/仓库容量及当前占用率' : 'Yard & Warehouse Occupancy Distribution'}
+                              </h4>
+                              <div className="flex-1 relative w-full h-full pt-4 pr-6 pb-6 pl-10 text-sans">
+                                {(() => {
+                                   const yardsData = Object.entries(yards).map(([key, y]) => {
+                                     const occupancy = (y as any).cheio || 0;
+                                     const capacity = (y as any).capacity || 1;
+                                     const percentage = (occupancy / capacity) * 100;
+                                     const isOverloaded = percentage > 90;
+                                     const backlog = ((y as any).porto || 0) + ((y as any).prontoColeta || 0);
+                                     return {
+                                       key,
+                                       name: (y as any).name,
+                                       occupancy,
+                                       capacity,
+                                       percentage,
+                                       isOverloaded,
+                                       backlog
+                                     };
+                                   }).filter(d => d.capacity > 0);
+                                   
+                                   const maxCap = Math.max(...yardsData.map(d => d.capacity), 2500);
+                                   const maxOcc = Math.max(...yardsData.map(d => d.occupancy), 2000);
+                                   const xAxisMax = Math.ceil(maxCap / 500) * 500;
+                                   const yAxisMax = Math.ceil(maxOcc / 500) * 500;
+                                   
+                                   return (
+                                     <svg className="w-full h-full overflow-visible" viewBox="0 0 800 400" preserveAspectRatio="none">
+                                       {/* Background Grid */}
+                                       {[0, 1, 2, 3, 4].map(i => {
+                                         const y = 400 - (i * 100);
+                                         const labelVal = Math.round((i / 4) * yAxisMax);
+                                         return (
+                                           <g key={`grid-y-${i}`}>
+                                             <line x1="0" y1={y} x2="800" y2={y} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} strokeWidth="1" strokeDasharray="4 4" />
+                                             <text x="-10" y={y + 4} fill={theme === 'dark' ? '#94a3b8' : '#64748b'} fontSize="12" fontWeight="600" textAnchor="end">{labelVal}</text>
+                                           </g>
+                                         );
+                                       })}
+                                       {[0, 1, 2, 3, 4].map(i => {
+                                         const x = i * 200;
+                                         const labelVal = Math.round((i / 4) * xAxisMax);
+                                         return (
+                                           <g key={`grid-x-${i}`}>
+                                             <line x1={x} y1="0" x2={x} y2="400" stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} strokeWidth="1" strokeDasharray="4 4" />
+                                             <text x={x} y="420" fill={theme === 'dark' ? '#94a3b8' : '#64748b'} fontSize="12" fontWeight="600" textAnchor="middle">{labelVal}</text>
+                                           </g>
+                                         );
+                                       })}
+                                       
+                                       {/* Diagonal 100% capacity line */}
+                                       <line x1="0" y1="400" x2={(yAxisMax / xAxisMax) * 800} y2="0" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="6 6" />
+                                       <text x={((yAxisMax / xAxisMax) * 800) - 10} y="15" fill="#ef4444" fontSize="11" fontWeight="bold" transform={`rotate(-${Math.atan((400)/( (yAxisMax/xAxisMax)*800 )) * (180/Math.PI)}, ${((yAxisMax / xAxisMax) * 800) - 10}, 15)`}>100% Capacity</text>
+                                       
+                                       {/* X and Y Axes labels */}
+                                       <text x="400" y="445" fill={theme === 'dark' ? '#cbd5e1' : '#334155'} fontSize="14" fontWeight="800" textAnchor="middle">TOTAL YARD CAPACITY (FEU)</text>
+                                       <text x="-30" y="200" fill={theme === 'dark' ? '#cbd5e1' : '#334155'} fontSize="14" fontWeight="800" textAnchor="middle" transform="rotate(-90, -30, 200)">CURRENT OCCUPANCY (FEU)</text>
+                                       
+                                       {/* Dots (Scatter) */}
+                                       {yardsData.map((d, i) => {
+                                         const cx = (d.capacity / xAxisMax) * 800;
+                                         const cy = 400 - ((d.occupancy / yAxisMax) * 400);
+                                         const radius = 10 + Math.min(d.backlog / 20, 30); 
+                                         const color = d.isOverloaded ? '#ef4444' : (d.percentage > 70 ? '#f59e0b' : '#10b981');
+                                         
+                                         return (
+                                           <g key={`scatter-${i}`}>
+                                             <circle cx={cx} cy={cy} r={radius} fill={color} fillOpacity="0.4" stroke={color} strokeWidth="2" className="transition-all hover:fill-opacity-80 cursor-pointer" />
+                                             <circle cx={cx} cy={cy} r="3" fill={color} />
+                                             <text x={cx} y={cy - radius - 8} fill={theme === 'dark' ? '#f8fafc' : '#0f172a'} fontSize="12" fontWeight="bold" textAnchor="middle" className="pointer-events-none drop-shadow-md">
+                                               {d.name}
+                                             </text>
+                                             <text x={cx} y={cy - radius + 5} fill={theme === 'dark' ? '#cbd5e1' : '#475569'} fontSize="10" fontWeight="600" textAnchor="middle" className="pointer-events-none drop-shadow-md">
+                                               {Math.round(d.percentage)}%
+                                             </text>
+                                           </g>
+                                         );
+                                       })}
+                                     </svg>
+                                   );
+                                })()}
+                              </div>
+                              <div className="flex justify-center gap-6 mt-12 mb-2">
+                                 <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-emerald-500 opacity-60 border border-emerald-500"></div>
+                                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Healthy (&lt; 70%)</span>
+                                 </div>
+                                 <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-amber-500 opacity-60 border border-amber-500"></div>
+                                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Warning (70% - 90%)</span>
+                                 </div>
+                                 <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-red-500 opacity-60 border border-red-500"></div>
+                                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Overloaded (&gt; 90%)</span>
+                                 </div>
+                                 <div className="flex items-center gap-2 ml-4">
+                                    <div className="w-4 h-4 rounded-full border-2 border-slate-400 border-dashed flex items-center justify-center">
+                                      <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Bubble Size = Backlog Volume</span>
+                                 </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                 </>
               );
             })()}
