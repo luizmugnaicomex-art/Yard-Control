@@ -386,6 +386,11 @@ const ORIGINAL_YARDS: YardsState = {
   clia: { name: 'CLIA EMPORIO', type: 'BONDED', capacity: 300, cheio: 109, vazio: 0, porto: 48, prontoColeta: 55, delivered: 371, previous_total: 120 },
   ag: { name: 'AG - INTER CDEX', type: 'WAREHOUSE', capacity: 2200, cheio: 844, vazio: 0, porto: 0, prontoColeta: 122, delivered: 144, previous_total: 850 },
   cts: { name: 'CTS - PONTUAL', type: 'WAREHOUSE', capacity: 1200, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
+  cts_jew: { name: 'CTS - JEW', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
+  cts_logic: { name: 'CTS - LOGIC', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
+  cts_uni: { name: 'CTS - UNI', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
+  cts_vbr: { name: 'CTS - VBR', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
+  multilog: { name: 'MULTILOG', type: 'WAREHOUSE', capacity: 1500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   buffer: { name: 'BYD BUFFER', type: 'BUFFER', capacity: 800, cheio: 500, vazio: 483, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 950 },
 };
 
@@ -1324,6 +1329,15 @@ export default function App() {
         yardsSnapshot.forEach((docSnap) => {
           newYards[docSnap.id] = docSnap.data() as Yard;
         });
+        
+        // Ensure all original yards exist even if database was initialized before they were added
+        Object.entries(ORIGINAL_YARDS).forEach(([key, originalYard]) => {
+          if (!newYards[key]) {
+            newYards[key] = { ...originalYard };
+            setDoc(doc(db, 'yards', key), originalYard).catch(e => console.warn('Falha ao adicionar novo yard:', e));
+          }
+        });
+        
         setYards(newYards);
 
         // Vessels
@@ -3189,7 +3203,12 @@ export default function App() {
       ["   - TPC (Warehouse / 仓库)"],
       ["   - CLIA (Warehouse / 仓库)"],
       ["   - AG (Warehouse / 仓库)"],
-      ["   - CTS (Warehouse / 仓库)"],
+      ["   - CTS - PONTUAL (Warehouse / 仓库)"],
+      ["   - CTS - JEW (Warehouse / 仓库)"],
+      ["   - CTS - LOGIC (Warehouse / 仓库)"],
+      ["   - CTS - UNI (Warehouse / 仓库)"],
+      ["   - CTS - VBR (Warehouse / 仓库)"],
+      ["   - MULTILOG (Warehouse / 仓库)"],
       ["3. Coluna 'CONTAINER' é obrigatória. / 'CONTAINER'列为必填项。"],
       ["4. Carga importada será inserida como Cheio (CHEIO) por padrão. / 导入货物默认设置为重箱(CHEIO)。"]
     ];
@@ -3248,7 +3267,21 @@ export default function App() {
           if (clean.includes('tpc')) return 'tpc';
           if (clean.includes('clia') || clean.includes('emporio')) return 'clia';
           if (clean.includes('ag') || clean.includes('cdex')) return 'ag';
-          if (clean.includes('cts') || clean.includes('pontual')) return 'cts';
+          if (clean.includes('multilog')) return 'multilog';
+          
+          if (clean.includes('cts')) {
+            if (clean.includes('jew')) return 'cts_jew';
+            if (clean.includes('logic')) return 'cts_logic';
+            if (clean.includes('uni')) return 'cts_uni';
+            if (clean.includes('vbr')) return 'cts_vbr';
+            return 'cts'; // default CTS fallback to PONTUAL
+          }
+          if (clean.includes('pontual')) return 'cts';
+          if (clean.includes('jew')) return 'cts_jew';
+          if (clean.includes('logic')) return 'cts_logic';
+          if (clean.includes('uni')) return 'cts_uni';
+          if (clean.includes('vbr')) return 'cts_vbr';
+
           return null;
         };
 
@@ -3264,7 +3297,12 @@ export default function App() {
           tpc: { total: 0, porto: 0, pronto: 0 },
           clia: { total: 0, porto: 0, pronto: 0 },
           ag: { total: 0, porto: 0, pronto: 0 },
-          cts: { total: 0, porto: 0, pronto: 0 }
+          cts: { total: 0, porto: 0, pronto: 0 },
+          cts_jew: { total: 0, porto: 0, pronto: 0 },
+          cts_logic: { total: 0, porto: 0, pronto: 0 },
+          cts_uni: { total: 0, porto: 0, pronto: 0 },
+          cts_vbr: { total: 0, porto: 0, pronto: 0 },
+          multilog: { total: 0, porto: 0, pronto: 0 }
         };
 
         for (let i = 1; i < data.length; i++) {
