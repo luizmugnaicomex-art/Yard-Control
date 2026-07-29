@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import { Calculator, 
   Settings, 
   Tv, 
   RotateCcw, 
@@ -372,7 +372,8 @@ export interface Depot {
   name: string;
   avgVolume: number;
   maxCapacity: number;
-  currentGateIn: number;
+  operatingDays: string;
+  operatingHours: string;
   status: 'Open' | 'Closed';
   isAlert: boolean;
 }
@@ -999,15 +1000,15 @@ export default function App() {
       } catch (e) { console.error(e); }
     }
     return [
-      { id: 'pontual', name: 'PONTUAL', avgVolume: 57, maxCapacity: 80, currentGateIn: 57, status: 'Open', isAlert: false },
-      { id: 'lechman', name: 'LECHMAN', avgVolume: 48, maxCapacity: 60, currentGateIn: 48, status: 'Open', isAlert: false },
-      { id: '3alog', name: '3ALOG', avgVolume: 26, maxCapacity: 40, currentGateIn: 26, status: 'Open', isAlert: false },
-      { id: 'jw', name: 'J&W', avgVolume: 24, maxCapacity: 30, currentGateIn: 24, status: 'Open', isAlert: false },
-      { id: 'ziran', name: 'ZIRAN', avgVolume: 23, maxCapacity: 35, currentGateIn: 23, status: 'Open', isAlert: false },
-      { id: 'wilson', name: 'WILSON SONS', avgVolume: 23, maxCapacity: 24, currentGateIn: 23, status: 'Open', isAlert: false },
-      { id: 'tecon', name: 'TECON', avgVolume: 14, maxCapacity: 20, currentGateIn: 14, status: 'Open', isAlert: false },
-      { id: 'vbr', name: 'VBR', avgVolume: 8, maxCapacity: 10, currentGateIn: 8, status: 'Open', isAlert: true },
-      { id: 'area23', name: 'AREA 23 - TECON', avgVolume: 7, maxCapacity: 5, currentGateIn: 7, status: 'Open', isAlert: true }
+      { id: 'pontual', name: 'PONTUAL', avgVolume: 57, maxCapacity: 80, operatingDays: 'Mon - Fri', operatingHours: '07:30 - 17:00' },
+      { id: 'lechman', name: 'LECHMAN', avgVolume: 48, maxCapacity: 60, operatingDays: 'Mon - Fri', operatingHours: '07:30 - 17:00' },
+      { id: '3alog', name: '3ALOG', avgVolume: 26, maxCapacity: 40, operatingDays: 'Mon - Fri', operatingHours: '07:30 - 17:00' },
+      { id: 'jw', name: 'J&W', avgVolume: 24, maxCapacity: 30, operatingDays: 'Mon - Fri', operatingHours: '07:30 - 17:00' },
+      { id: 'ziran', name: 'ZIRAN', avgVolume: 23, maxCapacity: 35, operatingDays: 'Mon - Fri', operatingHours: '07:30 - 17:00' },
+      { id: 'wilson', name: 'WILSON SONS', avgVolume: 23, maxCapacity: 24, operatingDays: 'Mon - Fri', operatingHours: '07:30 - 17:00' },
+      { id: 'tecon', name: 'TECON', avgVolume: 14, maxCapacity: 20, operatingDays: 'Mon - Fri', operatingHours: '07:30 - 17:00' },
+      { id: 'vbr', name: 'VBR', avgVolume: 8, maxCapacity: 10, operatingDays: 'Mon - Fri', operatingHours: '07:30 - 17:00' },
+      { id: 'area23', name: 'AREA 23 - TECON', avgVolume: 7, maxCapacity: 5, operatingDays: 'Mon - Fri', operatingHours: '07:30 - 17:00' }
     ];
   });
 
@@ -4392,7 +4393,8 @@ export default function App() {
               { index: 0, pt: "Visão Geral", zh: "综合大盘", icon: <Database className="w-4 h-4" /> },
               { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", icon: <Building2 className="w-4 h-4" /> },
               { index: 4, pt: "BYD Buffer", zh: "智能缓冲区", icon: <Layers className="w-4 h-4" /> },
-              { index: 5, pt: "Plano de Direcionamento", zh: "流向及仓储规划", icon: <FileSpreadsheet className="w-4 h-4" /> },
+              { index: 5, pt: "Depósitos & Alocação", zh: "协议堆存及流向", icon: <FileSpreadsheet className="w-4 h-4" /> },
+              { index: 10, pt: "Plano de Direcionamento", zh: "流向及仓储规划", icon: <Calculator className="w-4 h-4" /> },
               { index: 6, pt: "Demurrage & Overdue", zh: "滞期费监控", icon: <Clock className="w-4 h-4" /> },
               { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-4 h-4" /> },
               { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-4 h-4" /> },
@@ -4667,7 +4669,8 @@ export default function App() {
               { index: 0, pt: "Visão Geral", zh: "综合大盘", icon: <Database className="w-3.5 h-3.5" /> },
               { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", icon: <Building2 className="w-3.5 h-3.5" /> },
               { index: 4, pt: "BYD Buffer", zh: "智能缓冲区", icon: <Layers className="w-3.5 h-3.5" /> },
-              { index: 5, pt: "Plano de Direcionamento", zh: "流向及仓储规划", icon: <FileSpreadsheet className="w-3.5 h-3.5" /> },
+              { index: 5, pt: "Depósitos & Alocação", zh: "协议堆存及流向", icon: <FileSpreadsheet className="w-3.5 h-3.5" /> },
+              { index: 10, pt: "Plano de Direcionamento", zh: "流向及仓储规划", icon: <Calculator className="w-3.5 h-3.5" /> },
               { index: 6, pt: "Demurrage & Overdue", zh: "滞期费监控", icon: <Clock className="w-3.5 h-3.5" /> },
               { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-3.5 h-3.5" /> },
               { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-3.5 h-3.5" /> },
@@ -8532,6 +8535,370 @@ export default function App() {
                   })()}
                 </div>
               ) : currentSlide === 5 ? (
+                /* SLIDE 6: DEPOT CONTROL & ALLOCATION */
+                <div id="slide-dashboard-grid-depots" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
+                  
+                  {/* TOP CONTROL HUB FOR DEPOT ALLOCATION */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3`}>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
+                        <FileSpreadsheet className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
+                          {language === 'bilingual' ? 'DEPOT CONTROL & ALLOCATION / 协议堆存与港口流向动态调配' : language === 'zh' ? '协议堆存与港口流向动态调配' : 'DEPOT CONTROL & ALLOCATION'}
+                        </h3>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                          {language === 'zh' ? '每日流量平均监控、最大动态容量配额、与船东合作状态交叉管理矩阵' : 'Controle dinâmico de limites diários, capacidade sob contrato e compatibilidade de armadores.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] bg-red-600 text-white font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
+                        {language === 'zh' ? '高级物流架构板' : 'Senior Logistics Panel'}
+                      </span>
+                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold px-2 py-0.5 rounded border border-slate-200 dark:border-slate-750">
+                        UTC-3 LIVE
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* HIGH-LEVEL INTEGRATED LOGISTICS KPIs */}
+                  {(() => {
+                    const totalAvg = depots.reduce((sum, d) => sum + d.avgVolume, 0);
+                    const totalCap = depots.reduce((sum, d) => sum + d.maxCapacity, 0);
+                    const openGates = depots.filter(d => d.status === 'Open').length;
+                    const criticalCount = depots.filter(d => {
+                      const util = d.maxCapacity > 0 ? (d.avgVolume / d.maxCapacity) * 100 : 0;
+                      return d.isAlert || util > 95;
+                    }).length;
+                    
+                    const totalRemainingSlots = depots.reduce((sum, d) => {
+                      if (d.status === 'Closed') return sum;
+                      const remaining = d.maxCapacity - d.avgVolume;
+                      return sum + (remaining > 0 ? remaining : 0);
+                    }, 0);
+
+                    return (
+                      <div className="grid grid-cols-4 gap-3">
+                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '日常平均总吞吐量' : 'VOLUME DIÁRIO TOTAL (AVG)'}</span>
+                            <span className="text-gray-400 font-mono text-xs font-bold">AVG baseline</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">{totalAvg}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">FEU/Dia</span>
+                          </div>
+                        </div>
+
+                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '空余可用仓位数' : 'VAGAS DIÁRIAS DISPONÍVEIS'}</span>
+                            <span className="text-emerald-500 font-bold text-[10px] px-1 py-0.1 bg-emerald-50 dark:bg-emerald-950/20 rounded">Slots Livres</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">{totalRemainingSlots}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">FEU Slots</span>
+                          </div>
+                        </div>
+
+                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '通道开启比例' : 'SITUAÇÃO DE PORTÕES'}</span>
+                            <span className="text-blue-500 font-bold text-[10px] px-1 py-0.1 bg-blue-50 dark:bg-blue-950/20 rounded">Gates Status</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">{openGates} <span className="text-xs text-gray-400 font-bold">/ {depots.length}</span></span>
+                            <span className="text-xs text-emerald-600 dark:text-emerald-450 font-extrabold">{language === 'zh' ? '正常运营中' : 'Ativos'}</span>
+                          </div>
+                        </div>
+
+                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '高危受限/满载站点' : 'PONTOS CRÍTICOS / ALERTA'}</span>
+                            <span className="text-red-500 font-bold text-[10px] px-1 py-0.1 bg-red-50 dark:bg-red-950/20 rounded">Alert Count</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black font-mono tracking-tight text-red-600 dark:text-red-400">{criticalCount}</span>
+                            <span className="text-xs text-red-500 dark:text-red-400 font-bold uppercase">{language === 'zh' ? '严重红色限制' : 'Gargalos'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* BOTTOM WORKSPACE WORKGRID */}
+                  <div className="grid grid-cols-12 gap-4 flex-1">
+                    
+                    <div className={`col-span-7 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
+                      <div className="space-y-3 flex-1">
+                        {/* EXECUTIVE SUMMARY WIDGETS */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
+                          <div className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#1e293b]/50 border-slate-700/50' : 'bg-white border-slate-100'} shadow-sm flex flex-col justify-between`}>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold mb-1 block">
+                              {language === 'zh' ? '日常平均总吞吐量' : language === 'pt' ? 'Média Diária Total' : 'Total Daily Return Average'}
+                            </span>
+                            <span className="text-xl font-black text-slate-800 dark:text-white">{depots.reduce((sum, d) => sum + d.avgVolume, 0).toLocaleString()} <span className="text-xs font-bold text-slate-400">{language === 'zh' ? 'FEU/天' : language === 'pt' ? 'FEU/Dia' : 'FEU/Day'}</span></span>
+                          </div>
+                          <div className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#1e293b]/50 border-slate-700/50' : 'bg-white border-slate-100'} shadow-sm flex flex-col justify-between`}>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold mb-1 block">
+                              {language === 'zh' ? '25天预估总吞吐量' : language === 'pt' ? 'Estimativa Total (25 Dias)' : 'Total 25-Day Estimated Return'}
+                            </span>
+                            <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">{(depots.reduce((sum, d) => sum + d.avgVolume, 0) * 25).toLocaleString()} <span className="text-xs font-bold text-emerald-600/50 dark:text-emerald-400/50">FEU</span></span>
+                          </div>
+                          <div className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#1e293b]/50 border-slate-700/50' : 'bg-white border-slate-100'} shadow-sm flex flex-col justify-between`}>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold mb-1 block">
+                              {language === 'zh' ? '25天协议总额度上限' : language === 'pt' ? 'Limite Total Acordado (25 Dias)' : 'Total 25-Day Max Agreed Limit'}
+                            </span>
+                            <span className="text-xl font-black text-blue-600 dark:text-blue-400">{(depots.reduce((sum, d) => sum + d.maxCapacity, 0) * 25).toLocaleString()} <span className="text-xs font-bold text-blue-600/50 dark:text-blue-400/50">FEU</span></span>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center border-b pb-2 border-gray-100 dark:border-slate-800">
+                          <div className="flex items-center gap-1.5">
+                            <Sliders className="w-4 h-4 text-slate-500" />
+                            <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                              {language === 'zh' ? '空箱堆场吞吐能力与25天预测仪表盘' : language === 'pt' ? 'Capacidade de Retorno de Vazios e Previsão (25 Dias)' : 'EMPTY DEPOT RETURN CAPACITY & 25-DAY FORECASTING DASHBOARD'}
+                            </h4>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-gray-400 font-mono font-bold mr-2">{language === 'zh' ? '100% 自动计算引擎' : language === 'pt' ? '100% CÁLCULO AUTOMÁTICO' : '100% FORMULA ENGINE'}</span>
+                            <button
+                              onClick={() => {
+                                const newId = `depot_${Date.now()}`;
+                                const newName = `NEW DEPOT ${depots.length + 1}`;
+                                setDepots([...depots, { id: newId, name: newName, avgVolume: 0, maxCapacity: 0, operatingDays: 'Mon - Fri', operatingHours: '08:00 - 17:00' }]);
+                                setDepotMatrix(prev => ({...prev, [newName]: { 'MSC': 'Authorized', 'Maersk': 'Authorized', 'CMA CGM': 'Authorized', 'Hapag-Lloyd': 'Authorized', 'ONE': 'Authorized', 'COSCO': 'Authorized', 'Evergreen': 'Authorized' }}));
+                              }}
+                              className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded transition-colors flex items-center gap-1"
+                            >
+                              <Plus className="w-3 h-3" /> {language === 'zh' ? '新增堆场' : language === 'pt' ? 'Novo Depósito' : 'Add New Depot'}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-800/60 text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-800">
+                                <th className="p-2 pl-2.5">{language === 'zh' ? '堆存点名称' : language === 'pt' ? 'Nome do Depósito' : 'Depot Name'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '日常平均吞吐量 (FEU)' : language === 'pt' ? 'Média Diária (FEU)' : 'Daily Avg Returns (FEU)'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '协议最大日限额 (FEU)' : language === 'pt' ? 'Limite Diário Acordado (FEU)' : 'Max Daily Agreed Limit (FEU)'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '25天预估吞吐量' : language === 'pt' ? 'Estimativa Retorno (25d)' : '25-Day Return Estimate'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '25天潜在最大量' : language === 'pt' ? 'Máximo Potencial (25d)' : '25-Day Max Potential Return'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '运营日' : language === 'pt' ? 'Dias de Operação' : 'Operating Days'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '闸口营业时间' : language === 'pt' ? 'Horário do Gate' : 'Gate Operating Hours'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '运营预警状态' : language === 'pt' ? 'Alerta Operacional' : 'Operational Alert Status'}</th>
+                                <th className="p-2 text-center w-8"></th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800 font-bold text-slate-850 dark:text-slate-200">
+                              {depots.map((depot, idx) => {
+                                const utilPercent = depot.maxCapacity > 0 ? Math.round((depot.avgVolume / depot.maxCapacity) * 100) : 0;
+                                const remaining = depot.maxCapacity - depot.avgVolume;
+                                const estimate25 = depot.avgVolume * 25;
+                                const max25 = depot.maxCapacity * 25;
+                                
+                                let alertConfig = { bg: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-450 border-emerald-200 dark:border-emerald-900/30', label: language === 'zh' ? '正常 - 额度充足' : language === 'pt' ? 'NORMAL - Cota Disponível' : 'NORMAL - Quota Available' };
+                                if (depot.avgVolume > depot.maxCapacity) {
+                                  alertConfig = { bg: 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-450 border-rose-300 dark:border-rose-900/50', label: language === 'zh' ? '超额 - 需重新协商限制' : language === 'pt' ? 'COTA EXCEDIDA - Renegociar' : 'OVER QUOTA - Renegotiate Limit' };
+                                } else if (utilPercent > 95) {
+                                  alertConfig = { bg: 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-450 border-red-200 dark:border-red-900/30', label: language === 'zh' ? '瓶颈 - 日常额度已满/超出' : language === 'pt' ? 'GARGALO - Cota Máxima Atingida' : 'BOTTLENECK - Daily Quota Maxed/Exceeded' };
+                                } else if (utilPercent >= 75) {
+                                  alertConfig = { bg: 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-450 border-amber-200 dark:border-amber-900/30', label: language === 'zh' ? '注意 - 接近限制' : language === 'pt' ? 'ATENÇÃO - Limite Próximo' : 'ATTENTION - Approaching Limit' };
+                                }
+
+                                const handleUpdate = (field: keyof Depot, value: string | number) => {
+                                  const oldName = depots[idx].name;
+                                  const newDepots = [...depots];
+                                  newDepots[idx] = { ...newDepots[idx], [field]: value };
+                                  setDepots(newDepots);
+                                  if (field === 'name' && typeof value === 'string') {
+                                    setDepotMatrix(prev => {
+                                      const newMatrix = { ...prev };
+                                      if (newMatrix[oldName]) {
+                                        newMatrix[value] = newMatrix[oldName];
+                                        delete newMatrix[oldName];
+                                      }
+                                      return newMatrix;
+                                    });
+                                  }
+                                };
+
+                                return (
+                                  <tr
+                                    key={depot.id}
+                                    className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all"
+                                  >
+                                    <td className="p-1 pl-2.5 font-sans">
+                                      <input 
+                                        type="text" 
+                                        value={depot.name || ''} 
+                                        onChange={(e) => handleUpdate('name', e.target.value)}
+                                        className="w-full bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1.5 py-1 text-[11px] font-extrabold outline-none"
+                                      />
+                                    </td>
+                                    <td className="p-1 text-center font-mono">
+                                      <input 
+                                        type="number" 
+                                        value={depot.avgVolume || 0} 
+                                        onChange={(e) => handleUpdate('avgVolume', parseInt(e.target.value) || 0)}
+                                        className="w-16 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1 py-1 text-center font-bold text-gray-500 dark:text-slate-400 outline-none"
+                                      />
+                                    </td>
+                                    <td className="p-1 text-center font-mono">
+                                      <input 
+                                        type="number" 
+                                        value={depot.maxCapacity || 0} 
+                                        onChange={(e) => handleUpdate('maxCapacity', parseInt(e.target.value) || 0)}
+                                        className="w-16 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1 py-1 text-center font-bold text-slate-800 dark:text-slate-100 outline-none"
+                                      />
+                                    </td>
+                                    <td className="p-2 text-center font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                      {estimate25}
+                                    </td>
+                                    <td className="p-2 text-center font-mono text-blue-600 dark:text-blue-400 font-bold">
+                                      {max25}
+                                    </td>
+                                    <td className="p-1 text-center">
+                                      <input 
+                                        type="text" 
+                                        value={depot.operatingDays || ''} 
+                                        onChange={(e) => handleUpdate('operatingDays', e.target.value)}
+                                        className="w-20 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1 py-1 text-[10px] text-center outline-none"
+                                      />
+                                    </td>
+                                    <td className="p-1 text-center">
+                                      <input 
+                                        type="text" 
+                                        value={depot.operatingHours || ''} 
+                                        onChange={(e) => handleUpdate('operatingHours', e.target.value)}
+                                        className="w-24 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1 py-1 text-[10px] text-center font-mono outline-none"
+                                      />
+                                    </td>
+                                    <td className="p-2 text-center">
+                                      <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-black border uppercase tracking-wider ${alertConfig.bg}`}>
+                                        {alertConfig.label}
+                                      </span>
+                                    </td>
+                                    <td className="p-1 text-center">
+                                      <button 
+                                        onClick={() => {
+                                          setDepots(depots.filter(d => d.id !== depot.id));
+                                          setDepotMatrix(prev => {
+                                            const newMatrix = { ...prev };
+                                            delete newMatrix[depot.name];
+                                            return newMatrix;
+                                          });
+                                        }}
+                                        className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                      <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 font-bold flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <span>{language === 'zh' ? '💡 系统逻辑：绿仓表示空闲度高，黄仓为警戒装载，红仓（利用率超过95%）限制流入，VBR / AREA 23 在任何状态下均触发黄色警戒警告。' : '💡 Legenda do Motor de Regras: Utilização <75% Verde (Liberado), 75-95% Amarelo (Atenção), >95% Vermelho (Gargalo - Bloqueio de novos volumes).'}</span>
+                      </div>
+                    </div>
+
+                    {/* RIGHT WORKSPACE: DYNAMIC INTERACTIVE SHIPOWNER COMPATIBILITY MATRIX */}
+                    <div className={`col-span-5 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
+                      <div className="space-y-3 flex-1">
+                        <div className="flex justify-between items-center border-b pb-2 border-gray-100 dark:border-slate-800">
+                          <div className="flex items-center gap-1.5">
+                            <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                            <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                              {language === 'bilingual' ? 'MATRIZ DE COMPATIBILIDADE DE ARMADORES / 船东协议符合矩阵' : language === 'zh' ? '船东协议符合矩阵' : 'MATRIZ DE ARMADORES'}
+                            </h4>
+                          </div>
+                          <span className="text-[9px] text-emerald-600 font-black animate-pulse bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.2 rounded">Interactive</span>
+                        </div>
+
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                          {language === 'zh' ? '💡 点击矩阵中的任何状态可以直接循环切换：Authorized (授权) ➜ Blocked (锁定) ➜ Contract Only (特许合同)。' : '💡 Clique diretamente sobre qualquer status na matriz para alternar: Liberado (✅ Auth) ➜ Bloqueado (❌ Block) ➜ Contrato (📝 Contract).'}
+                        </p>
+
+                        <div className="overflow-x-auto mt-2">
+                          <table className="w-full text-center border-collapse text-[10.5px]">
+                            <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-800/60 text-[8.5px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-800">
+                                <th className="p-1.5 text-left pl-2 font-black">{language === 'zh' ? '堆存点' : 'DEPÓSITO'}</th>
+                                {['MSC', 'Maersk', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'COSCO', 'Evergreen'].map(armador => (
+                                  <th key={armador} className="p-1.5 font-black text-center text-slate-750 dark:text-gray-300">{armador}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-850 font-bold text-slate-800 dark:text-slate-200">
+                              {depots.map((depot) => { const depotName = depot.name; return (
+                                <tr key={depotName} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
+                                  <td className="p-1.5 text-left pl-2 font-extrabold text-[10px] text-slate-750 dark:text-gray-300">{depotName}</td>
+                                  {['MSC', 'Maersk', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'COSCO', 'Evergreen'].map((armador) => {
+                                    const value = depotMatrix[depotName]?.[armador] || 'Authorized';
+                                    
+                                    // Visual color states
+                                    let cellStyle = 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/45 dark:text-emerald-400';
+                                    let cellText = 'AUTH';
+                                    if (value === 'Blocked') {
+                                      cellStyle = 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/45 dark:text-red-400';
+                                      cellText = 'LOCK';
+                                    } else if (value === 'Contract Only') {
+                                      cellStyle = 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/45 dark:text-amber-400';
+                                      cellText = 'CONT';
+                                    }
+
+                                    return (
+                                      <td key={armador} className="p-1 text-center">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            // Click interaction to toggle through Authorized -> Blocked -> Contract Only
+                                            const states: ('Authorized' | 'Blocked' | 'Contract Only')[] = ['Authorized', 'Blocked', 'Contract Only'];
+                                            const currentIndex = states.indexOf(value);
+                                            const nextState = states[(currentIndex + 1) % states.length];
+                                            setDepotMatrix(prev => ({
+                                              ...prev,
+                                              [depotName]: {
+                                                ...(prev[depotName] || {}),
+                                                [armador]: nextState
+                                              }
+                                            }));
+                                          }}
+                                          className={`px-1 py-0.5 text-[8.5px] font-extrabold rounded-md border tracking-tighter cursor-pointer select-none transition-all active:scale-95 ${cellStyle}`}
+                                          title={`${armador} @ ${depotName}: Clique para alterar status / 点击切换状态`}
+                                        >
+                                          {cellText}
+                                        </button>
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 font-bold flex items-center justify-between">
+                        <span>{language === 'zh' ? '💡 契约限制：VBR及TEON 23 默认锁定大多数直接放行，仅接受特定预约。' : '💡 AUTH: Liberado | LOCK: Bloqueado | CONT: Requer Contrato.'}</span>
+                        <span className="text-[8px] bg-emerald-500/10 text-emerald-600 px-1 rounded uppercase tracking-widest font-black">Excel Friendly</span>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              ) : currentSlide === 10 ? (
                 /* SLIDE 6: PLANO DE DIRECIONAMENTO (ALLOCATION PLANNER) */
                 <div id="slide-dashboard-allocation-planner" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-y-auto overflow-x-hidden scrollbar-thin' : 'min-h-[660px] gap-4'}`}>
                   
@@ -8793,7 +9160,7 @@ export default function App() {
                                                 <td className="py-1.5 px-2 text-center">
                                                   <input 
                                                     type="number" 
-                                                    value={(period as any)[row.allocField]}
+                                                    value={(period as any)[row.allocField] || 0}
                                                     onChange={e => updatePeriod(row.allocField, Number(e.target.value))}
                                                     disabled={isHistoric}
                                                     className={`w-14 text-center text-[11px] font-bold py-0.5 rounded border outline-none ${isHistoric ? 'bg-transparent border-transparent' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-1 focus:ring-indigo-500'}`}
@@ -8805,7 +9172,7 @@ export default function App() {
                                                 <td className="py-1.5 px-2 text-right">
                                                   <input 
                                                     type="number" 
-                                                    value={(period as any)[row.outField]}
+                                                    value={(period as any)[row.outField] || 0}
                                                     onChange={e => updatePeriod(row.outField, Number(e.target.value))}
                                                     disabled={isHistoric}
                                                     className={`w-16 text-right text-[11px] font-bold py-0.5 px-1 rounded border outline-none ${isHistoric ? 'bg-transparent border-transparent text-emerald-700 dark:text-emerald-500' : 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 focus:ring-1 focus:ring-emerald-500'}`}
@@ -9093,7 +9460,7 @@ export default function App() {
                               <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">Pátio Origem</label>
                               <input 
                                 type="text"
-                                value={ydWarehouse}
+                                value={ydWarehouse} readOnly
                                 disabled
                                 className="w-full bg-slate-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-1.5 rounded-md font-sans text-[11px] text-gray-500 font-bold outline-none cursor-not-allowed"
                               />
@@ -9466,7 +9833,7 @@ export default function App() {
                                         <td className="py-2 font-sans">
                                           <select 
                                             value={entry.deliveryModel || 'DESCARGA'} 
-                                            onBlur={async (e) => { 
+                                            onChange={async (e) => { 
                                               if (e.target.value === entry.deliveryModel) return;
                                               try {
                                                 await updateDoc(doc(db, 'logisticsData', entry.id || ''), { deliveryModel: e.target.value }); 
@@ -9485,7 +9852,7 @@ export default function App() {
                                         <td className="py-2">
                                           <select 
                                             value={entry.status || 'PENDENTE'} 
-                                            onBlur={async (e) => { 
+                                            onChange={async (e) => { 
                                               if (e.target.value === entry.status) return;
                                               try {
                                                 await updateDoc(doc(db, 'logisticsData', entry.id || ''), { status: e.target.value }); 
@@ -10087,7 +10454,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             <label className="text-[9px] text-gray-500 dark:text-gray-400 font-black uppercase block mb-1">Capacidade / 总容量</label>
                             <input 
                               type="number" 
-                              value={yard.capacity} 
+                              value={yard.capacity || ''} 
                               onChange={(e) => handleYardChange(activeYardKey, 'capacity', e.target.value)}
                               className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
@@ -10096,7 +10463,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             <label className="text-[9px] text-blue-600 dark:text-blue-400 font-black uppercase block mb-1">Cheio / 重箱 (FEU)</label>
                             <input 
                               type="number" 
-                              value={yard.cheio} 
+                              value={yard.cheio || ''} 
                               onChange={(e) => handleYardChange(activeYardKey, 'cheio', e.target.value)}
                               className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
@@ -10105,7 +10472,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Vazio / 空箱 (FEU)</label>
                             <input 
                               type="number" 
-                              value={yard.vazio} 
+                              value={yard.vazio || ''} 
                               onChange={(e) => handleYardChange(activeYardKey, 'vazio', e.target.value)}
                               className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
@@ -10114,7 +10481,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Porto / 港口 (FEU)</label>
                             <input 
                               type="number" 
-                              value={yard.porto} 
+                              value={yard.porto || ''} 
                               onChange={(e) => handleYardChange(activeYardKey, 'porto', e.target.value)}
                               className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
@@ -10123,7 +10490,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             <label className="text-[9px] text-amber-600 dark:text-amber-400 font-black uppercase block mb-1">Pronto Coleta / 待提</label>
                             <input 
                               type="number" 
-                              value={yard.prontoColeta} 
+                              value={yard.prontoColeta || ''} 
                               onChange={(e) => handleYardChange(activeYardKey, 'prontoColeta', e.target.value)}
                               className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
@@ -10132,7 +10499,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             <label className="text-[9px] text-emerald-600 dark:text-emerald-400 font-black uppercase block mb-1">Delivered / 交付</label>
                             <input 
                               type="number" 
-                              value={yard.delivered} 
+                              value={yard.delivered || ''} 
                               onChange={(e) => handleYardChange(activeYardKey, 'delivered', e.target.value)}
                               className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
                             />
@@ -10790,7 +11157,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                                 <span className="text-[9px] text-gray-400 font-bold uppercase">ATA:</span>
                                 <input 
                                   type="number"
-                                  value={item.arrivals}
+                                  value={item.arrivals || 0}
                                   onChange={(e) => handleChartLeftChange(idx, 'arrivals', e.target.value)}
                                   className="w-16 text-center border border-slate-200 dark:border-slate-750 rounded font-mono p-0.5 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 font-bold outline-none"
                                 />
@@ -10799,7 +11166,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                                 <span className="text-[9px] text-gray-400 font-bold uppercase">Backlog:</span>
                                 <input 
                                   type="number"
-                                  value={item.backlog}
+                                  value={item.backlog || 0}
                                   onChange={(e) => handleChartLeftChange(idx, 'backlog', e.target.value)}
                                   className="w-16 text-center border border-slate-200 dark:border-slate-750 rounded font-mono p-0.5 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 font-bold outline-none"
                                 />
@@ -10888,7 +11255,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                                 <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'zh' ? '数量:' : 'Valor:'}</span>
                                 <input 
                                   type="number"
-                                  value={item.value}
+                                  value={item.value || 0}
                                   onChange={(e) => handleChartRightChange(idx, 'value', e.target.value)}
                                   className="w-16 text-center border border-slate-200 dark:border-slate-750 rounded font-mono p-0.5 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 font-bold outline-none"
                                 />
@@ -10948,7 +11315,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                                 <input 
                                   type="number"
                                   min="1"
-                                  value={depot.maxCapacity}
+                                  value={depot.maxCapacity || 0}
                                   onChange={(e) => {
                                     const val = Math.max(1, Number(e.target.value));
                                     const next = [...depots];
@@ -10997,7 +11364,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                     </p>
 
                     <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                      {Object.keys(depotMatrix).map((depotName) => (
+                      {depots.map((depot) => { const depotName = depot.name; return (
                         <div key={depotName} className="p-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 space-y-1.5">
                           <span className="text-[11px] font-black text-slate-800 dark:text-slate-100 block border-b pb-1 border-slate-100 dark:border-slate-800">{depotName}</span>
                           <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
@@ -11035,7 +11402,8 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             })}
                           </div>
                         </div>
-                      ))}
+                      );
+                      })}
                     </div>
                   </div>
 

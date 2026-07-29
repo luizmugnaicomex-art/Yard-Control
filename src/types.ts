@@ -64,7 +64,8 @@ export interface Depot {
   name: string;
   avgVolume: number;
   maxCapacity: number;
-  currentGateIn: number;
+  operatingDays: string;
+  operatingHours: string;
   status: 'Open' | 'Closed';
   isAlert: boolean;
 }
