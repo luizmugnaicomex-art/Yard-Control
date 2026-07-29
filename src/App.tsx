@@ -50,7 +50,7 @@ import {
   Activity,
   LayoutGrid,
   List,
-  Search
+  Search, DollarSign
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -956,6 +956,38 @@ export default function App() {
   const [vesselNote2, setVesselNote2] = useState("Destaques operacionais dos navios (Ex: Prioridades de descarga BYD). / 船舶运营重点亮点 (例如：比亚迪重箱卸船优先顺序)。");
   const [chartNote1, setChartNote1] = useState("Comentários sobre o Backlog Projetado vs Capacidade de Entrega Semanal. / 预测积压量与周度交付能力的对比分析说明。");
   const [chartNote2, setChartNote2] = useState("Análise de gargalos e metas diárias garantidas (meta Gc de 140). / 关于每日进箱量与保证目标 (Gc 140) 的瓶颈分析和建议。");
+
+  // NEW TAB STATES: PLANO DE DIRECIONAMENTO (ALLOCATION PLANNER)
+  const [plannerCostStrategy, setPlannerCostStrategy] = useState<Record<string, string>>({
+    '48hs': 'tecon', '7d': 'inter', '10d': 'inter', '15d': 'tpc', '20d': 'tpc', '25d': 'tpc'
+  });
+  const [plannerJustification, setPlannerJustification] = useState("Cost optimization prioritizing TECON for short-term due to volume constraints, and TPC for extended storage considering competitive tiered rates.");
+  const [plannerPeriods, setPlannerPeriods] = useState([
+    {
+      isHistoric: false,
+      id: 1,
+      dateRange: "30/07 - 03/08",
+      totalVolume: 1315,
+      allocTecon: 40,
+      allocInter: 30,
+      allocTpc: 30,
+      outflowTecon: 150,
+      outflowInter: 100,
+      outflowTpc: 100,
+    },
+    {
+      isHistoric: false,
+      id: 2,
+      dateRange: "04/08 - 09/08",
+      totalVolume: 800,
+      allocTecon: 30,
+      allocInter: 30,
+      allocTpc: 40,
+      outflowTecon: 200,
+      outflowInter: 150,
+      outflowTpc: 150,
+    }
+  ]);
 
   // ESTADOS PARA CONTROLE E ALOCAÇÃO DE DEPÓSITOS (DEPOT CONTROL & ALLOCATION)
   const [depots, setDepots] = useState<Depot[]>(() => {
@@ -4360,7 +4392,7 @@ export default function App() {
               { index: 0, pt: "Visão Geral", zh: "综合大盘", icon: <Database className="w-4 h-4" /> },
               { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", icon: <Building2 className="w-4 h-4" /> },
               { index: 4, pt: "BYD Buffer", zh: "智能缓冲区", icon: <Layers className="w-4 h-4" /> },
-              { index: 5, pt: "Depósitos & Alocação", zh: "协议堆存及港口流向", icon: <FileSpreadsheet className="w-4 h-4" /> },
+              { index: 5, pt: "Plano de Direcionamento", zh: "流向及仓储规划", icon: <FileSpreadsheet className="w-4 h-4" /> },
               { index: 6, pt: "Demurrage & Overdue", zh: "滞期费监控", icon: <Clock className="w-4 h-4" /> },
               { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-4 h-4" /> },
               { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-4 h-4" /> },
@@ -4635,7 +4667,7 @@ export default function App() {
               { index: 0, pt: "Visão Geral", zh: "综合大盘", icon: <Database className="w-3.5 h-3.5" /> },
               { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", icon: <Building2 className="w-3.5 h-3.5" /> },
               { index: 4, pt: "BYD Buffer", zh: "智能缓冲区", icon: <Layers className="w-3.5 h-3.5" /> },
-              { index: 5, pt: "Depósitos & Alocação", zh: "协议堆存及港口流向", icon: <FileSpreadsheet className="w-3.5 h-3.5" /> },
+              { index: 5, pt: "Plano de Direcionamento", zh: "流向及仓储规划", icon: <FileSpreadsheet className="w-3.5 h-3.5" /> },
               { index: 6, pt: "Demurrage & Overdue", zh: "滞期费监控", icon: <Clock className="w-3.5 h-3.5" /> },
               { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-3.5 h-3.5" /> },
               { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-3.5 h-3.5" /> },
@@ -8500,294 +8532,373 @@ export default function App() {
                   })()}
                 </div>
               ) : currentSlide === 5 ? (
-                /* SLIDE 6: DEPOT CONTROL & ALLOCATION */
-                <div id="slide-dashboard-grid-depots" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
+                /* SLIDE 6: PLANO DE DIRECIONAMENTO (ALLOCATION PLANNER) */
+                <div id="slide-dashboard-allocation-planner" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-y-auto overflow-x-hidden scrollbar-thin' : 'min-h-[660px] gap-4'}`}>
                   
-                  {/* TOP CONTROL HUB FOR DEPOT ALLOCATION */}
-                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3`}>
+                  {/* TOP CONTROL HUB */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shrink-0`}>
                     <div className="flex items-center gap-3">
                       <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
                         <FileSpreadsheet className="w-6 h-6" />
                       </div>
                       <div>
                         <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
-                          {language === 'bilingual' ? 'DEPOT CONTROL & ALLOCATION / 协议堆存与港口流向动态调配' : language === 'zh' ? '协议堆存与港口流向动态调配' : 'DEPOT CONTROL & ALLOCATION'}
+                          {language === 'bilingual' ? 'BONDED WAREHOUSE SPACE & ALLOCATION PLANNER / 仓储空间与流向规划' : 'BONDED WAREHOUSE SPACE & ALLOCATION PLANNER'}
                         </h3>
                         <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                          {language === 'zh' ? '每日流量平均监控、最大动态容量配额、与船东合作状态交叉管理矩阵' : 'Controle dinâmico de limites diários, capacidade sob contrato e compatibilidade de armadores.'}
+                          {language === 'zh' ? '动态容量规划，成本优化及实时库存数据同步' : 'Planejamento dinâmico de capacidade, otimização de custos e sincronização de estoque em tempo real.'}
                         </p>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] bg-red-600 text-white font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
-                        {language === 'zh' ? '高级物流架构板' : 'Senior Logistics Panel'}
-                      </span>
-                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold px-2 py-0.5 rounded border border-slate-200 dark:border-slate-750">
-                        UTC-3 LIVE
-                      </span>
-                    </div>
                   </div>
 
-                  {/* HIGH-LEVEL INTEGRATED LOGISTICS KPIs */}
-                  {(() => {
-                    const totalAvg = depots.reduce((sum, d) => sum + d.avgVolume, 0);
-                    const totalCap = depots.reduce((sum, d) => sum + d.maxCapacity, 0);
-                    const openGates = depots.filter(d => d.status === 'Open').length;
-                    const criticalCount = depots.filter(d => {
-                      const util = d.maxCapacity > 0 ? (d.avgVolume / d.maxCapacity) * 100 : 0;
-                      return d.isAlert || util > 95;
-                    }).length;
-                    
-                    const totalRemainingSlots = depots.reduce((sum, d) => {
-                      if (d.status === 'Closed') return sum;
-                      const remaining = d.maxCapacity - d.avgVolume;
-                      return sum + (remaining > 0 ? remaining : 0);
-                    }, 0);
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin pb-4">
+                    {(() => {
+                  {/* MAIN CONTENT AREA */}
+                      // Fetch Live Inventory Data
+                      const liveTecon = { 
+                        inv: yards.tecon?.cheio || 0, 
+                        cap: yards.tecon?.capacity || 2000 
+                      };
+                      const liveInter = { 
+                        inv: yards.intermaritima?.cheio || 0, 
+                        cap: yards.intermaritima?.capacity || 800 
+                      };
+                      const liveTpc = { 
+                        inv: yards.tpc?.cheio || 0, 
+                        cap: yards.tpc?.capacity || 1200 
+                      };
 
-                    return (
-                      <div className="grid grid-cols-4 gap-3">
-                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '日常平均总吞吐量' : 'VOLUME DIÁRIO TOTAL (AVG)'}</span>
-                            <span className="text-gray-400 font-mono text-xs font-bold">AVG baseline</span>
-                          </div>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">{totalAvg}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">FEU/Dia</span>
-                          </div>
-                        </div>
+                      const activePeriods = plannerPeriods.filter(p => !p.isHistoric);
+                      const totalExpectedVolume = activePeriods.reduce((sum, p) => sum + p.totalVolume, 0);
 
-                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '空余可用仓位数' : 'VAGAS DIÁRIAS DISPONÍVEIS'}</span>
-                            <span className="text-emerald-500 font-bold text-[10px] px-1 py-0.1 bg-emerald-50 dark:bg-emerald-950/20 rounded">Slots Livres</span>
-                          </div>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">{totalRemainingSlots}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">FEU Slots</span>
-                          </div>
-                        </div>
+                      const getProjections = (liveInv: number, allocKey: "allocTecon" | "allocInter" | "allocTpc", outflowKey: "outflowTecon" | "outflowInter" | "outflowTpc") => {
+                        let prevEnd = liveInv;
+                        let maxPeak = liveInv;
+                        const peaks: { start: number, end: number }[] = [];
+                        
+                        for (const p of activePeriods) {
+                          const pVol = Math.round(p.totalVolume * ((p as any)[allocKey] / 100));
+                          const currentOutflow = (p as any)[outflowKey];
+                          
+                          const start = prevEnd - currentOutflow;
+                          const end = start + pVol;
+                          
+                          peaks.push({ start, end });
+                          maxPeak = Math.max(maxPeak, end);
+                          prevEnd = end;
+                        }
+                        
+                        return { peaks, maxPeak };
+                      };
 
-                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '通道开启比例' : 'SITUAÇÃO DE PORTÕES'}</span>
-                            <span className="text-blue-500 font-bold text-[10px] px-1 py-0.1 bg-blue-50 dark:bg-blue-950/20 rounded">Gates Status</span>
-                          </div>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">{openGates} <span className="text-xs text-gray-400 font-bold">/ {depots.length}</span></span>
-                            <span className="text-xs text-emerald-600 dark:text-emerald-450 font-extrabold">{language === 'zh' ? '正常运营中' : 'Ativos'}</span>
-                          </div>
-                        </div>
+                      const teconData = getProjections(liveTecon.inv, "allocTecon", "outflowTecon");
+                      const teconPeaks = teconData.peaks;
+                      const teconPeakOcc = teconData.maxPeak;
+                      const teconPeakOccPct = (teconPeakOcc / liveTecon.cap) * 100;
 
-                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '高危受限/满载站点' : 'PONTOS CRÍTICOS / ALERTA'}</span>
-                            <span className="text-red-500 font-bold text-[10px] px-1 py-0.1 bg-red-50 dark:bg-red-950/20 rounded">Alert Count</span>
-                          </div>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-black font-mono tracking-tight text-red-600 dark:text-red-400">{criticalCount}</span>
-                            <span className="text-xs text-red-500 dark:text-red-400 font-bold uppercase">{language === 'zh' ? '严重红色限制' : 'Gargalos'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
+                      const interData = getProjections(liveInter.inv, "allocInter", "outflowInter");
+                      const interPeaks = interData.peaks;
+                      const interPeakOcc = interData.maxPeak;
+                      const interPeakOccPct = (interPeakOcc / liveInter.cap) * 100;
 
-                  {/* BOTTOM WORKSPACE WORKGRID */}
-                  <div className="grid grid-cols-12 gap-4 flex-1">
-                    
-                    {/* LEFT WORKSPACE: MAIN DEPOT CAPACITY CONTROL TABLE */}
-                    <div className={`col-span-7 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
-                      <div className="space-y-3 flex-1">
-                        <div className="flex justify-between items-center border-b pb-2 border-gray-100 dark:border-slate-800">
-                          <div className="flex items-center gap-1.5">
-                            <Sliders className="w-4 h-4 text-slate-500" />
-                            <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">
-                              {language === 'bilingual' ? 'CONTROLE DE CAPACIDADE DE DEPÓSITOS / 协议堆存容量监控大盘' : language === 'zh' ? '协议堆存容量监控大盘' : 'CONTROLE DE CAPACIDADE DE DEPÓSITOS'}
+                      const tpcData = getProjections(liveTpc.inv, "allocTpc", "outflowTpc");
+                      const tpcPeaks = tpcData.peaks;
+                      const tpcPeakOcc = tpcData.maxPeak;
+                      const tpcPeakOccPct = (tpcPeakOcc / liveTpc.cap) * 100;
+
+                      const getAlertStatus = (pct: number) => {
+                        if (pct > 95) return { color: 'text-red-600 bg-red-100 border-red-500', text: 'CRITICAL RISK - Storage Overflow / Reallocate Cargo' };
+                        if (pct > 80) return { color: 'text-amber-600 bg-amber-100 border-amber-500', text: 'CAUTION - High Yard Density / Monitor Outflow' };
+                        return { color: 'text-emerald-600 bg-emerald-100 border-emerald-500', text: 'SAFE - Operational Capacity Available' };
+                      };
+
+                      return (
+                        <div className="flex flex-col gap-4">
+                          
+                          {/* Executive Summary Widget */}
+                          <div className={`p-4 rounded-xl border-l-4 border-slate-800 ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200'} shadow-sm`}>
+                            <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider mb-2">Executive Yard Overview</h4>
+                            <div className="flex gap-6 items-center flex-wrap">
+                              <div>
+                                <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Planning Volume</span>
+                                <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{totalExpectedVolume} <span className="text-sm font-bold text-slate-500">FEU</span></span>
+                              </div>
+                              <div className="h-10 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+                              <div className="flex-1 flex flex-wrap gap-3">
+                                {[
+                                  { name: 'TECON', pct: teconPeakOccPct },
+                                  { name: 'INTER', pct: interPeakOccPct },
+                                  { name: 'TPC', pct: tpcPeakOccPct },
+                                ].map(t => (
+                                  <div key={t.name} className={`px-3 py-1.5 rounded-lg border flex flex-col min-w-[100px] ${t.pct > 95 ? 'bg-red-50 border-red-200' : t.pct > 80 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'} dark:bg-opacity-10`}>
+                                    <span className="text-[9px] font-black uppercase text-slate-600 dark:text-slate-400">{t.name} Peak</span>
+                                    <span className={`text-sm font-bold ${t.pct > 95 ? 'text-red-600' : t.pct > 80 ? 'text-amber-600' : 'text-emerald-600'}`}>{t.pct.toFixed(1)}%</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* SECTION A: Cost Strategy & Facility Selection */}
+                          <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100'} shadow-sm`}>
+                            <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider mb-3 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-emerald-500" /> 
+                              A. Cost Strategy & Facility Selection
                             </h4>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-[11px] mb-3">
+                                <thead>
+                                  <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
+                                    <th className="py-2 px-3 font-bold border-b border-slate-200 dark:border-slate-700">Bonded Period</th>
+                                    <th className="py-2 px-3 font-bold border-b border-slate-200 dark:border-slate-700 text-center">TECON</th>
+                                    <th className="py-2 px-3 font-bold border-b border-slate-200 dark:border-slate-700 text-center">INTER</th>
+                                    <th className="py-2 px-3 font-bold border-b border-slate-200 dark:border-slate-700 text-center">TPC</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {['48hs', '7d', '10d', '15d', '20d', '25d'].map((milestone) => (
+                                    <tr key={milestone} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
+                                      <td className="py-1.5 px-3 font-extrabold text-slate-700 dark:text-slate-300">{milestone}</td>
+                                      {['tecon', 'inter', 'tpc'].map((fac) => {
+                                        const isSelected = plannerCostStrategy[milestone] === fac;
+                                        return (
+                                          <td key={fac} className={`py-1 px-3 text-center transition-colors ${isSelected ? 'bg-emerald-50/50 dark:bg-emerald-900/10' : ''}`}>
+                                            <label className="flex items-center justify-center gap-1.5 cursor-pointer w-full h-full">
+                                              <input 
+                                                type="radio" 
+                                                name={`strat_${milestone}`} 
+                                                checked={isSelected}
+                                                onChange={() => setPlannerCostStrategy(prev => ({...prev, [milestone]: fac}))}
+                                                className="w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                              />
+                                              {isSelected && <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter">Best Rate</span>}
+                                            </label>
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Strategic Allocation Justification</label>
+                              <textarea
+                                value={plannerJustification}
+                                onChange={(e) => setPlannerJustification(e.target.value)}
+                                className="w-full p-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500/50 outline-none resize-none font-medium leading-relaxed min-h-[60px]"
+                              />
+                            </div>
                           </div>
-                          <span className="text-[9px] text-gray-400 font-mono font-bold">100% FORMULA ENGINE</span>
-                        </div>
 
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left border-collapse text-xs">
-                            <thead>
-                              <tr className="bg-slate-50 dark:bg-slate-800/60 text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-800">
-                                <th className="p-2 pl-2.5">{language === 'zh' ? '堆存点名称' : 'DEPÓSITO'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? '日均平均量' : 'AVG DIÁRIO'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? '最大动态限制' : 'CAP. MÁXIMA'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? '当前占用率' : 'OCUPAÇÃO %'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? '剩余库位' : 'SLOTS DISP.'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? '通道 portão' : 'PORTÃO'}</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800 font-bold text-slate-850 dark:text-slate-200">
-                              {depots.map((depot) => {
-                                const utilPercent = depot.maxCapacity > 0 ? Math.round((depot.avgVolume / depot.maxCapacity) * 100) : 0;
-                                const remaining = depot.maxCapacity - depot.avgVolume;
-                                
-                                // COLOR CALCULATION: Green < 75%, Yellow 75-95%, Red > 95%
-                                let utilBg = 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-450';
-                                let utilBorder = 'border-emerald-200 dark:border-emerald-900/30';
-                                if (utilPercent > 95) {
-                                  utilBg = 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-450';
-                                  utilBorder = 'border-red-200 dark:border-red-900/30';
-                                } else if (utilPercent >= 75) {
-                                  utilBg = 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-450';
-                                  utilBorder = 'border-amber-200 dark:border-amber-900/30';
-                                }
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {/* SECTION B & C: Inbound Arrivals & Percentage Allocation */}
+                            <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100'} shadow-sm`}>
+                              <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+                                <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                                  <Ship className="w-4 h-4 text-blue-500" /> 
+                                  B & C. Inbound Arrivals & Outflow Parameters
+                                </h4>
+                                <button
+                                  onClick={() => {
+                                    const nextId = plannerPeriods.length > 0 ? Math.max(...plannerPeriods.map(p => p.id)) + 1 : 1;
+                                    setPlannerPeriods([...plannerPeriods, {
+                                      id: nextId,
+                                      isHistoric: false,
+                                      dateRange: "New Period",
+                                      totalVolume: 0,
+                                      allocTecon: 0,
+                                      allocInter: 0,
+                                      allocTpc: 0,
+                                      outflowTecon: 0,
+                                      outflowInter: 0,
+                                      outflowTpc: 0,
+                                    }]);
+                                  }}
+                                  className="px-2.5 py-1 text-[10px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 rounded transition-colors"
+                                >
+                                  + ADD PERIOD
+                                </button>
+                              </div>
+                              
+                              <div className="space-y-4">
+                                {plannerPeriods.map((period, idx) => {
+                                  const updatePeriod = (field: string, val: number | string | boolean) => {
+                                    const next = [...plannerPeriods];
+                                    (next[idx] as any)[field] = val;
+                                    setPlannerPeriods(next);
+                                  };
 
-                                // HIGH ALERT STYLING (For VBR and AREA 23 - TECON)
-                                const isSpecialAlert = depot.isAlert;
+                                  const isHistoric = period.isHistoric;
 
-                                return (
-                                  <tr 
-                                    key={depot.id} 
-                                    className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all ${
-                                      isSpecialAlert 
-                                        ? 'bg-rose-50/30 dark:bg-red-950/5 border-l-4 border-l-rose-500' 
-                                        : ''
-                                    }`}
-                                  >
-                                    <td className="p-2.5 pl-2.5 font-sans">
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="font-extrabold tracking-tight text-[11px]">{depot.name}</span>
-                                        {isSpecialAlert && (
-                                          <span className="text-[7.5px] font-black text-rose-600 bg-rose-100 dark:text-rose-450 dark:bg-rose-950/35 px-1 rounded uppercase tracking-wider animate-pulse flex items-center gap-0.5">
-                                            <AlertTriangle className="w-2 h-2" /> Alert
-                                          </span>
+                                  return (
+                                    <div key={period.id} className={`border ${isHistoric ? 'border-dashed border-gray-300 dark:border-gray-600 opacity-60' : 'border-slate-200 dark:border-slate-700'} rounded-lg overflow-hidden transition-opacity`}>
+                                      {/* Header */}
+                                      <div className={`${isHistoric ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-slate-100 dark:bg-slate-800'} p-2 flex flex-wrap justify-between items-center border-b border-slate-200 dark:border-slate-700 gap-2`}>
+                                        <div className="flex items-center gap-2">
+                                          <button 
+                                            onClick={() => updatePeriod('isHistoric', !isHistoric)}
+                                            className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border cursor-pointer transition-colors ${isHistoric ? 'bg-gray-200 text-gray-500 border-gray-300 dark:bg-gray-700 dark:border-gray-600' : 'bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}
+                                            title="Toggle active/historic status"
+                                          >
+                                            {isHistoric ? 'HISTORIC' : `PERIOD ${period.id}`}
+                                          </button>
+                                          <input 
+                                            type="text" 
+                                            value={period.dateRange} 
+                                            onChange={e => updatePeriod('dateRange', e.target.value)}
+                                            disabled={isHistoric}
+                                            className={`text-[11px] font-bold px-2 py-0.5 rounded border w-28 text-center ${isHistoric ? 'bg-transparent border-transparent text-gray-500' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                                          />
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Total Arr. Vol (FEU):</span>
+                                          <input 
+                                            type="number" 
+                                            value={period.totalVolume} 
+                                            onChange={e => updatePeriod('totalVolume', Number(e.target.value))}
+                                            disabled={isHistoric}
+                                            className={`font-black text-[11px] px-2 py-0.5 rounded border w-20 text-right outline-none ${isHistoric ? 'bg-transparent border-transparent text-gray-500' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 focus:ring-1 focus:ring-indigo-500'}`}
+                                          />
+                                          <button
+                                            onClick={() => setPlannerPeriods(plannerPeriods.filter(p => p.id !== period.id))}
+                                            className="text-red-400 hover:text-red-600 transition-colors ml-1"
+                                            title="Remove Period"
+                                          >
+                                            <span className="text-lg leading-none">&times;</span>
+                                          </button>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Table */}
+                                      <div className="overflow-x-auto">
+                                        <table className={`w-full text-left text-[11px] ${isHistoric ? 'grayscale' : ''}`}>
+                                          <thead>
+                                            <tr className="bg-slate-50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                              <th className="py-1.5 px-2 font-bold border-b border-slate-200 dark:border-slate-700">Facility</th>
+                                              <th className="py-1.5 px-2 font-bold border-b border-slate-200 dark:border-slate-700 text-center">Alloc %</th>
+                                              <th className="py-1.5 px-2 font-bold border-b border-slate-200 dark:border-slate-700 text-right">Alloc Vol</th>
+                                              <th className="py-1.5 px-2 font-bold border-b border-slate-200 dark:border-slate-700 text-right">Est Outflow</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {[
+                                              { name: 'TECON', allocField: 'allocTecon', outField: 'outflowTecon', vol: Math.round(period.totalVolume * (period.allocTecon / 100)) },
+                                              { name: 'INTER', allocField: 'allocInter', outField: 'outflowInter', vol: Math.round(period.totalVolume * (period.allocInter / 100)) },
+                                              { name: 'TPC', allocField: 'allocTpc', outField: 'outflowTpc', vol: Math.round(period.totalVolume * (period.allocTpc / 100)) },
+                                            ].map(row => (
+                                              <tr key={row.name} className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 whitespace-nowrap">
+                                                <td className="py-1.5 px-2 font-black text-slate-700 dark:text-slate-300">{row.name}</td>
+                                                <td className="py-1.5 px-2 text-center">
+                                                  <input 
+                                                    type="number" 
+                                                    value={(period as any)[row.allocField]}
+                                                    onChange={e => updatePeriod(row.allocField, Number(e.target.value))}
+                                                    disabled={isHistoric}
+                                                    className={`w-14 text-center text-[11px] font-bold py-0.5 rounded border outline-none ${isHistoric ? 'bg-transparent border-transparent' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-1 focus:ring-indigo-500'}`}
+                                                  />
+                                                </td>
+                                                <td className="py-1.5 px-2 text-right font-bold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/30">
+                                                  {row.vol}
+                                                </td>
+                                                <td className="py-1.5 px-2 text-right">
+                                                  <input 
+                                                    type="number" 
+                                                    value={(period as any)[row.outField]}
+                                                    onChange={e => updatePeriod(row.outField, Number(e.target.value))}
+                                                    disabled={isHistoric}
+                                                    className={`w-16 text-right text-[11px] font-bold py-0.5 px-1 rounded border outline-none ${isHistoric ? 'bg-transparent border-transparent text-emerald-700 dark:text-emerald-500' : 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 focus:ring-1 focus:ring-emerald-500'}`}
+                                                  />
+                                                </td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                          <tfoot className="bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                                            <tr>
+                                              <td className="py-1.5 px-2 font-black text-[10px] uppercase text-slate-600 dark:text-slate-400">Total</td>
+                                              <td className={`py-1.5 px-2 text-center font-black ${period.allocTecon + period.allocInter + period.allocTpc === 100 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                                {period.allocTecon + period.allocInter + period.allocTpc}%
+                                              </td>
+                                              <td className="py-1.5 px-2 text-right font-black text-slate-700 dark:text-slate-300">
+                                                {Math.round(period.totalVolume * (period.allocTecon / 100)) + Math.round(period.totalVolume * (period.allocInter / 100)) + Math.round(period.totalVolume * (period.allocTpc / 100))}
+                                              </td>
+                                              <td className="py-1.5 px-2 text-right font-black text-slate-700 dark:text-slate-300">
+                                                {period.outflowTecon + period.outflowInter + period.outflowTpc}
+                                              </td>
+                                            </tr>
+                                          </tfoot>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* SECTION D: Inventory Projections & Capacity Stress-Testing */}
+                            <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100'} shadow-sm`}>
+                              <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider mb-3 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                                <Database className="w-4 h-4 text-rose-500" /> 
+                                D. Inventory Projections & Stress-Testing
+                              </h4>
+                              
+                              <div className="flex flex-col gap-3">
+                                {[
+                                  { name: 'TECON', live: liveTecon.inv, cap: liveTecon.cap, peaks: teconPeaks, peakOcc: teconPeakOcc, peakOccPct: teconPeakOccPct },
+                                  { name: 'INTER', live: liveInter.inv, cap: liveInter.cap, peaks: interPeaks, peakOcc: interPeakOcc, peakOccPct: interPeakOccPct },
+                                  { name: 'TPC', live: liveTpc.inv, cap: liveTpc.cap, peaks: tpcPeaks, peakOcc: tpcPeakOcc, peakOccPct: tpcPeakOccPct },
+                                ].map((fac) => {
+                                  const alert = getAlertStatus(fac.peakOccPct);
+                                  return (
+                                    <div key={fac.name} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-slate-50 dark:bg-slate-900/50">
+                                      <div className="flex justify-between items-center mb-2">
+                                        <h5 className="font-black text-sm text-slate-800 dark:text-slate-100">{fac.name}</h5>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[10px] font-bold text-slate-500 uppercase">Live Inventory:</span>
+                                          <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">{fac.live} <span className="font-bold opacity-60">/ {fac.cap}</span></span>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="flex gap-2 overflow-x-auto mb-3 pb-2 scrollbar-thin">
+                                        {activePeriods.map((p, idx) => (
+                                          <React.Fragment key={p.id}>
+                                            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center shadow-sm min-w-[60px]">
+                                              <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-tighter mb-0.5">P{p.id} Start Inv.</span>
+                                              <span className="block text-xs font-black text-slate-700 dark:text-slate-300">{fac.peaks[idx]?.start || 0}</span>
+                                            </div>
+                                            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center shadow-sm min-w-[60px]">
+                                              <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-tighter mb-0.5">P{p.id} End Inv.</span>
+                                              <span className="block text-xs font-black text-slate-700 dark:text-slate-300">{fac.peaks[idx]?.end || 0}</span>
+                                            </div>
+                                          </React.Fragment>
+                                        ))}
+                                        {activePeriods.length === 0 && (
+                                          <div className="text-[10px] text-gray-500 italic py-2">No active planning periods to project.</div>
                                         )}
                                       </div>
-                                    </td>
-                                    <td className="p-2 text-center font-mono text-gray-500 dark:text-slate-400 font-bold">{depot.avgVolume} FEU</td>
-                                    <td className="p-2 text-center font-mono text-slate-800 dark:text-slate-100">
-                                      {depot.maxCapacity} FEU
-                                    </td>
-                                    <td className="p-2 text-center font-mono">
-                                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${utilBg} ${utilBorder}`}>
-                                        {utilPercent}%
-                                      </span>
-                                    </td>
-                                    <td className="p-2 text-center font-mono">
-                                      {remaining <= 0 ? (
-                                        <span className="text-[9px] font-black text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-950/40 px-1.5 py-0.5 rounded">
-                                          LOTAÇÃO / FULL
-                                        </span>
-                                      ) : (
-                                        <span className={`font-bold ${remaining < 5 ? 'text-amber-600' : 'text-slate-700 dark:text-slate-200'}`}>
-                                          {remaining} FEU
-                                        </span>
-                                      )}
-                                    </td>
-                                    <td className="p-2 text-center">
-                                      <span className={`text-[9.5px] px-2 py-0.5 rounded font-black border uppercase tracking-wider ${
-                                        depot.status === 'Open'
-                                          ? 'bg-emerald-100/10 border-emerald-300 text-emerald-600 dark:text-emerald-400'
-                                          : 'bg-red-100/10 border-red-300 text-red-600 dark:text-red-400'
-                                      }`}>
-                                        {depot.status === 'Open' ? 'Open' : 'Closed'}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
 
-                      <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 font-bold flex items-center gap-1.5">
-                        <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                        <span>{language === 'zh' ? '💡 系统逻辑：绿仓表示空闲度高，黄仓为警戒装载，红仓（利用率超过95%）限制流入，VBR / AREA 23 在任何状态下均触发黄色警戒警告。' : '💡 Legenda do Motor de Regras: Utilização <75% Verde (Liberado), 75-95% Amarelo (Atenção), >95% Vermelho (Gargalo - Bloqueio de novos volumes).'}</span>
-                      </div>
-                    </div>
-
-                    {/* RIGHT WORKSPACE: DYNAMIC INTERACTIVE SHIPOWNER COMPATIBILITY MATRIX */}
-                    <div className={`col-span-5 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
-                      <div className="space-y-3 flex-1">
-                        <div className="flex justify-between items-center border-b pb-2 border-gray-100 dark:border-slate-800">
-                          <div className="flex items-center gap-1.5">
-                            <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-                            <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">
-                              {language === 'bilingual' ? 'MATRIZ DE COMPATIBILIDADE DE ARMADORES / 船东协议符合矩阵' : language === 'zh' ? '船东协议符合矩阵' : 'MATRIZ DE ARMADORES'}
-                            </h4>
+                                      <div className={`p-2 rounded flex items-center justify-between border ${alert.color}`}>
+                                        <div className="flex flex-col">
+                                          <span className="text-[9px] font-black uppercase tracking-wider opacity-80">Capacity Alert</span>
+                                          <span className="text-[10px] font-bold">{alert.text}</span>
+                                        </div>
+                                        <div className="text-right">
+                                          <span className="block text-[10px] font-bold uppercase opacity-80">Max Peak Occ.</span>
+                                          <span className="block text-sm font-black">{fac.peakOccPct.toFixed(1)}%</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           </div>
-                          <span className="text-[9px] text-emerald-600 font-black animate-pulse bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.2 rounded">Interactive</span>
+                          
                         </div>
-
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
-                          {language === 'zh' ? '💡 点击矩阵中的任何状态可以直接循环切换：Authorized (授权) ➜ Blocked (锁定) ➜ Contract Only (特许合同)。' : '💡 Clique diretamente sobre qualquer status na matriz para alternar: Liberado (✅ Auth) ➜ Bloqueado (❌ Block) ➜ Contrato (📝 Contract).'}
-                        </p>
-
-                        <div className="overflow-x-auto mt-2">
-                          <table className="w-full text-center border-collapse text-[10.5px]">
-                            <thead>
-                              <tr className="bg-slate-50 dark:bg-slate-800/60 text-[8.5px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-800">
-                                <th className="p-1.5 text-left pl-2 font-black">{language === 'zh' ? '堆存点' : 'DEPÓSITO'}</th>
-                                {['MSC', 'Maersk', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'COSCO', 'Evergreen'].map(armador => (
-                                  <th key={armador} className="p-1.5 font-black text-center text-slate-750 dark:text-gray-300">{armador}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-slate-850 font-bold text-slate-800 dark:text-slate-200">
-                              {Object.keys(depotMatrix).map((depotName) => (
-                                <tr key={depotName} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
-                                  <td className="p-1.5 text-left pl-2 font-extrabold text-[10px] text-slate-750 dark:text-gray-300">{depotName}</td>
-                                  {['MSC', 'Maersk', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'COSCO', 'Evergreen'].map((armador) => {
-                                    const value = depotMatrix[depotName]?.[armador] || 'Authorized';
-                                    
-                                    // Visual color states
-                                    let cellStyle = 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/45 dark:text-emerald-400';
-                                    let cellText = 'AUTH';
-                                    if (value === 'Blocked') {
-                                      cellStyle = 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/45 dark:text-red-400';
-                                      cellText = 'LOCK';
-                                    } else if (value === 'Contract Only') {
-                                      cellStyle = 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/45 dark:text-amber-400';
-                                      cellText = 'CONT';
-                                    }
-
-                                    return (
-                                      <td key={armador} className="p-1 text-center">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            // Click interaction to toggle through Authorized -> Blocked -> Contract Only
-                                            const states: ('Authorized' | 'Blocked' | 'Contract Only')[] = ['Authorized', 'Blocked', 'Contract Only'];
-                                            const currentIndex = states.indexOf(value);
-                                            const nextState = states[(currentIndex + 1) % states.length];
-                                            setDepotMatrix(prev => ({
-                                              ...prev,
-                                              [depotName]: {
-                                                ...(prev[depotName] || {}),
-                                                [armador]: nextState
-                                              }
-                                            }));
-                                          }}
-                                          className={`px-1 py-0.5 text-[8.5px] font-extrabold rounded-md border tracking-tighter cursor-pointer select-none transition-all active:scale-95 ${cellStyle}`}
-                                          title={`${armador} @ ${depotName}: Clique para alterar status / 点击切换状态`}
-                                        >
-                                          {cellText}
-                                        </button>
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 font-bold flex items-center justify-between">
-                        <span>{language === 'zh' ? '💡 契约限制：VBR及TEON 23 默认锁定大多数直接放行，仅接受特定预约。' : '💡 AUTH: Liberado | LOCK: Bloqueado | CONT: Requer Contrato.'}</span>
-                        <span className="text-[8px] bg-emerald-500/10 text-emerald-600 px-1 rounded uppercase tracking-widest font-black">Excel Friendly</span>
-                      </div>
-                    </div>
-
+                      );
+                    })()}
                   </div>
-
                 </div>
               ) : currentSlide === 7 ? (
                 /* SLIDE 7: MÓDULO DE GESTÃO LOGÍSTICA CRUDS */
