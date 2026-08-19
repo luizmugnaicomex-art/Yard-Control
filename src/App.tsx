@@ -65,9 +65,10 @@ import {
   setDoc, 
   updateDoc, 
   deleteDoc, 
-  writeBatch,
-  getDocs,
-  getDoc
+  writeBatch, 
+  getDocs, 
+  getDoc,
+  onSnapshot 
 } from 'firebase/firestore';
 import { 
   db, 
@@ -1350,34 +1351,72 @@ export default function App() {
     }
   };
 
-  // 3. SINCRONIZADOR EM TEMPO REAL ON-SNAPSHOT DO FIRESTORE
+  // 3. SINCRONIZADOR EM TEMPO REAL ON-SNAPSHOT DO FIRESTORE (MULTI-USER REAL-TIME SYNCHRONIZATION)
   useEffect(() => {
     setDbStatus('connecting');
-    
-    // Data Polling
-    const fetchData = async () => {
-      try {
-        // Yards
-        const yardsSnapshot = await getDocs(collection(db, 'yards'));
+
+    // 1. Assinatura em Tempo Real de Yards (Pátios)
+    const unsubYards = onSnapshot(collection(db, 'yards'), (snapshot) => {
+      if (snapshot.empty) {
+        initializeYardsInDb();
+      } else {
         const newYards: YardsState = {};
-        yardsSnapshot.forEach((docSnap) => {
+        snapshot.forEach((docSnap) => {
           newYards[docSnap.id] = docSnap.data() as Yard;
         });
-        
-        // Ensure all original yards exist even if database was initialized before they were added
+
+        // Garante integridade de todos os pátios padrão
         Object.entries(ORIGINAL_YARDS).forEach(([key, originalYard]) => {
           if (!newYards[key]) {
             newYards[key] = { ...originalYard };
             setDoc(doc(db, 'yards', key), originalYard).catch(e => console.warn('Falha ao adicionar novo yard:', e));
           }
         });
-        
-        setYards(newYards);
 
-        // Vessels
-        const vesselsSnapshot = await getDocs(collection(db, 'vessels'));
+        setYards(newYards);
+        setDbStatus('online');
+      }
+    }, (err) => {
+      console.warn("Falha no listener de yards:", err);
+      setDbStatus('offline');
+    });
+
+    // 2. Assinatura em Tempo Real de Buffer Areas (BYD Buffer Interativo Multi-User)
+    const unsubBuffers = onSnapshot(collection(db, 'bufferAreas'), (snapshot) => {
+      if (snapshot.empty) {
+        const batch = writeBatch(db);
+        defaultBufferAreas.forEach(area => {
+          batch.set(doc(db, 'bufferAreas', area.id), area);
+        });
+        batch.commit().catch(e => console.warn('Falha ao inicializar bufferAreas no Firestore:', e));
+        setBufferAreas(defaultBufferAreas);
+      } else {
+        const list: BufferArea[] = [];
+        snapshot.forEach((docSnap) => {
+          list.push(docSnap.data() as BufferArea);
+        });
+        const order = ['buffer-e', 'buffer-b', 'buffer-alfa', 'buffer-beta', 'buffer-intermaritima'];
+        list.sort((a, b) => {
+          const idxA = order.indexOf(a.id);
+          const idxB = order.indexOf(b.id);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return (a.name || '').localeCompare(b.name || '');
+        });
+        setBufferAreas(list);
+      }
+    }, (err) => {
+      console.warn("Falha no listener de bufferAreas:", err);
+    });
+
+    // 3. Assinatura em Tempo Real de Navios (Vessels)
+    const unsubVessels = onSnapshot(collection(db, 'vessels'), (snapshot) => {
+      if (snapshot.empty) {
+        initializeVesselsInDb();
+      } else {
         const newVessels: Vessel[] = [];
-        vesselsSnapshot.forEach((docSnap) => {
+        snapshot.forEach((docSnap) => {
           const data = docSnap.data();
           newVessels.push({
             id: Number(docSnap.id) || Date.now(),
@@ -1393,11 +1432,16 @@ export default function App() {
           return orderA - orderB;
         });
         setVessels(newVessels);
+      }
+    }, (err) => {
+      console.warn("Falha no listener de vessels:", err);
+    });
 
-        // ChartLeft
-        const chartLeftSnapshot = await getDocs(collection(db, 'chartLeft'));
+    // 4. Assinatura em Tempo Real de ChartLeft (Projeções e Histórico)
+    const unsubChartLeft = onSnapshot(collection(db, 'chartLeft'), (snapshot) => {
+      if (!snapshot.empty) {
         const newChartLeft: ChartLeftItem[] = [];
-        chartLeftSnapshot.forEach((docSnap) => {
+        snapshot.forEach((docSnap) => {
           const data = docSnap.data();
           newChartLeft.push({
             docId: docSnap.id,
@@ -1412,11 +1456,16 @@ export default function App() {
           return numA - numB;
         });
         setChartLeft(newChartLeft);
+      }
+    }, (err) => {
+      console.warn("Falha no listener de chartLeft:", err);
+    });
 
-        // ChartRight
-        const chartRightSnapshot = await getDocs(collection(db, 'chartRight'));
+    // 5. Assinatura em Tempo Real de ChartRight
+    const unsubChartRight = onSnapshot(collection(db, 'chartRight'), (snapshot) => {
+      if (!snapshot.empty) {
         const newChartRight: { index: string, item: ChartRightItem }[] = [];
-        chartRightSnapshot.forEach((docSnap) => {
+        snapshot.forEach((docSnap) => {
           const data = docSnap.data();
           newChartRight.push({
             index: docSnap.id,
@@ -1430,80 +1479,98 @@ export default function App() {
         });
         newChartRight.sort((a, b) => a.index.localeCompare(b.index));
         setChartRight(newChartRight.map(x => x.item));
-
-        // Containers
-        const containersSnapshot = await getDocs(collection(db, 'containers'));
-        const newContainers: Container[] = [];
-        containersSnapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          newContainers.push({
-            id: docSnap.id,
-            yardId: data.yardId || "",
-            vesselName: data.vesselName || "N/A",
-            size: data.size || "40' HC",
-            status: data.status || "CHEIO",
-            category: data.category || "GERAL",
-            bl: data.bl || "",
-            eta: formatExcelDateIfNeeded(data.eta),
-            freeTime: formatExcelDateIfNeeded(data.freeTime),
-            componente: data.componente || "",
-            modelo: data.modelo || "",
-            lote: data.lote || "",
-            programacao: formatExcelDateIfNeeded(data.programacao),
-            transportadora: data.transportadora || ""
-          });
-        });
-        setContainers(newContainers);
-
-        // Logistics
-        const logisticsSnapshot = await getDocs(collection(db, 'logisticsData'));
-        const data: LogisticsEntry[] = [];
-        logisticsSnapshot.forEach(docSnap => {
-          data.push({ id: docSnap.id, ...docSnap.data() } as LogisticsEntry);
-        });
-        setLogisticsEntries(data);
-        
-        setDbStatus('online');
-      } catch (err) {
-        console.warn("Falha ao ler dados do Firestore:", err);
-        setDbStatus('offline');
       }
-    };
-    
-    // Initial fetch for everything (including config)
-    const fetchInitial = async () => {
-        // Global Config
-        const configDoc = await getDoc(doc(db, 'config', 'global'));
-        if (configDoc.exists()) {
-          const data = configDoc.data();
-          if (data.language !== undefined) setLanguage(data.language);
-          if (data.slideTitlePT !== undefined) setSlideTitlePT(data.slideTitlePT);
-          if (data.slideTitleZH !== undefined) setSlideTitleZH(data.slideTitleZH);
-          if (data.watermarkText !== undefined) setWatermarkText(data.watermarkText);
-          if (data.showWatermark !== undefined) setShowWatermark(data.showWatermark);
-          if (data.theme !== undefined) setTheme(data.theme);
-          if (data.widescreenMode !== undefined) setWidescreenMode(data.widescreenMode);
-          if (data.slideWidth !== undefined) setSlideWidth(data.slideWidth);
-          if (data.yardsComment !== undefined) setYardsComment(data.yardsComment);
-          if (data.vesselNote1 !== undefined) setVesselNote1(data.vesselNote1);
-          if (data.vesselNote2 !== undefined) setVesselNote2(data.vesselNote2);
-          if (data.chartNote1 !== undefined) setChartNote1(data.chartNote1);
-          if (data.chartNote2 !== undefined) setChartNote2(data.chartNote2);
-          if (data.scenarioValue !== undefined) setScenarioValue(data.scenarioValue);
-        } else {
-          initializeConfigInDb();
-        }
-        fetchData();
-    };
-    
-    fetchInitial();
-    // const intervalData = setInterval(async () => {
-    //   if (dbStatus === 'offline') return;
-    //   await fetchData();
-    // }, 3600000); // 1 hour
+    }, (err) => {
+      console.warn("Falha no listener de chartRight:", err);
+    });
+
+    // 6. Assinatura em Tempo Real de Contêineres (Containers)
+    const unsubContainers = onSnapshot(collection(db, 'containers'), (snapshot) => {
+      const newContainers: Container[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        newContainers.push({
+          id: docSnap.id,
+          yardId: data.yardId || "",
+          vesselName: data.vesselName || "N/A",
+          size: data.size || "40' HC",
+          status: data.status || "CHEIO",
+          category: data.category || "GERAL",
+          bl: data.bl || "",
+          eta: formatExcelDateIfNeeded(data.eta),
+          freeTime: formatExcelDateIfNeeded(data.freeTime),
+          componente: data.componente || "",
+          modelo: data.modelo || "",
+          lote: data.lote || "",
+          programacao: formatExcelDateIfNeeded(data.programacao),
+          transportadora: data.transportadora || ""
+        });
+      });
+      setContainers(newContainers);
+    }, (err) => {
+      console.warn("Falha no listener de containers:", err);
+    });
+
+    // 7. Assinatura em Tempo Real de Logística Geral
+    const unsubLogistics = onSnapshot(collection(db, 'logisticsData'), (snapshot) => {
+      const data: LogisticsEntry[] = [];
+      snapshot.forEach(docSnap => {
+        data.push({ id: docSnap.id, ...docSnap.data() } as LogisticsEntry);
+      });
+      setLogisticsEntries(data);
+    }, (err) => {
+      console.warn("Falha no listener de logisticsData:", err);
+    });
+
+    // 8. Assinatura em Tempo Real de Configurações Globais
+    const unsubConfig = onSnapshot(doc(db, 'config', 'global'), (configDoc) => {
+      if (configDoc.exists()) {
+        const data = configDoc.data();
+        if (data.language !== undefined) setLanguage(data.language);
+        if (data.slideTitlePT !== undefined) setSlideTitlePT(data.slideTitlePT);
+        if (data.slideTitleZH !== undefined) setSlideTitleZH(data.slideTitleZH);
+        if (data.watermarkText !== undefined) setWatermarkText(data.watermarkText);
+        if (data.showWatermark !== undefined) setShowWatermark(data.showWatermark);
+        if (data.theme !== undefined) setTheme(data.theme);
+        if (data.widescreenMode !== undefined) setWidescreenMode(data.widescreenMode);
+        if (data.slideWidth !== undefined) setSlideWidth(data.slideWidth);
+        if (data.yardsComment !== undefined) setYardsComment(data.yardsComment);
+        if (data.vesselNote1 !== undefined) setVesselNote1(data.vesselNote1);
+        if (data.vesselNote2 !== undefined) setVesselNote2(data.vesselNote2);
+        if (data.chartNote1 !== undefined) setChartNote1(data.chartNote1);
+        if (data.chartNote2 !== undefined) setChartNote2(data.chartNote2);
+        if (data.scenarioValue !== undefined) setScenarioValue(data.scenarioValue);
+        if (data.dailyDeliveryRate !== undefined) setDailyDeliveryRate(data.dailyDeliveryRate);
+        if (data.additionalBacklog !== undefined) setAdditionalBacklog(data.additionalBacklog);
+        if (data.selectedScenario !== undefined) setSelectedScenario(data.selectedScenario);
+      } else {
+        initializeConfigInDb();
+      }
+    }, (err) => {
+      console.warn("Falha no listener de config:", err);
+    });
+
+    // 9. Assinatura em Tempo Real de Depots
+    const unsubDepots = onSnapshot(doc(db, 'config', 'depots'), (depotDoc) => {
+      if (depotDoc.exists()) {
+        const data = depotDoc.data();
+        if (data.depots) setDepots(data.depots);
+        if (data.depotMatrix) setDepotMatrix(data.depotMatrix);
+      }
+    }, (err) => {
+      console.warn("Falha no listener de depots:", err);
+    });
 
     return () => {
-      // clearInterval(intervalData);
+      unsubYards();
+      unsubBuffers();
+      unsubVessels();
+      unsubChartLeft();
+      unsubChartRight();
+      unsubContainers();
+      unsubLogistics();
+      unsubConfig();
+      unsubDepots();
     };
   }, []);
 
@@ -2168,51 +2235,57 @@ export default function App() {
       updatedStack.push(layerData);
     }
 
-    setBufferAreas(prev => prev.map(area => {
-      if (area.id !== editingSlotAreaId) return area;
+    setBufferAreas(prev => {
+      const nextAreas = prev.map(area => {
+        if (area.id !== editingSlotAreaId) return area;
 
-      const updatedSlots = [...area.slots];
-      const slotIndex = updatedSlots.findIndex(s => s.row === editingSlot.row && s.col === editingSlot.col);
+        const updatedSlots = [...area.slots];
+        const slotIndex = updatedSlots.findIndex(s => s.row === editingSlot.row && s.col === editingSlot.col);
 
-      // Main slot container is the topmost container in the stack
-      const validLayers = updatedStack.filter(item => !!item.containerNo);
-      const topLayer: Partial<BufferSlot> = validLayers[validLayers.length - 1] || {};
+        // Main slot container is the topmost container in the stack
+        const validLayers = updatedStack.filter(item => !!item.containerNo);
+        const topLayer: Partial<BufferSlot> = validLayers[validLayers.length - 1] || {};
 
-      const newSlotData: BufferSlot = {
-        row: editingSlot.row,
-        col: editingSlot.col,
-        containerNo: topLayer.containerNo || '',
-        cargoType: topLayer.cargoType || '',
-        size: topLayer.size || "40' HC",
-        priority: topLayer.priority || 'NORMAL',
-        isOptimalPickup: !!topLayer.isOptimalPickup,
-        status: topLayer.status || 'CHEIO',
-        entryTime: topLayer.entryTime || '',
-        danfe: topLayer.danfe || '',
-        origin: topLayer.origin || '',
-        loteNo: topLayer.loteNo || '',
-        statusRecebimento: topLayer.statusRecebimento || '',
-        validade: topLayer.validade || '',
-        updatedAt: new Date().toISOString().split('T')[0],
-        stack: validLayers
-      };
+        const newSlotData: BufferSlot = {
+          row: editingSlot.row,
+          col: editingSlot.col,
+          containerNo: topLayer.containerNo || '',
+          cargoType: topLayer.cargoType || '',
+          size: topLayer.size || "40' HC",
+          priority: topLayer.priority || 'NORMAL',
+          isOptimalPickup: !!topLayer.isOptimalPickup,
+          status: topLayer.status || 'CHEIO',
+          entryTime: topLayer.entryTime || '',
+          danfe: topLayer.danfe || '',
+          origin: topLayer.origin || '',
+          loteNo: topLayer.loteNo || '',
+          statusRecebimento: topLayer.statusRecebimento || '',
+          validade: topLayer.validade || '',
+          updatedAt: new Date().toISOString().split('T')[0],
+          stack: validLayers
+        };
 
-      if (slotIndex > -1) {
-        if (!newSlotData.containerNo) {
-          // If no containers left, clear slot
-          updatedSlots[slotIndex] = { row: editingSlot.row, col: editingSlot.col };
-        } else {
-          updatedSlots[slotIndex] = newSlotData;
+        if (slotIndex > -1) {
+          if (!newSlotData.containerNo) {
+            // If no containers left, clear slot
+            updatedSlots[slotIndex] = { row: editingSlot.row, col: editingSlot.col };
+          } else {
+            updatedSlots[slotIndex] = newSlotData;
+          }
+        } else if (newSlotData.containerNo) {
+          updatedSlots.push(newSlotData);
         }
-      } else if (newSlotData.containerNo) {
-        updatedSlots.push(newSlotData);
-      }
 
-      return {
-        ...area,
-        slots: updatedSlots
-      };
-    }));
+        const modifiedArea = {
+          ...area,
+          slots: updatedSlots
+        };
+
+        setDoc(doc(db, 'bufferAreas', editingSlotAreaId), modifiedArea).catch(e => console.warn('Falha ao salvar buffer no Firestore:', e));
+        return modifiedArea;
+      });
+      return nextAreas;
+    });
 
     setEditingSlot(null);
     setEditingSlotAreaId(null);
@@ -2221,24 +2294,30 @@ export default function App() {
   const handleClearSlot = () => {
     if (!editingSlot || !editingSlotAreaId) return;
 
-    setBufferAreas(prev => prev.map(area => {
-      if (area.id !== editingSlotAreaId) return area;
+    setBufferAreas(prev => {
+      const nextAreas = prev.map(area => {
+        if (area.id !== editingSlotAreaId) return area;
 
-      const updatedSlots = [...area.slots];
-      const slotIndex = updatedSlots.findIndex(s => s.row === editingSlot.row && s.col === editingSlot.col);
+        const updatedSlots = [...area.slots];
+        const slotIndex = updatedSlots.findIndex(s => s.row === editingSlot.row && s.col === editingSlot.col);
 
-      if (slotIndex > -1) {
-        updatedSlots[slotIndex] = {
-          row: editingSlot.row,
-          col: editingSlot.col
+        if (slotIndex > -1) {
+          updatedSlots[slotIndex] = {
+            row: editingSlot.row,
+            col: editingSlot.col
+          };
+        }
+
+        const modifiedArea = {
+          ...area,
+          slots: updatedSlots
         };
-      }
 
-      return {
-        ...area,
-        slots: updatedSlots
-      };
-    }));
+        setDoc(doc(db, 'bufferAreas', editingSlotAreaId), modifiedArea).catch(e => console.warn('Falha ao limpar slot no Firestore:', e));
+        return modifiedArea;
+      });
+      return nextAreas;
+    });
 
     setEditingSlot(null);
     setEditingSlotAreaId(null);
@@ -2271,6 +2350,7 @@ export default function App() {
       slots: []
     };
 
+    setDoc(doc(db, 'bufferAreas', id), newArea).catch(e => console.warn('Falha ao criar buffer no Firestore:', e));
     setBufferAreas(prev => [...prev, newArea]);
     setActiveBufferId(id);
   };
@@ -2292,6 +2372,7 @@ export default function App() {
       : `Tem certeza que deseja excluir a área de buffer "${area.name}"? Todos os contêineres e informações desta área serão perdidos permanentemente!`;
 
     requestConfirmation(title, confirmMessage, () => {
+      deleteDoc(doc(db, 'bufferAreas', area.id)).catch(e => console.warn('Falha ao remover buffer no Firestore:', e));
       const remainingAreas = bufferAreas.filter(a => a.id !== area.id);
       setBufferAreas(remainingAreas);
       setActiveBufferId(remainingAreas[0].id);
@@ -2630,6 +2711,20 @@ export default function App() {
               updatedAreas.push(newArea);
             }
           });
+
+          // Sync to Firestore in batch so all users receive updates in real time
+          try {
+            const batch = writeBatch(db);
+            Object.keys(parsedGroups).forEach(areaId => {
+              const area = updatedAreas.find(a => a.id === areaId);
+              if (area) {
+                batch.set(doc(db, 'bufferAreas', area.id), area);
+              }
+            });
+            batch.commit().catch(e => console.warn('Falha ao sincronizar buffer batch no Firestore:', e));
+          } catch (batchErr) {
+            console.warn('Erro ao preparar batch de buffer:', batchErr);
+          }
 
           return updatedAreas;
         });
@@ -5579,266 +5674,6 @@ export default function App() {
                       </div>
                     );
                   })()}
-
-                  {/* SEÇÃO 2: GRÁFICOS ANALÍTICOS (DISTRIBUÍDOS SEPARADAMENTE NO FIM DO SITE SEM CORTAR!) */}
-                  <div className="flex flex-col gap-4 mt-4">
-                    <div className="flex items-center gap-2 border-b pb-1.5 border-gray-200 dark:border-slate-800">
-                      <TrendingUp className="w-4 h-4 text-[#ef4444] animate-pulse" />
-                      <h3 className="font-extrabold text-[12px] text-gray-800 dark:text-gray-100 uppercase tracking-widest">
-                        {language === 'bilingual' ? 'Análise e Capacidades Gráficas / 运营数据与预测趋势图表' : 'Análise e Capacidades Gráficas'}
-                      </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {/* Gráfico 1 Expandido */}
-                      {(() => {
-                        const chartLeftData = getDynamicChartLeft();
-                        const maxVal = Math.max(...chartLeftData.map(item => item.backlog), 6000);
-                        return (
-                          <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-[280px]`}>
-                            <div className="flex justify-between items-center mb-1">
-                              <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                                <TrendingUp className="w-4 h-4 text-emerald-500" /> {getChartLeftTitle()}
-                              </h4>
-                              <div className="flex gap-2 text-[9px] font-bold font-sans">
-                                <span className="flex items-center gap-1 text-slate-800 dark:text-slate-300"><span className="w-1.5 h-1.5 bg-slate-800 dark:bg-slate-400 inline-block rounded-sm"></span>{language === 'bilingual' ? '到港 / ATA' : language === 'zh' ? '到港' : 'ATA'}</span>
-                                <span className="flex items-center gap-1 text-emerald-500">
-                                  <span className="w-1.5 h-0.5 border-t border-emerald-500 border-dashed inline-block"></span>
-                                  {language === 'pt' ? `Capacidade (${dailyDeliveryRate}/dia)` : (language === 'zh' ? `交付能力 (${dailyDeliveryRate}/天)` : `交付 / Capacidade (${dailyDeliveryRate}/d)`)}
-                                </span>
-                                <span className="flex items-center gap-1 text-red-500">
-                                  <span className="w-1.5 h-1.5 bg-red-500 inline-block rounded-full"></span>
-                                  {language === 'pt' ? 'Backlog' : (language === 'zh' ? '预测积压' : '积压 / Backlog')}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="relative flex-1 w-full pt-1.5">
-                              <svg className="w-full h-full overflow-visible" style={{ overflow: 'visible' }} viewBox="0 0 600 135" preserveAspectRatio="none">
-                                <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                                <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                                <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                                
-                                {/* Dynamic green dashed line connecting the actual delivery capped by max capacity (dailyDeliveryRate * 7) */}
-                                <path
-                                  d={chartLeftData.reduce((acc, item, i) => {
-                                    const x = 35 + i * (540 / (chartLeftData.length - 1));
-                                    const prevBacklog = i === 0 ? 1416 : chartLeftData[i-1].backlog;
-                                    const delivery = Math.min(dailyDeliveryRate * 7, prevBacklog + item.arrivals);
-                                    const y = 100 - (delivery / maxVal) * 85;
-                                    return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-                                  }, '')}
-                                  fill="none"
-                                  stroke="#10b981"
-                                  strokeWidth="1.25"
-                                  strokeDasharray="4 4"
-                                />
-
-                                {chartLeftData.map((item, i) => {
-                                  const x = 35 + i * (540 / (chartLeftData.length - 1));
-                                  const barHeight = (item.arrivals / maxVal) * 85;
-                                  const y = 100 - barHeight;
-                                  return (
-                                    <rect 
-                                      key={i}
-                                      x={x - 2} 
-                                      y={y} 
-                                      width="4" 
-                                      height={barHeight} 
-                                      fill={theme === 'dark' ? '#475569' : '#1e293b'} 
-                                      rx="0.5"
-                                    />
-                                  );
-                                })}
-
-                                <path
-                                  d={chartLeftData.reduce((acc, item, i) => {
-                                    const x = 35 + i * (540 / (chartLeftData.length - 1));
-                                    const y = 100 - (item.backlog / maxVal) * 85;
-                                    return acc + `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-                                  }, '')}
-                                  fill="none"
-                                  stroke="#ef4444"
-                                  strokeWidth="1.5"
-                                />
-
-                                {chartLeftData.map((item, i) => {
-                                  const x = 35 + i * (540 / (chartLeftData.length - 1));
-                                  const y = 100 - (item.backlog / maxVal) * 85;
-                                  return (
-                                    <g key={`cl-${i}`}>
-                                      <circle cx={x} cy={y} r="2" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
-                                      {(i % 2 === 0 || i === chartLeftData.length - 1 || item.backlog > 0) && (
-                                        <text 
-                                          x={x} 
-                                          y={y - 4} 
-                                          fill="#ef4444" 
-                                          fontSize="6" 
-                                          fontWeight="black" 
-                                          textAnchor="middle" 
-                                          className="font-mono"
-                                        >
-                                          {item.backlog}
-                                        </text>
-                                      )}
-                                    </g>
-                                  );
-                                })}
-
-                                {chartLeftData.map((item, i) => {
-                                  const x = 35 + i * (540 / (chartLeftData.length - 1));
-                                  return (
-                                    <text 
-                                      key={`cl-lbl-${i}`} 
-                                      x={x} 
-                                      y="112" 
-                                      fill="#94a3b8" 
-                                      fontSize="5.5" 
-                                      textAnchor="end" 
-                                      fontWeight="bold" 
-                                      className="font-mono"
-                                      transform={`rotate(-45, ${x}, 112)`}
-                                    >
-                                      {item.week} - 2026
-                                    </text>
-                                  );
-                                })}
-                              </svg>
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      {/* Gráfico 2 Expandido */}
-                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between h-[280px]`}>
-                        <div className="flex justify-between items-center mb-1">
-                          <h4 className="text-[11px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                            <Database className="w-4 h-4 text-cyan-500" /> {getChartRightTitle()}
-                          </h4>
-                          <div className="flex gap-2 text-[9px] font-bold">
-                            <span className="flex items-center gap-1 text-emerald-500"><span className="w-1.5 h-1.5 bg-[#059669] inline-block rounded-sm"></span>{language === 'bilingual' ? '高效 / High' : t('opHigh')}</span>
-                            <span className="flex items-center gap-1 text-indigo-500"><span className="w-1.5 h-1.5 bg-[#6366f1] inline-block rounded-sm"></span>{language === 'bilingual' ? '稳定 / Stable' : t('opStable')}</span>
-                            <span className="flex items-center gap-1 text-[#f59e0b]"><span className="w-1.5 h-0.5 border-t border-[#f59e0b] border-dashed inline-block"></span>{language === 'bilingual' ? '目标 / Gc (140)' : t('metaGc')}</span>
-                          </div>
-                        </div>
-
-                        <div className="relative flex-1 w-full pt-1.5">
-                          <svg className="w-full h-full overflow-visible" style={{ overflow: 'visible' }} viewBox="0 0 600 135" preserveAspectRatio="none">
-                            <line x1="30" y1="100" x2="580" y2="100" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                            <line x1="30" y1="65" x2="580" y2="65" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                            <line x1="30" y1="30" x2="580" y2="30" stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 3" />
-                            <line x1="30" y1="67" x2="580" y2="67" stroke="#f59e0b" strokeWidth="1" strokeDasharray="4 4" />
-                            <text x="582" y="70" fill="#f59e0b" fontSize="7" fontWeight="bold">Gc</text>
-
-                            {chartRight.map((item, i) => {
-                              const x = 32 + i * (540 / (chartRight.length - 1));
-                              const barHeight = (item.value / 320) * 85;
-                              const y = 100 - barHeight;
-                              
-                              let barColor = "#059669"; 
-                              if (item.value < 140) {
-                                barColor = "#6366f1"; 
-                              }
-                              if (i % 3 === 0 && item.value > 180) {
-                                barColor = "#10b981"; 
-                              }
-
-                              return (
-                                <g key={`cr-${i}`}>
-                                  <rect 
-                                    x={x - 2} 
-                                    y={y} 
-                                    width="4" 
-                                    height={barHeight} 
-                                    fill={barColor} 
-                                    rx="0.5"
-                                  />
-                                  {item.value > 0 && (
-                                    <text 
-                                      x={x} 
-                                      y={y - 3} 
-                                      fill={theme === 'dark' ? '#cbd5e1' : '#1e293b'} 
-                                      fontSize="5.5" 
-                                      fontWeight="black" 
-                                      textAnchor="middle" 
-                                      className="font-mono"
-                                    >
-                                      {item.value}
-                                    </text>
-                                  )}
-                                </g>
-                              );
-                            })}
-
-                            {chartRight.map((item, i) => {
-                              if (i % 11 === 0 || i === chartRight.length - 1) {
-                                const x = 32 + i * (540 / (chartRight.length - 1));
-                                return (
-                                  <text key={`cr-lbl-${i}`} x={x} y="118" fill="#94a3b8" fontSize="6.5" textAnchor="middle" fontWeight="bold">{item.date}</text>
-                                );
-                              }
-                              return null;
-                            })}
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* COMENTÁRIOS E DIRETRIZES DE OPERAÇÃO */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                    <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between min-h-[140px]`}>
-                      <div className="flex items-center gap-2 border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
-                        <FileText className="w-4 h-4 text-red-500 animate-pulse" />
-                        <h4 className="font-extrabold text-[11px] text-red-600 dark:text-red-400 uppercase tracking-wider block">
-                          {language === 'bilingual' ? 'DIRETRIZES & COMENTÁRIOS GERAIS DE PÁTIOS / 堆场备忘录与运行评论' : 'DIRETRIZES & COMENTÁRIOS GERAIS DE PÁTIOS'}
-                        </h4>
-                      </div>
-                      <div className="flex-1 flex flex-col pt-1">
-                        {isEditMode ? (
-                          <textarea
-                            value={yardsComment}
-                            onChange={(e) => {
-                              setYardsComment(e.target.value);
-                              updateGlobalDoc('yardsComment', e.target.value);
-                            }}
-                            className="w-full flex-1 p-2 text-xs font-semibold border border-gray-200 dark:border-gray-700 dark:bg-slate-800 rounded-lg focus:ring-1 focus:ring-red-500 outline-none resize-none text-slate-800 dark:text-slate-100 placeholder:text-gray-400 font-sans"
-                            rows={3}
-                          />
-                        ) : (
-                          <div className="text-xs leading-relaxed font-bold text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans p-1.5 bg-slate-50/40 dark:bg-slate-900/40 rounded-lg border border-slate-50 dark:border-none">
-                            {yardsComment}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between min-h-[140px]`}>
-                      <div className="flex items-center gap-2 border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
-                        <FileText className="w-4 h-4 text-emerald-500" />
-                        <h4 className="font-extrabold text-[11px] text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
-                          {language === 'bilingual' ? 'ANÁLISE DE BACKLOG & CAPACIDADE / 预测积压与交付分析' : 'ANÁLISE DE BACKLOG & CAPACIDADE'}
-                        </h4>
-                      </div>
-                      <div className="flex-1 flex flex-col pt-1">
-                        {isEditMode ? (
-                          <textarea
-                            value={chartNote1}
-                            onChange={(e) => {
-                              setChartNote1(e.target.value);
-                              updateGlobalDoc('chartNote1', e.target.value);
-                            }}
-                            className="w-full flex-1 p-2 text-xs font-semibold border border-gray-200 dark:border-gray-700 dark:bg-slate-800 rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none resize-none text-slate-800 dark:text-slate-100 placeholder:text-gray-400 font-sans"
-                            rows={3}
-                          />
-                        ) : (
-                          <div className="text-xs leading-relaxed font-bold text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans p-1.5 bg-slate-50/40 dark:bg-slate-900/40 rounded-lg border border-slate-50 dark:border-none">
-                            {chartNote1}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
 
                 </div>
               ) : currentSlide === 1 ? (

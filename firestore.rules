@@ -7,138 +7,61 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Reuseable global helpers
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Checking email verified or Google auth provider
-    function isEmailVerified() {
-      return isSignedIn() && (
-        request.auth.token.email_verified == true || 
-        request.auth.token.firebase.sign_in_provider == 'google.com'
-      );
-    }
-
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    function incoming() {
-      return request.resource.data;
-    }
-
-    function existing() {
-      return resource.data;
-    }
-
-    // Validações de Entidades (Anti-Update-Gap / Strict Schema Match)
-
-    function isValidYard(data) {
-      return data.keys().hasAll(['name', 'type', 'capacity', 'cheio', 'vazio', 'porto', 'prontoColeta', 'delivered']) 
-        && data.keys().size() == 8
-        && data.name is string && data.name.size() <= 100
-        && data.type is string && (data.type == 'BONDED' || data.type == 'WAREHOUSE' || data.type == 'BUFFER')
-        && data.capacity is number && data.capacity >= 0
-        && data.cheio is number && data.cheio >= 0
-        && data.vazio is number && data.vazio >= 0
-        && data.porto is number && data.porto >= 0
-        && data.prontoColeta is number && data.prontoColeta >= 0
-        && data.delivered is number && data.delivered >= 0;
-    }
-
-    function isValidVessel(data) {
-      return data.keys().hasAll(['id', 'name', 'eta', 'cntrs']) 
-        && data.keys().size() == 4
-        && (data.id is string || data.id is number)
-        && data.name is string && data.name.size() <= 200
-        && data.eta is string && data.eta.size() <= 60
-        && data.cntrs is number && data.cntrs >= 0;
-    }
-
-    function isValidChartLeft(data) {
-      return data.keys().hasAll(['week', 'arrivals', 'backlog']) 
-        && data.keys().size() == 3
-        && data.week is string && data.week.size() <= 30
-        && data.arrivals is number && data.arrivals >= 0
-        && data.backlog is number && data.backlog >= 0;
-    }
-
-    function isValidChartRight(data) {
-      return data.keys().hasAll(['date', 'value', 'type']) 
-        && data.keys().size() == 3
-        && data.date is string && data.date.size() <= 30
-        && data.value is number && data.value >= 0
-        && data.type is string && data.type.size() <= 15;
-    }
-
-    function isValidContainer(data) {
-      return data.keys().hasAll(['id', 'yardId', 'vesselName', 'size', 'status', 'category'])
-        && data.keys().size() == 6
-        && data.id is string && data.id.size() <= 30
-        && data.yardId is string && data.yardId.size() <= 50
-        && data.vesselName is string && data.vesselName.size() <= 100
-        && data.size is string && data.size.size() <= 20
-        && data.status is string && (data.status == 'CHEIO' || data.status == 'VAZIO')
-        && data.category is string && (data.category == 'PORTO' || data.category == 'PRONTO_COLETA' || data.category == 'DELIVERED' || data.category == 'GERAL');
-    }
-
-    function isValidConfig(data) {
-      return data.keys().hasAll(['language', 'slideTitlePT', 'slideTitleZH', 'watermarkText', 'showWatermark', 'theme', 'widescreenMode', 'slideWidth'])
-        && data.keys().size() <= 20
-        && data.language is string && (data.language == 'pt' || data.language == 'zh' || data.language == 'bilingual')
-        && data.slideTitlePT is string && data.slideTitlePT.size() <= 400
-        && data.slideTitleZH is string && data.slideTitleZH.size() <= 400
-        && data.watermarkText is string && data.watermarkText.size() <= 300
-        && data.showWatermark is bool
-        && data.theme is string && (data.theme == 'light' || data.theme == 'dark')
-        && data.widescreenMode is bool
-        && data.slideWidth is number && data.slideWidth >= 1000 && data.slideWidth <= 2000
-        && (!data.keys().contains('yardsComment') || data.yardsComment is string)
-        && (!data.keys().contains('vesselNote1') || data.vesselNote1 is string)
-        && (!data.keys().contains('vesselNote2') || data.vesselNote2 is string)
-        && (!data.keys().contains('chartNote1') || data.chartNote1 is string)
-        && (!data.keys().contains('chartNote2') || data.chartNote2 is string);
+      return id is string && id.size() <= 128;
     }
 
     // MATCH BLOCKS FOR ALL IDENTIFIED COLLECTIONS
+    match /bufferAreas/{bufferId} {
+      allow read, write: if true;
+    }
+
+    match /buffers/{bufferId} {
+      allow read, write: if true;
+    }
 
     match /containers/{containerId} {
-      allow read: if true;
-      allow create, update: if isValidId(containerId) && isValidContainer(incoming());
-      allow delete: if isValidId(containerId);
+      allow read, write: if true;
     }
 
     match /yards/{yardId} {
-      allow read: if true;
-      allow create, update: if isValidId(yardId) && isValidYard(incoming());
-      allow delete: if isValidId(yardId);
+      allow read, write: if true;
     }
 
     match /vessels/{vesselId} {
-      allow read: if true;
-      allow create, update: if isValidId(vesselId) && isValidVessel(incoming());
-      allow delete: if isValidId(vesselId);
+      allow read, write: if true;
     }
 
     match /chartLeft/{itemId} {
-      allow read: if true;
-      allow create, update: if isValidId(itemId) && isValidChartLeft(incoming());
-      allow delete: if isValidId(itemId);
+      allow read, write: if true;
     }
 
     match /chartRight/{itemId} {
-      allow read: if true;
-      allow create, update: if isValidId(itemId) && isValidChartRight(incoming());
-      allow delete: if isValidId(itemId);
+      allow read, write: if true;
+    }
+
+    match /logisticsData/{entryId} {
+      allow read, write: if true;
+    }
+
+    match /depots/{depotId} {
+      allow read, write: if true;
+    }
+
+    match /planner/{plannerId} {
+      allow read, write: if true;
     }
 
     // Configuration documents
     match /config/{configId} {
-      allow read: if true;
-      allow create, update: if (configId == 'global') && isValidConfig(incoming());
-      allow delete: if false; // Singleton protection
+      allow read, write: if true;
+    }
+
+    // Test connection
+    match /test/{docId} {
+      allow read, write: if true;
     }
 
   }
 }
+

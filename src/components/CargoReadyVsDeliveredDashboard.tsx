@@ -40,6 +40,8 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { Yard, Vessel, YardStockItem, VesselETAItem } from '../types';
+import { db } from '../firebase';
+import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 interface CargoReadyVsDeliveredDashboardProps {
   theme: string;
@@ -426,15 +428,18 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
 
   const handleUpdateYard = (yardKey: string, field: keyof Yard, value: number) => {
     if (!setYards) return;
+    const sanitizedVal = Math.max(0, value);
     setYards(prev => {
       const current = prev[yardKey];
       if (!current) return prev;
+      const updated = {
+        ...current,
+        [field]: sanitizedVal
+      };
+      setDoc(doc(db, 'yards', yardKey), updated, { merge: true }).catch(err => console.warn('Falha ao sincronizar yard no Firestore:', err));
       return {
         ...prev,
-        [yardKey]: {
-          ...current,
-          [field]: Math.max(0, value)
-        }
+        [yardKey]: updated
       };
     });
   };
@@ -443,15 +448,14 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
     e.preventDefault();
     if (!setVessels || !newVesselName.trim()) return;
     const newId = Date.now();
-    setVessels(prev => [
-      ...prev,
-      {
-        id: newId,
-        name: newVesselName.toUpperCase().trim(),
-        eta: newVesselEta,
-        cntrs: Number(newVesselCntrs) || 100
-      }
-    ]);
+    const newVesselObj: Vessel = {
+      id: newId,
+      name: newVesselName.toUpperCase().trim(),
+      eta: newVesselEta,
+      cntrs: Number(newVesselCntrs) || 100
+    };
+    setVessels(prev => [...prev, newVesselObj]);
+    setDoc(doc(db, 'vessels', String(newId)), newVesselObj).catch(err => console.warn('Falha ao adicionar vessel no Firestore:', err));
     setNewVesselName('');
     setNewVesselCntrs(500);
   };
@@ -459,11 +463,13 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
   const handleRemoveVessel = (vesselId: number) => {
     if (!setVessels) return;
     setVessels(prev => prev.filter(v => v.id !== vesselId));
+    deleteDoc(doc(db, 'vessels', String(vesselId))).catch(err => console.warn('Falha ao remover vessel no Firestore:', err));
   };
 
   const handleUpdateVessel = (vesselId: number, field: keyof Vessel, value: any) => {
     if (!setVessels) return;
     setVessels(prev => prev.map(v => v.id === vesselId ? { ...v, [field]: value } : v));
+    setDoc(doc(db, 'vessels', String(vesselId)), { [field]: value }, { merge: true }).catch(err => console.warn('Falha ao atualizar vessel no Firestore:', err));
   };
 
   // -------------------------------------------------------------
