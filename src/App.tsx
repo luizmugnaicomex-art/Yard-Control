@@ -55,6 +55,7 @@ import { Calculator,
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
+import { CargoReadyVsDeliveredDashboard } from './components/CargoReadyVsDeliveredDashboard';
 
 // FIREBASE INTEGRATION
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -5475,391 +5476,6 @@ export default function App() {
                                   </div>
                                 )}
                               </div>
-
-                              {/* NEW SECTION: Factory Backlog Tracking & Delivery Projection */}
-                              <div className={`p-5 rounded-xl border relative transition-all ${
-                                theme === 'dark' 
-                                  ? 'bg-[#1e293b] border-slate-700 text-white' 
-                                  : 'bg-white border-slate-100 shadow-md'
-                              }`}>
-                                <div className="flex items-center justify-between border-b pb-3 mb-4 border-gray-150/45 dark:border-slate-800">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="p-1.5 bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 rounded-lg animate-pulse">
-                                      <Truck className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                      <h3 className="font-extrabold text-[13px] text-gray-800 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
-                                        {language === 'bilingual' ? 'Consolidado de Backlog e Projeção de Escoamento / 厂区积压与发运监控' : 'Consolidated Backlog & Drain Projection'}
-                                      </h3>
-                                      <p className="text-[10.5px] text-gray-500 dark:text-gray-400 leading-normal">
-                                        {language === 'bilingual' ? 'Cálculo automático em tempo real combinando pátios, armazéns e fluxo de navios / 自动同步保税堆场、仓库、辅助堆场及在途船舶数据进行发运测算' : 'Automatic real-time calculation combining yards, warehouses, and incoming vessels.'}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Dynamic calculations */}
-                                {(() => {
-                                  // 1. Core inventories
-                                  const bondedVal = bondedSum.totalCheio;
-                                  const warehouseVal = warehouseSum.totalCheio;
-                                  const bufferVal = bufferSum.totalCheio;
-
-                                  // 2. Sum of Inventory Backlog
-                                  const inventoryBacklog = bondedVal + warehouseVal + bufferVal;
-
-                                  // 3. Upcoming Arrivals
-                                  const upcomingArrivals = vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0);
-
-                                  // 4. Grand Total Pending Volume (including additional if any)
-                                  const totalPendingVolume = inventoryBacklog + upcomingArrivals + additionalBacklog;
-
-                                  // Active volume selection based on scenario
-                                  const activeScenarioVolume = selectedScenario === 'etapa1'
-                                    ? (bondedVal + warehouseVal + additionalBacklog)
-                                    : selectedScenario === 'etapa2'
-                                      ? (bondedVal + warehouseVal + bufferVal + additionalBacklog)
-                                      : (bondedVal + warehouseVal + bufferVal + upcomingArrivals + additionalBacklog);
-
-                                  // 5. Drain Days
-                                  const drainTimeDays = dailyDeliveryRate > 0 ? (activeScenarioVolume / dailyDeliveryRate) : 0;
-
-                                  const getCompletionWeek = (days: number) => {
-                                    const weeksNeeded = Math.ceil(days / 7);
-                                    return `W${28 + weeksNeeded}`;
-                                  };
-
-                                  const getCompletionDateStr = (days: number) => {
-                                    const baseDate = new Date('2026-07-08');
-                                    baseDate.setDate(baseDate.getDate() + Math.round(days));
-                                    const d = String(baseDate.getDate()).padStart(2, '0');
-                                    const m = String(baseDate.getMonth() + 1).padStart(2, '0');
-                                    return `${d}/${m}`;
-                                  };
-
-                                  // Status levels
-                                  let statusColor = "text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
-                                  let statusLabel = language === 'bilingual' ? "Fluxo Seguro / 安全流速" : language === 'zh' ? "安全流速" : "Fluxo Seguro";
-                                  let progressColor = "stroke-emerald-500";
-                                  let statusBgLight = "bg-emerald-50/40 dark:bg-emerald-950/20";
-                                  if (drainTimeDays > 45.0) {
-                                    statusColor = "text-red-500 dark:text-red-400 bg-red-500/10 border-red-500/20 animate-pulse";
-                                    statusLabel = language === 'bilingual' ? "Gargalo Crítico / 严重积压" : language === 'zh' ? "严重积压" : "Gargalo Crítico";
-                                    progressColor = "stroke-red-500";
-                                    statusBgLight = "bg-red-50/40 dark:bg-red-950/20";
-                                  } else if (drainTimeDays > 25.0) {
-                                    statusColor = "text-amber-500 dark:text-amber-400 bg-amber-500/10 border-amber-500/20";
-                                    statusLabel = language === 'bilingual' ? "Alerta de Acúmulo / 积压警示" : language === 'zh' ? "积压警示" : "Alerta de Acúmulo";
-                                    progressColor = "stroke-amber-500";
-                                    statusBgLight = "bg-amber-50/40 dark:bg-amber-950/20";
-                                  }
-
-                                  return (
-                                    <div className="flex flex-col gap-5">
-                                      {/* Phase 1: Real-time Area Inventory KPIs */}
-                                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                        {/* STAT 1: Bonded */}
-                                        <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a]/60 border-slate-800' : 'bg-slate-50 border-slate-100'} flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-transform`}>
-                                          <div className="absolute top-0 right-0 w-12 h-12 bg-blue-500/5 rounded-full -mr-4 -mt-4 transition-all group-hover:scale-125" />
-                                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase font-extrabold tracking-wider leading-none">
-                                            {language === 'bilingual' ? 'Bonded / 保税' : 'Bonded'}
-                                          </span>
-                                          <div className="flex items-baseline gap-1 mt-2">
-                                            <span className="text-xl font-black text-blue-600 dark:text-blue-400 font-mono">
-                                              {bondedVal.toLocaleString()}
-                                            </span>
-                                            <span className="text-[10px] text-gray-450 font-medium">CNTRs</span>
-                                          </div>
-                                          <span className="text-[8px] text-gray-400 mt-1 block">
-                                            {language === 'bilingual' ? 'Sumado dos portos / 港口及保税库重箱' : 'Sum of ports & primary yards'}
-                                          </span>
-                                        </div>
-
-                                        {/* STAT 2: Warehouses */}
-                                        <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a]/60 border-slate-800' : 'bg-slate-50 border-slate-100'} flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-transform`}>
-                                          <div className="absolute top-0 right-0 w-12 h-12 bg-indigo-500/5 rounded-full -mr-4 -mt-4 transition-all group-hover:scale-125" />
-                                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase font-extrabold tracking-wider leading-none">
-                                            {language === 'bilingual' ? 'Warehouses / 仓库' : 'Warehouses'}
-                                          </span>
-                                          <div className="flex items-baseline gap-1 mt-2">
-                                            <span className="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono">
-                                              {warehouseVal.toLocaleString()}
-                                            </span>
-                                            <span className="text-[10px] text-gray-450 font-medium">CNTRs</span>
-                                          </div>
-                                          <span className="text-[8px] text-gray-400 mt-1 block">
-                                            {language === 'bilingual' ? 'CDs e recintos secundários / 二级仓库与配送中心' : 'Secondary warehousing total'}
-                                          </span>
-                                        </div>
-
-                                        {/* STAT 3: BYD Buffer */}
-                                        <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a]/60 border-slate-800' : 'bg-slate-50 border-slate-100'} flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-transform`}>
-                                          <div className="absolute top-0 right-0 w-12 h-12 bg-teal-500/5 rounded-full -mr-4 -mt-4 transition-all group-hover:scale-125" />
-                                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase font-extrabold tracking-wider leading-none">
-                                            {language === 'bilingual' ? 'BYD Buffer / 缓冲堆场' : 'BYD Buffer'}
-                                          </span>
-                                          <div className="flex items-baseline gap-1 mt-2">
-                                            <span className="text-xl font-black text-teal-600 dark:text-teal-400 font-mono">
-                                              {bufferVal.toLocaleString()}
-                                            </span>
-                                            <span className="text-[10px] text-gray-450 font-medium">CNTRs</span>
-                                          </div>
-                                          <span className="text-[8px] text-gray-400 mt-1 block">
-                                            {language === 'bilingual' ? 'Pátios de apoio ativos / 工厂外协缓冲堆场' : 'Active factory support yards'}
-                                          </span>
-                                        </div>
-
-                                        {/* STAT 4: TOTAL CONSOLIDATED BACKLOG */}
-                                        <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a]/80 border-amber-500/20' : 'bg-amber-50/30 border-amber-100'} flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-transform`}>
-                                          <div className="absolute top-0 right-0 w-12 h-12 bg-amber-500/10 rounded-full -mr-4 -mt-4 transition-all group-hover:scale-125" />
-                                          <span className="text-[9.5px] text-amber-600 dark:text-amber-400 uppercase font-black tracking-wider leading-none">
-                                            {language === 'bilingual' ? 'Backlog Consolidado / 综合总积压' : 'Consolidated Backlog'}
-                                          </span>
-                                          <div className="flex items-baseline gap-1 mt-2">
-                                            <span className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono">
-                                              {inventoryBacklog.toLocaleString()}
-                                            </span>
-                                            <span className="text-[10px] text-amber-500 font-bold">CNTRs</span>
-                                          </div>
-                                          <span className="text-[8px] text-slate-500 dark:text-slate-400 mt-1 block font-semibold">
-                                            {language === 'bilingual' ? 'Soma das 3 áreas de estoque / 三方库存总和' : 'Sum of 3 storage areas'}
-                                          </span>
-                                        </div>
-                                      </div>
-
-                                      {/* Main Calculation & Slider Block */}
-                                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                                        
-                                        {/* Math Breakdown Box (Left 8 columns) */}
-                                        <div className={`lg:col-span-8 p-4 rounded-xl border ${
-                                          theme === 'dark' ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50/50 border-slate-150/80'
-                                        } flex flex-col gap-4`}>
-                                          
-                                          {/* Step-by-Step Math Visualization */}
-                                          <div className="flex flex-col gap-2.5">
-                                            <div className="flex items-center justify-between">
-                                              <h4 className="text-[11px] font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                                {language === 'bilingual' ? 'Demonstração do Cálculo de Carga / 货量流速测算步骤' : 'Step-by-Step Volume Calculation'}
-                                              </h4>
-                                              <span className="text-[8.5px] text-red-500 dark:text-red-400 font-black animate-pulse bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded border border-red-150 dark:border-red-900">
-                                                {language === 'bilingual' ? 'CLIQUE PARA SELECIONAR CENÁRIO DE PROJEÇÃO / 点击选择预测场景' : 'CLICK TO SELECT PROJECTION SCENARIO'}
-                                              </span>
-                                            </div>
-
-                                            {/* Step 1 */}
-                                            <div 
-                                              onClick={() => setSelectedScenario('etapa1')}
-                                              className={`p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs cursor-pointer transition-all select-none ${
-                                                selectedScenario === 'etapa1'
-                                                  ? 'ring-2 ring-blue-500 bg-blue-50/40 dark:bg-blue-950/30 border-blue-400'
-                                                  : theme === 'dark' ? 'bg-slate-805/30 border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700' : 'bg-white border-slate-200/50 shadow-xs opacity-60 hover:opacity-100 hover:border-slate-350'
-                                              }`}
-                                            >
-                                              <div className="flex flex-wrap items-center gap-1.5">
-                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${selectedScenario === 'etapa1' ? 'bg-blue-600 text-white' : 'bg-blue-500/10 text-blue-500'}`}>Etapa 1</span>
-                                                <span className="text-gray-600 dark:text-slate-300 font-bold">
-                                                  {language === 'bilingual' ? 'Pátios + CDs (Sem Buffer/ETA):' : 'Yards + Warehouses:'}
-                                                </span>
-                                                <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-blue-600 dark:text-blue-400">
-                                                  {bondedVal.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Bonded</span>
-                                                </span>
-                                                <span className="text-gray-400 font-black">+</span>
-                                                <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-indigo-600 dark:text-indigo-400">
-                                                  {warehouseVal.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Warehouse</span>
-                                                </span>
-                                              </div>
-                                              <div className="flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-slate-800 pt-1.5 sm:pt-0 sm:pl-3">
-                                                <span className="text-[10px] text-gray-450 uppercase font-black font-sans">Subtotal =</span>
-                                                <span className="font-mono font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-[13px]">
-                                                  {(bondedVal + warehouseVal).toLocaleString()}
-                                                </span>
-                                                {selectedScenario === 'etapa1' && <span className="text-[9px] font-black text-blue-600">●</span>}
-                                              </div>
-                                            </div>
-
-                                            {/* Step 2 */}
-                                            <div 
-                                              onClick={() => setSelectedScenario('etapa2')}
-                                              className={`p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs cursor-pointer transition-all select-none ${
-                                                selectedScenario === 'etapa2'
-                                                  ? 'ring-2 ring-amber-500 bg-amber-50/40 dark:bg-amber-950/30 border-amber-400'
-                                                  : theme === 'dark' ? 'bg-slate-805/30 border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700' : 'bg-white border-slate-200/50 shadow-xs opacity-60 hover:opacity-100 hover:border-slate-350'
-                                              }`}
-                                            >
-                                              <div className="flex flex-wrap items-center gap-1.5">
-                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${selectedScenario === 'etapa2' ? 'bg-amber-600 text-white' : 'bg-amber-500/10 text-amber-500'}`}>Etapa 2</span>
-                                                <span className="text-gray-600 dark:text-slate-300 font-bold">
-                                                  {language === 'bilingual' ? 'Pátios + CDs + Buffer (Sem ETA):' : 'Yards + Warehouses + Buffer:'}
-                                                </span>
-                                                <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-blue-600 dark:text-blue-400">
-                                                  {(bondedVal + warehouseVal).toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Subtotal</span>
-                                                </span>
-                                                <span className="text-gray-400 font-black">+</span>
-                                                <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-teal-600 dark:text-teal-400">
-                                                  {bufferVal.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">BYD Buffer</span>
-                                                </span>
-                                              </div>
-                                              <div className="flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-slate-800 pt-1.5 sm:pt-0 sm:pl-3">
-                                                <span className="text-[10px] text-gray-450 uppercase font-black font-sans">Backlog =</span>
-                                                <span className="font-mono font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[13px]">
-                                                  {inventoryBacklog.toLocaleString()}
-                                                </span>
-                                                {selectedScenario === 'etapa2' && <span className="text-[9px] font-black text-amber-600">●</span>}
-                                              </div>
-                                            </div>
-
-                                            {/* Step 3 */}
-                                            <div 
-                                              onClick={() => setSelectedScenario('etapa3')}
-                                              className={`p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs cursor-pointer transition-all select-none ${
-                                                selectedScenario === 'etapa3'
-                                                  ? 'ring-2 ring-purple-500 bg-purple-50/40 dark:bg-purple-950/30 border-purple-400'
-                                                  : theme === 'dark' ? 'bg-slate-805/30 border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700' : 'bg-white border-slate-200/50 shadow-xs opacity-60 hover:opacity-100 hover:border-slate-350'
-                                              }`}
-                                            >
-                                              <div className="flex flex-wrap items-center gap-1.5">
-                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${selectedScenario === 'etapa3' ? 'bg-purple-600 text-white' : 'bg-purple-500/10 text-purple-500'}`}>Etapa 3</span>
-                                                <span className="text-gray-600 dark:text-slate-300 font-bold">
-                                                  {language === 'bilingual' ? 'Carga Total para Escoar (Com ETA + Adj):' : 'Total Volume to Drain:'}
-                                                </span>
-                                                <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-amber-600 dark:text-amber-400">
-                                                  {inventoryBacklog.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">Backlog</span>
-                                                </span>
-                                                <span className="text-gray-400 font-black">+</span>
-                                                <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-yellow-600 dark:text-yellow-400">
-                                                  {upcomingArrivals.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-500">ETA Arrivals</span>
-                                                </span>
-                                                {additionalBacklog > 0 && (
-                                                  <>
-                                                    <span className="text-gray-400 font-black">+</span>
-                                                    <span className="font-mono font-bold bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500">
-                                                      {additionalBacklog.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-450">Adj</span>
-                                                    </span>
-                                                  </>
-                                                )}
-                                              </div>
-                                              <div className="flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-slate-800 pt-1.5 sm:pt-0 sm:pl-3">
-                                                <span className="text-[10px] text-gray-450 uppercase font-black font-sans">Total =</span>
-                                                <span className="font-mono font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded text-[13px]">
-                                                  {totalPendingVolume.toLocaleString()}
-                                                </span>
-                                                {selectedScenario === 'etapa3' && <span className="text-[9px] font-black text-purple-600">●</span>}
-                                              </div>
-                                            </div>
-                                          </div>
-
-                                          {/* Fine Tuning Controls */}
-                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-dashed border-gray-200 dark:border-slate-800 pt-3">
-                                            <div>
-                                              <label className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-black flex justify-between mb-1.5">
-                                                <span>{language === 'bilingual' ? 'Ajuste Fino de Volume / 手动体积微调' : 'Manual Fine-Tuning Adjustment'}</span>
-                                                <span className="font-mono text-slate-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.2 rounded font-bold">+{additionalBacklog}</span>
-                                              </label>
-                                              <input 
-                                                type="range"
-                                                min="0"
-                                                max="1500"
-                                                step="50"
-                                                value={additionalBacklog}
-                                                onChange={(e) => setAdditionalBacklog(Number(e.target.value))}
-                                                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-slate-600 dark:bg-slate-700"
-                                              />
-                                              <span className="text-[8.5px] text-gray-400 block mt-1">
-                                                {language === 'bilingual' ? 'Simule volumes adicionais não listados nos pátios / 模拟未登记录入的额外库存体积' : 'Simulate custom additional loads'}
-                                              </span>
-                                            </div>
-
-                                            <div>
-                                              <label className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-black flex justify-between mb-1.5">
-                                                <span>{language === 'bilingual' ? 'Capacidade de Escoamento Diário / 工厂每日发运能力' : 'Daily Factory Delivery Rate'}</span>
-                                                <span className="font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded font-bold">{dailyDeliveryRate} cntrs/dia</span>
-                                              </label>
-                                              <input 
-                                                type="range"
-                                                min="50"
-                                                max="500"
-                                                step="10"
-                                                value={dailyDeliveryRate}
-                                                onChange={(e) => setDailyDeliveryRate(Number(e.target.value))}
-                                                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-550 dark:bg-slate-700"
-                                              />
-                                              <span className="text-[8.5px] text-gray-400 block mt-1">
-                                                {language === 'bilingual' ? 'Regule a taxa de carregamento de carretas na fábrica / 调节工厂集卡日出库平均流速' : 'Adjust average container truck exits per day'}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                        {/* Visual Day Counter Ring / Widget (Right 4 columns) */}
-                                        <div className={`lg:col-span-4 p-4 rounded-xl border flex flex-col justify-center items-center text-center ${statusBgLight} border-dashed border-gray-300 dark:border-slate-700 relative overflow-hidden`}>
-                                          <span className="text-[9.5px] text-gray-450 dark:text-gray-400 uppercase font-black tracking-wider mb-2">
-                                            {selectedScenario === 'etapa1'
-                                              ? (language === 'bilingual' ? 'Tempo de Escoamento Backlog (Etapa 1) / 预计现有库存出清周期' : 'Projected Backlog Drain (Step 1)')
-                                              : (language === 'bilingual' ? 'Tempo de Escoamento Total (Etapa 2) / 预计总货量出清周期' : 'Projected Total Drain (Step 2)')
-                                            }
-                                          </span>
-
-                                          {/* Stunning Progress Ring Container */}
-                                          <div className="relative w-28 h-28 flex items-center justify-center my-1">
-                                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                                              {/* Background circle */}
-                                              <circle
-                                                cx="50"
-                                                cy="50"
-                                                r="40"
-                                                className="stroke-gray-200 dark:stroke-slate-800"
-                                                strokeWidth="7"
-                                                fill="transparent"
-                                              />
-                                              {/* Progress circle */}
-                                              <circle
-                                                cx="50"
-                                                cy="50"
-                                                r="40"
-                                                className={`transition-all duration-500 ${progressColor}`}
-                                                strokeWidth="8"
-                                                strokeDasharray="251.2"
-                                                strokeDashoffset={Math.max(0, 251.2 - (Math.min(100, (drainTimeDays / 90) * 100) / 100) * 251.2)}
-                                                strokeLinecap="round"
-                                                fill="transparent"
-                                              />
-                                            </svg>
-                                            
-                                            {/* Centered Big Value */}
-                                            <div className="absolute flex flex-col items-center">
-                                              <span className="text-2xl font-black font-mono tracking-tight text-gray-800 dark:text-white leading-none">
-                                                {drainTimeDays.toFixed(1)}
-                                              </span>
-                                              <span className="text-[9px] text-gray-500 dark:text-gray-400 font-bold mt-1 uppercase">
-                                                {language === 'bilingual' ? 'Dias / 天' : 'Days'}
-                                              </span>
-                                            </div>
-                                          </div>
-
-                                          <div className="mt-2 flex flex-col items-center gap-1 w-full">
-                                            <span className={`inline-block text-[8.5px] px-2.5 py-0.5 rounded font-black uppercase tracking-wider text-center border ${statusColor}`}>
-                                              {statusLabel}
-                                            </span>
-                                            <p className="text-[9px] text-gray-400 max-w-[180px] leading-tight mt-0.5">
-                                              {language === 'bilingual' 
-                                                ? `Escoamento de ${activeScenarioVolume.toLocaleString()} contêineres à média de ${dailyDeliveryRate}/dia.` 
-                                                : `Draining ${activeScenarioVolume.toLocaleString()} cntrs at ${dailyDeliveryRate}/day.`
-                                              }
-                                            </p>
-                                          </div>
-
-                                          <div className="mt-3.5 border-t border-dashed border-gray-200 dark:border-slate-700/60 pt-2 w-full flex flex-col items-center">
-                                            <span className="text-[8px] text-gray-400 dark:text-gray-500 uppercase font-black tracking-widest">{language === 'bilingual' ? 'Previsão de Conclusão / 预计完成' : 'Completion Week'}:</span>
-                                            <span className="text-sm font-black text-amber-600 dark:text-amber-400 mt-0.5 bg-amber-500/10 px-2 py-0.5 rounded-md">
-                                              {getCompletionWeek(drainTimeDays)} <span className="text-[10px] text-gray-500">({getCompletionDateStr(drainTimeDays)})</span>
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
-                              </div>
                             </div>
 
                             {/* Vessels Table Card */}
@@ -5912,8 +5528,29 @@ export default function App() {
                                 </div>
                               </div>
                             </div>
-
                           </div>
+
+                          {/* EXECUTIVE LOGISTICS TRACKING DASHBOARD COMPONENT - FULL WIDTH */}
+                          <div className="w-full mt-2">
+                            <CargoReadyVsDeliveredDashboard
+                              theme={theme}
+                              language={language}
+                              yards={yards}
+                              setYards={setYards}
+                              vessels={vessels}
+                              setVessels={setVessels}
+                              dailyDeliveryRate={dailyDeliveryRate}
+                              setDailyDeliveryRate={setDailyDeliveryRate}
+                              bondedSum={bondedSum}
+                              warehouseSum={warehouseSum}
+                              bufferSum={bufferSum}
+                              additionalBacklog={additionalBacklog}
+                              setAdditionalBacklog={setAdditionalBacklog}
+                              selectedScenario={selectedScenario}
+                              setSelectedScenario={setSelectedScenario}
+                            />
+                          </div>
+
                         </div>
 
                         {/* OTHER DYNAMIC EXTRA YARDS FALLBACK */}

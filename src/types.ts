@@ -1,3 +1,24 @@
+export interface YardStockItem {
+  id: string;
+  name: string;
+  category: 'BONDED' | 'WAREHOUSE' | 'BUFFER';
+  capacity: number;
+  currentFull: number;
+  currentEmpty: number;
+  inTransitPort: number;
+  inTransitCollection: number;
+  inTransitDelivery: number;
+}
+
+export interface VesselETAItem {
+  id: string;
+  vesselName: string;
+  etaDate: string; // ISO date format "YYYY-MM-DD" or standard date
+  containerCount: number;
+  blCount?: number;
+  status: 'SCHEDULED' | 'BERTHED' | 'DISCHARGED' | 'DELAYED';
+}
+
 export interface Yard {
   name: string;
   type: 'BONDED' | 'WAREHOUSE' | 'BUFFER' | string;
