@@ -144,6 +144,71 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
   // 1. DYNAMIC STATE MODELS & MAPPINGS (Zero Hardcoded Assumptions)
   // -------------------------------------------------------------
 
+  // Helper for timezone-safe local date parsing
+  const parseEtaToDate = (rawEta: string | undefined): { date: Date; year: number; month: number; day: number; formattedIso: string } | null => {
+    if (!rawEta) return null;
+    const str = String(rawEta).trim();
+    if (!str) return null;
+
+    let day = 1;
+    let month = 8;
+    let year = 2026;
+
+    if (str.includes('/')) {
+      const parts = str.split('/');
+      if (parts.length >= 2) {
+        day = parseInt(parts[0], 10) || 1;
+        month = parseInt(parts[1], 10) || 8;
+        if (parts.length >= 3) {
+          let y = parseInt(parts[2], 10);
+          if (!isNaN(y)) {
+            if (y < 100) y += 2000;
+            year = y;
+          }
+        }
+      }
+    } else if (str.includes('-')) {
+      const parts = str.split('-');
+      if (parts.length >= 3) {
+        if (parts[0].length === 4) {
+          year = parseInt(parts[0], 10) || 2026;
+          month = parseInt(parts[1], 10) || 8;
+          day = parseInt(parts[2], 10) || 1;
+        } else {
+          day = parseInt(parts[0], 10) || 1;
+          month = parseInt(parts[1], 10) || 8;
+          let y = parseInt(parts[2], 10);
+          if (!isNaN(y)) {
+            if (y < 100) y += 2000;
+            year = y;
+          }
+        }
+      } else if (parts.length === 2) {
+        month = parseInt(parts[1], 10) || 8;
+        let y = parseInt(parts[0], 10);
+        if (!isNaN(y)) year = y < 100 ? y + 2000 : y;
+      }
+    } else {
+      return null;
+    }
+
+    if (isNaN(year) || isNaN(month) || isNaN(day) || month < 1 || month > 12 || day < 1 || day > 31) {
+      return null;
+    }
+
+    // Set local noon time (12:00:00) so there's never an off-by-one or DST/UTC timezone border issue
+    const localDate = new Date(year, month - 1, day, 12, 0, 0, 0);
+    const formattedIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    return {
+      date: localDate,
+      year,
+      month,
+      day,
+      formattedIso
+    };
+  };
+
   const yardStockList: YardStockItem[] = useMemo(() => {
     return (Object.entries(yards || {}) as [string, Yard][]).map(([id, y]) => {
       let cat: 'BONDED' | 'WAREHOUSE' | 'BUFFER' = 'WAREHOUSE';
@@ -165,19 +230,13 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
 
   const vesselList: VesselETAItem[] = useMemo(() => {
     return (vessels || []).map((v) => {
-      let etaDate = v.eta || '2026-08-20';
-      if (etaDate.includes('/')) {
-        const parts = etaDate.split('/');
-        if (parts.length === 3) {
-          etaDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-        }
-      }
+      const parsed = parseEtaToDate(v.eta);
       return {
         id: String(v.id),
         vesselName: v.name,
-        etaDate: etaDate,
-        containerCount: v.cntrs || 0,
-        blCount: Math.round((v.cntrs || 0) / 3.2),
+        etaDate: parsed ? parsed.formattedIso : (v.eta || '2026-08-20'),
+        containerCount: Number(v.cntrs) || 0,
+        blCount: Math.round((Number(v.cntrs) || 0) / 3.2),
         status: 'SCHEDULED' as const
       };
     });
@@ -214,89 +273,67 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
     ? Math.round((totalInitialBacklog / dynamicYardMaxCapacity) * 100)
     : 0;
 
-  // B. Dynamic ETA Week Aggregation (Groups incoming vessels dynamically into ISO/Operational Weeks)
-  const weeklyVesselInflow = useMemo(() => {
-    const baseDate = new Date(2026, 7, 17); // Aug 17, 2026 is Monday of W34
-    const weeks: Array<{
-      weekLabel: string;
-      weekFull: string;
-      dateRange: string;
-      startDate: Date;
-      endDate: Date;
-      containers: number;
-      vessels: VesselETAItem[];
-    }> = [];
+  // B. Dynamic ETA Week Aggregation & Simulation until Yard Drain reaches Zero
+  const weeklyData: WeeklyDataPoint[] = useMemo(() => {
+    const baseDate = new Date(2026, 7, 17, 0, 0, 0, 0); // Aug 17, 2026 is Monday of W34
+    const teusPerBl = 3.2;
+    const weeklyDrainCapacity = (dailyDeliveryRate || 140) * 7;
 
-    for (let i = 0; i < 13; i++) {
-      const weekNum = 34 + i;
-      const start = new Date(baseDate);
-      start.setDate(baseDate.getDate() + i * 7);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
+    // 1. Pre-group all scheduled vessels by week index relative to W34 base date
+    const vesselMapByWeekIdx = new Map<number, { containers: number; vessels: VesselETAItem[] }>();
+    let maxVesselWeekIdx = 0;
 
-      const startStr = `${String(start.getDate()).padStart(2, '0')}/${String(start.getMonth() + 1).padStart(2, '0')}`;
-      const endStr = `${String(end.getDate()).padStart(2, '0')}/${String(end.getMonth() + 1).padStart(2, '0')}`;
-
-      weeks.push({
-        weekLabel: `W${weekNum}`,
-        weekFull: `W${weekNum} - 2026`,
-        dateRange: `${startStr} a ${endStr}`,
-        startDate: start,
-        endDate: end,
-        containers: 0,
-        vessels: []
-      });
-    }
-
-    // Distribute actual vessel arrivals into their exact arrival week
     vesselList.forEach(v => {
-      if (!v.containerCount || v.containerCount <= 0) return;
-      let targetIndex = -1;
-      if (v.etaDate) {
-        const vDate = new Date(v.etaDate);
-        if (!isNaN(vDate.getTime())) {
-          for (let i = 0; i < weeks.length; i++) {
-            if (vDate >= weeks[i].startDate && vDate <= weeks[i].endDate) {
-              targetIndex = i;
-              break;
-            }
-          }
-          if (targetIndex === -1 && vDate < weeks[0].startDate) {
-            targetIndex = 0;
-          }
-          if (targetIndex === -1 && vDate > weeks[weeks.length - 1].endDate) {
-            targetIndex = weeks.length - 1;
-          }
-        }
+      const cntrs = Number(v.containerCount) || 0;
+      if (cntrs <= 0) return;
+
+      let targetIdx = 0;
+      const parsed = parseEtaToDate(v.etaDate);
+      if (parsed) {
+        const vTime = parsed.date.getTime();
+        const diffMs = vTime - baseDate.getTime();
+        targetIdx = Math.floor(diffMs / (7 * 86400000));
+        if (targetIdx < 0) targetIdx = 0;
       }
 
-      if (targetIndex >= 0 && targetIndex < weeks.length) {
-        weeks[targetIndex].containers += v.containerCount;
-        weeks[targetIndex].vessels.push(v);
-      } else {
-        // Default assignment based on index modulo if unparsed
-        const fallbackIdx = Math.min(weeks.length - 1, Math.max(0, parseInt(v.id) % 8));
-        weeks[fallbackIdx].containers += v.containerCount;
-        weeks[fallbackIdx].vessels.push(v);
-      }
+      maxVesselWeekIdx = Math.max(maxVesselWeekIdx, targetIdx);
+      const current = vesselMapByWeekIdx.get(targetIdx) || { containers: 0, vessels: [] };
+      current.containers += cntrs;
+      current.vessels.push(v);
+      vesselMapByWeekIdx.set(targetIdx, current);
     });
 
-    return weeks;
-  }, [vesselList]);
-
-  // C. Dynamic Rolling Projection Simulation (Recalculates on any stock change, ETA change, or slider adjustment)
-  const weeklyData: WeeklyDataPoint[] = useMemo(() => {
+    // 2. Initial Backlog determined by active scenario
     let rollingBacklog = selectedScenario === 'etapa1'
       ? (activeBondedStock + activeWarehouseStock + additionalBacklog)
       : selectedScenario === 'etapa2'
         ? (activeBondedStock + activeWarehouseStock + activeBufferStock + additionalBacklog)
         : (totalInitialBacklog + additionalBacklog);
 
-    const weeklyDrainCapacity = (dailyDeliveryRate || 140) * 7;
-    const teusPerBl = 3.2;
+    const generatedWeeks: WeeklyDataPoint[] = [];
+    let zeroBalanceCount = 0;
 
-    return weeklyVesselInflow.map((weekData, i) => {
-      const weeklyArrivals = selectedScenario === 'etapa3' ? weekData.containers : 0;
+    // 3. Simulate rolling weekly drain until all vessels arrive AND the remaining balance line reaches zero
+    for (let i = 0; i < 70; i++) {
+      const weekNum = 34 + i;
+      const start = new Date(baseDate);
+      start.setDate(baseDate.getDate() + i * 7);
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+
+      const startStr = `${String(start.getDate()).padStart(2, '0')}/${String(start.getMonth() + 1).padStart(2, '0')}`;
+      const endStr = `${String(end.getDate()).padStart(2, '0')}/${String(end.getMonth() + 1).padStart(2, '0')}`;
+      const weekLabel = `W${weekNum}`;
+      const weekFull = `W${weekNum} (${startStr} a ${endStr})`;
+      const dateRange = `${startStr} a ${endStr}`;
+
+      const weekInflowData = vesselMapByWeekIdx.get(i);
+      const weeklyArrivals = selectedScenario === 'etapa3' ? (weekInflowData?.containers || 0) : 0;
+      const weekVessels = weekInflowData?.vessels || [];
+
       const startingInventory = rollingBacklog;
       const balanceBeforeDrain = startingInventory + weeklyArrivals;
       const actualDrain = Math.min(balanceBeforeDrain, weeklyDrainCapacity);
@@ -306,18 +343,18 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
       const isWarning = rollingBacklog > 2000;
       const status: 'critical' | 'warning' | 'optimal' = isCritical ? 'critical' : isWarning ? 'warning' : 'optimal';
 
-      // Granular drilldown data
+      // Granular drilldown breakdown
       const yardBreakdown: Record<string, number> = {};
       if (activeBondedStock > 0) yardBreakdown['BONDED (TECON/TPC/INTER)'] = Math.round(rollingBacklog * (activeBondedStock / Math.max(1, totalInitialBacklog)));
       if (activeWarehouseStock > 0) yardBreakdown['WAREHOUSES (AG/CTS)'] = Math.round(rollingBacklog * (activeWarehouseStock / Math.max(1, totalInitialBacklog)));
       if (activeBufferStock > 0) yardBreakdown['BYD BUFFER'] = Math.round(rollingBacklog * (activeBufferStock / Math.max(1, totalInitialBacklog)));
 
-      const sampleVessel = weekData.vessels[0]?.vesselName || 'MSC SAVONA';
+      const sampleVessel = weekVessels[0]?.vesselName || 'MSC SAVONA';
 
-      return {
-        week: weekData.weekLabel,
-        weekFull: weekData.weekFull,
-        dateRange: weekData.dateRange,
+      generatedWeeks.push({
+        week: weekLabel,
+        weekFull,
+        dateRange,
         vesselArrivals: weeklyArrivals,
         deliveredDrain: actualDrain,
         inventoryBalance: rollingBacklog,
@@ -328,7 +365,7 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
         startingInventory,
         balanceBeforeDrain,
         status,
-        vesselsInWeek: weekData.vessels,
+        vesselsInWeek: weekVessels,
         drilldown: {
           containerList: [
             { id: `BYDU${849201 + i * 17}`, bl: `BL-SSZ-${9021 + i}`, carrier: sampleVessel.startsWith('MSC') ? 'MSC MEDITERRANEAN' : 'COSCO SHIPPING', zone: 'TECON SALVADOR', type: "40' HC", status: 'PRONTO COLETA', daysInYard: 12 + (i % 8), priority: isCritical ? 'CRITICAL' : 'HIGH' },
@@ -344,10 +381,21 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
           },
           zoneBreakdown: yardBreakdown
         }
-      };
-    });
+      });
+
+      // Once remaining balance reaches 0 and no more vessels are arriving in future weeks
+      if (rollingBacklog === 0 && i >= maxVesselWeekIdx) {
+        zeroBalanceCount++;
+        // Display at least 13 weeks (i >= 12, W34–W46) and stop once zero is reached
+        if (i >= 12 && zeroBalanceCount >= 1) {
+          break;
+        }
+      }
+    }
+
+    return generatedWeeks;
   }, [
-    weeklyVesselInflow,
+    vesselList,
     selectedScenario,
     activeBondedStock,
     activeWarehouseStock,
@@ -385,7 +433,7 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
     if (!weeklyData || weeklyData.length === 0) return { week: 'W45', days: drainDays };
     const found = weeklyData.find(pt => pt.inventoryBalance <= 0);
     return {
-      week: found ? found.week : 'W46+',
+      week: found ? found.week : (weeklyData[weeklyData.length - 1]?.week || 'W46+'),
       days: drainDays
     };
   }, [weeklyData, drainDays]);
@@ -932,7 +980,7 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              Semanas (W34–W46)
+              Semanas (W34–{weeklyData[weeklyData.length - 1]?.week || 'W46'})
             </button>
             <button
               type="button"
