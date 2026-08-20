@@ -1152,6 +1152,101 @@ export default function App() {
   const [autoFit, setAutoFit] = useState<boolean>(true); // Auto-ajustar à tela para evitar corte de informações
   const [sidePanelWidth, setSidePanelWidth] = useState<number>(440); // Width of the side editor panel (Wild slider option)
   const [isDesktop, setIsDesktop] = useState(true);
+
+  // CONTROLE DE EXPANSÃO / RECOLHIMENTO DE NAVIOS POR MÊS
+  const [expandedVesselMonths, setExpandedVesselMonths] = useState<Record<string, boolean>>({});
+
+  const groupVesselsByMonth = (vesselList: Vessel[], lang: string) => {
+    const ptMonths = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const zhMonths = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+
+    const groups: Record<string, {
+      monthKey: string;
+      year: number;
+      month: number;
+      monthLabel: string;
+      vessels: Vessel[];
+      totalCntrs: number;
+    }> = {};
+
+    vesselList.forEach(vessel => {
+      let year = 2026;
+      let month = 5;
+
+      const etaStr = String(vessel.eta || '').trim();
+      if (etaStr) {
+        if (etaStr.includes('/')) {
+          const parts = etaStr.split('/');
+          if (parts.length >= 2) {
+            const m = parseInt(parts[1], 10);
+            if (!isNaN(m) && m >= 1 && m <= 12) month = m;
+            if (parts.length >= 3) {
+              let y = parseInt(parts[2], 10);
+              if (!isNaN(y)) {
+                if (y < 100) y += 2000;
+                year = y;
+              }
+            }
+          }
+        } else if (etaStr.includes('-')) {
+          const parts = etaStr.split('-');
+          if (parts.length >= 2) {
+            let y = parseInt(parts[0], 10);
+            let m = parseInt(parts[1], 10);
+            if (parts[0].length === 4 && !isNaN(y) && !isNaN(m)) {
+              year = y;
+              if (m >= 1 && m <= 12) month = m;
+            } else if (parts.length >= 3) {
+              const m2 = parseInt(parts[1], 10);
+              const y2 = parseInt(parts[2], 10);
+              if (!isNaN(m2) && m2 >= 1 && m2 <= 12) month = m2;
+              if (!isNaN(y2)) year = y2 < 100 ? y2 + 2000 : y2;
+            }
+          }
+        }
+      }
+
+      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+      const ptLabel = `${ptMonths[month - 1]} ${year}`;
+      const zhLabel = `${year}年${zhMonths[month - 1]}`;
+      
+      let monthLabel = ptLabel;
+      if (lang === 'zh') monthLabel = zhLabel;
+      else if (lang === 'bilingual') monthLabel = `${ptMonths[month - 1]} / ${zhMonths[month - 1]} (${year})`;
+
+      if (!groups[monthKey]) {
+        groups[monthKey] = {
+          monthKey,
+          year,
+          month,
+          monthLabel,
+          vessels: [],
+          totalCntrs: 0,
+        };
+      }
+
+      groups[monthKey].vessels.push(vessel);
+      groups[monthKey].totalCntrs += (Number(vessel.cntrs) || 0);
+    });
+
+    return Object.values(groups).sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+  };
+
+  const toggleVesselMonth = (monthKey: string) => {
+    setExpandedVesselMonths(prev => ({
+      ...prev,
+      [monthKey]: !prev[monthKey]
+    }));
+  };
+
+  const toggleAllVesselMonths = (groups: { monthKey: string }[]) => {
+    const anyOpen = groups.some(g => expandedVesselMonths[g.monthKey]);
+    const newMap: Record<string, boolean> = {};
+    if (!anyOpen) {
+      groups.forEach(g => { newMap[g.monthKey] = true; });
+    }
+    setExpandedVesselMonths(newMap);
+  };
   const [user, setUser] = useState<User | null>(null);
   const [dbStatus, setDbStatus] = useState<'connecting' | 'online' | 'offline'>('connecting');
   const [configExistsInDb, setConfigExistsInDb] = useState<boolean | null>(null);
@@ -5573,51 +5668,205 @@ export default function App() {
                               </div>
                             </div>
 
-                            {/* Vessels Table Card */}
+                            {/* Vessels Table Card - Minimizable by Month */}
                             <div className="col-span-1">
                               <div className="flex flex-col h-full min-h-[220px]">
                                 <div className={`p-3 rounded-xl flex-1 border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
                                   <div>
-                                    <div className="flex items-center justify-between border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
-                                      <h3 className="font-extrabold text-xs flex items-center gap-2 text-[#2563eb] tracking-tight">
-                                        <Ship className="w-4 h-4 text-blue-500" /> {language === 'bilingual' ? '活跃船舶靠泊计划 (ETA)' : t('vesselSchedule')}
-                                      </h3>
-                                      <span className="text-[9px] bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 font-bold px-1.5 py-0.5 rounded-full">{t('projected')}</span>
+                                    {/* Card Header */}
+                                    <div className="flex items-center justify-between border-b pb-1.5 mb-2.5 border-gray-100 dark:border-slate-800">
+                                      <div className="flex items-center gap-1.5">
+                                        <Ship className="w-4 h-4 text-blue-500" />
+                                        <h3 className="font-extrabold text-xs text-[#2563eb] tracking-tight">
+                                          {language === 'bilingual' ? '活跃船舶靠泊计划 (ETA)' : t('vesselSchedule')}
+                                        </h3>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-1.5">
+                                        {/* Quick Toggle All Months */}
+                                        {(() => {
+                                          const monthlyGroups = groupVesselsByMonth(vessels, language);
+                                          const anyOpen = monthlyGroups.some(g => expandedVesselMonths[g.monthKey]);
+                                          return (
+                                            <button
+                                              type="button"
+                                              onClick={() => toggleAllVesselMonths(monthlyGroups)}
+                                              className="text-[9px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/80 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1 border border-blue-200/60 dark:border-blue-800/60 shadow-2xs"
+                                              title={anyOpen ? 'Recolher todos os meses' : 'Abrir todos os navios'}
+                                            >
+                                              {anyOpen ? (
+                                                <>
+                                                  <Minimize2 className="w-2.5 h-2.5" />
+                                                  <span>{language === 'bilingual' ? 'Recolher / 折叠' : language === 'zh' ? '全部折叠' : 'Recolher'}</span>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <Maximize2 className="w-2.5 h-2.5" />
+                                                  <span>{language === 'bilingual' ? 'Abrir Todos / 展开' : language === 'zh' ? '全部展开' : 'Abrir Todos'}</span>
+                                                </>
+                                              )}
+                                            </button>
+                                          );
+                                        })()}
+                                        <span className="text-[9px] bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 font-bold px-1.5 py-0.5 rounded-full">
+                                          {t('projected')}
+                                        </span>
+                                      </div>
                                     </div>
 
-                                    <div className="overflow-x-auto">
-                                      <table className="w-full text-left text-xs">
-                                        <thead>
-                                          <tr className="border-b border-gray-100 dark:border-slate-800 text-gray-400 font-bold uppercase text-[9.5px] tracking-wider">
-                                            <th className="py-1.5">{getColHeader('vessel')}</th>
-                                            <th className="py-1.5 text-center">{getColHeader('eta')}</th>
-                                            <th className="py-1.5 text-right">{getColHeader('cntrs')}</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
-                                          {vessels.map((vessel) => (
-                                            <tr key={vessel.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
-                                              <td className={`font-extrabold text-gray-800 dark:text-gray-200 text-xs tracking-tight ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.name}</td>
-                                              <td className={`text-center text-gray-650 dark:text-gray-400 font-mono font-medium ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.eta}</td>
-                                              <td className={`text-right font-black text-blue-600 dark:text-blue-400 text-xs ${widescreenMode ? 'py-1.5' : 'py-2.5'}`}>{vessel.cntrs.toLocaleString()}</td>
-                                            </tr>
-                                          ))}
-                                          {vessels.length === 0 && (
-                                            <tr>
-                                              <td colSpan={3} className="text-center py-6 text-gray-400">{t('noVessels')}</td>
-                                            </tr>
-                                          )}
-                                        </tbody>
-                                      </table>
-                                    </div>
+                                    {/* Monthly Groups Accordion */}
+                                    {(() => {
+                                      const monthlyGroups = groupVesselsByMonth(vessels, language);
+
+                                      if (monthlyGroups.length === 0) {
+                                        return (
+                                          <div className="text-center py-6 text-gray-400 text-xs font-semibold">
+                                            {t('noVessels')}
+                                          </div>
+                                        );
+                                      }
+
+                                      return (
+                                        <div className="flex flex-col gap-2">
+                                          {monthlyGroups.map((group) => {
+                                            const isExpanded = !!expandedVesselMonths[group.monthKey];
+                                            return (
+                                              <div
+                                                key={group.monthKey}
+                                                className={`rounded-lg border transition-all duration-200 overflow-hidden ${
+                                                  theme === 'dark'
+                                                    ? isExpanded ? 'bg-slate-800/80 border-blue-900/60' : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600'
+                                                    : isExpanded ? 'bg-blue-50/40 border-blue-200/80' : 'bg-slate-50/80 border-slate-200/70 hover:border-blue-300'
+                                                }`}
+                                              >
+                                                {/* Month Accordion Header Bar */}
+                                                <button
+                                                  type="button"
+                                                  onClick={() => toggleVesselMonth(group.monthKey)}
+                                                  className="w-full px-2.5 py-2 flex items-center justify-between text-left cursor-pointer select-none transition-colors hover:bg-blue-500/5"
+                                                >
+                                                  <div className="flex items-center gap-1.5 min-w-0">
+                                                    <div className={`p-0.5 rounded transition-transform duration-200 ${isExpanded ? 'text-blue-600 rotate-0' : 'text-gray-400 -rotate-90'}`}>
+                                                      <ChevronDown className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <Calendar className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                                                    <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 tracking-tight truncate">
+                                                      {group.monthLabel}
+                                                    </span>
+                                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                                      {group.vessels.length} {language === 'zh' ? '艘' : 'navio(s)'}
+                                                    </span>
+                                                  </div>
+
+                                                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                                    <span className="font-mono font-black text-[11px] text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                                                      {group.totalCntrs.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-400">FEU</span>
+                                                    </span>
+                                                  </div>
+                                                </button>
+
+                                                {/* Collapsible Vessel Table Body */}
+                                                {isExpanded && (
+                                                  <div className="border-t border-slate-200/70 dark:border-slate-700/60 p-2 bg-white/70 dark:bg-slate-900/60 animate-in fade-in-50 duration-150">
+                                                    <table className="w-full text-left text-xs">
+                                                      <thead>
+                                                        <tr className="border-b border-gray-100 dark:border-slate-800 text-gray-400 font-bold uppercase text-[9px] tracking-wider">
+                                                          <th className="py-1">{getColHeader('vessel')}</th>
+                                                          <th className="py-1 text-center">{getColHeader('eta')}</th>
+                                                          <th className="py-1 text-right">{getColHeader('cntrs')}</th>
+                                                          {isEditMode && <th className="py-1 text-center w-8">Ação</th>}
+                                                        </tr>
+                                                      </thead>
+                                                      <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
+                                                        {group.vessels.map((vessel) => (
+                                                          <tr key={vessel.id} className="hover:bg-blue-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                                                            <td className={`font-extrabold text-gray-800 dark:text-gray-200 text-xs tracking-tight ${widescreenMode ? 'py-1' : 'py-1.5'}`}>
+                                                              {isEditMode ? (
+                                                                <input
+                                                                  type="text"
+                                                                  value={vessel.name}
+                                                                  onChange={(e) => {
+                                                                    const newName = e.target.value;
+                                                                    setVessels(prev => prev.map(v => v.id === vessel.id ? { ...v, name: newName } : v));
+                                                                    setDoc(doc(db, 'vessels', String(vessel.id)), { name: newName }, { merge: true });
+                                                                  }}
+                                                                  className="w-full p-1 text-xs border rounded bg-white dark:bg-slate-800 font-bold"
+                                                                />
+                                                              ) : (
+                                                                vessel.name
+                                                              )}
+                                                            </td>
+                                                            <td className={`text-center text-gray-650 dark:text-gray-400 font-mono font-medium text-xs ${widescreenMode ? 'py-1' : 'py-1.5'}`}>
+                                                              {isEditMode ? (
+                                                                <input
+                                                                  type="text"
+                                                                  value={vessel.eta}
+                                                                  onChange={(e) => {
+                                                                    const newEta = e.target.value;
+                                                                    setVessels(prev => prev.map(v => v.id === vessel.id ? { ...v, eta: newEta } : v));
+                                                                    setDoc(doc(db, 'vessels', String(vessel.id)), { eta: newEta }, { merge: true });
+                                                                  }}
+                                                                  className="w-20 p-1 text-xs text-center border rounded bg-white dark:bg-slate-800 font-mono"
+                                                                />
+                                                              ) : (
+                                                                vessel.eta
+                                                              )}
+                                                            </td>
+                                                            <td className={`text-right font-black text-blue-600 dark:text-blue-400 text-xs ${widescreenMode ? 'py-1' : 'py-1.5'}`}>
+                                                              {isEditMode ? (
+                                                                <input
+                                                                  type="number"
+                                                                  value={vessel.cntrs}
+                                                                  onChange={(e) => {
+                                                                    const newCntrs = Number(e.target.value) || 0;
+                                                                    setVessels(prev => prev.map(v => v.id === vessel.id ? { ...v, cntrs: newCntrs } : v));
+                                                                    setDoc(doc(db, 'vessels', String(vessel.id)), { cntrs: newCntrs }, { merge: true });
+                                                                  }}
+                                                                  className="w-16 p-1 text-xs text-right border rounded bg-white dark:bg-slate-800 font-mono font-black text-blue-600"
+                                                                />
+                                                              ) : (
+                                                                vessel.cntrs.toLocaleString()
+                                                              )}
+                                                            </td>
+                                                            {isEditMode && (
+                                                              <td className="text-center py-1">
+                                                                <button
+                                                                  type="button"
+                                                                  onClick={() => {
+                                                                    setVessels(prev => prev.filter(v => v.id !== vessel.id));
+                                                                    deleteDoc(doc(db, 'vessels', String(vessel.id)));
+                                                                  }}
+                                                                  className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                                                                  title="Remover navio"
+                                                                >
+                                                                  <Trash2 className="w-3 h-3" />
+                                                                </button>
+                                                              </td>
+                                                            )}
+                                                          </tr>
+                                                        ))}
+                                                      </tbody>
+                                                    </table>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
 
+                                  {/* Card Footer: Overall Total */}
                                   <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 flex justify-between items-center">
-                                    <span className="font-bold uppercase tracking-tight text-[9.5px]">
-                                      {language === 'bilingual' ? '集装箱总数 / Total Containers:' : t('totalContainers') + ':'}
-                                    </span>
-                                    <span className="font-extrabold text-xs text-gray-700 dark:text-gray-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono">
-                                      {vessels.reduce((acc, curr) => acc + curr.cntrs, 0).toLocaleString()}
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-bold uppercase tracking-tight text-[9.5px]">
+                                        {language === 'bilingual' ? '集装箱总数 / Total:' : t('totalContainers') + ':'}
+                                      </span>
+                                      <span className="text-[9px] text-gray-400 font-medium">({vessels.length} {language === 'zh' ? '艘船' : 'navios'})</span>
+                                    </div>
+                                    <span className="font-extrabold text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/80 border border-blue-200/50 dark:border-blue-900/50 px-2 py-0.5 rounded font-mono">
+                                      {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()} <span className="text-[9px] font-normal">FEU</span>
                                     </span>
                                   </div>
                                 </div>
@@ -6113,52 +6362,137 @@ export default function App() {
                 /* SLIDE 3: NAVIOS (VESSELS ONLY) COM DUAS ÁREAS DE NOTAS */
                 <div id="slide-dashboard-grid-vessels" className={`grid grid-cols-12 gap-4 ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px]'}`}>
                   
-                  {/* LADO ESQUERDO: TABELA DE NAVIOS INTEGRAL EXPANDIDA */}
+                  {/* LADO ESQUERDO: TABELA DE NAVIOS INTEGRAL EXPANDIDA POR MÊS */}
                   <div className="col-span-12 lg:col-span-5 flex flex-col h-full justify-between">
                     <div className={`p-4 rounded-xl flex-1 border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
                       <div>
+                        {/* Header */}
                         <div className="flex items-center justify-between border-b pb-2 mb-3 border-gray-100 dark:border-slate-800">
                           <h3 className="font-extrabold text-sm flex items-center gap-2 text-[#2563eb] tracking-tight">
-                            <Ship className="w-5 h-5 text-blue-500 animate-bounce" /> 
+                            <Ship className="w-5 h-5 text-blue-500" /> 
                             {language === 'bilingual' ? '活跃船舶靠泊计划 (ETA) / 船舶计划' : t('vesselSchedule')}
                           </h3>
-                          <span className="text-[10px] bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 font-bold px-2 py-0.5 rounded-full">{t('projected')}</span>
+                          <div className="flex items-center gap-1.5">
+                            {(() => {
+                              const monthlyGroups = groupVesselsByMonth(vessels, language);
+                              const anyOpen = monthlyGroups.some(g => expandedVesselMonths[g.monthKey]);
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleAllVesselMonths(monthlyGroups)}
+                                  className="text-[9.5px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/80 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1 border border-blue-200/60 dark:border-blue-800/60 shadow-2xs"
+                                  title={anyOpen ? 'Recolher todos os meses' : 'Abrir todos os navios'}
+                                >
+                                  {anyOpen ? (
+                                    <>
+                                      <Minimize2 className="w-2.5 h-2.5" />
+                                      <span>{language === 'bilingual' ? 'Recolher / 折叠' : language === 'zh' ? '全部折叠' : 'Recolher'}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Maximize2 className="w-2.5 h-2.5" />
+                                      <span>{language === 'bilingual' ? 'Abrir Todos / 展开' : language === 'zh' ? '全部展开' : 'Abrir Todos'}</span>
+                                    </>
+                                  )}
+                                </button>
+                              );
+                            })()}
+                            <span className="text-[10px] bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 font-bold px-2 py-0.5 rounded-full">{t('projected')}</span>
+                          </div>
                         </div>
 
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left text-xs">
-                            <thead>
-                              <tr className="border-b border-gray-200 dark:border-slate-800 text-gray-400 font-extrabold uppercase text-[10px] tracking-wider">
-                                <th className="py-2 pb-2.5">{getColHeader('vessel')}</th>
-                                <th className="py-2 pb-2.5 text-center">{getColHeader('eta')}</th>
-                                <th className="py-2 pb-2.5 text-right">{getColHeader('cntrs')}</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800/40">
-                              {vessels.map((vessel, idx) => (
-                                <tr key={vessel.id || idx} className="hover:bg-gray-50 dark:hover:bg-slate-800/10 transition-colors">
-                                  <td className="font-extrabold text-gray-800 dark:text-gray-200 text-sm tracking-tight py-3">{vessel.name}</td>
-                                  <td className="text-center text-gray-650 dark:text-gray-400 font-mono font-bold text-xs py-3">{vessel.eta}</td>
-                                  <td className="text-right font-black text-blue-600 dark:text-blue-400 text-sm py-3 animate-pulse">{vessel.cntrs.toLocaleString()}</td>
-                                </tr>
-                              ))}
-                              {vessels.length === 0 && (
-                                <tr>
-                                  <td colSpan={3} className="text-center py-10 text-gray-400">{t('noVessels')}</td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
+                        {/* Monthly Groups Accordion */}
+                        {(() => {
+                          const monthlyGroups = groupVesselsByMonth(vessels, language);
+
+                          if (monthlyGroups.length === 0) {
+                            return (
+                              <div className="text-center py-10 text-gray-400 text-sm font-semibold">
+                                {t('noVessels')}
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="flex flex-col gap-2.5">
+                              {monthlyGroups.map((group) => {
+                                const isExpanded = !!expandedVesselMonths[group.monthKey];
+                                return (
+                                  <div
+                                    key={group.monthKey}
+                                    className={`rounded-lg border transition-all duration-200 overflow-hidden ${
+                                      theme === 'dark'
+                                        ? isExpanded ? 'bg-slate-800/80 border-blue-900/60' : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600'
+                                        : isExpanded ? 'bg-blue-50/40 border-blue-200/80' : 'bg-slate-50/80 border-slate-200/70 hover:border-blue-300'
+                                    }`}
+                                  >
+                                    {/* Month Header Bar */}
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleVesselMonth(group.monthKey)}
+                                      className="w-full px-3 py-2.5 flex items-center justify-between text-left cursor-pointer select-none transition-colors hover:bg-blue-500/5"
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <div className={`p-0.5 rounded transition-transform duration-200 ${isExpanded ? 'text-blue-600 rotate-0' : 'text-gray-400 -rotate-90'}`}>
+                                          <ChevronDown className="w-4 h-4" />
+                                        </div>
+                                        <Calendar className="w-4 h-4 text-blue-500 shrink-0" />
+                                        <span className="font-extrabold text-sm text-slate-800 dark:text-slate-200 tracking-tight truncate">
+                                          {group.monthLabel}
+                                        </span>
+                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                          {group.vessels.length} {language === 'zh' ? '艘' : 'navio(s)'}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                                        <span className="font-mono font-black text-xs text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                                          {group.totalCntrs.toLocaleString()} <span className="text-[9px] font-normal text-gray-400">FEU</span>
+                                        </span>
+                                      </div>
+                                    </button>
+
+                                    {/* Collapsible Body */}
+                                    {isExpanded && (
+                                      <div className="border-t border-slate-200/70 dark:border-slate-700/60 p-2.5 bg-white/70 dark:bg-slate-900/60 animate-in fade-in-50 duration-150">
+                                        <table className="w-full text-left text-xs">
+                                          <thead>
+                                            <tr className="border-b border-gray-200 dark:border-slate-800 text-gray-400 font-extrabold uppercase text-[9.5px] tracking-wider">
+                                              <th className="py-1.5">{getColHeader('vessel')}</th>
+                                              <th className="py-1.5 text-center">{getColHeader('eta')}</th>
+                                              <th className="py-1.5 text-right">{getColHeader('cntrs')}</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-gray-100 dark:divide-slate-800/40">
+                                            {group.vessels.map((vessel, idx) => (
+                                              <tr key={vessel.id || idx} className="hover:bg-blue-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                                                <td className="font-extrabold text-gray-800 dark:text-gray-200 text-xs tracking-tight py-2">{vessel.name}</td>
+                                                <td className="text-center text-gray-650 dark:text-gray-400 font-mono font-bold text-xs py-2">{vessel.eta}</td>
+                                                <td className="text-right font-black text-blue-600 dark:text-blue-400 text-xs py-2">{vessel.cntrs.toLocaleString()}</td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Resumo do Volume Total a Descarregar */}
                       <div className="mt-4 pt-3 border-t border-dashed border-gray-200 dark:border-slate-800 text-xs text-gray-400 flex justify-between items-center bg-blue-50/20 dark:bg-blue-950/20 p-2.5 rounded-lg border border-blue-50 dark:border-none">
-                        <span className="font-bold uppercase tracking-tight text-[10px]">
-                          {language === 'bilingual' ? '集装箱到港总量 / Total Containers:' : t('totalContainers') + ':'}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold uppercase tracking-tight text-[10px]">
+                            {language === 'bilingual' ? '集装箱到港总量 / Total Containers:' : t('totalContainers') + ':'}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">({vessels.length} {language === 'zh' ? '艘船' : 'navios'})</span>
+                        </div>
                         <span className="font-black text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950 px-3 py-1 rounded font-mono">
-                          {vessels.reduce((acc, curr) => acc + curr.cntrs, 0).toLocaleString()}
+                          {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()} <span className="text-[10px] font-normal">FEU</span>
                         </span>
                       </div>
                     </div>
