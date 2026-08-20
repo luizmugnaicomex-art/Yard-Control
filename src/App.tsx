@@ -173,116 +173,144 @@ export interface LogisticsEntry {
 interface TranslationItem {
   pt: string;
   zh: string;
+  en: string;
 }
 
 const TRANSLATIONS: { [key: string]: TranslationItem } = {
   systemTitle: {
     pt: "SISTEMA DE CONTROLE DE PÁTIOS BYD",
-    zh: "BYD 堆场控制系统"
+    zh: "BYD 堆场管控系统",
+    en: "BYD YARD CONTROL SYSTEM"
   },
   slideTitle: {
     pt: "DASHBOARD OPERACIONAL & CAPACIDADE DE PÁTIOS",
-    zh: "堆场运营与容量监控看板"
+    zh: "堆场运营与容量监控综合看板",
+    en: "OPERATIONAL DASHBOARD & YARD CAPACITY"
   },
   slideSubtitle: {
     pt: "Monitoramento de Ocupação, Backlog Projetado e Escalas de Navios",
-    zh: "堆场使用率、预测积压与船舶靠泊计划监控"
+    zh: "堆场使用率、预测积压与船舶靠泊计划监控",
+    en: "Occupancy Monitoring, Projected Backlog & Vessel Schedules"
   },
   activeSupplier: {
     pt: "FORNECEDOR BYD ATIVO",
-    zh: "比亚迪常规合作堆场"
+    zh: "比亚迪合作堆场",
+    en: "ACTIVE BYD SUPPLIER"
   },
   usedCapacity: {
     pt: "Capacidade Usada",
-    zh: "已用容量"
+    zh: "已用容量",
+    en: "Used Capacity"
   },
   totalCap: {
-    pt: "Total Cap",
-    zh: "总容量"
+    pt: "Capacidade Total",
+    zh: "总容量",
+    en: "Total Capacity"
   },
   full: {
     pt: "Cheio (Full)",
-    zh: "重箱 (Full)"
+    zh: "重箱 (Full)",
+    en: "Full (Loaded)"
   },
   empty: {
     pt: "Vazio (Empty)",
-    zh: "空箱 (Empty)"
+    zh: "空箱 (Empty)",
+    en: "Empty (Vazio)"
   },
   porto: {
-    pt: "Porto",
-    zh: "港口"
+    pt: "No Porto",
+    zh: "在港",
+    en: "In Port"
   },
   prontoColeta: {
-    pt: "Pronto Coleta",
-    zh: "待提货"
+    pt: "Pronto para Coleta",
+    zh: "待提货",
+    en: "Ready for Pickup"
   },
   delivered: {
-    pt: "Delivered",
-    zh: "已交付"
+    pt: "Entregue (Delivered)",
+    zh: "已交付 (Delivered)",
+    en: "Delivered"
   },
   overflow: {
-    pt: "Estouro",
-    zh: "爆仓"
+    pt: "Estouro / Excesso",
+    zh: "超容 / 爆仓",
+    en: "Overflow / Exceeded"
   },
   vesselSchedule: {
     pt: "Escala de Navios Ativos (ETA)",
-    zh: "活跃船舶靠泊计划 (ETA)"
+    zh: "活跃船舶靠泊计划 (ETA)",
+    en: "Active Vessel Schedule (ETA)"
   },
   projected: {
     pt: "Projetado",
-    zh: "预测"
+    zh: "预测",
+    en: "Projected"
   },
   vessel: {
-    pt: "Vessel",
-    zh: "船名"
+    pt: "Navio (Vessel)",
+    zh: "船名 (Vessel)",
+    en: "Vessel Name"
   },
   eta: {
-    pt: "ETA",
-    zh: "预计抵达"
+    pt: "ETA (Chegada)",
+    zh: "预计抵达 (ETA)",
+    en: "ETA (Arrival)"
   },
   cntrs: {
-    pt: "Cntrs",
-    zh: "箱量"
+    pt: "Contêineres",
+    zh: "箱量 (FEU/TEU)",
+    en: "Containers"
   },
   totalContainers: {
-    pt: "Soma Total de Conteiners",
-    zh: "集装箱总数"
+    pt: "Soma Total de Contêineres",
+    zh: "集装箱总数",
+    en: "Total Containers"
   },
   noVessels: {
     pt: "Nenhum navio programado.",
-    zh: "暂无船舶计划。"
+    zh: "暂无排期船舶。",
+    en: "No scheduled vessels."
   },
   chartLeftTitle: {
     pt: "Backlog Projetado vs Capacidade de Entrega (Semanal)",
-    zh: "预测积压量 vs 交付能力 (周度)"
+    zh: "预测积压量 vs 交付能力 (周度)",
+    en: "Projected Backlog vs Delivery Capacity (Weekly)"
   },
   chartRightTitle: {
     pt: "Fluxo de Entradas Diárias vs Meta Garantida (Gc)",
-    zh: "每日进箱量 vs 保证目标 (Gc)"
+    zh: "每日进箱量 vs 保证目标 (Gc)",
+    en: "Daily Inflow vs Guaranteed Target (Gc)"
   },
   opHigh: {
     pt: "Operação Alta",
-    zh: "高效运行"
+    zh: "高负荷运行",
+    en: "High Operation"
   },
   opStable: {
     pt: "Operação Estável",
-    zh: "稳定运行"
+    zh: "稳定运行",
+    en: "Stable Operation"
   },
   metaGc: {
     pt: "Meta Gc (140)",
-    zh: "Gc 目标 (140)"
+    zh: "Gc 目标 (140)",
+    en: "Target Gc (140)"
   },
   confidential: {
     pt: "CONFIDENCIAL BYD LOGÍSTICA",
-    zh: "比亚迪物流机密"
+    zh: "比亚迪物流机密",
+    en: "CONFIDENTIAL BYD LOGISTICS"
   },
   nationalOperations: {
-    pt: "Ativo Nacional",
-    zh: "国内运营"
+    pt: "Operações Nacionais",
+    zh: "国内运营",
+    en: "National Operations"
   },
   logistics: {
-    pt: "Logística",
-    zh: "物流"
+    pt: "Logística Integrada",
+    zh: "综合物流",
+    en: "Integrated Logistics"
   }
 };
 
@@ -1159,6 +1187,7 @@ export default function App() {
   const groupVesselsByMonth = (vesselList: Vessel[], lang: string) => {
     const ptMonths = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const zhMonths = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+    const enMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     const groups: Record<string, {
       monthKey: string;
@@ -1209,9 +1238,11 @@ export default function App() {
       const monthKey = `${year}-${String(month).padStart(2, '0')}`;
       const ptLabel = `${ptMonths[month - 1]} ${year}`;
       const zhLabel = `${year}年${zhMonths[month - 1]}`;
+      const enLabel = `${enMonths[month - 1]} ${year}`;
       
       let monthLabel = ptLabel;
       if (lang === 'zh') monthLabel = zhLabel;
+      else if (lang === 'en') monthLabel = enLabel;
       else if (lang === 'bilingual') monthLabel = `${ptMonths[month - 1]} / ${zhMonths[month - 1]} (${year})`;
 
       if (!groups[monthKey]) {
@@ -1303,6 +1334,7 @@ export default function App() {
     const dyn = getDynamicSlideTitleAndSubtitle();
     if (language === 'pt') return <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans">{dyn.subPT}</p>;
     if (language === 'zh') return <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans tracking-wide">{dyn.subZH}</p>;
+    if (language === 'en') return <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans">{dyn.subEN}</p>;
     return (
       <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans">
         {dyn.subPT} / {dyn.subZH}
@@ -2127,6 +2159,7 @@ export default function App() {
     if (!TRANSLATIONS[key]) return key;
     if (language === 'pt') return TRANSLATIONS[key].pt;
     if (language === 'zh') return TRANSLATIONS[key].zh;
+    if (language === 'en') return TRANSLATIONS[key].en || TRANSLATIONS[key].pt;
     // Retorno Bilíngue elegante com separador
     return `${TRANSLATIONS[key].pt} / ${TRANSLATIONS[key].zh}`;
   };
@@ -2136,11 +2169,15 @@ export default function App() {
     if (!TRANSLATIONS[key]) return <span>{key}</span>;
     const pt = TRANSLATIONS[key].pt;
     const zh = TRANSLATIONS[key].zh;
+    const en = TRANSLATIONS[key].en || pt;
     if (language === 'pt') {
       return <span className={`${colorClass} font-semibold uppercase text-[9px] tracking-tight`}>{pt}</span>;
     }
     if (language === 'zh') {
       return <span className="text-slate-800 dark:text-slate-100 font-semibold text-xs tracking-wide font-sans">{zh}</span>;
+    }
+    if (language === 'en') {
+      return <span className={`${colorClass} font-semibold uppercase text-[9px] tracking-tight`}>{en}</span>;
     }
     // Bilingual: stacked neatly with custom size and colors, making Chinese larger and Portugues small/muted
     return (
@@ -2154,6 +2191,7 @@ export default function App() {
   const getChartLeftTitle = () => {
     if (language === 'pt') return TRANSLATIONS.chartLeftTitle.pt;
     if (language === 'zh') return TRANSLATIONS.chartLeftTitle.zh;
+    if (language === 'en') return TRANSLATIONS.chartLeftTitle.en || TRANSLATIONS.chartLeftTitle.pt;
     return (
       <span className="flex flex-col text-left leading-tight">
         <span className="text-[8px] text-gray-400 dark:text-gray-500 uppercase font-mono tracking-tight font-medium">{TRANSLATIONS.chartLeftTitle.pt}</span>
@@ -2165,6 +2203,7 @@ export default function App() {
   const getChartRightTitle = () => {
     if (language === 'pt') return TRANSLATIONS.chartRightTitle.pt;
     if (language === 'zh') return TRANSLATIONS.chartRightTitle.zh;
+    if (language === 'en') return TRANSLATIONS.chartRightTitle.en || TRANSLATIONS.chartRightTitle.pt;
     return (
       <span className="flex flex-col text-left leading-tight">
         <span className="text-[8px] text-gray-400 dark:text-gray-500 uppercase font-mono tracking-tight font-medium">{TRANSLATIONS.chartRightTitle.pt}</span>
@@ -2177,6 +2216,7 @@ export default function App() {
     if (!TRANSLATIONS[key]) return key;
     if (language === 'pt') return TRANSLATIONS[key].pt;
     if (language === 'zh') return TRANSLATIONS[key].zh;
+    if (language === 'en') return TRANSLATIONS[key].en || TRANSLATIONS[key].pt;
     return `${TRANSLATIONS[key].zh} (${TRANSLATIONS[key].pt})`;
   };
 
@@ -4434,78 +4474,109 @@ export default function App() {
         return {
           titlePT: slideTitlePT,
           titleZH: slideTitleZH,
+          titleEN: "OPERATIONAL DASHBOARD & YARD CAPACITY",
           subPT: slideSubtitlePT,
           subZH: slideSubtitleZH,
+          subEN: "Integrated Monitoring of Occupancy, Projected Backlog, and Vessel Schedules",
         };
       case 1:
         return {
           titlePT: "OCUPAÇÃO DETALHADA DE PÁTIOS & CAPACIDADE",
           titleZH: "BYD 合作堆场容量与占用比监控",
-          subPT: "Monitoramento Detalhado de Capacidade Usada, Contentores Cheios, Vazios e Status de Ocupação",
-          subZH: "常规合作堆场使用容量、重箱及空箱占用比监控与爆仓预警分析",
+          titleEN: "DETAILED YARD OCCUPANCY & CAPACITY MANAGEMENT",
+          subPT: "Monitoramento Detalhado de Capacidade Usada, Contêineres Cheios, Vazios e Status de Ocupação",
+          subZH: "常规合作堆场使用容量、重箱及空箱占用比监控与超容预警分析",
+          subEN: "Detailed Monitoring of Used Capacity, Full/Empty Containers, and Occupancy Status",
         };
       case 2:
         return {
           titlePT: "ESCALA DE NAVIOS ATIVOS & JANELAS (ETA)",
-          titleZH: "活跃船舶靠泊计划与到港预测",
-          subPT: "Programação de Chegada de Navios, Volume de Contentores e Notas Operacionais",
-          subZH: "活跃船舶到港ETA、集装箱卸船计划、口岸放行及作业手记",
+          titleZH: "活跃船舶靠泊计划与到港预测 (ETA)",
+          titleEN: "ACTIVE VESSEL SCHEDULE & BERTHING WINDOWS (ETA)",
+          subPT: "Programação de Chegada de Navios, Volume de Contêineres e Notas Operacionais",
+          subZH: "活跃船舶到港 ETA、集装箱卸船计划、口岸放行及作业手记",
+          subEN: "Vessel Arrival Schedules, Container Volumes, and Operational Highlights",
         };
       case 3:
         return {
-          titlePT: "INBOUND CAPACITY RAMP-UP PLAN",
-          titleZH: "INBOUND CAPACITY RAMP-UP PLAN",
-          subPT: "PROJECTION OF ARRIVALS SHOWING ACTUAL VS ESTIMATED CONTAINER VOLUME PER WEEK.",
-          subZH: "PROJECTION OF ARRIVALS SHOWING ACTUAL VS ESTIMATED CONTAINER VOLUME PER WEEK.",
+          titlePT: "PLANO DE ESCALONAMENTO DE CAPACIDADE INBOUND & DRAIN",
+          titleZH: "进港运力爬坡与出清排水计划看板",
+          titleEN: "INBOUND CAPACITY RAMP-UP & DRAIN PROJECTION PLAN",
+          subPT: "PROJEÇÃO DE CHEGADAS (ATA/ETA) VS ESCOAMENTO EFETIVO E EVOLUÇÃO DO SALDO DE INVENTÁRIO.",
+          subZH: "预测每周船舶到港进箱量与工厂出清能力对比及库存走势分析。",
+          subEN: "PROJECTION OF ARRIVALS (ATA/ETA) VS DELIVERY DRAIN AND WEEKLY INVENTORY BALANCE EVOLUTION.",
         };
       case 4:
         return {
           titlePT: "BYD BUFFER INTEGRATED HUB & TRANSPORTE RÁPIDO",
           titleZH: "比亚迪智能缓冲中转枢纽与快速移运监控",
+          titleEN: "BYD BUFFER INTEGRATED HUB & RAPID TRANSFER",
           subPT: "Mapeamento em tempo real de posições, escoamento de contêineres e otimização de retirada rápida",
           subZH: "缓冲区堆位、放行流向与智能移箱优化监控",
+          subEN: "Real-time slot mapping, container flow, and rapid pickup optimization",
         };
       case 5:
         return {
           titlePT: "CONTROLE OPERACIONAL DE DEPÓSITOS & ALOCAÇÃO",
           titleZH: "协议堆存容量动态配额与船东准入管理大盘",
+          titleEN: "DEPOT OPERATIONAL CONTROL & CARRIER ALLOCATION",
           subPT: "Gestão integrada de capacidades diárias, portões ativos e matriz de compatibilidade com armadores principais",
           subZH: "实时动态管控协议堆场每日限额、口岸通道开闭及集装箱流向分配符合矩阵",
+          subEN: "Integrated daily capacity management, active gates, and carrier compatibility matrix",
         };
       case 6:
         return {
-          titlePT: "1. GENERAL OVERVIEW - DEMURRAGE & OVERDUE CONTROL",
-          titleZH: "1. 综合大盘 - 滞期费与集装箱超期监控塔",
+          titlePT: "PAINEL GERAL DE DEMURRAGE & CONTROLE DE DIÁRIAS (OVERDUE)",
+          titleZH: "滞期费与集装箱超期监控塔",
+          titleEN: "DEMURRAGE & OVERDUE CONTAINER MONITORING TOWER",
           subPT: "Painel de controle de vencimento de free time, contêineres retidos e custos de demurrage",
           subZH: "集装箱免费期到期预警、堆场滞期超期监控及异常滞箱控制面板",
+          subEN: "Free time expiration alert, retained containers, and demurrage cost management",
         };
       case 7:
         return {
-          titlePT: "MÓDULO DE GESTÃO LOGÍSTICA CRUDS",
+          titlePT: "MÓDULO DE GESTÃO LOGÍSTICA & REGISTROS OPERACIONAIS",
           titleZH: "比亚迪外贸进出口单证及集成物流控制大盘",
+          titleEN: "LOGISTICS MANAGEMENT MODULE & OPERATIONAL RECORDS",
           subPT: "Cadastro integrado de equipamentos, containers WMS e importador Sheets",
-          subZH: "数据流控制中心",
+          subZH: "集装箱单证台账、WMS 状态同步与表格批量导入",
+          subEN: "Integrated equipment registry, container WMS status, and Sheets importer",
         };
       case 8:
         return {
-          titlePT: "PAINEL EXECUTIVO DE ENTREGAS CD",
-          titleZH: "每日工厂到货及运输节点控制台",
+          titlePT: "PAINEL EXECUTIVO DE ENTREGAS & TRANSPORTE CD",
+          titleZH: "工厂到货交货监控面板与运力控制台",
+          titleEN: "EXECUTIVE DELIVERY DASHBOARD & CD TRANSPORTATION",
           subPT: "Controle de status operacionais diários, transportadores e fretes",
-          subZH: "运输管理",
+          subZH: "每日工厂到货状态追踪、运输承运商及运费核算监控",
+          subEN: "Daily operational status tracking, transport carriers, and freight monitoring",
         };
       case 9:
         return {
-          titlePT: "CALENDÁRIO MENSAL DE DISTRIBUIÇÃO",
+          titlePT: "CALENDÁRIO MENSAL DE DISTRIBUIÇÃO & ENTREGAS",
           titleZH: "月度交付日历与班轮吞吐预测",
+          titleEN: "MONTHLY DISTRIBUTION & DELIVERY CALENDAR",
           subPT: "Agrupamento inteligente por House BL e volumes consolidados semanais",
-          subZH: "日历看板",
+          subZH: "按提单 BL 与周度合并箱量的智能排程与交付日历",
+          subEN: "Smart scheduling grouped by House BL and weekly consolidated volumes",
+        };
+      case 10:
+        return {
+          titlePT: "PLANO DIRECIONAL DE ARMAZENAGEM & FLUXOS",
+          titleZH: "集装箱流向分配与多级仓储规划",
+          titleEN: "CONTAINER ROUTING & STORAGE CAPACITY PLAN",
+          subPT: "Alocação estratégica de contêineres entre terminais alfandegados, armazéns gerais e buffer BYD",
+          subZH: "保税堆场、普通外仓及比亚迪缓冲区的多梯次集装箱智能流向与运力配额规划",
+          subEN: "Strategic container allocation across bonded yards, general warehouses, and BYD buffer",
         };
       default:
         return {
           titlePT: slideTitlePT,
           titleZH: slideTitleZH,
+          titleEN: "BYD LOGISTICS CONTROL DASHBOARD",
           subPT: slideSubtitlePT,
           subZH: slideSubtitleZH,
+          subEN: "Operational yard management and container visibility",
         };
     }
   };
@@ -4514,18 +4585,20 @@ export default function App() {
   const getSlideTitle = () => {
     const dyn = getDynamicSlideTitleAndSubtitle();
     if (currentSlide === 3) {
+      const titleText = language === 'zh' ? dyn.titleZH : (language === 'en' ? dyn.titleEN : dyn.titlePT);
       return (
         <div className="flex items-center gap-2">
           <div className="w-[4px] h-[18px] bg-blue-600 rounded-xs self-center"></div>
           <span className="text-[18px] font-black text-slate-850 dark:text-white uppercase tracking-wider font-sans leading-none">
-            {dyn.titlePT}
+            {titleText}
           </span>
         </div>
       );
     }
     if (language === 'pt') return <span className="text-xl font-black">{dyn.titlePT}</span>;
     if (language === 'zh') return <span className="text-2xl font-black font-sans tracking-wide">{dyn.titleZH}</span>;
-    return <span className="text-xl font-black">{dyn.titlePT}</span>;
+    if (language === 'en') return <span className="text-xl font-black">{dyn.titleEN}</span>;
+    return <span className="text-xl font-black">{dyn.titlePT} / {dyn.titleZH}</span>;
   };
 
   return (
@@ -4578,20 +4651,20 @@ export default function App() {
           {/* Dynamic Navigation Links & System Controls */}
           <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1.5 scrollbar-thin">
             <span className="text-[9px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider block px-3.5 mb-2">
-              {language === 'zh' ? '导航菜单' : 'MÓDULOS DO PORTAL'}
+              {language === 'zh' ? '导航菜单' : (language === 'en' ? 'PORTAL MODULES' : 'MÓDULOS DO PORTAL')}
             </span>
             {[
-              { index: 0, pt: "Visão Geral", zh: "综合大盘", icon: <Database className="w-4 h-4" /> },
-              { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", icon: <Building2 className="w-4 h-4" /> },
-              { index: 4, pt: "BYD Buffer", zh: "智能缓冲区", icon: <Layers className="w-4 h-4" /> },
-              { index: 5, pt: "Depósitos & Alocação", zh: "协议堆存及流向", icon: <FileSpreadsheet className="w-4 h-4" /> },
-              { index: 10, pt: "Plano de Direcionamento", zh: "流向及仓储规划", icon: <Calculator className="w-4 h-4" /> },
-              { index: 6, pt: "Demurrage & Overdue", zh: "滞期费监控", icon: <Clock className="w-4 h-4" /> },
-              { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", icon: <Ship className="w-4 h-4" /> },
-              { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", icon: <TrendingUp className="w-4 h-4" /> },
-              { index: 7, pt: "Módulo Logística", zh: "物流管理模块", icon: <Package className="w-4 h-4" /> },
-              { index: 8, pt: "Painel de Entregas", zh: "交货监控面板", icon: <Truck className="w-4 h-4" /> },
-              { index: 9, pt: "Calendário", zh: "交付日历", icon: <Calendar className="w-4 h-4" /> },
+              { index: 0, pt: "Visão Geral", zh: "综合大盘", en: "Overview", icon: <Database className="w-4 h-4" /> },
+              { index: 1, pt: "Gestão de Pátios", zh: "堆场管理", en: "Yard Management", icon: <Building2 className="w-4 h-4" /> },
+              { index: 4, pt: "BYD Buffer", zh: "智能缓冲区", en: "BYD Buffer", icon: <Layers className="w-4 h-4" /> },
+              { index: 5, pt: "Depósitos & Alocação", zh: "协议堆存及流向", en: "Depots & Allocation", icon: <FileSpreadsheet className="w-4 h-4" /> },
+              { index: 10, pt: "Plano de Direcionamento", zh: "流向及仓储规划", en: "Routing & Storage Plan", icon: <Calculator className="w-4 h-4" /> },
+              { index: 6, pt: "Demurrage & Overdue", zh: "滞期费监控", en: "Demurrage & Overdue", icon: <Clock className="w-4 h-4" /> },
+              { index: 2, pt: "Escala de Navios", zh: "船舶靠泊计划", en: "Vessel Schedule", icon: <Ship className="w-4 h-4" /> },
+              { index: 3, pt: "Gráficos & Projeções", zh: "智能运营图表", en: "Charts & Projections", icon: <TrendingUp className="w-4 h-4" /> },
+              { index: 7, pt: "Módulo Logística", zh: "物流管理模块", en: "Logistics Module", icon: <Package className="w-4 h-4" /> },
+              { index: 8, pt: "Painel de Entregas", zh: "交货监控面板", en: "Delivery Dashboard", icon: <Truck className="w-4 h-4" /> },
+              { index: 9, pt: "Calendário", zh: "交付日历", en: "Delivery Calendar", icon: <Calendar className="w-4 h-4" /> },
             ].map(s => {
               const isActive = currentSlide === s.index;
               return (
@@ -4610,9 +4683,11 @@ export default function App() {
                     {s.icon}
                   </span>
                   <div className="flex flex-col min-w-0">
-                    <span className="truncate tracking-wide">{language === 'zh' ? s.zh : s.pt}</span>
+                    <span className="truncate tracking-wide">
+                      {language === 'zh' ? s.zh : (language === 'en' ? s.en : s.pt)}
+                    </span>
                     <span className="text-[8.5px] opacity-60 truncate font-normal tracking-wider uppercase mt-0.5">
-                      {language === 'zh' ? s.pt : s.zh}
+                      {language === 'zh' ? s.pt : (language === 'en' ? s.zh : s.zh)}
                     </span>
                   </div>
                 </button>
@@ -4726,66 +4801,18 @@ export default function App() {
 
           {/* Sidebar Config / Footer */}
           <div className="p-4 border-t border-gray-150/40 dark:border-slate-800/80 space-y-3.5 bg-slate-50/50 dark:bg-slate-900/40 shrink-0">
-            
-            {/* Database & Google Login Info */}
-            <div className="flex flex-col gap-2 p-3 rounded-xl border bg-white dark:bg-slate-900 border-gray-150 dark:border-slate-800 text-xs shadow-3xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider">DATABASE STATUS</span>
-                <span className="flex items-center gap-1">
-                  {dbStatus === 'online' ? (
-                    <Wifi className="w-3 h-3 text-emerald-500" />
-                  ) : dbStatus === 'connecting' ? (
-                    <RefreshCw className="w-3 h-3 animate-spin text-amber-500" />
-                  ) : (
-                    <WifiOff className="w-3 h-3 text-rose-400" />
-                  )}
-                  <span className={`text-[9.5px] font-mono font-black uppercase tracking-wider ${
-                    dbStatus === 'online' ? 'text-emerald-500' : dbStatus === 'connecting' ? 'text-amber-500' : 'text-rose-400'
-                  }`}>
-                    {dbStatus === 'online' ? 'Online' : dbStatus === 'connecting' ? 'Sinc' : 'Offline'}
-                  </span>
-                </span>
-              </div>
-
-              <div className="h-px bg-gray-100 dark:bg-slate-800 my-0.5"></div>
-
-              {user ? (
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <UserIcon className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span className="truncate text-[10px] text-slate-700 dark:text-slate-300 font-black leading-none">{user.displayName || user.email?.split('@')[0]}</span>
-                  </div>
-                  <button
-                    onClick={logoutUser}
-                    className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer shrink-0"
-                    title="Desconectar do Firebase"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={loginWithGoogle}
-                  className="w-full flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-extrabold py-1.5 px-2 rounded-lg text-[9px] uppercase tracking-wider cursor-pointer transition-colors shadow-3xs"
-                  title="Conectar com o Google"
-                >
-                  <Lock className="w-3 h-3 text-red-500" />
-                  <span>Conectar Firebase</span>
-                </button>
-              )}
-            </div>
-
             {/* Language Segmented Control */}
             <div className="bg-white dark:bg-slate-900 p-0.5 rounded-lg flex items-center border border-gray-150 dark:border-slate-800 shadow-3xs">
               {[
                 { id: 'pt', label: '🇧🇷 PT' },
                 { id: 'zh', label: '🇨🇳 中文' },
-                { id: 'bilingual', label: '🌐 PT/ZH' }
+                { id: 'en', label: '🇺🇸 EN' },
+                { id: 'bilingual', label: '🌐 MULTI' }
               ].map(lang => (
                 <button
                   key={lang.id}
                   onClick={() => { setLanguage(lang.id); updateGlobalDoc('language', lang.id); }}
-                  className={`flex-1 py-1.5 text-[10px] font-black rounded-md transition-all cursor-pointer ${
+                  className={`flex-1 py-1.5 text-[9.5px] font-black rounded-md transition-all cursor-pointer ${
                     language === lang.id 
                       ? 'bg-red-50 dark:bg-slate-800 shadow-3xs text-red-600 dark:text-red-400' 
                       : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
@@ -4937,7 +4964,7 @@ export default function App() {
                 id="btn-lang-pt"
                 onClick={() => { setLanguage('pt'); updateGlobalDoc('language', 'pt'); }}
                 className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'pt' ? 'bg-white dark:bg-slate-700 shadow text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
-                title="Português"
+                title="Português Brasileiro"
               >
                 🇧🇷 PT
               </button>
@@ -4945,17 +4972,25 @@ export default function App() {
                 id="btn-lang-zh"
                 onClick={() => { setLanguage('zh'); updateGlobalDoc('language', 'zh'); }}
                 className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'zh' ? 'bg-white dark:bg-slate-700 shadow text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
-                title="Mandarim (中文)"
+                title="简体中文 (Chinese Simple)"
               >
                 🇨🇳 中文
+              </button>
+              <button 
+                id="btn-lang-en"
+                onClick={() => { setLanguage('en'); updateGlobalDoc('language', 'en'); }}
+                className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'en' ? 'bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
+                title="English"
+              >
+                🇺🇸 EN
               </button>
               <button 
                 id="btn-lang-bilingual"
                 onClick={() => { setLanguage('bilingual'); updateGlobalDoc('language', 'bilingual'); }}
                 className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'bilingual' ? 'bg-white dark:bg-slate-700 shadow text-emerald-700 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
-                title="Bilíngue (Lado a Lado)"
+                title="Multi / Bilíngue"
               >
-                🌐 PT / 中文
+                🌐 MULTI
               </button>
             </div>
 
@@ -5122,20 +5157,48 @@ export default function App() {
                 <span className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider">MODERN LOGISTICS PORTAL VIEW</span>
               </div>
               <h2 className="text-xl font-black text-slate-850 dark:text-white tracking-tight leading-none">
-                {language === 'zh' ? getDynamicSlideTitleAndSubtitle().titleZH : getDynamicSlideTitleAndSubtitle().titlePT}
+                {language === 'zh' 
+                  ? getDynamicSlideTitleAndSubtitle().titleZH 
+                  : (language === 'en' ? getDynamicSlideTitleAndSubtitle().titleEN : getDynamicSlideTitleAndSubtitle().titlePT)}
               </h2>
               <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-1.5">
-                {language === 'zh' ? getDynamicSlideTitleAndSubtitle().subZH : getDynamicSlideTitleAndSubtitle().subPT}
+                {language === 'zh' 
+                  ? getDynamicSlideTitleAndSubtitle().subZH 
+                  : (language === 'en' ? getDynamicSlideTitleAndSubtitle().subEN : getDynamicSlideTitleAndSubtitle().subPT)}
               </p>
             </div>
           </div>
 
-          {/* Telemetry Metrics on the Right Side of Topbar */}
+          {/* Telemetry Metrics & Quick Language Switcher on the Right Side of Topbar */}
           <div className="flex flex-wrap items-center gap-3 text-xs select-none">
+            {/* Quick Topbar Language Pills */}
+            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-0.5 rounded-xl flex items-center shadow-3xs">
+              {[
+                { id: 'pt', label: '🇧🇷 PT' },
+                { id: 'zh', label: '🇨🇳 中文' },
+                { id: 'en', label: '🇺🇸 EN' },
+                { id: 'bilingual', label: '🌐 MULTI' }
+              ].map(lang => (
+                <button
+                  key={lang.id}
+                  onClick={() => { setLanguage(lang.id); updateGlobalDoc('language', lang.id); }}
+                  className={`px-2 py-1 text-[9.5px] font-black rounded-lg transition-all cursor-pointer ${
+                    language === lang.id 
+                      ? 'bg-white dark:bg-slate-800 shadow-xs text-red-600 dark:text-red-400 font-bold' 
+                      : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  {lang.label}
+                </button>
+              ))}
+            </div>
+
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-3xs transition-transform hover:scale-101 duration-300">
               <Activity className="w-3.5 h-3.5 text-red-600 animate-pulse" />
               <div className="flex flex-col">
-                <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '总堆存使用率' : 'Yards Occupancy'}</span>
+                <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">
+                  {language === 'zh' ? '总堆存使用率' : (language === 'en' ? 'YARDS OCCUPANCY' : 'OCUPAÇÃO DE PÁTIOS')}
+                </span>
                 <span className="text-xs font-black text-slate-800 dark:text-white font-mono">{globalOccupancyPercentForHeader}%</span>
               </div>
             </div>
@@ -5143,7 +5206,9 @@ export default function App() {
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-3xs transition-transform hover:scale-101 duration-300">
               <Ship className="w-3.5 h-3.5 text-blue-500 animate-bounce-slow" />
               <div className="flex flex-col">
-                <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '活跃船舶到港' : 'Active Vessels'}</span>
+                <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">
+                  {language === 'zh' ? '活跃船舶到港' : (language === 'en' ? 'ACTIVE VESSELS' : 'ESCALA DE NAVIOS')}
+                </span>
                 <span className="text-xs font-black text-slate-800 dark:text-white font-mono">
                   {totalExpectedVesselsForHeader} <span className="text-[9.5px] text-slate-400 font-normal">({totalExpectedContainersForHeader} FEU)</span>
                 </span>
@@ -5153,7 +5218,9 @@ export default function App() {
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-3xs transition-transform hover:scale-101 duration-300">
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
               <div className="flex flex-col">
-                <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? '协议堆场平均流量' : 'Depots Volume'}</span>
+                <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">
+                  {language === 'zh' ? '协议堆场平均流量' : (language === 'en' ? 'DEPOTS VOLUME' : 'DEPÓSITOS REGULARES')}
+                </span>
                 <span className="text-xs font-black text-slate-800 dark:text-white font-mono">
                   {totalContractedDepotsVolumeForHeader} <span className="text-[9.5px] text-emerald-500">({depotsOccupancyPercentForHeader}%)</span>
                 </span>
