@@ -10,7 +10,8 @@ import {
   Tooltip,
   Legend,
   ReferenceLine,
-  Area
+  Area,
+  LabelList
 } from 'recharts';
 import {
   TrendingUp,
@@ -126,6 +127,7 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
   const [granularity, setGranularity] = useState<'weeks' | 'days'>('weeks');
   const [metricUnit, setMetricUnit] = useState<'containers' | 'bls'>('containers');
   const [showInventoryOnly, setShowInventoryOnly] = useState<boolean>(false);
+  const [showDataLabels, setShowDataLabels] = useState<boolean>(true);
   const [activeDrilldownWeek, setActiveDrilldownWeek] = useState<WeeklyDataPoint | null>(null);
   const [isAiScriptModalOpen, setIsAiScriptModalOpen] = useState<boolean>(false);
   const [isDataEditorOpen, setIsDataEditorOpen] = useState<boolean>(false);
@@ -779,6 +781,62 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
     return null;
   };
 
+  // Direct Data Label renderers for Recharts so users can see all numbers without hover
+  const renderBarDataLabel = (props: any) => {
+    const { x, y, width, value } = props;
+    if (!showDataLabels || value === undefined || value === null || Number(value) <= 0) return null;
+    const num = Number(value);
+    const text = num.toLocaleString();
+    return (
+      <text
+        x={x + (width ? width / 2 : 0)}
+        y={y - 6}
+        fill={theme === 'dark' ? '#FCA5A5' : '#DC2626'}
+        textAnchor="middle"
+        fontSize={10}
+        fontWeight="800"
+        fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+      >
+        {text}
+      </text>
+    );
+  };
+
+  const renderBalanceLineLabel = (props: any) => {
+    const { x, y, value } = props;
+    if (!showDataLabels || value === undefined || value === null) return null;
+    const num = Number(value);
+    if (num <= 0) return null;
+    const text = num.toLocaleString();
+    const boxWidth = Math.max(34, text.length * 6.5 + 8);
+    return (
+      <g>
+        <rect
+          x={x - boxWidth / 2}
+          y={y - 19}
+          width={boxWidth}
+          height={13}
+          rx={3}
+          fill={theme === 'dark' ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)'}
+          stroke={theme === 'dark' ? '#8B5CF6' : '#7C3AED'}
+          strokeWidth={1}
+        />
+        <text
+          x={x}
+          y={y - 12}
+          fill={theme === 'dark' ? '#DDD6FE' : '#5B21B6'}
+          textAnchor="middle"
+          fontSize={8.5}
+          fontWeight="800"
+          fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+          dominantBaseline="central"
+        >
+          {text}
+        </text>
+      </g>
+    );
+  };
+
   return (
     <div className={`p-5 rounded-2xl border transition-all relative ${
       theme === 'dark'
@@ -1101,17 +1159,33 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
               {dt('Dias (Diário)', '按日 (明细)', 'Days (Daily)')}
             </button>
           </div>
+
+          {/* Toggle for Numerical Data Labels on Chart */}
+          <button
+            type="button"
+            id="toggle-chart-numbers-btn"
+            onClick={() => setShowDataLabels(!showDataLabels)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+              showDataLabels
+                ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 shadow-xs'
+                : 'bg-white dark:bg-slate-900 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white border-gray-200 dark:border-slate-700'
+            }`}
+            title={dt('Exibir/Ocultar valores numéricos nas barras e linhas do gráfico', '在图表柱状图与折线上显示/隐藏数值', 'Show/Hide numbers on chart bars and lines')}
+          >
+            <span className="text-[10px] font-black px-1 py-0.5 rounded bg-purple-200/60 dark:bg-purple-900/60">123</span>
+            <span>{showDataLabels ? dt('Números: Ativos', '数值: 显示', 'Numbers: ON') : dt('Números: Ocultos', '数值: 隐藏', 'Numbers: OFF')}</span>
+          </button>
         </div>
       </div>
 
       {/* 4. MAIN CHART SUB-VIEW */}
       {activeTabSubView === 'chart' && (
         <div className="space-y-4">
-          <div className="h-[360px] w-full pt-2">
+          <div className="h-[390px] w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 data={(granularity === 'weeks' ? weeklyData : dailyData) as any}
-                margin={{ top: 20, right: 25, left: 10, bottom: 20 }}
+                margin={{ top: 30, right: 25, left: 10, bottom: 20 }}
               >
                 <defs>
                   <linearGradient id="vesselInflowGrad" x1="0" y1="0" x2="0" y2="1">
@@ -1186,7 +1260,7 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
                   stroke="none"
                 />
 
-                {/* Bar for Vessel Inflow */}
+                {/* Bar for Vessel Inflow with direct numerical label on top */}
                 {!showInventoryOnly && (
                   <Bar
                     yAxisId="left"
@@ -1195,7 +1269,13 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
                     fill="url(#vesselInflowGrad)"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={45}
-                  />
+                  >
+                    <LabelList
+                      dataKey={metricUnit === 'bls' ? 'blVesselArrivals' : 'vesselArrivals'}
+                      position="top"
+                      content={renderBarDataLabel}
+                    />
+                  </Bar>
                 )}
 
                 {/* Drain Line (Green) */}
@@ -1213,7 +1293,7 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
                   />
                 )}
 
-                {/* Cumulative Backlog Balance Curve (Purple) - NEVER zero while incoming vessels remain */}
+                {/* Cumulative Backlog Balance Curve (Purple) with direct numerical value badges */}
                 <Line
                   yAxisId="left"
                   type="monotone"
@@ -1223,7 +1303,13 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
                   strokeWidth={3.5}
                   dot={{ r: 4.5, fill: '#8B5CF6', stroke: '#fff', strokeWidth: 1.5 }}
                   activeDot={{ r: 7 }}
-                />
+                >
+                  <LabelList
+                    dataKey={metricUnit === 'bls' ? 'blInventoryBalance' : 'inventoryBalance'}
+                    position="top"
+                    content={renderBalanceLineLabel}
+                  />
+                </Line>
               </ComposedChart>
             </ResponsiveContainer>
           </div>
