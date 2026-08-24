@@ -642,21 +642,23 @@ export default function App() {
     localStorage.setItem('byd_additional_backlog', String(additionalBacklog));
   }, [additionalBacklog]);
 
-  const getSummary = (list: [string, Yard][]) => {
+  const getSummary = (list: [string, Yard][], isBuffer = false) => {
     const totalCap = list.reduce((sum, [_, y]) => sum + (y?.capacity || 0), 0);
     const totalCheio = list.reduce((sum, [_, y]) => sum + (y?.cheio || 0), 0);
-    const pct = totalCap > 0 ? Math.round((totalCheio / totalCap) * 100) : 0;
-    return { totalCap, totalCheio, pct };
+    const totalVazio = list.reduce((sum, [_, y]) => sum + (y?.vazio || 0), 0);
+    const totalOccupied = isBuffer ? (totalCheio + totalVazio) : totalCheio;
+    const pct = totalCap > 0 ? Math.round((totalOccupied / totalCap) * 100) : 0;
+    return { totalCap, totalCheio, totalVazio, totalOccupied, pct };
   };
 
-  const bondedSum = getSummary(bondedYards);
-  const warehouseSum = getSummary(warehouseYards);
-  const bufferSum = getSummary(bufferYards);
+  const bondedSum = getSummary(bondedYards, false);
+  const warehouseSum = getSummary(warehouseYards, false);
+  const bufferSum = getSummary(bufferYards, true);
 
   const getDynamicChartLeft = () => {
     const bondedVal = bondedSum?.totalCheio || 0;
     const warehouseVal = warehouseSum?.totalCheio || 0;
-    const bufferVal = bufferSum?.totalCheio || 0;
+    const bufferVal = bufferSum?.totalOccupied || (bufferSum?.totalCheio || 0) + (bufferSum?.totalVazio || 0);
     
     // Starting backlog for W28 projection
     let currentBacklog = 0;
@@ -5411,16 +5413,18 @@ export default function App() {
                     const otherYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type !== 'BONDED' && y.type !== 'WAREHOUSE' && y.type !== 'BUFFER');
 
                     // Calculate live executive telemetry summaries
-                    const getSummary = (list: [string, Yard][]) => {
+                    const getSummary = (list: [string, Yard][], isBuffer = false) => {
                       const totalCap = list.reduce((sum, [_, y]) => sum + (y?.capacity || 0), 0);
                       const totalCheio = list.reduce((sum, [_, y]) => sum + (y?.cheio || 0), 0);
-                      const pct = totalCap > 0 ? Math.round((totalCheio / totalCap) * 100) : 0;
-                      return { totalCap, totalCheio, pct };
+                      const totalVazio = list.reduce((sum, [_, y]) => sum + (y?.vazio || 0), 0);
+                      const totalOccupied = isBuffer ? (totalCheio + totalVazio) : totalCheio;
+                      const pct = totalCap > 0 ? Math.round((totalOccupied / totalCap) * 100) : 0;
+                      return { totalCap, totalCheio, totalVazio, totalOccupied, pct };
                     };
 
-                    const bondedSum = getSummary(bondedYards);
-                    const warehouseSum = getSummary(warehouseYards);
-                    const bufferSum = getSummary(bufferYards);
+                    const bondedSum = getSummary(bondedYards, false);
+                    const warehouseSum = getSummary(warehouseYards, false);
+                    const bufferSum = getSummary(bufferYards, true);
 
                     return (
                       <div className="flex flex-col gap-6">
@@ -5689,8 +5693,11 @@ export default function App() {
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col">
-                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Ocupado Buffer / 缓冲已用' : 'Ocupado'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bufferSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">CNTRs</span></span>
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider" title="Total no Buffer: Soma Cheio + Vazio (espaço ocupado)">{language === 'bilingual' ? 'Total Buffer (Cheio + Vazio) / 缓冲总库存(重+空)' : language === 'zh' ? '缓冲总库存 (重+空)' : 'Total Buffer (Cheio + Vazio)'}</span>
+                                  <span className="font-mono text-amber-600 dark:text-amber-400 font-extrabold flex items-baseline gap-1">
+                                    {(bufferSum.totalOccupied).toLocaleString()} <span className="text-[9px] text-gray-400 font-normal">CNTRs</span>
+                                    <span className="text-[8px] text-gray-400 font-normal">({bufferSum.totalCheio}C + {bufferSum.totalVazio}V)</span>
+                                  </span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col items-center">
@@ -6732,8 +6739,8 @@ export default function App() {
                                   const activeVol = selectedScenario === 'etapa1'
                                     ? (bondedSum.totalCheio + warehouseSum.totalCheio + additionalBacklog)
                                     : selectedScenario === 'etapa2'
-                                      ? (bondedSum.totalCheio + warehouseSum.totalCheio + bufferSum.totalCheio + additionalBacklog)
-                                      : (bondedSum.totalCheio + warehouseSum.totalCheio + bufferSum.totalCheio + vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0) + additionalBacklog);
+                                      ? (bondedSum.totalCheio + warehouseSum.totalCheio + bufferSum.totalOccupied + additionalBacklog)
+                                      : (bondedSum.totalCheio + warehouseSum.totalCheio + bufferSum.totalOccupied + vessels.reduce((sum, v) => sum + (v.cntrs || 0), 0) + additionalBacklog);
                                   const days = dailyDeliveryRate > 0 ? (activeVol / dailyDeliveryRate) : 0;
                                   const weeksNeeded = Math.ceil(days / 7);
                                   const complWeek = `W${28 + weeksNeeded}`;

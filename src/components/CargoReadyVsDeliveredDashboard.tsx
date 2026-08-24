@@ -55,7 +55,7 @@ interface CargoReadyVsDeliveredDashboardProps {
   setDailyDeliveryRate: (rate: number) => void;
   bondedSum?: { totalCheio: number; totalCap: number; pct: number };
   warehouseSum?: { totalCheio: number; totalCap: number; pct: number };
-  bufferSum?: { totalCheio: number; totalCap: number; pct: number };
+  bufferSum?: { totalCheio: number; totalVazio?: number; totalOccupied?: number; totalCap: number; pct: number };
   additionalBacklog?: number;
   setAdditionalBacklog?: (val: number) => void;
   selectedScenario?: 'etapa1' | 'etapa2' | 'etapa3';
@@ -356,7 +356,7 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
   }, [yardStockList]);
 
   const activeBufferStock = useMemo(() => {
-    return yardStockList.filter(y => y.category === 'BUFFER').reduce((acc, y) => acc + y.currentFull, 0);
+    return yardStockList.filter(y => y.category === 'BUFFER').reduce((acc, y) => acc + (y.currentFull || 0) + (y.currentEmpty || 0), 0);
   }, [yardStockList]);
 
   const totalInitialBacklog = activeBondedStock + activeWarehouseStock + activeBufferStock;
