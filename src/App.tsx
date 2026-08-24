@@ -259,7 +259,7 @@ const TRANSLATIONS: { [key: string]: TranslationItem } = {
   },
   cntrs: {
     pt: "Contêineres",
-    zh: "箱量 (FEU/TEU)",
+    zh: "箱量 (CNTRs/CNTRs)",
     en: "Containers"
   },
   totalContainers: {
@@ -5210,7 +5210,7 @@ export default function App() {
                   {language === 'zh' ? '活跃船舶到港' : (language === 'en' ? 'ACTIVE VESSELS' : 'ESCALA DE NAVIOS')}
                 </span>
                 <span className="text-xs font-black text-slate-800 dark:text-white font-mono">
-                  {totalExpectedVesselsForHeader} <span className="text-[9.5px] text-slate-400 font-normal">({totalExpectedContainersForHeader} FEU)</span>
+                  {totalExpectedVesselsForHeader} <span className="text-[9.5px] text-slate-400 font-normal">({totalExpectedContainersForHeader} CNTRs)</span>
                 </span>
               </div>
             </div>
@@ -5292,7 +5292,7 @@ export default function App() {
                   <Ship className="w-3.5 h-3.5 text-blue-500" />
                   <div className="flex flex-col">
                     <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'zh' ? '活跃船舶到港' : 'Active Vessels'}</span>
-                    <span className="text-xs font-black text-slate-800 dark:text-white font-mono">{totalExpectedVesselsForHeader} <span className="text-[9px] text-gray-400 font-normal">({totalExpectedContainersForHeader} FEU)</span></span>
+                    <span className="text-xs font-black text-slate-800 dark:text-white font-mono">{totalExpectedVesselsForHeader} <span className="text-[9px] text-gray-400 font-normal">({totalExpectedContainersForHeader} CNTRs)</span></span>
                   </div>
                 </div>
 
@@ -5549,12 +5549,12 @@ export default function App() {
                               <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border dark:border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs">
                                 <div className="flex flex-col">
                                   <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Capacidade / 容量' : 'Capacidade'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bondedSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">FEU</span></span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bondedSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">CNTRs</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col">
                                   <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Ocupado / 已用' : 'Ocupado'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bondedSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">FEU</span></span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bondedSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">CNTRs</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col items-center">
@@ -5617,12 +5617,12 @@ export default function App() {
                               <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border dark:border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs">
                                 <div className="flex flex-col">
                                   <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Capacidade / 容量' : 'Capacidade'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(warehouseSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">FEU</span></span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(warehouseSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">CNTRs</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col">
                                   <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Ocupado / 已用' : 'Ocupado'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(warehouseSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">FEU</span></span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(warehouseSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">CNTRs</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col items-center">
@@ -5685,12 +5685,12 @@ export default function App() {
                               <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border dark:border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs">
                                 <div className="flex flex-col">
                                   <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Capacidade Buffer / 缓冲容量' : 'Buffer'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bufferSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">FEU</span></span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bufferSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">CNTRs</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col">
                                   <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Ocupado Buffer / 缓冲已用' : 'Ocupado'}</span>
-                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bufferSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">FEU</span></span>
+                                  <span className="font-mono text-gray-700 dark:text-slate-300">{(bufferSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">CNTRs</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col items-center">
@@ -5827,7 +5827,7 @@ export default function App() {
 
                                                   <div className="flex items-center gap-1.5 shrink-0 ml-2">
                                                     <span className="font-mono font-black text-[11px] text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200/80 dark:border-slate-700 shadow-2xs">
-                                                      {group.totalCntrs.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-400">FEU</span>
+                                                      {group.totalCntrs.toLocaleString()} <span className="text-[8.5px] font-normal text-gray-400">CNTRs</span>
                                                     </span>
                                                   </div>
                                                 </button>
@@ -5933,7 +5933,7 @@ export default function App() {
                                       <span className="text-[9px] text-gray-400 font-medium">({vessels.length} {language === 'zh' ? '艘船' : 'navios'})</span>
                                     </div>
                                     <span className="font-extrabold text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/80 border border-blue-200/50 dark:border-blue-900/50 px-2 py-0.5 rounded font-mono">
-                                      {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()} <span className="text-[9px] font-normal">FEU</span>
+                                      {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()} <span className="text-[9px] font-normal">CNTRs</span>
                                     </span>
                                   </div>
                                 </div>
@@ -6514,7 +6514,7 @@ export default function App() {
 
                                       <div className="flex items-center gap-2 shrink-0 ml-2">
                                         <span className="font-mono font-black text-xs text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-700 shadow-2xs">
-                                          {group.totalCntrs.toLocaleString()} <span className="text-[9px] font-normal text-gray-400">FEU</span>
+                                          {group.totalCntrs.toLocaleString()} <span className="text-[9px] font-normal text-gray-400">CNTRs</span>
                                         </span>
                                       </div>
                                     </button>
@@ -6559,7 +6559,7 @@ export default function App() {
                           <span className="text-[10px] text-gray-400 font-medium">({vessels.length} {language === 'zh' ? '艘船' : 'navios'})</span>
                         </div>
                         <span className="font-black text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950 px-3 py-1 rounded font-mono">
-                          {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()} <span className="text-[10px] font-normal">FEU</span>
+                          {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()} <span className="text-[10px] font-normal">CNTRs</span>
                         </span>
                       </div>
                     </div>
@@ -6799,15 +6799,29 @@ export default function App() {
                                   const barHeight = (item.arrivals / maxVal) * 85;
                                   const y = 100 - barHeight;
                                   return (
-                                    <rect 
-                                      key={i}
-                                      x={x - 2} 
-                                      y={y} 
-                                      width="4" 
-                                      height={barHeight} 
-                                      fill={theme === 'dark' ? '#475569' : '#1e293b'} 
-                                      rx="0.5"
-                                    />
+                                    <g key={`cl-bar-${i}`}>
+                                      <rect 
+                                        x={x - 2.5} 
+                                        y={y} 
+                                        width="5" 
+                                        height={Math.max(0, barHeight)} 
+                                        fill={theme === 'dark' ? '#64748b' : '#334155'} 
+                                        rx="1"
+                                      />
+                                      {item.arrivals > 0 && (
+                                        <text 
+                                          x={x} 
+                                          y={y - 3} 
+                                          fill={theme === 'dark' ? '#cbd5e1' : '#334155'} 
+                                          fontSize="5.5" 
+                                          fontWeight="black" 
+                                          textAnchor="middle" 
+                                          className="font-mono"
+                                        >
+                                          {item.arrivals}
+                                        </text>
+                                      )}
+                                    </g>
                                   );
                                 })}
 
@@ -6827,21 +6841,18 @@ export default function App() {
                                   const y = 100 - (item.backlog / maxVal) * 85;
                                   return (
                                     <g key={`cl-${i}`}>
-                                      <circle cx={x} cy={y} r="2" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
-                                      {/* Prevent overlapping text nodes by showing labels at key points */}
-                                      {(i % 2 === 0 || i === chartLeftData.length - 1 || item.backlog > 0) && (
-                                        <text 
-                                          x={x} 
-                                          y={y - 4} 
-                                          fill="#ef4444" 
-                                          fontSize="6" 
-                                          fontWeight="black" 
-                                          textAnchor="middle" 
-                                          className="font-mono"
-                                        >
-                                          {item.backlog}
-                                        </text>
-                                      )}
+                                      <circle cx={x} cy={y} r="2.2" fill="#ef4444" stroke="#fff" strokeWidth="0.5" />
+                                      <text 
+                                        x={x} 
+                                        y={y - 4} 
+                                        fill="#ef4444" 
+                                        fontSize="6" 
+                                        fontWeight="black" 
+                                        textAnchor="middle" 
+                                        className="font-mono"
+                                      >
+                                        {item.backlog}
+                                      </text>
                                     </g>
                                   );
                                 })}
@@ -7065,8 +7076,8 @@ export default function App() {
                                        <text x={((yAxisMax / xAxisMax) * 800) - 10} y="15" fill="#ef4444" fontSize="11" fontWeight="bold" transform={`rotate(-${Math.atan((400)/( (yAxisMax/xAxisMax)*800 )) * (180/Math.PI)}, ${((yAxisMax / xAxisMax) * 800) - 10}, 15)`}>100% Capacity</text>
                                        
                                        {/* X and Y Axes labels */}
-                                       <text x="400" y="445" fill={theme === 'dark' ? '#cbd5e1' : '#334155'} fontSize="14" fontWeight="800" textAnchor="middle">TOTAL YARD CAPACITY (FEU)</text>
-                                       <text x="-30" y="200" fill={theme === 'dark' ? '#cbd5e1' : '#334155'} fontSize="14" fontWeight="800" textAnchor="middle" transform="rotate(-90, -30, 200)">CURRENT OCCUPANCY (FEU)</text>
+                                       <text x="400" y="445" fill={theme === 'dark' ? '#cbd5e1' : '#334155'} fontSize="14" fontWeight="800" textAnchor="middle">TOTAL YARD CAPACITY (CNTRs)</text>
+                                       <text x="-30" y="200" fill={theme === 'dark' ? '#cbd5e1' : '#334155'} fontSize="14" fontWeight="800" textAnchor="middle" transform="rotate(-90, -30, 200)">CURRENT OCCUPANCY (CNTRs)</text>
                                        
                                        {/* Dots (Scatter) */}
                                        {yardsData.map((d, i) => {
@@ -8462,7 +8473,7 @@ export default function App() {
                           </div>
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">{totalAvg}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">FEU/Dia</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">CNTRs/Dia</span>
                           </div>
                         </div>
 
@@ -8473,7 +8484,7 @@ export default function App() {
                           </div>
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">{totalRemainingSlots}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">FEU Slots</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">CNTRs Slots</span>
                           </div>
                         </div>
 
@@ -8513,19 +8524,19 @@ export default function App() {
                             <span className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold mb-1 block">
                               {language === 'zh' ? '日常平均总吞吐量' : language === 'pt' ? 'Média Diária Total' : 'Total Daily Return Average'}
                             </span>
-                            <span className="text-xl font-black text-slate-800 dark:text-white">{depots.reduce((sum, d) => sum + d.avgVolume, 0).toLocaleString()} <span className="text-xs font-bold text-slate-400">{language === 'zh' ? 'FEU/天' : language === 'pt' ? 'FEU/Dia' : 'FEU/Day'}</span></span>
+                            <span className="text-xl font-black text-slate-800 dark:text-white">{depots.reduce((sum, d) => sum + d.avgVolume, 0).toLocaleString()} <span className="text-xs font-bold text-slate-400">{language === 'zh' ? 'CNTRs/天' : language === 'pt' ? 'CNTRs/Dia' : 'CNTRs/Day'}</span></span>
                           </div>
                           <div className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#1e293b]/50 border-slate-700/50' : 'bg-white border-slate-100'} shadow-sm flex flex-col justify-between`}>
                             <span className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold mb-1 block">
                               {language === 'zh' ? '25天预估总吞吐量' : language === 'pt' ? 'Estimativa Total (25 Dias)' : 'Total 25-Day Estimated Return'}
                             </span>
-                            <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">{(depots.reduce((sum, d) => sum + d.avgVolume, 0) * 25).toLocaleString()} <span className="text-xs font-bold text-emerald-600/50 dark:text-emerald-400/50">FEU</span></span>
+                            <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">{(depots.reduce((sum, d) => sum + d.avgVolume, 0) * 25).toLocaleString()} <span className="text-xs font-bold text-emerald-600/50 dark:text-emerald-400/50">CNTRs</span></span>
                           </div>
                           <div className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#1e293b]/50 border-slate-700/50' : 'bg-white border-slate-100'} shadow-sm flex flex-col justify-between`}>
                             <span className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold mb-1 block">
                               {language === 'zh' ? '25天协议总额度上限' : language === 'pt' ? 'Limite Total Acordado (25 Dias)' : 'Total 25-Day Max Agreed Limit'}
                             </span>
-                            <span className="text-xl font-black text-blue-600 dark:text-blue-400">{(depots.reduce((sum, d) => sum + d.maxCapacity, 0) * 25).toLocaleString()} <span className="text-xs font-bold text-blue-600/50 dark:text-blue-400/50">FEU</span></span>
+                            <span className="text-xl font-black text-blue-600 dark:text-blue-400">{(depots.reduce((sum, d) => sum + d.maxCapacity, 0) * 25).toLocaleString()} <span className="text-xs font-bold text-blue-600/50 dark:text-blue-400/50">CNTRs</span></span>
                           </div>
                         </div>
 
@@ -8557,8 +8568,8 @@ export default function App() {
                             <thead>
                               <tr className="bg-slate-50 dark:bg-slate-800/60 text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-800">
                                 <th className="p-2 pl-2.5">{language === 'zh' ? '堆存点名称' : language === 'pt' ? 'Nome do Depósito' : 'Depot Name'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? '日常平均吞吐量 (FEU)' : language === 'pt' ? 'Média Diária (FEU)' : 'Daily Avg Returns (FEU)'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? '协议最大日限额 (FEU)' : language === 'pt' ? 'Limite Diário Acordado (FEU)' : 'Max Daily Agreed Limit (FEU)'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '日常平均吞吐量 (CNTRs)' : language === 'pt' ? 'Média Diária (CNTRs)' : 'Daily Avg Returns (CNTRs)'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '协议最大日限额 (CNTRs)' : language === 'pt' ? 'Limite Diário Acordado (CNTRs)' : 'Max Daily Agreed Limit (CNTRs)'}</th>
                                 <th className="p-2 text-center">{language === 'zh' ? '25天预估吞吐量' : language === 'pt' ? 'Estimativa Retorno (25d)' : '25-Day Return Estimate'}</th>
                                 <th className="p-2 text-center">{language === 'zh' ? '25天潜在最大量' : language === 'pt' ? 'Máximo Potencial (25d)' : '25-Day Max Potential Return'}</th>
                                 <th className="p-2 text-center">{language === 'zh' ? '运营日' : language === 'pt' ? 'Dias de Operação' : 'Operating Days'}</th>
@@ -8862,7 +8873,7 @@ export default function App() {
                             <div className="flex gap-6 items-center flex-wrap">
                               <div>
                                 <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Planning Volume</span>
-                                <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{totalExpectedVolume} <span className="text-sm font-bold text-slate-500">FEU</span></span>
+                                <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{totalExpectedVolume} <span className="text-sm font-bold text-slate-500">CNTRs</span></span>
                               </div>
                               <div className="h-10 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
                               <div className="flex-1 flex flex-wrap gap-3">
@@ -8993,7 +9004,7 @@ export default function App() {
                                           />
                                         </div>
                                         <div className="flex items-center gap-1.5">
-                                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Total Arr. Vol (FEU):</span>
+                                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Total Arr. Vol (CNTRs):</span>
                                           <input 
                                             type="number" 
                                             value={period.totalVolume} 
@@ -10226,7 +10237,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                       <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
                         <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Capacidade Total / 总容量' : language === 'zh' ? '总容量' : 'Capacidade Total'}</span>
                         <span className="font-mono text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">
-                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.capacity) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">FEU</span>
+                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.capacity) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">CNTRs</span>
                         </span>
                       </div>
                       <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
@@ -10251,13 +10262,13 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                       <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
                         <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Total Cheios / 重箱总量' : language === 'zh' ? '重箱总量' : 'Total Cheios'}</span>
                         <span className="font-mono text-xs font-black text-blue-600 mt-0.5">
-                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.cheio) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">FEU</span>
+                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.cheio) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">CNTRs</span>
                         </span>
                       </div>
                       <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
                         <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Pronto Coleta / 待提总量' : language === 'zh' ? '待提总量' : 'Pronto Coleta'}</span>
                         <span className="font-mono text-xs font-black text-emerald-600 mt-0.5">
-                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.prontoColeta) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">FEU</span>
+                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.prontoColeta) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">CNTRs</span>
                         </span>
                       </div>
                     </div>
@@ -10333,7 +10344,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-blue-600 dark:text-blue-400 font-black uppercase block mb-1">Cheio / 重箱 (FEU)</label>
+                            <label className="text-[9px] text-blue-600 dark:text-blue-400 font-black uppercase block mb-1">Cheio / 重箱 (CNTRs)</label>
                             <input 
                               type="number" 
                               value={yard.cheio || ''} 
@@ -10342,7 +10353,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Vazio / 空箱 (FEU)</label>
+                            <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Vazio / 空箱 (CNTRs)</label>
                             <input 
                               type="number" 
                               value={yard.vazio || ''} 
@@ -10351,7 +10362,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             />
                           </div>
                           <div>
-                            <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Porto / 港口 (FEU)</label>
+                            <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Porto / 港口 (CNTRs)</label>
                             <input 
                               type="number" 
                               value={yard.porto || ''} 
@@ -10378,7 +10389,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                             />
                           </div>
                           <div className="col-span-2">
-                            <label className="text-[9px] text-rose-600 dark:text-rose-400 font-black uppercase block mb-1">Prev Total / 上期总量 (FEU)</label>
+                            <label className="text-[9px] text-rose-600 dark:text-rose-400 font-black uppercase block mb-1">Prev Total / 上期总量 (CNTRs)</label>
                             <input 
                               type="number" 
                               value={yard.previous_total !== undefined ? yard.previous_total : 0} 
@@ -10506,7 +10517,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                         </div>
 
                         <div>
-                          <label className="text-[8px] text-rose-500 dark:text-rose-400 font-bold uppercase block mb-0.5">Prev Total / 上期总量 (FEU)</label>
+                          <label className="text-[8px] text-rose-500 dark:text-rose-400 font-bold uppercase block mb-0.5">Prev Total / 上期总量 (CNTRs)</label>
                           <input 
                             type="number" 
                             placeholder="1000"
@@ -11906,7 +11917,7 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4 border-b dark:border-slate-800 bg-blue-50/20 dark:bg-[#111827]/40 text-xs">
                 <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Capacidade / 容量' : 'Capacidade'}</span>
-                  <span className="font-mono text-base font-black text-slate-700 dark:text-slate-150 mt-1">{selectedYard.capacity.toLocaleString()} <span className="text-xs text-gray-400 font-normal">FEU</span></span>
+                  <span className="font-mono text-base font-black text-slate-700 dark:text-slate-150 mt-1">{selectedYard.capacity.toLocaleString()} <span className="text-xs text-gray-400 font-normal">CNTRs</span></span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Ocupação / 占用率' : 'Ocupação'}</span>
@@ -11918,20 +11929,20 @@ const scheduledItem = matchedCntr?.modelo || group.component || group.descriptio
                           ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300' 
                           : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
                     }`}>{yardOcupacao}%</span>
-                    <span className="text-[10px] text-gray-400 font-bold">({(selectedYard.cheio + selectedYard.vazio).toLocaleString()} FEU)</span>
+                    <span className="text-[10px] text-gray-400 font-bold">({(selectedYard.cheio + selectedYard.vazio).toLocaleString()} CNTRs)</span>
                   </div>
                 </div>
                 <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Cheios / 重箱' : 'Cheios'}</span>
-                  <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 mt-1">{selectedYard.cheio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">FEU</span></span>
+                  <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 mt-1">{selectedYard.cheio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">CNTRs</span></span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Vazios / 空箱' : 'Vazios'}</span>
-                  <span className="font-mono text-sm font-bold text-gray-500 mt-1">{selectedYard.vazio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">FEU</span></span>
+                  <span className="font-mono text-sm font-bold text-gray-500 mt-1">{selectedYard.vazio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">CNTRs</span></span>
                 </div>
                 <div className="col-span-2 md:col-span-1 p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Pronto Coleta / 待收箱' : 'Pronto Coleta'}</span>
-                  <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-450 mt-1">{(selectedYard.prontoColeta || 0).toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">FEU</span></span>
+                  <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-450 mt-1">{(selectedYard.prontoColeta || 0).toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">CNTRs</span></span>
                 </div>
               </div>
 

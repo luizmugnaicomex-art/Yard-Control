@@ -66,7 +66,7 @@ export interface WeeklyDataPoint {
   week: string;
   weekFull: string;
   dateRange: string;
-  vesselArrivals: number; // TEUs (Future Inflow)
+  vesselArrivals: number; // CNTRs (Future Inflow)
   deliveredDrain: number; // Drain applied
   inventoryBalance: number; // Cumulative Backlog (Bonded + Warehouses + Buffer)
   blVesselArrivals: number;
@@ -128,10 +128,25 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
   const [metricUnit, setMetricUnit] = useState<'containers' | 'bls'>('containers');
   const [showInventoryOnly, setShowInventoryOnly] = useState<boolean>(false);
   const [showDataLabels, setShowDataLabels] = useState<boolean>(true);
+  const [startWeekIso, setStartWeekIso] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('byd_start_week_iso');
+      if (saved) return parseInt(saved, 10);
+    } catch {}
+    return 35; // Default: Start at Week 35 as requested ("started week 35, so we don't need to see week 34 anymore")
+  });
+  const [includeSaturday, setIncludeSaturday] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('byd_include_saturdays');
+      return saved === 'true';
+    } catch {
+      return false; // Default: 5 days/week (Mon-Fri) because Sundays are off, and Saturday is optional
+    }
+  });
   const [activeDrilldownWeek, setActiveDrilldownWeek] = useState<WeeklyDataPoint | null>(null);
   const [isAiScriptModalOpen, setIsAiScriptModalOpen] = useState<boolean>(false);
   const [isDataEditorOpen, setIsDataEditorOpen] = useState<boolean>(false);
-  const [editorTab, setEditorTab] = useState<'yards' | 'vessels'>('yards');
+  const [editorTab, setEditorTab] = useState<'yards' | 'vessels' | 'calendar'>('yards');
   const [activeTabSubView, setActiveTabSubView] = useState<'chart' | 'steps' | 'curves' | 'risk'>('chart');
   const [copiedScript, setCopiedScript] = useState<boolean>(false);
   const [activeActionCurve, setActiveActionCurve] = useState<'alert' | 'inflow' | 'drain'>('alert');
@@ -359,36 +374,37 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
     : 0;
 
   // B. Dynamic ETA Week Aggregation & Simulation until Yard Drain reaches Zero
-  const weeklyData: WeeklyDataPoint[] = useMemo(() => {
-    const baseDate = new Date(2026, 7, 17, 0, 0, 0, 0); // Aug 17, 2026 is Monday of W34
-    const teusPerBl = 3.2;
-    const weeklyDrainCapacity = (dailyDeliveryRate || 140) * 7;
+  const workingDaysPerWeek = includeSaturday ? 6 : 5;
+  const weeklyDrainCapacity = (dailyDeliveryRate || 140) * workingDaysPerWeek;
 
-    // 1. Pre-group all scheduled vessels by week index relative to W34 base date (17/08/2026)
-    const vesselMapByWeekIdx = new Map<number, { containers: number; vessels: VesselETAItem[] }>();
-    let maxVesselWeekIdx = 0;
+  const weeklyData: WeeklyDataPoint[] = useMemo(() => {
+    // Dynamic starting Monday based on startWeekIso (35 = 24/08/2026, 34 = 17/08/2026, etc.)
+    const weekOffset = (startWeekIso || 35) - 34;
+    const baseDate = new Date(2026, 7, 17 + weekOffset * 7, 12, 0, 0, 0);
+    const cntrsPerBl = 3.2;
+    const simWeeklyDrainCapacity = (dailyDeliveryRate || 140) * (includeSaturday ? 6 : 5);
+
+    // 1. Group scheduled vessels by ISO year & week
+    const vesselMapByIsoWeek = new Map<number, { containers: number; vessels: VesselETAItem[] }>();
+    let maxVesselIsoWeekKey = 0;
 
     vesselList.forEach(v => {
       const cntrs = Number(v.containerCount) || 0;
       if (cntrs <= 0) return;
 
-      let targetIdx = 0;
       const parsed = parseEtaToDate(v.etaDate);
       if (parsed) {
         const vesselWeek = getISOWeekDetails(parsed.date);
-        const diffMs = vesselWeek.start.getTime() - baseDate.getTime();
-        targetIdx = Math.round(diffMs / (7 * 86400000));
-        if (targetIdx < 0) targetIdx = 0;
+        const isoKey = vesselWeek.isoYear * 100 + vesselWeek.isoWeek;
+        maxVesselIsoWeekKey = Math.max(maxVesselIsoWeekKey, isoKey);
+        const current = vesselMapByIsoWeek.get(isoKey) || { containers: 0, vessels: [] };
+        current.containers += cntrs;
+        current.vessels.push(v);
+        vesselMapByIsoWeek.set(isoKey, current);
       }
-
-      maxVesselWeekIdx = Math.max(maxVesselWeekIdx, targetIdx);
-      const current = vesselMapByWeekIdx.get(targetIdx) || { containers: 0, vessels: [] };
-      current.containers += cntrs;
-      current.vessels.push(v);
-      vesselMapByWeekIdx.set(targetIdx, current);
     });
 
-    // 2. Initial Backlog determined by active scenario
+    // 2. Initial Backlog at the starting week determined by active scenario
     let rollingBacklog = selectedScenario === 'etapa1'
       ? (activeBondedStock + activeWarehouseStock + additionalBacklog)
       : selectedScenario === 'etapa2'
@@ -401,19 +417,20 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
     // 3. Simulate rolling weekly drain until all vessels arrive AND the remaining balance line reaches zero
     // Following real calendar: 2026 extends until W53, and 2027 begins with W01 on January 04, 2027
     for (let i = 0; i < 70; i++) {
-      const currentWeekMonday = new Date(2026, 7, 17 + i * 7, 12, 0, 0, 0);
+      const currentWeekMonday = new Date(baseDate.getTime() + i * 7 * 86400000);
       const weekInfo = getISOWeekDetails(currentWeekMonday);
       const weekLabel = weekInfo.weekLabel;
       const weekFull = weekInfo.weekFull;
       const dateRange = weekInfo.dateRange;
+      const isoKey = weekInfo.isoYear * 100 + weekInfo.isoWeek;
 
-      const weekInflowData = vesselMapByWeekIdx.get(i);
+      const weekInflowData = vesselMapByIsoWeek.get(isoKey);
       const weeklyArrivals = selectedScenario === 'etapa3' ? (weekInflowData?.containers || 0) : 0;
       const weekVessels = weekInflowData?.vessels || [];
 
       const startingInventory = rollingBacklog;
       const balanceBeforeDrain = startingInventory + weeklyArrivals;
-      const actualDrain = Math.min(balanceBeforeDrain, weeklyDrainCapacity);
+      const actualDrain = Math.min(balanceBeforeDrain, simWeeklyDrainCapacity);
       rollingBacklog = Math.max(0, balanceBeforeDrain - actualDrain);
 
       const isCritical = rollingBacklog > 3000 || rollingBacklog > dynamicSafeYardCapacity;
@@ -435,10 +452,10 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
         vesselArrivals: weeklyArrivals,
         deliveredDrain: actualDrain,
         inventoryBalance: rollingBacklog,
-        blVesselArrivals: Math.round(weeklyArrivals / teusPerBl),
-        blDeliveredDrain: Math.round(actualDrain / teusPerBl),
-        blInventoryBalance: Math.round(rollingBacklog / teusPerBl),
-        capacityThreshold: weeklyDrainCapacity,
+        blVesselArrivals: Math.round(weeklyArrivals / cntrsPerBl),
+        blDeliveredDrain: Math.round(actualDrain / cntrsPerBl),
+        blInventoryBalance: Math.round(rollingBacklog / cntrsPerBl),
+        capacityThreshold: simWeeklyDrainCapacity,
         startingInventory,
         balanceBeforeDrain,
         status,
@@ -461,10 +478,10 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
       });
 
       // Once remaining balance reaches 0 and no more vessels are arriving in future weeks
-      if (rollingBacklog === 0 && i >= maxVesselWeekIdx) {
+      if (rollingBacklog === 0 && (isoKey >= maxVesselIsoWeekKey || maxVesselIsoWeekKey === 0)) {
         zeroBalanceCount++;
-        // Display at least 13 weeks (i >= 12) and stop once zero is reached
-        if (i >= 12 && zeroBalanceCount >= 1) {
+        // Display at least 12 weeks (i >= 11) and stop once zero is reached
+        if (i >= 11 && zeroBalanceCount >= 1) {
           break;
         }
       }
@@ -472,6 +489,7 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
 
     return generatedWeeks;
   }, [
+    startWeekIso,
     vesselList,
     selectedScenario,
     activeBondedStock,
@@ -480,6 +498,7 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
     additionalBacklog,
     totalInitialBacklog,
     dailyDeliveryRate,
+    includeSaturday,
     dynamicSafeYardCapacity
   ]);
 
@@ -496,8 +515,8 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
     return activeInv + eta + additionalBacklog;
   }, [selectedScenario, activeBondedStock, activeWarehouseStock, totalInitialBacklog, totalProjectedETA, additionalBacklog]);
 
-  const drainDays = dailyDeliveryRate > 0 ? totalVolumeToProcess / dailyDeliveryRate : 0;
-  const weeklyDrainCapacity = (dailyDeliveryRate || 140) * 7;
+  const drainWorkingDays = dailyDeliveryRate > 0 ? totalVolumeToProcess / dailyDeliveryRate : 0;
+  const drainDays = workingDaysPerWeek > 0 ? drainWorkingDays * (7 / workingDaysPerWeek) : 0;
 
   // Dynamic Peak Yard Risk Point
   const peakPoint = useMemo(() => {
@@ -515,11 +534,12 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
     };
   }, [weeklyData, drainDays]);
 
-  // Daily Dataset for day view
+  // Daily Dataset for day view (Sundays: 0 drain; Saturdays: drain only if includeSaturday is true)
   const dailyData: DailyDataPoint[] = useMemo(() => {
-    const baseDate = new Date(2026, 7, 17, 12, 0, 0, 0); // Mon 17/08/2026
+    const weekOffset = (startWeekIso || 35) - 34;
+    const baseDate = new Date(2026, 7, 17 + weekOffset * 7, 12, 0, 0, 0); // Monday of active starting week
     let runningInv = totalInitialBacklog;
-    const teusPerBl = 3.2;
+    const cntrsPerBl = 3.2;
     const avgDailyArrival = totalProjectedETA > 0 ? Math.round(totalProjectedETA / 60) : 150;
 
     const dayNamesEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -531,13 +551,33 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
       const curDate = new Date(baseDate);
       curDate.setDate(baseDate.getDate() + d);
 
-      const dayOfWeek = curDate.getDay();
+      const dayOfWeek = curDate.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+      const isSunday = dayOfWeek === 0;
+      const isSaturday = dayOfWeek === 6;
+
       const localizedDay = dt(dayNamesPt[dayOfWeek], dayNamesZh[dayOfWeek], dayNamesEn[dayOfWeek]);
       const dateStr = `${String(curDate.getDate()).padStart(2, '0')}/${String(curDate.getMonth() + 1).padStart(2, '0')}`;
-      const dayLabel = `${localizedDay} (${dateStr})`;
+      
+      let daySuffix = '';
+      if (isSunday) {
+        daySuffix = ` • [${dt('DOM: Folga', '周日: 休息', 'SUN: Off')}]`;
+      } else if (isSaturday) {
+        daySuffix = includeSaturday
+          ? ` • [${dt('SÁB: Operacional', '周六: 上班', 'SAT: Work')}]`
+          : ` • [${dt('SÁB: Folga', '周六: 休息', 'SAT: Off')}]`;
+      }
+      const dayLabel = `${localizedDay} (${dateStr})${daySuffix}`;
 
       const arrivals = selectedScenario === 'etapa3' ? (d % 3 === 0 ? Math.round(avgDailyArrival * 1.6) : (d % 2 === 0 ? Math.round(avgDailyArrival * 0.9) : Math.round(avgDailyArrival * 0.5))) : 0;
-      const drain = Math.min(dailyDeliveryRate, runningInv + arrivals);
+      
+      // Sunday is strictly 0 (no deliveries); Saturday is active only if includeSaturday is true
+      let drain = 0;
+      if (!isSunday) {
+        if (!isSaturday || includeSaturday) {
+          drain = Math.min(dailyDeliveryRate, runningInv + arrivals);
+        }
+      }
+
       runningInv = Math.max(0, runningInv + arrivals - drain);
       const isCritical = runningInv > 2200;
       const isWarning = runningInv > 1600;
@@ -548,16 +588,16 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
         vesselArrivals: arrivals,
         deliveredDrain: drain,
         inventoryBalance: runningInv,
-        blVesselArrivals: Math.round(arrivals / teusPerBl),
-        blDeliveredDrain: Math.round(drain / teusPerBl),
-        blInventoryBalance: Math.round(runningInv / teusPerBl),
-        capacityThreshold: dailyDeliveryRate,
+        blVesselArrivals: Math.round(arrivals / cntrsPerBl),
+        blDeliveredDrain: Math.round(drain / cntrsPerBl),
+        blInventoryBalance: Math.round(runningInv / cntrsPerBl),
+        capacityThreshold: isSunday ? 0 : (!isSaturday || includeSaturday ? dailyDeliveryRate : 0),
         status: isCritical ? 'critical' : isWarning ? 'warning' : 'optimal'
       });
     }
 
     return points;
-  }, [totalInitialBacklog, totalProjectedETA, dailyDeliveryRate, selectedScenario, language]);
+  }, [startWeekIso, totalInitialBacklog, totalProjectedETA, dailyDeliveryRate, selectedScenario, language, includeSaturday]);
 
   // -------------------------------------------------------------
   // 3. MUTATION HANDLERS (Live Edit Yard & Vessel Data)
@@ -626,7 +666,7 @@ We are currently managing a high-priority logistics throughput across port, bond
 Our aggregate volume to process stands at ${totalVolumeToProcess.toLocaleString()} containers (composed of ${totalInitialBacklog.toLocaleString()} containers in active stock across Bonded (${activeBondedStock.toLocaleString()}), Warehouse (${activeWarehouseStock.toLocaleString()}), and Buffer yards (${activeBufferStock.toLocaleString()}), plus ${totalProjectedETA.toLocaleString()} containers across ${vesselList.length} scheduled vessel calls).
 
 At our current factory throughput of ${dailyDeliveryRate} containers per day (${weeklyDrainCapacity.toLocaleString()}/week), our logistics network faces a ${drainDays.toFixed(1)}-day Critical Path (~${Math.ceil(drainDays / 7)} weeks) to drain this volume.
-With incoming vessel waves reaching peak volume around ${peakPoint.week} (${peakPoint.inventoryBalance.toLocaleString()} TEUs peak backlog), dynamic clearance is projected for ${clearPoint.week}.
+With incoming vessel waves reaching peak volume around ${peakPoint.week} (${peakPoint.inventoryBalance.toLocaleString()} CNTRs peak backlog), dynamic clearance is projected for ${clearPoint.week}.
 Without proactive fleet and receiving schedule coordination, yard utilization will test safe operating buffers."
 
 --------------------------------------------------------------------------------
@@ -1008,24 +1048,24 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
                 {dt('Tempo Estimado para Escoar (Weeks to Clear):', '预计出清周期 (Weeks to Clear):', 'Estimated Drain Time (Weeks to Clear):')}
               </span>
               <span className="font-mono px-2 py-0.5 rounded bg-white dark:bg-slate-900 font-black border text-indigo-600 dark:text-indigo-400 text-xs shadow-xs">
-                ~{drainDays.toFixed(1)} {dt('dias', '天', 'days')} ({Math.ceil(drainDays / 7)} {dt('semanas', '周', 'weeks')} — {dt('Escoa em', '出清于', 'Clears in')} {clearPoint.week})
+                ~{drainWorkingDays.toFixed(0)} {dt('dias úteis', '工作日', 'working days')} (~{drainDays.toFixed(1)} {dt('dias corridos', '自然日', 'calendar days')} / {Math.ceil(drainDays / 7)} {dt('semanas', '周', 'weeks')} — {dt('Escoa em', '出清于', 'Clears in')} {clearPoint.week})
               </span>
             </div>
             <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">
               {dailyDeliveryRate <= 220 && dt(
-                `Taxa Atual de ${dailyDeliveryRate} CNTRs/dia (${weeklyDrainCapacity.toLocaleString()}/sem): ~${drainDays.toFixed(1)} dias (Escoa em ${clearPoint.week}) — Risco Elevado de Demurrage.`,
-                `当前出清速率 ${dailyDeliveryRate} 箱/天 (${weeklyDrainCapacity.toLocaleString()}/周): ~${drainDays.toFixed(1)} 天 (预计 ${clearPoint.week} 出清) — 存在滞期费风险。`,
-                `Current Rate of ${dailyDeliveryRate} CNTRs/day (${weeklyDrainCapacity.toLocaleString()}/wk): ~${drainDays.toFixed(1)} days (Clears by ${clearPoint.week}) — High Demurrage Risk.`
+                `Taxa Atual de ${dailyDeliveryRate} CNTRs/dia × ${workingDaysPerWeek} dias úteis (${weeklyDrainCapacity.toLocaleString()}/sem): ~${drainWorkingDays.toFixed(0)} dias úteis (~${drainDays.toFixed(1)} dias corridos, escoa em ${clearPoint.week}) — Risco Elevado de Demurrage. (Domingo 100% folga${includeSaturday ? ' • Sábado ativo' : ' • Sábado folga'}).`,
+                `当前出清速率 ${dailyDeliveryRate} 箱/天 × ${workingDaysPerWeek} 个工作日 (${weeklyDrainCapacity.toLocaleString()} 箱/周): 约 ${drainWorkingDays.toFixed(0)} 工作日 (${drainDays.toFixed(1)} 自然日，预计 ${clearPoint.week} 出清) — 存在滞期费风险 (周日固定休息${includeSaturday ? ' • 周六计入工作日' : ' • 周六休息'})。`,
+                `Current Rate of ${dailyDeliveryRate} CNTRs/day × ${workingDaysPerWeek} working days (${weeklyDrainCapacity.toLocaleString()}/wk): ~${drainWorkingDays.toFixed(0)} working days (~${drainDays.toFixed(1)} calendar days, clears in ${clearPoint.week}) — High Demurrage Risk. (Sunday 100% off${includeSaturday ? ' • Saturday work active' : ' • Saturday off'}).`
               )}
               {dailyDeliveryRate > 220 && dailyDeliveryRate < 290 && dt(
-                `Taxa Intermediária de ${dailyDeliveryRate} CNTRs/dia (${weeklyDrainCapacity.toLocaleString()}/sem): ~${drainDays.toFixed(1)} dias (Escoa em ${clearPoint.week}) — Ritmo Balanceado.`,
-                `中等出清速率 ${dailyDeliveryRate} 箱/天 (${weeklyDrainCapacity.toLocaleString()}/周): ~${drainDays.toFixed(1)} 天 (预计 ${clearPoint.week} 出清) — 节奏平衡。`,
-                `Intermediate Rate of ${dailyDeliveryRate} CNTRs/day (${weeklyDrainCapacity.toLocaleString()}/wk): ~${drainDays.toFixed(1)} days (Clears by ${clearPoint.week}) — Balanced Pace.`
+                `Taxa Intermediária de ${dailyDeliveryRate} CNTRs/dia × ${workingDaysPerWeek} dias úteis (${weeklyDrainCapacity.toLocaleString()}/sem): ~${drainWorkingDays.toFixed(0)} dias úteis (~${drainDays.toFixed(1)} dias corridos, escoa em ${clearPoint.week}) — Ritmo Balanceado. (Domingo 100% folga${includeSaturday ? ' • Sábado ativo' : ' • Sábado folga'}).`,
+                `中等出清速率 ${dailyDeliveryRate} 箱/天 × ${workingDaysPerWeek} 个工作日 (${weeklyDrainCapacity.toLocaleString()} 箱/周): 约 ${drainWorkingDays.toFixed(0)} 工作日 (${drainDays.toFixed(1)} 自然日，预计 ${clearPoint.week} 出清) — 节奏平衡 (周日固定休息${includeSaturday ? ' • 周六计入工作日' : ' • 周六休息'})。`,
+                `Intermediate Rate of ${dailyDeliveryRate} CNTRs/day × ${workingDaysPerWeek} working days (${weeklyDrainCapacity.toLocaleString()}/wk): ~${drainWorkingDays.toFixed(0)} working days (~${drainDays.toFixed(1)} calendar days, clears in ${clearPoint.week}) — Balanced Pace. (Sunday 100% off${includeSaturday ? ' • Saturday work active' : ' • Saturday off'}).`
               )}
               {dailyDeliveryRate >= 290 && dt(
-                `Taxa Acelerada de ${dailyDeliveryRate} CNTRs/dia (${weeklyDrainCapacity.toLocaleString()}/sem): ~${drainDays.toFixed(1)} dias (Escoa em ${clearPoint.week}) — Meta Segura Recomendada.`,
-                `加速出清速率 ${dailyDeliveryRate} 箱/天 (${weeklyDrainCapacity.toLocaleString()}/周): ~${drainDays.toFixed(1)} 天 (预计 ${clearPoint.week} 出清) — 推荐安全目标。`,
-                `Accelerated Rate of ${dailyDeliveryRate} CNTRs/day (${weeklyDrainCapacity.toLocaleString()}/wk): ~${drainDays.toFixed(1)} days (Clears by ${clearPoint.week}) — Recommended Safe Target.`
+                `Taxa Acelerada de ${dailyDeliveryRate} CNTRs/dia × ${workingDaysPerWeek} dias úteis (${weeklyDrainCapacity.toLocaleString()}/sem): ~${drainWorkingDays.toFixed(0)} dias úteis (~${drainDays.toFixed(1)} dias corridos, escoa em ${clearPoint.week}) — Meta Segura Recomendada. (Domingo 100% folga${includeSaturday ? ' • Sábado ativo' : ' • Sábado folga'}).`,
+                `加速出清速率 ${dailyDeliveryRate} 箱/天 × ${workingDaysPerWeek} 个工作日 (${weeklyDrainCapacity.toLocaleString()} 箱/周): 约 ${drainWorkingDays.toFixed(0)} 工作日 (${drainDays.toFixed(1)} 自然日，预计 ${clearPoint.week} 出清) — 推荐安全目标 (周日固定休息${includeSaturday ? ' • 周六计入工作日' : ' • 周六休息'})。`,
+                `Accelerated Rate of ${dailyDeliveryRate} CNTRs/day × ${workingDaysPerWeek} working days (${weeklyDrainCapacity.toLocaleString()}/wk): ~${drainWorkingDays.toFixed(0)} working days (~${drainDays.toFixed(1)} calendar days, clears in ${clearPoint.week}) — Recommended Safe Target. (Sunday 100% off${includeSaturday ? ' • Saturday work active' : ' • Saturday off'}).`
               )}
             </p>
           </div>
@@ -1093,8 +1133,9 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
           </button>
         </div>
 
-        {/* Drain Slider & Presets */}
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Drain Slider & Presets + Saturday Blank Checkbox */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Drain Rate Slider */}
           <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700">
             <Sliders className="w-3.5 h-3.5 text-emerald-500" />
             <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
@@ -1132,6 +1173,76 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
             ))}
           </div>
 
+          {/* Blank Box / Checkbox to consider Saturday work */}
+          <label
+            id="consider-saturday-blank-box"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer select-none ${
+              includeSaturday
+                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 shadow-xs'
+                : 'bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'
+            }`}
+            title={dt(
+              'Marque esta caixa para considerar operação aos Sábados. Domingos nunca são trabalhados (0 entregas).',
+              '勾选此空白复选框以计入周六工作日。周日固定不工作（0出清）。',
+              'Check this blank box to consider working on Saturdays. Sundays are never worked (0 drain).'
+            )}
+          >
+            <input
+              type="checkbox"
+              id="checkbox-saturday-work"
+              checked={includeSaturday}
+              onChange={(e) => {
+                const val = e.target.checked;
+                setIncludeSaturday(val);
+                try {
+                  localStorage.setItem('byd_include_saturdays', val ? 'true' : 'false');
+                } catch {}
+              }}
+              className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500 cursor-pointer accent-blue-600"
+            />
+            <div className="flex flex-col text-left leading-tight">
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold">{dt('Considerar Sábado', '计入周六', 'Consider Saturday')}</span>
+                <span className={`text-[9px] font-black px-1.5 py-0.2 rounded uppercase ${
+                  includeSaturday
+                    ? 'bg-blue-200/80 dark:bg-blue-900/80 text-blue-800 dark:text-blue-200'
+                    : 'bg-gray-100 dark:bg-slate-800 text-gray-500'
+                }`}>
+                  {includeSaturday ? dt('6d/sem', '6天/周', '6d/wk') : dt('5d/sem', '5天/周', '5d/wk')}
+                </span>
+              </div>
+              <span className="text-[9px] text-gray-400 font-normal">
+                {dt('Dom: 0 (Sem operação)', '周日: 0 (固定休息)', 'Sun: 0 (Off)')}
+              </span>
+            </div>
+          </label>
+
+          {/* Start Week Selector / Filter (Dynamic windowing) */}
+          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-slate-700 text-xs">
+            <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+            <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+              {dt('A partir de:', '起始周:', 'From Week:')}
+            </span>
+            <select
+              id="start-week-iso-select"
+              value={startWeekIso}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setStartWeekIso(val);
+                try {
+                  localStorage.setItem('byd_start_week_iso', String(val));
+                } catch {}
+              }}
+              className="font-bold text-xs bg-transparent text-indigo-600 dark:text-indigo-400 focus:outline-none cursor-pointer"
+            >
+              <option value={35} className="dark:bg-slate-900 text-gray-900 dark:text-white">W35 ({dt('Semana Atual • 24/08', '当前周 • 8月24日', 'Current Week • Aug 24')})</option>
+              <option value={36} className="dark:bg-slate-900 text-gray-900 dark:text-white">W36 ({dt('31/08', '8月31日', 'Aug 31')})</option>
+              <option value={37} className="dark:bg-slate-900 text-gray-900 dark:text-white">W37 ({dt('07/09', '9月07日', 'Sep 07')})</option>
+              <option value={38} className="dark:bg-slate-900 text-gray-900 dark:text-white">W38 ({dt('14/09', '9月14日', 'Sep 14')})</option>
+              <option value={34} className="dark:bg-slate-900 text-gray-900 dark:text-white">W34 ({dt('Histórico • 17/08', '历史周 • 8月17日', 'Historical • Aug 17')})</option>
+            </select>
+          </div>
+
           {/* Granularity Toggle: Days vs Weeks */}
           <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-lg border border-gray-200 dark:border-slate-700 text-xs">
             <button
@@ -1144,7 +1255,7 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              {dt('Semanas', '按周', 'Weeks')} (W34–{weeklyData[weeklyData.length - 1]?.week || 'W46'})
+              {dt('Semanas', '按周', 'Weeks')} ({weeklyData[0]?.week || `W${startWeekIso}`}–{weeklyData[weeklyData.length - 1]?.week || 'W46'})
             </button>
             <button
               type="button"
@@ -1631,6 +1742,18 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
                 <Ship className="w-4 h-4" />
                 <span>{dt('Escala de Navios ETA', '船舶到港船期', 'Vessel ETA Schedule')} ({vesselList.length})</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setEditorTab('calendar')}
+                className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+                  editorTab === 'calendar'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
+                }`}
+              >
+                <Calendar className="w-4 h-4" />
+                <span>{dt('Calendário Operacional', '运营工作日日历', 'Working Calendar')} ({workingDaysPerWeek} {dt('dias/sem', '天/周', 'days/wk')})</span>
+              </button>
             </div>
 
             {/* Modal Body */}
@@ -1685,7 +1808,7 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
                     ))}
                   </div>
                 </div>
-              ) : (
+              ) : editorTab === 'vessels' ? (
                 <div className="space-y-4">
                   {/* Add New Vessel Form */}
                   <form onSubmit={handleAddVessel} className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/30 dark:bg-blue-950/20 space-y-3">
@@ -1789,6 +1912,108 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              ) : (
+                /* Calendário Operacional Tab */
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/40 dark:bg-indigo-950/20 space-y-3">
+                    <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-black text-sm">
+                      <Calendar className="w-4 h-4" />
+                      <span>{dt('Regras de Dias Úteis e Finais de Semana', '工作日与周末运营规则', 'Working Days & Weekend Operation Rules')}</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                      {dt(
+                        'Ajuste os parâmetros de cálculo do modelo para refletir exatamente os dias trabalhados pela operação logística da BYD / Fábrica.',
+                        '调整模型计算参数，精确匹配比亚迪工厂及物流操作的实际工作日安排。',
+                        'Adjust simulation model parameters to accurately match BYD / Plant actual operational working days.'
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
+                    {/* Sunday Card (Fixed Non-working) */}
+                    <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/30 dark:bg-rose-950/20 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-xs text-rose-700 dark:text-rose-300 uppercase">
+                          {dt('Domingo (Sunday)', '周日 (Sunday)', 'Sunday')}
+                        </span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-black bg-rose-500/15 text-rose-600 dark:text-rose-400">
+                          {dt('100% Folga (0 entregas)', '固定休息 (0 出清)', '100% Off (0 drain)')}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-600 dark:text-gray-400">
+                        {dt(
+                          'Domingos nunca são contabilizados para entregas/escoamento. A taxa de entrega no domingo é fixada em 0 CNTRs/dia.',
+                          '周日不执行工厂出清配送操作，周日出清速率恒定锁定为 0 箱/天。',
+                          'Sundays are strictly excluded from drain calculations. Sunday delivery rate is fixed at 0 CNTRs/day.'
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Saturday Card (Interactive Blank Box / Checkbox) */}
+                    <div className={`p-4 rounded-xl border space-y-2.5 transition-all ${
+                      includeSaturday
+                        ? 'border-blue-300 dark:border-blue-800 bg-blue-50/40 dark:bg-blue-950/30'
+                        : 'border-gray-200 dark:border-slate-800 bg-gray-50/60 dark:bg-slate-800/40'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-xs text-gray-900 dark:text-white uppercase">
+                          {dt('Sábado (Saturday)', '周六 (Saturday)', 'Saturday')}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                          includeSaturday
+                            ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
+                            : 'bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-400'
+                        }`}>
+                          {includeSaturday ? dt('Trabalhado (6d/sem)', '上班 (6天/周)', 'Working (6d/wk)') : dt('Folga (5d/sem)', '休息 (5天/周)', 'Off (5d/wk)')}
+                        </span>
+                      </div>
+
+                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={includeSaturday}
+                          onChange={(e) => {
+                            const val = e.target.checked;
+                            setIncludeSaturday(val);
+                            try {
+                              localStorage.setItem('byd_include_saturdays', val ? 'true' : 'false');
+                            } catch {}
+                          }}
+                          className="w-4 h-4 mt-0.5 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500 cursor-pointer accent-blue-600"
+                        />
+                        <div className="space-y-1">
+                          <span className="font-bold text-gray-900 dark:text-gray-100 block">
+                            {dt('Marcar caixa para considerar trabalho aos Sábados', '勾选复选框以计入周六工作日', 'Check box to consider Saturday work')}
+                          </span>
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">
+                            {dt(
+                              'Como nem todos os sábados são trabalhados, deixe desmarcado para cálculo padrão de 5 dias úteis (Segunda a Sexta), ou marque para 6 dias úteis.',
+                              '鉴于并非所有周六均加班，取消勾选即按标准5个工作日(周一至周五)计算；勾选则计为6个工作日。',
+                              'Since not all Saturdays are worked, leave unchecked for 5-day week (Mon-Fri) or check for 6-day week.'
+                            )}
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Summary of Capacity Impact */}
+                  <div className="p-3.5 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/20 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div>
+                      <span className="font-bold text-gray-800 dark:text-gray-200">
+                        {dt('Capacidade Semanal Resultante:', '最终周度出清能力:', 'Resulting Weekly Drain Capacity:')}
+                      </span>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                        {dailyDeliveryRate} CNTRs/{dt('dia', '天', 'day')} × {workingDaysPerWeek} {dt('dias úteis', '工作日', 'working days')} = <strong className="text-emerald-600 dark:text-emerald-400 font-mono font-black">{weeklyDrainCapacity.toLocaleString()} CNTRs/{dt('sem', '周', 'wk')}</strong>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800 font-mono">
+                        {workingDaysPerWeek} {dt('dias/semana', '天/周', 'days/week')}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
