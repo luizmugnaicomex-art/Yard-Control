@@ -421,6 +421,7 @@ const ORIGINAL_YARDS: YardsState = {
   cts_logic: { name: 'CTS - LOGIC', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   cts_uni: { name: 'CTS - UNI', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   cts_vbr: { name: 'CTS - VBR', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
+  logic: { name: 'LOGIC', type: 'WAREHOUSE', capacity: 1000, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   multilog: { name: 'MULTILOG', type: 'WAREHOUSE', capacity: 1500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   buffer: { name: 'BYD BUFFER', type: 'BUFFER', capacity: 800, cheio: 500, vazio: 483, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 950 },
 };
@@ -3474,6 +3475,7 @@ export default function App() {
       ["   - CTS - LOGIC (Warehouse / ä»“åº“)"],
       ["   - CTS - UNI (Warehouse / ä»“åº“)"],
       ["   - CTS - VBR (Warehouse / ä»“åº“)"],
+      ["   - LOGIC (Warehouse / ä»“åº“)"],
       ["   - MULTILOG (Warehouse / ä»“åº“)"],
       ["3. Coluna 'CONTAINER' Ã© obrigatÃ³ria. / 'CONTAINER'åˆ—ä¸ºå¿…å¡«é¡¹ã€‚"],
       ["4. Carga importada serÃ¡ inserida como Cheio (CHEIO) por padrÃ£o. / å¯¼å…¥è´§ç‰©é»˜è®¤è®¾ç½®ä¸ºé‡ç®±(CHEIO)ã€‚"]
@@ -3544,9 +3546,9 @@ export default function App() {
           }
           if (clean.includes('pontual')) return 'cts';
           if (clean.includes('jew')) return 'cts_jew';
-          if (clean.includes('logic')) return 'cts_logic';
           if (clean.includes('uni')) return 'cts_uni';
           if (clean.includes('vbr')) return 'cts_vbr';
+          if (clean.includes('logic')) return 'logic'; // Separate LOGIC warehouse from CTS - LOGIC
 
           return null;
         };
@@ -3568,6 +3570,7 @@ export default function App() {
           cts_logic: { total: 0, porto: 0, pronto: 0 },
           cts_uni: { total: 0, porto: 0, pronto: 0 },
           cts_vbr: { total: 0, porto: 0, pronto: 0 },
+          logic: { total: 0, porto: 0, pronto: 0 },
           multilog: { total: 0, porto: 0, pronto: 0 }
         };
 
@@ -9188,3953 +9191,160 @@ export default function App() {
                       <button 
                         onClick={handleClearAllLogisticsData} 
                         className="px-4 py-1.5 bg-gradient-to-r from-red-50 to-rose-100 hover:from-rose-100 hover:to-rose-200 text-rose-700 border border-rose-300 dark:from-red-950/40 dark:to-rose-900/20 dark:border-rose-900/60 dark:text-rose-350 font-extrabold text-[10px] rounded-lg shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 uppercase tracking-wider hover:shadow-md hover:shadow-rose-100/30 dark:hover:shadow-none"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> {language === 'zh' ? 'æ¸…ç©ºå…¨éƒ¨æ•°æ®' : 'Zerar Tudo'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* SPLIT WORKSPACE GRID */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 overflow-hidden mt-1">
-                    
-                    {/* LEFT WORKSPACE: LINK WAREHOUSE CONTAINERS */}
-                    <div className={`lg:col-span-4 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between overflow-y-auto`}>
-                      <form onSubmit={handleSaveYdContainerLogistics} className="space-y-3">
-                        <div className="flex flex-col gap-2 border-b pb-2 border-gray-150/40 dark:border-slate-800">
-                          <div className="flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-red-500 shrink-0" />
-                            <h4 className="font-extrabold text-[12px] text-slate-800 dark:text-slate-100 uppercase tracking-tight">
-                              {language === 'zh' ? 'ç»‘å®šä»“åº“é›†è£…ç®± (ä¿ç¨/éä¿ç¨)' : 'Vincular Container do PÃ¡tio'}
-                            </h4>
-                          </div>
-                          <div className="grid grid-cols-2 gap-1 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setYdScheduleMode('container');
-                                handleYdContainerChange("");
-                              }}
-                              className={`py-1 text-[9px] font-black uppercase rounded-md transition-all ${
-                                ydScheduleMode === 'container'
-                                  ? 'bg-red-650 text-white shadow-xs'
-                                  : 'text-gray-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-slate-200'
-                              }`}
-                            >
-                              {language === 'zh' ? 'æŒ‰é›†è£…ç®±æ’ç¨‹' : 'Por Container'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setYdScheduleMode('bl');
-                                handleYdBlChange("");
-                              }}
-                              className={`py-1 text-[9px] font-black uppercase rounded-md transition-all ${
-                                ydScheduleMode === 'bl'
-                                  ? 'bg-red-650 text-white shadow-xs'
-                                  : 'text-gray-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-slate-200'
-                              }`}
-                            >
-                              {language === 'zh' ? 'æŒ‰æ•´å• BL æ’ç¨‹' : 'Por BL Inteiro'}
-                            </button>
-                          </div>
-                        </div>
-
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-normal font-medium">
-                          {language === 'zh' 
-                            ? 'ä»ä¿ç¨å †åœºï¼ˆTECONã€INTERMARITIMAç­‰ï¼‰æˆ–ä¸€èˆ¬ä»“åº“ä¸­é€‰æ‹©å·²ä¸Šä¼ çš„é›†è£…ç®±æˆ–æ•´å• HBL (BL) è¿›è¡Œäº¤ä»˜æ’ç¨‹ã€‚' 
-                            : 'Selecione um contÃªiner ou um BL completo carregado nos pÃ¡tios para criar uma programaÃ§Ã£o de entrega.'}
-                        </p>
-
-                        <div className="space-y-2.5 text-xs">
-                          {/* Container or BL Select with Search Input */}
-                          <div>
-                            <label className="block text-[10px] font-black uppercase text-gray-500 dark:text-gray-450 mb-1">
-                              {ydScheduleMode === 'container'
-                                ? (language === 'zh' ? 'é€‰æ‹©ä»“åº“é›†è£…ç®± *' : 'Selecionar Equipamento do PÃ¡tio *')
-                                : (language === 'zh' ? 'é€‰æ‹©æ•´å• HBL (BL) *' : 'Selecionar BL do PÃ¡tio *')
-                              }
-                            </label>
-
-                            {/* Search Filter Input */}
-                            <div className="mb-1.5 relative">
-                              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-gray-400" />
-                              <input
-                                type="text"
-                                value={ydSearchFilter}
-                                onChange={(e) => setYdSearchFilter(e.target.value)}
-                                placeholder={language === 'zh' ? (ydScheduleMode === 'container' ? 'ğŸ” æœç´¢é›†è£…ç®±å·æˆ–æ‰¹æ¬¡(å¦‚ lot 442)...' : 'ğŸ” æœç´¢ BL / æå•æˆ–æ‰¹æ¬¡(å¦‚ lot 442)...') : (ydScheduleMode === 'container' ? 'ğŸ” Digite container ou lote (ex: lot 442)...' : 'ğŸ” Digite BL ou lote (ex: lot 442)...')}
-                                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono font-bold text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-red-500"
-                              />
-                            </div>
-
-                            {ydScheduleMode === 'container' ? (
-                              <select 
-                                value={selectedYdContainerId} 
-                                onChange={(e) => handleYdContainerChange(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-2 rounded-lg font-mono font-bold text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-red-500"
-                              >
-                                <option value="">-- {language === 'zh' ? 'è¯·é€‰æ‹©é›†è£…ç®±' : 'Selecione o Container'} --</option>
-                                {containers.filter(c => {
-                                  if (!ydSearchFilter) return true;
-                                  return matchContainerSearch(c, ydSearchFilter);
-                                }).map(c => {
-                                  const yardName = yards[c.yardId]?.name || c.yardId;
-                                  const isScheduled = logisticsEntries.some(le => le.cntrsOriginal === c.id);
-                                  return (
-                                    <option key={c.id} value={c.id}>
-                                      {c.id} {c.lote ? `[Lote: ${c.lote}]` : ''} - {yardName} ({c.status}) {isScheduled ? 'â€¢ [Scheduled]' : ''}
-                                    </option>
-                                  );
-                                })}
-                              </select>
-                            ) : (
-                              <select 
-                                value={selectedYdBl} 
-                                onChange={(e) => handleYdBlChange(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-2 rounded-lg font-mono font-bold text-xs text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-red-500"
-                              >
-                                <option value="">-- {language === 'zh' ? 'è¯·é€‰æ‹© HBL (BL)' : 'Selecione o BL'} --</option>
-                                {Array.from(new Set(containers.map(c => c.bl).filter(Boolean))).filter(blVal => {
-                                  if (!ydSearchFilter) return true;
-                                  const q = ydSearchFilter.trim().toLowerCase();
-                                  if (q.startsWith('lot ') || q.startsWith('lote ')) {
-                                    const lotTerm = q.replace(/^(lot|lote)\s+/, '').trim();
-                                    return containers.some(c => c.bl === blVal && String(c.lote || '').toLowerCase().includes(lotTerm));
-                                  }
-                                  return String(blVal).toLowerCase().includes(q) || containers.some(c => c.bl === blVal && (c.id.toLowerCase().includes(q) || (c.lote && String(c.lote).toLowerCase().includes(q))));
-                                }).map(blVal => {
-                                  const cntrsCount = containers.filter(c => c.bl === blVal).length;
-                                  const yardNames = Array.from(new Set(containers.filter(c => c.bl === blVal).map(c => yards[c.yardId]?.name || c.yardId || ""))).filter(Boolean);
-                                  return (
-                                    <option key={blVal} value={blVal}>
-                                      {blVal} ({cntrsCount} cntrs) - {yardNames.join(", ")}
-                                    </option>
-                                  );
-                                })}
-                              </select>
-                            )}
-                          </div>
-
-                          {/* Grid for Quick Auto-fills */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">HBL (BL)</label>
-                              <input 
-                                type="text"
-                                value={ydBl}
-                                onChange={(e) => setYdBl(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">Navio (Vessel)</label>
-                              <input 
-                                type="text"
-                                value={ydVessel}
-                                onChange={(e) => setYdVessel(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">Batch / Lote</label>
-                              <input 
-                                type="text"
-                                value={ydBatch}
-                                onChange={(e) => setYdBatch(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">PÃ¡tio Origem</label>
-                              <input 
-                                type="text"
-                                value={ydWarehouse} readOnly
-                                disabled
-                                className="w-full bg-slate-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-1.5 rounded-md font-sans text-[11px] text-gray-500 font-bold outline-none cursor-not-allowed"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Delivery Schedule Inputs */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[9px] font-black uppercase text-red-500 mb-0.5">ğŸ“… Data CD Planta *</label>
-                              <input 
-                                type="text"
-                                value={ydDeliveryDate}
-                                onChange={(e) => setYdDeliveryDate(e.target.value)}
-                                placeholder="YYYY-MM-DD"
-                                className="w-full bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900 p-1.5 rounded-md font-mono text-[11px] text-slate-800 dark:text-white font-bold outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">Status Entrega</label>
-                              <select 
-                                value={ydStatus} 
-                                onChange={(e) => setYdStatus(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none"
-                              >
-                                <option value="PENDENTE">PENDENTE</option>
-                                <option value="A CAMINHO">A CAMINHO</option>
-                                <option value="ADIADO">ADIADO</option>
-                                <option value="ENTREGUE">ENTREGUE</option>
-                                <option value="CANCELADO">CANCELADO</option>
-                              </select>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[9px] font-black uppercase text-gray-400 mb-0.5">Transportadora</label>
-                              <input 
-                                type="text"
-                                value={ydCarrier}
-                                onChange={(e) => setYdCarrier(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[9px] font-black uppercase text-red-500 mb-0.5">ğŸšš Modelo de Entrega (Delivery Model)</label>
-                              <select 
-                                value={ydDeliveryModel} 
-                                onChange={(e) => setYdDeliveryModel(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none focus:ring-1 focus:ring-red-500"
-                              >
-                                <option value="DESCARGA">DESCARGA (Unload)</option>
-                                <option value="SWAP">SWAP (Swap)</option>
-                                <option value="COLOCAR NO CHÃƒO">COLOCAR NO CHÃƒO (Put down)</option>
-                                <option value="DEVOLUÃ‡ÃƒO DE VAZIO">DEVOLUÃ‡ÃƒO DE VAZIO (Return empty)</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-[9px] font-black uppercase text-red-500 mb-0.5">ğŸ“ Local de Entrega (Delivery Site)</label>
-                              <select 
-                                value={ydOnSitePlaceOfDelivery} 
-                                onChange={(e) => setYdOnSitePlaceOfDelivery(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-md font-sans text-[11px] text-slate-800 dark:text-white font-bold outline-none focus:ring-1 focus:ring-red-500"
-                              >
-                                <option value="WAREHOUSE 25">WAREHOUSE 25</option>
-                                <option value="WAREHOUSE 27">WAREHOUSE 27</option>
-                                <option value="BUFFER 10">BUFFER 10</option>
-                                <option value="WAREHOUSE 20">WAREHOUSE 20</option>
-                                <option value="WAREHOUSE 21">WAREHOUSE 21</option>
-                                <option value="GERAL">GERAL</option>
-                              </select>
-                            </div>
-                          </div>
-
-                        </div>
-
-                        <button 
-                          type="submit"
-                          className="w-full py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-black text-[10px] rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer uppercase tracking-wider flex items-center justify-center gap-1.5 mt-2"
-                        >
-                          <Truck className="w-3.5 h-3.5" /> {language === 'zh' ? 'ç¡®è®¤æ’ç¨‹å¹¶åŒæ­¥' : 'Vincular e Agendar'}
-                        </button>
-                      </form>
-                    </div>
-
-                    {/* RIGHT WORKSPACE: FILTERS AND TABLE WORKSPACE */}
-                    <div className="lg:col-span-8 p-4 rounded-xl border bg-white border-slate-150 dark:bg-[#1e293b] dark:border-slate-700 flex flex-col justify-between overflow-hidden">
-                    <div className="flex flex-col md:flex-row gap-3 items-center justify-between mb-4">
-                      <div className="relative w-full max-w-sm">
-                        <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
-                        <input 
-                          type="text" 
-                          value={logisticsSearch} 
-                          onChange={(e) => setLogisticsPageSearch(e.target.value)}
-                          placeholder={language === 'zh' ? "æœç´¢ Container, BL, èˆ¹å..." : "Buscar por Container, BL, Navio..."} 
-                          className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 pl-8 pr-3 py-1.5 rounded-lg outline-none text-slate-800 dark:text-white text-xs font-bold"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <select 
-                          value={logisticsFilterComex} 
-                          onChange={(e) => setLogisticsFilterComex(e.target.value)} 
-                          className="bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-1.5 rounded-lg text-xs font-bold outline-none"
-                        >
-                          <option value="ALL">{language === 'zh' ? 'å…¨éƒ¨ Comex çŠ¶æ€' : 'Status Comex: Todos'}</option>
-                          <option value="CARGO DELIVERED">CARGO DELIVERED</option>
-                          <option value="PENDENTE">PENDENTE</option>
-                        </select>
-
-                        <label className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400 cursor-pointer text-xs font-bold select-none">
-                          <input 
-                            type="checkbox" 
-                            checked={logisticsOnlyPending} 
-                            onChange={(e) => setLogisticsOnlyPending(e.target.checked)} 
-                            className="rounded text-red-600 focus:ring-red-500 w-4 h-4 cursor-pointer" 
-                          />
-                          <span>{language === 'zh' ? 'ä»…æ˜¾ç¤ºæœªäº¤ä»˜' : 'Apenas Pendentes'}</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="overflow-x-auto flex-1 max-h-[380px] overflow-y-auto">
-                      <table className="w-full text-left text-[11px] border-collapse">
-                        <thead>
-                          <tr className="bg-slate-50 dark:bg-slate-800 text-[9px] uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-slate-700 font-black tracking-wider">
-                            <th className="p-2.5 pl-3">ID Container</th>
-                            <th className="p-2.5">Conhecimento (HBL)</th>
-                            <th className="p-2.5">Vessel (Navio)</th>
-                            <th className="p-2.5">Lote (Batch)</th>
-                            <th className="p-2.5 text-center">Data Agendada CD</th>
-                            <th className="p-2.5">Bonded Warehouse</th>
-                            <th className="p-2.5 text-center">Status Comex</th>
-                            <th className="p-2.5">Carrier</th>
-                            <th className="p-2.5 text-right pr-3">AÃ§Ã£o</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-300">
-                          {logisticsEntries
-                            .filter(e => {
-                              if (logisticsSearch) {
-                                const searchLower = logisticsSearch.toLowerCase();
-                                if (!e.cntrsOriginal.toLowerCase().includes(searchLower) && 
-                                    !e.bl?.toLowerCase().includes(searchLower) && 
-                                    !e.arrivalVessel?.toLowerCase().includes(searchLower)) return false;
-                              }
-                              if (logisticsFilterComex !== 'ALL' && e.statusComex !== logisticsFilterComex) return false;
-                              if (logisticsOnlyPending && e.status === 'ENTREGUE') return false;
-                              return true;
-                            })
-                            .slice((logisticsPage - 1) * 8, logisticsPage * 8)
-                            .map((entry, index) => (
-                              <tr key={entry.id || index} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 font-mono">
-                                <td className="p-2 pl-3 font-bold text-slate-900 dark:text-white select-all">{entry.cntrsOriginal}</td>
-                                <td className="p-2 font-bold">{entry.bl}</td>
-                                <td className="p-2 font-sans">{entry.arrivalVessel}</td>
-                                <td className="p-2 text-blue-600 dark:text-blue-400 font-sans font-bold">{entry.batch}</td>
-                                <td className="p-2 text-center font-bold text-red-600 dark:text-red-400">{entry.estimatedDeliveryDate || '-'}</td>
-                                <td className="p-2 font-sans truncate max-w-[120px]" title={entry.bondedWarehouse}>{entry.bondedWarehouse || 'N/A'}</td>
-                                <td className="p-2 text-center">
-                                  <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${entry.statusComex === 'CARGO DELIVERED' ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/40' : 'bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/40'}`}>
-                                    {entry.statusComex || 'PENDENTE'}
-                                  </span>
-                                </td>
-                                <td className="p-2 font-sans font-bold">{entry.carrier || 'N/A'}</td>
-                                <td className="p-2 text-right pr-3 font-sans">
-                                  <button 
-                                    onClick={() => { 
-                                      const title = language === 'zh' ? 'åˆ é™¤ç‰©æµè®°å½•' : 'Excluir Entrada';
-                                      const msg = language === 'zh'
-                                        ? `æ‚¨ç¡®å®šè¦ä» Firestore ä¸­åˆ é™¤é›†è£…ç®± ${entry.cntrsOriginal} çš„ç‰©æµè®°å½•å—ï¼Ÿ`
-                                        : `Deseja realmente remover a entrada logÃ­stica do contÃªiner ${entry.cntrsOriginal} do Firestore?`;
-                                      
-                                      requestConfirmation(title, msg, async () => {
-                                        try {
-                                          await deleteDoc(doc(db, 'logisticsData', entry.id || '')); 
-                                        } catch (error) {
-                                          handleFirestoreError(error, OperationType.DELETE, `logisticsData/${entry.id}`);
-                                        }
-                                      });
-                                    }} 
-                                    className="p-1.5 text-red-500 hover:text-white hover:bg-red-600 rounded-lg border border-transparent hover:border-red-600 transition-all active:scale-90 cursor-pointer shadow-xs hover:shadow-md"
-                                    title={language === 'zh' ? 'åˆ é™¤' : 'Excluir'}
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          {logisticsEntries.length === 0 && (
-                            <tr>
-                              <td colSpan={9} className="p-8 text-center text-gray-400 dark:text-gray-500 font-extrabold font-sans">
-                                {language === 'zh' ? 'æš‚æ— æ•°æ®ã€‚è¯·ç‚¹å‡»å³ä¸Šæ–¹ Google Sheets åŒæ­¥æˆ–è¿›è¡Œæœ¬åœ°æ–‡ä»¶æ‹–æ‹½ã€‚' : 'Nenhum registro de container ou HBL importado ainda.'}
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Pagination */}
-                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-150/40 dark:border-slate-800 text-[10px] font-bold text-gray-500 dark:text-gray-400">
-                      <span>Total de {logisticsEntries.length} containers logÃ­sticos importados</span>
-                      <div className="flex items-center gap-1">
-                        <button 
-                          disabled={logisticsPage === 1} 
-                          onClick={() => setLogisticsPage(p => Math.max(p - 1, 1))}
-                          className="px-2 py-1 bg-slate-100 dark:bg-slate-800 disabled:opacity-50 text-slate-800 dark:text-white rounded-md cursor-pointer"
-                        >
-                          â—„ Anterior
-                        </button>
-                        <span className="px-2">{logisticsPage} / {Math.ceil(logisticsEntries.length / 8) || 1}</span>
-                        <button 
-                          disabled={logisticsPage >= Math.ceil(logisticsEntries.length / 8)} 
-                          onClick={() => setLogisticsPage(p => p + 1)}
-                          className="px-2 py-1 bg-slate-100 dark:bg-slate-800 disabled:opacity-50 text-slate-800 dark:text-white rounded-md cursor-pointer"
-                        >
-                          PrÃ³ximo â–º
-                        </button>
-                      </div>
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-              ) : currentSlide === 8 ? (
-                /* SLIDE 8: PAINEL EXECUTIVO DE ENTREGAS CD */
-                <div id="slide-delivery-panel" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
-                  
-                  {/* HEADER PANEL */}
-                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3`}>
-                    <div className="flex items-center gap-3">
-                      <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
-                        <Truck className="w-6 h-6 animate-pulse" />
-                      </div>
-                      <div>
-                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
-                          {language === 'bilingual' ? 'DELIVERY MONITORING STATION / CD å‚å†…å¸è´§ã€è¿è¾“çŠ¶æ€åŠå®æ—¶äº¤æœŸæ§åˆ¶' : language === 'zh' ? 'CD å‚å†…å¸è´§ã€è¿è¾“çŠ¶æ€åŠå®æ—¶äº¤æœŸæ§åˆ¶' : 'DELIVERY STATION'}
-                        </h3>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                          {language === 'zh' ? 'æ§åˆ¶è¿è¾“é€”ä¸­ã€å»¶æœŸã€å·²äº¤ä»˜åˆ°å‚çš„é›†è£…ç®±èŠ‚ç‚¹ï¼ŒååŠ©è¿›è¡Œå…¨æµç¨‹æ—¶æ•ˆç®¡ç†ï¼Œé™ä½æ»ç®±è´¹é£é™©' : 'GestÃ£o executiva de status operacionais, faturamento de fretes, transportadoras ativas e reprogramaÃ§Ãµes.'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] bg-red-600 text-white font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
-                        CD PLANTA DISPATCH
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* SUMMARY CARDS GRID */}
-                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                    {[
-                      { status: 'ALL', label: 'Geral', color: 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-800 dark:text-white', count: logisticsEntries.length },
-                      { status: 'PENDENTE', label: 'Pendente', color: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-800/40 dark:text-gray-400', count: logisticsEntries.filter(e => e.status === 'PENDENTE' || !e.status).length },
-                      { status: 'A CAMINHO', label: 'A Caminho', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400', count: logisticsEntries.filter(e => e.status === 'A CAMINHO').length },
-                      { status: 'ADIADO', label: 'Adiado', color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-450', count: logisticsEntries.filter(e => e.status === 'ADIADO').length },
-                      { status: 'ENTREGUE', label: 'Entregue', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400', count: logisticsEntries.filter(e => e.status === 'ENTREGUE').length },
-                      { status: 'CANCELADO', label: 'Cancelado', color: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-450', count: logisticsEntries.filter(e => e.status === 'CANCELADO').length },
-                    ].map(card => (
-                      <div 
-                        key={card.status}
-                        onClick={() => setDeliveryStatusFilter(card.status === 'ALL' ? null : card.status)}
-                        className={`p-3 rounded-xl border hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer shadow-3xs flex flex-col justify-between select-none ${card.color} ${deliveryStatusFilter === card.status ? 'ring-2 ring-red-500' : ''}`}
-                      >
-                        <span className="text-[10px] uppercase font-black tracking-wider block opacity-75">{card.label}</span>
-                        <span className="font-mono text-lg font-black block mt-1">{card.count} <span className="text-[10px] font-normal font-sans opacity-80">EQ</span></span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* ACTIVE WORKSPACE: ESTIMATED DELIVERY DATES PANELS */}
-                  <div className="flex-1 overflow-y-auto max-h-[350px] space-y-3.5 pr-1">
-                    {Array.from(new Set(logisticsEntries.map(e => String(e.estimatedDeliveryDate || 'Sem Data')))).map((dateGroup: string) => {
-                      const groupEntries = logisticsEntries.filter(e => String(e.estimatedDeliveryDate || 'Sem Data') === dateGroup && (!deliveryStatusFilter || e.status === deliveryStatusFilter || (deliveryStatusFilter === 'PENDENTE' && !e.status)));
-                      if (groupEntries.length === 0) return null;
-
-                      const isCollapsed = !!(collapsedDates as Record<string, boolean>)[dateGroup];
-
-                      // Calculate summary counts for delivery model
-                      const unloadCount = groupEntries.filter(e => e.deliveryModel === 'DESCARGA' || !e.deliveryModel).length;
-                      const swapCount = groupEntries.filter(e => e.deliveryModel === 'SWAP').length;
-                      const putDownCount = groupEntries.filter(e => e.deliveryModel === 'COLOCAR NO CHÃƒO').length;
-                      const returnEmptyCount = groupEntries.filter(e => e.deliveryModel === 'DEVOLUÃ‡ÃƒO DE VAZIO').length;
-
-                      return (
-                        <div key={dateGroup} className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-800' : 'bg-white border-slate-150 shadow-3xs'} space-y-3`}>
-                          <div className="flex items-center justify-between border-b pb-2.5 border-gray-150/40 dark:border-slate-800">
-                            <div className="flex items-center gap-2">
-                              <Truck className="w-4 h-4 text-red-500 shrink-0" />
-                              <span className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase tracking-tight flex items-center">
-                                {language === 'zh' ? 'è®¡åˆ’äº¤ä»˜å‚å†…/CDæ—¶é—´ï¼š' : 'Data de Entrega Planejada:'} <strong className="font-mono text-red-600 dark:text-red-400 pl-1">{dateGroup}</strong>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setCollapsedDates(prev => {
-                                      const copy = { ...prev } as Record<string, boolean>;
-                                      copy[dateGroup as string] = !copy[dateGroup as string];
-                                      return copy;
-                                    });
-                                  }}
-                                  className="p-1 text-slate-500 hover:text-red-500 rounded-md transition-all hover:bg-slate-100 dark:hover:bg-slate-800 ml-2 flex items-center justify-center cursor-pointer"
-                                  title={isCollapsed ? (language === 'zh' ? 'å±•å¼€' : 'Expandir') : (language === 'zh' ? 'æœ€å°åŒ–' : 'Minimizar')}
-                                >
-                                  {isCollapsed ? <ChevronDown className="w-4 h-4 text-red-500" /> : <ChevronUp className="w-4 h-4 text-gray-500" />}
-                                </button>
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {isCollapsed && (
-                                <span className="hidden sm:inline-flex items-center gap-1.5 text-[9px] font-bold text-gray-400 mr-2">
-                                  [ Unload: {unloadCount} | Swap: {swapCount} | Down: {putDownCount} | Empty: {returnEmptyCount} ]
-                                </span>
-                              )}
-                              <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">{groupEntries.length} Equipamentos</span>
-                            </div>
-                          </div>
-
-                          {isCollapsed ? (
-                            <div className="flex flex-wrap gap-2 pt-1">
-                              <span className="text-[10px] bg-sky-50 text-sky-700 dark:bg-sky-950/25 dark:text-sky-400 px-2.5 py-1 rounded-md font-extrabold uppercase">
-                                ğŸ“¥ {language === 'zh' ? 'å¸è´§' : 'DESCARGA (Unload)'}: {unloadCount}
-                              </span>
-                              <span className="text-[10px] bg-purple-50 text-purple-700 dark:bg-purple-950/25 dark:text-purple-400 px-2.5 py-1 rounded-md font-extrabold uppercase">
-                                ğŸ”„ {language === 'zh' ? 'äº¤æ¢' : 'SWAP (Swap)'}: {swapCount}
-                              </span>
-                              <span className="text-[10px] bg-amber-50 text-amber-700 dark:bg-amber-950/25 dark:text-amber-450 px-2.5 py-1 rounded-md font-extrabold uppercase">
-                                â¬‡ï¸ {language === 'zh' ? 'è½ç®±' : 'NO CHÃƒO (Put down)'}: {putDownCount}
-                              </span>
-                              <span className="text-[10px] bg-rose-50 text-rose-700 dark:bg-rose-950/25 dark:text-rose-450 px-2.5 py-1 rounded-md font-extrabold uppercase">
-                                â™»ï¸ {language === 'zh' ? 'é€€ç©º' : 'DEVOLUÃ‡ÃƒO VAZIO (Return empty)'}: {returnEmptyCount}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-left text-[11px] border-collapse">
-                                <thead>
-                                  <tr className="text-[9px] uppercase font-black text-slate-400 dark:text-slate-500 border-b border-gray-100 dark:border-slate-800 tracking-wider">
-                                    <th className="py-2 pl-2">ID Container / Item</th>
-                                    <th className="py-2">HBL (BL)</th>
-                                    <th className="py-2">Lote (Batch) / SAP PO</th>
-                                    <th className="py-2">Modelo de Entrega (Delivery Model)</th>
-                                    <th className="py-2">Status Operacional</th>
-                                    <th className="py-2 font-black text-red-700 dark:text-red-400 bg-red-100/40 dark:bg-red-950/20 text-center">ğŸ“… Alterar Data Entrega</th>
-                                    <th className="py-2">Transportadora (Carrier)</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800/60 font-medium text-slate-750 dark:text-slate-350 font-mono">
-                                  {groupEntries.map(entry => {
-                                    const matchedCntr = containers.find(c => c.id === entry.cntrsOriginal);
-                                    const scheduledItem = entry.component || (matchedCntr && matchedCntr.componente) || entry.description || (matchedCntr && matchedCntr.modelo) || 'Componente NÃ£o Especificado';
-                                    
-                                    return (
-                                      <tr key={entry.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-all">
-                                        <td className="py-2 pl-2">
-                                          <div className="font-bold text-slate-900 dark:text-white select-all">{entry.cntrsOriginal}</div>
-                                          <div className="text-[9px] text-slate-400 dark:text-slate-500 font-sans max-w-[150px] truncate" title={scheduledItem}>
-                                            ğŸ“¦ {scheduledItem}
-                                          </div>
-                                        </td>
-                                        <td className="py-2 font-semibold text-slate-500">{entry.bl}</td>
-                                        <td className="py-2 font-sans">{entry.batch} / <span className="text-blue-500 font-bold font-mono">{entry.poSap || 'N/A'}</span></td>
-                                        <td className="py-2 font-sans">
-                                          <select 
-                                            value={entry.deliveryModel || 'DESCARGA'} 
-                                            onChange={async (e) => { 
-                                              if (e.target.value === entry.deliveryModel) return;
-                                              try {
-                                                await updateDoc(doc(db, 'logisticsData', entry.id || ''), { deliveryModel: e.target.value }); 
-                                              } catch (err) {
-                                                handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
-                                              }
-                                            }}
-                                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1 text-[10px] font-black uppercase text-slate-800 dark:text-slate-100 outline-none focus:ring-1 focus:ring-red-500"
-                                          >
-                                            <option value="DESCARGA">DESCARGA (Unload)</option>
-                                            <option value="SWAP">SWAP (Swap)</option>
-                                            <option value="COLOCAR NO CHÃƒO">COLOCAR NO CHÃƒO (Put down)</option>
-                                            <option value="DEVOLUÃ‡ÃƒO DE VAZIO">DEVOLUÃ‡ÃƒO DE VAZIO (Return empty)</option>
-                                          </select>
-                                        </td>
-                                        <td className="py-2">
-                                          <select 
-                                            value={entry.status || 'PENDENTE'} 
-                                            onChange={async (e) => { 
-                                              if (e.target.value === entry.status) return;
-                                              try {
-                                                await updateDoc(doc(db, 'logisticsData', entry.id || ''), { status: e.target.value }); 
-                                              } catch (err) {
-                                                handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
-                                              }
-                                            }}
-                                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1 text-[10px] font-black uppercase text-slate-800 dark:text-slate-100 outline-none"
-                                          >
-                                            <option value="PENDENTE">PENDENTE</option>
-                                            <option value="A CAMINHO">A CAMINHO</option>
-                                            <option value="ADIADO">ADIADO</option>
-                                            <option value="ENTREGUE">ENTREGUE</option>
-                                            <option value="CANCELADO">CANCELADO</option>
-                                          </select>
-                                        </td>
-                                        <td className="py-1 bg-red-100/10 dark:bg-red-950/5">
-                                          <input 
-                                            type="text" 
-                                            defaultValue={entry.estimatedDeliveryDate || ""} 
-                                            onBlur={async (e) => { 
-                                              try {
-                                                await updateDoc(doc(db, 'logisticsData', entry.id || ''), { estimatedDeliveryDate: e.target.value }); 
-                                              } catch (err) {
-                                                handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
-                                              }
-                                            }}
-                                            className="w-28 mx-auto bg-white dark:bg-slate-800 p-1 border border-red-250 dark:border-red-900/50 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-md font-sans text-[11px] font-bold text-slate-800 dark:text-slate-100 text-center outline-none"
-                                          />
-                                        </td>
-                                        <td className="py-2">
-                                          <input 
-                                            type="text" 
-                                            defaultValue={entry.carrier || "JSL"} 
-                                            onBlur={async (e) => { 
-                                              try {
-                                                await updateDoc(doc(db, 'logisticsData', entry.id || ''), { carrier: e.target.value }); 
-                                              } catch (err) {
-                                                handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${entry.id}`);
-                                              }
-                                            }}
-                                            className="bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 border border-transparent focus:border-gray-200 px-1 py-0.5 rounded outline-none w-24 text-[11px] font-bold font-sans text-slate-800 dark:text-slate-100"
-                                          />
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                </div>
-              ) : currentSlide === 9 ? (
-                /* SLIDE 9: CALENDÃRIO MENSAL DE DISTRIBUIÃ‡ÃƒO */
-                <div id="slide-delivery-calendar" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
-                  
-                  {/* WORKSPACE */}
-                  <div className="grid grid-cols-12 gap-4 flex-1">
-                    
-                    {/* LEFT WORKSPACE: MONTHLY CALENDAR GRID / SHIPMENT INFO TABLE */}
-                    <div className={`col-span-12 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between overflow-hidden`}>
-                      <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
-                        
-                        {/* Header controls with view toggler */}
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2.5 border-gray-150/40 dark:border-slate-800 gap-2 shrink-0">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <span className="font-black uppercase text-xs text-slate-850 dark:text-slate-200 flex items-center gap-1.5">
-                              <Calendar className="w-4 h-4 text-red-500 shrink-0" /> 
-                              {language === 'zh' ? 'äº¤ä»˜æ’ç¨‹æ—¥å† & Shipment Info' : 'CalendÃ¡rio de Entregas & Shipment Info'}
-                            </span>
-                            
-                            {/* VIEW TOGGLER */}
-                            <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                              <button
-                                type="button"
-                                onClick={() => setCalendarViewMode('monthly')}
-                                className={`px-2.5 py-1 text-[9px] font-black uppercase rounded-md transition-all cursor-pointer ${
-                                  calendarViewMode === 'monthly'
-                                    ? 'bg-red-600 text-white shadow-3xs'
-                                    : 'text-gray-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-slate-200'
-                                }`}
-                              >
-                                {language === 'zh' ? 'æœˆè§†å›¾' : 'Mensal'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setCalendarViewMode('shipment_info')}
-                                className={`px-2.5 py-1 text-[9px] font-black uppercase rounded-md transition-all cursor-pointer flex items-center gap-1 ${
-                                  calendarViewMode === 'shipment_info'
-                                    ? 'bg-red-600 text-white shadow-3xs'
-                                    : 'text-gray-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-slate-200'
-                                }`}
-                              >
-                                ğŸ“‹ {language === 'zh' ? 'å‘¨åº¦/æ—¥äº¤ä»˜è¡¨ (Shipment Info)' : 'Shipment Info (Semanal/DiÃ¡rio)'}
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {calendarViewMode === 'shipment_info' ? (
-                              <div className="flex gap-1">
-                                <input
-                                  type="week"
-                                  value={selectedWeek}
-                                  onChange={(e) => {
-                                    setSelectedWeek(e.target.value);
-                                    setSelectedDayCalendar(null);
-                                  }}
-                                  className="bg-slate-50 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 text-xs font-bold rounded px-2 py-1 text-slate-800 dark:text-white outline-none"
-                                />
-                                <input
-                                  type="date"
-                                  value={selectedDayCalendar || ''}
-                                  onChange={(e) => {
-                                    setSelectedDayCalendar(e.target.value);
-                                  }}
-                                  className="bg-slate-50 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 text-xs font-bold rounded px-2 py-1 text-slate-800 dark:text-white outline-none"
-                                />
-                              </div>
-                            ) : (
-                              <input 
-                                type="month" 
-                                value={operationalMonth} 
-                                onChange={(e) => setOperationalMonth(e.target.value)} 
-                                className="bg-slate-50 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 text-xs font-bold rounded px-2 py-1 text-slate-800 dark:text-white outline-none" 
-                              />
-                            )}
-                          </div>
-                        </div>
-
-                        {calendarViewMode === 'monthly' ? (
-                          <div className="flex-1 flex flex-col justify-between">
-                            <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black uppercase tracking-wider text-gray-400 mb-2">
-                              <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>SÃ¡b</div>
-                            </div>
-
-                            {/* Calendar Grid Days */}
-                            <div className="grid grid-cols-7 gap-1.5 flex-1">
-                              {Array.from({ length: 31 }).map((_, d) => {
-                                const currentDayStr = `${operationalMonth}-${String(d + 1).padStart(2, '0')}`;
-                                const dayEntries = logisticsEntries.filter(e => normalizeDate(String(e.estimatedDeliveryDate)) === currentDayStr);
-                                
-                                return (
-                                  <div 
-                                    key={d} 
-                                    onClick={() => { if (dayEntries.length > 0) setSelectedDayCalendar(currentDayStr); }}
-                                    className={`min-h-[52px] p-2 rounded-lg border flex flex-col justify-between items-start transition-all ${
-                                      dayEntries.length > 0 
-                                        ? 'bg-red-50/40 border-red-350 hover:bg-red-100/40 dark:bg-red-950/20 dark:border-red-900 cursor-pointer active:scale-95 shadow-3xs' 
-                                        : 'border-gray-100 bg-slate-50/20 dark:border-slate-800/50 text-gray-400 opacity-60'
-                                    }`}
-                                  >
-                                    <span className="font-mono font-black text-slate-900 dark:text-white text-xs leading-none">{d + 1}</span>
-                                    {dayEntries.length > 0 && (
-                                      <span className="text-[8px] bg-red-600 text-white font-mono font-black px-1 py-0.2 rounded-xs self-end animate-pulse">
-                                        {dayEntries.length} EQ
-                                      </span>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ) : (
-                          /* HIGH-FIDELITY SHIPMENT INFORMATION WEEK/DAILY PLAN (EXCEL INSPIRED) */
-                          <div className="flex-1 overflow-auto max-h-[460px] border border-slate-250 dark:border-slate-700 rounded-lg shadow-3xs">
-                            <table className="w-full text-left text-[11px] border-collapse bg-white dark:bg-[#0f172a]">
-                              <thead>
-                                {/* Main Excel Title row */}
-                                <tr className="bg-[#b3b3b3] dark:bg-slate-700 text-slate-900 dark:text-white border-b border-slate-350 dark:border-slate-600">
-                                  <th colSpan={10} className="py-2 text-center text-xs font-black uppercase tracking-widest font-sans border-b border-slate-350 dark:border-slate-600">
-                                    Shipment Information {selectedDayCalendar ? ` - ${selectedDayCalendar}` : ''}
-                                  </th>
-                                </tr>
-                                {/* Table headers */}
-                                <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-[9px] uppercase font-black tracking-wider text-center border-b border-slate-350 dark:border-slate-700">
-                                    <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700 w-[110px] cursor-pointer group" onClick={() => setSelectedDayCalendar(null)}>
-                                      Day
-                                      {selectedDayCalendar && (
-                                        <button className="block mx-auto mt-1 px-2 py-0.5 bg-red-100 text-red-700 rounded text-[8px] hover:bg-red-200">Clear</button>
-                                      )}
-                                    </th>
-                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">BL</th>
-                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700 w-[170px]">Description</th>
-                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">PO</th>
-                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Batch</th>
-                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">CNTR QTY</th>
-                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Warehouse</th>
-                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Operation</th>
-                                  <th className="py-2 px-1.5 border-r border-slate-250 dark:border-slate-700">Truck Company</th>
-                                  <th className="py-2 px-1.5">Delivery Site</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium font-mono text-slate-850 dark:text-slate-200 text-center">
-                                {(() => {
-                                  // Agrupar entries por data e BL
-                                  const groupedEntries = logisticsEntries
-                                    .filter(e => {
-                                      const normalized = normalizeDate(String(e.estimatedDeliveryDate));
-                                      if (normalized === 'Sem Data') return false;
-                                      // Filter by selected day
-                                      if (selectedDayCalendar) {
-                                        return normalized === selectedDayCalendar;
-                                      }
-
-                                      if (calendarViewMode === 'shipment_info') {
-                                        const parts = normalized.split('-');
-                                        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-                                        return getISOWeek(d) === selectedWeek;
-                                      }
-                                      return normalized.startsWith(operationalMonth);
-                                    })
-                                    .reduce((acc, entry) => {
-                                      const date = normalizeDate(String(entry.estimatedDeliveryDate));
-                                      const bl = entry.bl || 'PENDING-BL';
-                                      const key = `${date}|${bl}`;
-                                      if (!acc[key]) {
-                                        acc[key] = { ...entry, bl, date, entries: [] };
-                                      }
-                                      acc[key].entries.push(entry);
-                                      return acc;
-                                                                        }, {} as Record<string, { entries: any[], bl: string, date: string, [key: string]: any }>);
-
-                                  const sortedKeys = Object.keys(groupedEntries).sort();
-
-                                  if (sortedKeys.length === 0) {
-                                    return (
-                                      <tr>
-                                        <td colSpan={10} className="py-12 text-center text-gray-400 font-bold uppercase font-sans">
-                                          {language === 'zh' ? 'å½“å‰æœˆä»½æ²¡æœ‰æ’ç¨‹çš„äº¤ä»˜æ•°æ®' : 'Nenhum agendamento encontrado.'}
-                                        </td>
-                                      </tr>
-                                    );
-                                  }
-
-                                                                                                      return sortedKeys.map((key) => {
-                                    const group = groupedEntries[key] as any;
-                                    const dateStr = group.date;
-                                                                        const dayEntries = (Object.values(groupedEntries as any) as any[]).filter(g => g.date === dateStr);
-                                    const entryIdx = dayEntries.findIndex(g => g.bl === group.bl);
-                                    const isFirst = entryIdx === 0;
-
-                                    const cntrQuantity = group.entries.reduce((sum: number, e: any) => sum + (Number(e.quantity) || 1), 0);
-                                    const firstEntry = group.entries[0];
-const matchedCntr = containers.find(c => c.id === firstEntry.cntrsOriginal);
-const scheduledItem = matchedCntr?.modelo || group.component || group.description || 'Componente NÃ£o Especificado';
-                                    const formatted = formatDayColumn(dateStr);
-
-                                      return (
-                                        <tr key={key} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
-                                          {/* Day Column (merged cells per day group) */}
-                                          {isFirst && (
-                                            <td 
-                                              rowSpan={dayEntries.length} 
-                                              onClick={() => setSelectedDayCalendar(dateStr)}
-                                              className="py-3 px-2 border-r border-b border-slate-250 dark:border-slate-700 bg-[#f4f4f5] dark:bg-[#1a2235] text-slate-900 dark:text-white font-black uppercase text-[10px] align-middle cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                                            >
-                                              <div className="flex flex-col items-center justify-center text-center">
-                                                <span className="font-sans font-bold leading-tight tracking-tight text-slate-800 dark:text-slate-200">
-                                                  {formatted.date}
-                                                </span>
-                                                <span className="text-gray-400 my-0.5 font-sans">-</span>
-                                                <span className="text-[9px] tracking-wider text-red-600 dark:text-red-400 font-sans font-black uppercase">
-                                                  {formatted.dayOfWeek}
-                                                </span>
-                                              </div>
-                                            </td>
-                                          )}
-
-                                          {/* BL */}
-                                          <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-white select-all text-[10px]">
-                                            {group.bl || 'PENDING-BL'}
-                                          </td>
-
-                                          {/* Description */}
-                                          <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 text-left font-sans text-[9px] max-w-[170px] truncate" title={scheduledItem}>
-                                            {scheduledItem}
-                                          </td>
-
-                                          {/* PO */}
-                                          <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 font-bold text-blue-600 dark:text-blue-400 text-[10px]">
-                                            {group.poSap || 'N/A'}
-                                          </td>
-
-                                          {/* Batch */}
-                                          <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 text-[10px]">
-                                            {group.batch || 'N/A'}
-                                          </td>
-
-                                          {/* Container Quantity */}
-                                          <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 font-bold text-[10px]">
-                                            {cntrQuantity}
-                                          </td>
-
-                                          {/* Warehouse (Originating Yard) */}
-                                          <td className="py-2 px-1.5 border-r border-slate-200 dark:border-slate-800 text-[10px]">
-                                            {group.bondedWarehouse || 'CD PLANTA'}
-                                          </td>
-
-                                          {/* Operation */}
-                                          <td className="py-1 px-1 border-r border-slate-200 dark:border-slate-800">
-                                            <select 
-                                              value={group.deliveryModel || 'DESCARGA'} 
-                                              onChange={async (e) => { 
-                                                try {
-                                                  // Update all entries in this group
-                                                  await Promise.all(group.entries.map((entry: any) => updateDoc(doc(db, 'logisticsData', entry.id || ''), { deliveryModel: e.target.value }))); 
-                                                } catch (err) {
-                                                  handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${group.id}`);
-                                                }
-                                              }}
-                                              className="bg-transparent text-[10px] font-black uppercase text-slate-800 dark:text-slate-200 outline-none w-full text-center border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-red-500 rounded p-0.5"
-                                            >
-                                              <option value="DESCARGA">UNLOAD</option>
-                                              <option value="SWAP">SWAP</option>
-                                              <option value="COLOCAR NO CHÃƒO">PUT DOWN</option>
-                                              <option value="DEVOLUÃ‡ÃƒO DE VAZIO">RETURN EMPTY</option>
-                                            </select>
-                                          </td>
-
-                                          {/* Truck Company */}
-                                          <td className="py-1 px-1 border-r border-slate-200 dark:border-slate-800">
-                                            <select 
-                                              value={group.carrier || 'JSL'} 
-                                              onChange={async (e) => { 
-                                                try {
-                                                  await Promise.all(group.entries.map((entry: any) => updateDoc(doc(db, 'logisticsData', entry.id || ''), { carrier: e.target.value }))); 
-                                                } catch (err) {
-                                                  handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${group.id}`);
-                                                }
-                                              }}
-                                              className="bg-transparent text-[10px] font-black uppercase text-slate-800 dark:text-slate-200 outline-none w-full text-center border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-red-500 rounded p-0.5"
-                                            >
-                                              <option value="TPC">TPC</option>
-                                              <option value="RECOM">RECOM</option>
-                                              <option value="TEGMA">TEGMA</option>
-                                              <option value="INTERMARÃTIMA">INTERMARÃTIMA</option>
-                                              <option value="LOGIC">LOGIC</option>
-                                              <option value="MULTILOG">MULTILOG</option>
-                                              <option value="TRANSPARANÃ">TRANSPARANÃ</option>
-                                              <option value="JSL">JSL</option>
-                                              <option value="BRILHANTE">BRILHANTE</option>
-                                            </select>
-                                          </td>
-
-                                          {/* Delivery Site */}
-                                          <td className="py-1 px-1">
-                                            <select 
-                                              value={group.onSitePlaceOfDelivery || 'WAREHOUSE 25'} 
-                                              onChange={async (e) => { 
-                                                try {
-                                                  await Promise.all(group.entries.map((entry: any) => updateDoc(doc(db, 'logisticsData', entry.id || ''), { onSitePlaceOfDelivery: e.target.value }))); 
-                                                } catch (err) {
-                                                  handleFirestoreError(err, OperationType.UPDATE, `logisticsData/${group.id}`);
-                                                }
-                                              }}
-                                              className="bg-transparent text-[10px] font-black uppercase text-slate-800 dark:text-slate-200 outline-none w-full text-center border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-red-500 rounded p-0.5"
-                                            >
-                                              <option value="WAREHOUSE 25">WAREHOUSE 25</option>
-                                              <option value="WAREHOUSE 27">WAREHOUSE 27</option>
-                                              <option value="BUFFER 10">BUFFER 10</option>
-                                              <option value="WAREHOUSE 20">WAREHOUSE 20</option>
-                                              <option value="WAREHOUSE 21">WAREHOUSE 21</option>
-                                              <option value="GERAL">GERAL</option>
-                                            </select>
-                                          </td>
-
-                                        </tr>
-                                      );
-                                    })
-                                  })()}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                  </div>
-
-                </div>
-              ) : null}
-            </div> {/* END OF ZOOM SCALE WRAPPER */}
-
-            {/* MARCA D'ÃGUA PERSONALIZADA DE SLIDE CORPORATIVO */}
-            {showWatermark && viewParadigm === 'ppt' && (
-              <div className="absolute bottom-2.5 left-6 flex items-center gap-1.5 opacity-40 select-none pointer-events-none">
-                <span className="text-[9px] font-mono tracking-widest text-[#94a3b8]">
-                  {watermarkText} â€¢ {language === 'bilingual' ? 'æ¯”äºšè¿ªç‰©æµæœºå¯† / CONFIDENCIAL BYD' : t('confidential')}
-                </span>
-              </div>
-            )}
-
-          </div>
-
-        </div>
-
-        {/* PAINEL LATERAL DE EDIÃ‡ÃƒO */}
-        {isEditMode && (
-          <aside 
-            id="side-editor-panel" 
-            style={{ width: isDesktop ? `${sidePanelWidth}px` : '100%' }}
-            className="w-full bg-white border-l border-gray-200 flex flex-col h-full overflow-hidden shadow-xl shrink-0"
-          >
-            
-            {/* CORPORATE EDITOR HEADER */}
-            <div className="p-3 bg-slate-900 text-white flex items-center justify-between font-sans border-b border-slate-850">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-red-500 animate-pulse" />
-                <div>
-                  <h3 className="font-extrabold text-[11px] tracking-wider uppercase">YARD CONTROLLER</h3>
-                  <p className="text-[8px] text-slate-400 font-bold uppercase">{language === 'bilingual' ? 'Logistics High-Level Panel / ä¾›åº”é“¾æ§åˆ¶å¡”é¢æ¿' : 'Painel de Controle LogÃ­stico'}</p>
-                </div>
-              </div>
-              <div className="text-[8px] bg-red-600/20 text-red-400 font-mono px-1.5 py-0.5 rounded border border-red-500/25 uppercase font-bold">
-                {language === 'bilingual' ? 'Active / æ¿€æ´»' : 'Ativo'}
-              </div>
-            </div>
-
-            {/* TABS DE SELEÃ‡ÃƒO */}
-            <div className="flex border-b border-gray-200 bg-slate-50 text-slate-700 font-sans">
-              <button 
-                id="tab-btn-yards"
-                onClick={() => {
-                  setActiveTab('yards');
-                  // Set activeYardKey to the first available yard key if not already set
-                  const keys = Object.keys(yards);
-                  if (keys.length > 0 && !keys.includes(activeYardKey)) {
-                    setActiveYardKey(keys[0]);
-                  }
-                }}
-                className={`flex-1 py-3 text-[10px] font-black border-b-2 text-center cursor-pointer transition-all ${activeTab === 'yards' ? 'border-red-600 text-red-600 bg-white font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-              >
-                {language === 'zh' ? 'å †åœº' : language === 'pt' ? 'PÃ¡tios' : 'PÃ¡tios / å †åœº'}
-              </button>
-              <button 
-                id="tab-btn-stock"
-                onClick={() => {
-                  setActiveTab('stock');
-                  const keys = Object.keys(yards);
-                  if (keys.length > 0 && !keys.includes(stockSelectedYardKey)) {
-                    setStockSelectedYardKey(keys[0]);
-                  }
-                }}
-                className={`flex-1 py-3 text-[10px] font-black border-b-2 text-center cursor-pointer transition-all ${activeTab === 'stock' ? 'border-red-600 text-red-600 bg-white font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-              >
-                {language === 'zh' ? 'åº“å­˜' : language === 'pt' ? 'Estoque' : 'Estoque / åº“å­˜'}
-              </button>
-              <button 
-                id="tab-btn-vessels"
-                onClick={() => setActiveTab('vessels')}
-                className={`flex-1 py-3 text-[10px] font-black border-b-2 text-center cursor-pointer transition-all ${activeTab === 'vessels' ? 'border-red-600 text-red-600 bg-white font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-              >
-                {language === 'zh' ? 'èˆ¹æœŸ' : language === 'pt' ? 'Navios' : 'Navios / èˆ¹æœŸ'}
-              </button>
-              <button 
-                id="tab-btn-charts"
-                onClick={() => setActiveTab('charts')}
-                className={`flex-1 py-3 text-[10px] font-black border-b-2 text-center cursor-pointer transition-all ${activeTab === 'charts' ? 'border-red-600 text-red-600 bg-white font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-              >
-                {language === 'zh' ? 'å›¾è¡¨' : language === 'pt' ? 'GrÃ¡ficos' : 'GrÃ¡ficos / å›¾è¡¨'}
-              </button>
-              <button 
-                id="tab-btn-depots"
-                onClick={() => {
-                  setActiveTab('depots');
-                  setCurrentSlide(5); // Auto switch slide to Depots Slide when clicking sidebar Depots tab
-                }}
-                className={`flex-1 py-3 text-[10px] font-black border-b-2 text-center cursor-pointer transition-all ${activeTab === 'depots' ? 'border-red-600 text-red-600 bg-white font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-              >
-                {language === 'zh' ? 'åè®®å †å­˜' : language === 'pt' ? 'DepÃ³sitos' : 'Depots / åè®®å †å­˜'}
-              </button>
-              <button 
-                id="tab-btn-config"
-                onClick={() => setActiveTab('config')}
-                className={`flex-1 py-3 text-[10px] font-black border-b-2 text-center cursor-pointer transition-all ${activeTab === 'config' ? 'border-red-600 text-red-600 bg-white font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-              >
-                {language === 'zh' ? 'é…ç½®' : language === 'pt' ? 'Config.' : 'Config. / é…ç½®'}
-              </button>
-            </div>
-
-            {/* CONTEÃšDO DA TAB SELECIONADA */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              
-              {/* TAB: PÃTIOS */}
-              {activeTab === 'yards' && (
-                <div className="space-y-4">
-                  {/* High-Level Logistics KPIs */}
-                  <div className="space-y-1.5 font-sans">
-                    <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">
-                      {language === 'bilingual' ? 'Indicadores de PÃ¡tio / å †åœºé«˜å±‚ç‰©æµ KPI' : language === 'zh' ? 'å †åœºé«˜å±‚ç‰©æµ KPI' : 'Indicadores de PÃ¡tio'}
-                    </span>
-                    <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-150 dark:border-slate-850 text-xs">
-                      <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
-                        <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Capacidade Total / æ€»å®¹é‡' : language === 'zh' ? 'æ€»å®¹é‡' : 'Capacidade Total'}</span>
-                        <span className="font-mono text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">
-                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.capacity) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">CNTRs</span>
-                        </span>
-                      </div>
-                      <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
-                        <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'OcupaÃ§Ã£o Geral / æ€»ä½“å ç”¨ç‡' : language === 'zh' ? 'æ€»ä½“å ç”¨ç‡' : 'OcupaÃ§Ã£o Geral'}</span>
-                        <span className={`text-xs font-black mt-0.5 px-1 py-0.2 w-max rounded ${
-                          (() => {
-                            const totalCap = (Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.capacity) || 0), 0);
-                            const totalCheio = (Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.cheio) || 0), 0);
-                            const totalVazio = (Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.vazio) || 0), 0);
-                            const util = totalCap > 0 ? Math.round(((totalCheio + totalVazio) / totalCap) * 100) : 0;
-                            return util >= 89 ? 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400' : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400';
-                          })()
-                        }`}>
-                          {(() => {
-                            const totalCap = (Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.capacity) || 0), 0);
-                            const totalCheio = (Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.cheio) || 0), 0);
-                            const totalVazio = (Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.vazio) || 0), 0);
-                            return totalCap > 0 ? Math.round(((totalCheio + totalVazio) / totalCap) * 100) : 0;
-                          })()}%
-                        </span>
-                      </div>
-                      <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
-                        <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Total Cheios / é‡ç®±æ€»é‡' : language === 'zh' ? 'é‡ç®±æ€»é‡' : 'Total Cheios'}</span>
-                        <span className="font-mono text-xs font-black text-blue-600 mt-0.5">
-                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.cheio) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">CNTRs</span>
-                        </span>
-                      </div>
-                      <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-3xs flex flex-col justify-between">
-                        <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Pronto Coleta / å¾…ææ€»é‡' : language === 'zh' ? 'å¾…ææ€»é‡' : 'Pronto Coleta'}</span>
-                        <span className="font-mono text-xs font-black text-emerald-600 mt-0.5">
-                          {((Object.values(yards) as Yard[]).reduce((sum, y) => sum + (Number(y?.prontoColeta) || 0), 0)).toLocaleString()} <span className="text-[8px] text-gray-400 font-normal">CNTRs</span>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-red-50 dark:bg-red-950/20 p-2.5 rounded-lg border border-red-100 dark:border-red-900/30">
-                    <p className="text-[10px] text-red-800 dark:text-red-300 font-medium leading-relaxed">
-                      {language === 'zh' ? (
-                        <span>è¯·åœ¨ä¸‹æ–¹é€‰æ‹©å¹¶é…ç½®å„ä¸ªå †åœºå’ŒCDçš„å®é™…å‚æ•°ã€‚</span>
-                      ) : language === 'pt' ? (
-                        <span>Escolha um pÃ¡tio no seletor abaixo para atualizar seus valores de capacidade, estoque e total anterior de contÃªineres.</span>
-                      ) : (
-                        <>
-                          <span className="font-extrabold text-[10.5px] text-red-950 dark:text-red-200 block">è¯·åœ¨ä¸‹æ–¹é€‰æ‹©å¹¶é…ç½®å„ä¸ªå †åœºå’ŒCDçš„å®é™…å‚æ•°ã€‚</span>
-                          <span className="opacity-85 block mt-0.5">Escolha um pÃ¡tio no seletor abaixo para atualizar seus valores de capacidade, estoque e total anterior de contÃªineres.</span>
-                        </>
-                      )}
-                    </p>
-                  </div>
-
-                  {/* SELECTOR DE PÃTIO ATIVO */}
-                  <div className="space-y-1.5 font-sans">
-                    <label className="text-[9px] text-slate-500 font-extrabold uppercase tracking-wider block">
-                      {language === 'bilingual' ? 'Selecione o PÃ¡tio para Configurar / é€‰æ‹©å †åœºè¿›è¡Œé…ç½®' : language === 'zh' ? 'é€‰æ‹©å †åœºè¿›è¡Œé…ç½®' : 'Selecione o PÃ¡tio para Configurar'}
-                    </label>
-                    <select
-                      value={activeYardKey}
-                      onChange={(e) => setActiveYardKey(e.target.value)}
-                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded-lg p-2 bg-slate-50 dark:bg-slate-850 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
-                    >
-                      {(Object.entries(yards) as [string, Yard][]).map(([key, y]) => (
-                        <option key={key} value={key}>
-                          {y.name} ({y.type})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* FORMULÃRIO DE EDIÃ‡ÃƒO DO PÃTIO ATIVO */}
-                  {(() => {
-                    const yard = yards[activeYardKey];
-                    if (!yard) return null;
-                    return (
-                      <div className="p-3 border border-red-150 dark:border-red-950/40 rounded-xl bg-red-50/10 dark:bg-red-950/5 space-y-3 font-sans">
-                        <div className="flex justify-between items-center border-b border-red-100 dark:border-red-950/40 pb-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-extrabold text-xs text-red-950 dark:text-red-200">{yard.name}</span>
-                            <span className="text-[8.5px] bg-red-600/10 text-red-700 dark:text-red-400 font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wide">{yard.type}</span>
-                          </div>
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              deleteYard(activeYardKey);
-                              // Fallback to first available yard key
-                              const keys = Object.keys(yards).filter(k => k !== activeYardKey);
-                              if (keys.length > 0) setActiveYardKey(keys[0]);
-                            }}
-                            title="Excluir PÃ¡tio / åˆ é™¤å †åœº"
-                            className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1 rounded hover:bg-red-55 dark:hover:bg-red-950/40 cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-2 text-slate-800 dark:text-slate-100">
-                          <div>
-                            <label className="text-[9px] text-gray-500 dark:text-gray-400 font-black uppercase block mb-1">Capacidade / æ€»å®¹é‡</label>
-                            <input 
-                              type="number" 
-                              value={yard.capacity || ''} 
-                              onChange={(e) => handleYardChange(activeYardKey, 'capacity', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[9px] text-blue-600 dark:text-blue-400 font-black uppercase block mb-1">Cheio / é‡ç®± (CNTRs)</label>
-                            <input 
-                              type="number" 
-                              value={yard.cheio || ''} 
-                              onChange={(e) => handleYardChange(activeYardKey, 'cheio', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Vazio / ç©ºç®± (CNTRs)</label>
-                            <input 
-                              type="number" 
-                              value={yard.vazio || ''} 
-                              onChange={(e) => handleYardChange(activeYardKey, 'vazio', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase block mb-1">Porto / æ¸¯å£ (CNTRs)</label>
-                            <input 
-                              type="number" 
-                              value={yard.porto || ''} 
-                              onChange={(e) => handleYardChange(activeYardKey, 'porto', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[9px] text-amber-600 dark:text-amber-400 font-black uppercase block mb-1">Pronto Coleta / å¾…æ</label>
-                            <input 
-                              type="number" 
-                              value={yard.prontoColeta || ''} 
-                              onChange={(e) => handleYardChange(activeYardKey, 'prontoColeta', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[9px] text-emerald-600 dark:text-emerald-400 font-black uppercase block mb-1">Delivered / äº¤ä»˜</label>
-                            <input 
-                              type="number" 
-                              value={yard.delivered || ''} 
-                              onChange={(e) => handleYardChange(activeYardKey, 'delivered', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
-                            />
-                          </div>
-                          <div className="col-span-2">
-                            <label className="text-[9px] text-rose-600 dark:text-rose-400 font-black uppercase block mb-1">Prev Total / ä¸ŠæœŸæ€»é‡ (CNTRs)</label>
-                            <input 
-                              type="number" 
-                              value={yard.previous_total !== undefined ? yard.previous_total : 0} 
-                              onChange={(e) => handleYardChange(activeYardKey, 'previous_total', e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-hidden"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* COLLAPSIBLE CRIAR NOVO PÃTIO */}
-                  <div className="border border-gray-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans">
-                    <button
-                      type="button"
-                      onClick={() => setShowAddYardForm(!showAddYardForm)}
-                      className="w-full p-3 bg-white dark:bg-slate-900 text-left font-extrabold text-[10.5px] uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center justify-between cursor-pointer"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Plus className="w-3.5 h-3.5 text-red-500" />
-                        {language === 'bilingual' ? 'Criar Novo PÃ¡tio / å¢åŠ æ–°å †åœº' : language === 'zh' ? 'å¢åŠ æ–°å †åœº' : 'Criar Novo PÃ¡tio'}
-                      </span>
-                      <span className="text-gray-400 font-black">{showAddYardForm ? 'âˆ’' : '+'}</span>
-                    </button>
-                    
-                    {showAddYardForm && (
-                      <form onSubmit={addYard} className="p-3 border-t border-gray-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 space-y-2.5 text-[10.5px]">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[8.5px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-0.5">Nome do PÃ¡tio / å †åœºåç§°</label>
-                            <input 
-                              type="text" 
-                              placeholder="NOME / åç§°"
-                              value={newYardName}
-                              onChange={(e) => setNewYardName(e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 uppercase outline-hidden"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[8.5px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-0.5">Tipo / å †åœºç±»å‹</label>
-                            <select 
-                              value={newYardType}
-                              onChange={(e) => setNewYardType(e.target.value)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 uppercase outline-hidden"
-                            >
-                              <option value="BONDED">BONDED / å…³å†…</option>
-                              <option value="WAREHOUSE">CD & WAREHOUSE / ä»“åº“</option>
-                              <option value="BUFFER">BUFFER / ç¼“å†²åŒº</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2 text-slate-800 dark:text-slate-100">
-                          <div>
-                            <label className="text-[8px] text-gray-500 dark:text-gray-400 font-bold uppercase block mb-0.5">Capacity / å®¹ç§¯</label>
-                            <input 
-                              type="number" 
-                              placeholder="2000"
-                              value={newYardCapacity}
-                              onChange={(e) => setNewYardCapacity(Number(e.target.value) || 0)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
-                              min="0"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[8px] text-blue-500 dark:text-blue-400 font-bold uppercase block mb-0.5">Cheio / é‡ç®±</label>
-                            <input 
-                              type="number" 
-                              placeholder="500"
-                              value={newYardCheio}
-                              onChange={(e) => setNewYardCheio(Number(e.target.value) || 0)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
-                              min="0"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[8px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-0.5">Vazio / ç©ºç®±</label>
-                            <input 
-                              type="number" 
-                              placeholder="100"
-                              value={newYardVazio}
-                              onChange={(e) => setNewYardVazio(Number(e.target.value) || 0)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
-                              min="0"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2 text-slate-800 dark:text-slate-100">
-                          <div>
-                            <label className="text-[8px] text-gray-500 dark:text-gray-400 font-bold uppercase block mb-0.5">Porto / æ¸¯å£</label>
-                            <input 
-                              type="number" 
-                              placeholder="50"
-                              value={newYardPorto}
-                              onChange={(e) => setNewYardPorto(Number(e.target.value) || 0)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
-                              min="0"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[8px] text-blue-500 dark:text-blue-400 font-bold uppercase block mb-0.5">Coleta / å¾…æ</label>
-                            <input 
-                              type="number" 
-                              placeholder="120"
-                              value={newYardProntoColeta}
-                              onChange={(e) => setNewYardProntoColeta(Number(e.target.value) || 0)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
-                              min="0"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[8px] text-emerald-500 dark:text-emerald-400 font-bold uppercase block mb-0.5">Deliv / äº¤ä»˜</label>
-                            <input 
-                              type="number" 
-                              placeholder="80"
-                              value={newYardDelivered}
-                              onChange={(e) => setNewYardDelivered(Number(e.target.value) || 0)}
-                              className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
-                              min="0"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-[8px] text-rose-500 dark:text-rose-400 font-bold uppercase block mb-0.5">Prev Total / ä¸ŠæœŸæ€»é‡ (CNTRs)</label>
-                          <input 
-                            type="number" 
-                            placeholder="1000"
-                            value={newYardPreviousTotal}
-                            onChange={(e) => setNewYardPreviousTotal(Number(e.target.value) || 0)}
-                            className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
-                            min="0"
-                          />
-                        </div>
-
-                        <button 
-                          type="submit"
-                          className="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold text-[10px] py-1.5 rounded uppercase tracking-wider transition-colors cursor-pointer"
-                        >
-                          {language === 'zh' ? 'æ·»åŠ å †åœº' : language === 'pt' ? 'Adicionar PÃ¡tio' : 'Adicionar PÃ¡tio / æ·»åŠ '}
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* TAB: STOCK (ESTOQUE DETALHADO DE CADA ÃREA) */}
-              {activeTab === 'stock' && (
-                <div className="space-y-4 text-slate-800 dark:text-slate-200 font-sans">
-                  <div className="bg-emerald-50 dark:bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-900/50">
-                    <p className="text-[10px] text-emerald-800 dark:text-emerald-300 font-medium leading-relaxed">
-                      {language === 'zh' ? (
-                        <span>åœ¨è¿™é‡Œï¼Œæ‚¨å¯ä»¥åƒåœ¨â€œDetalhamento de Ãreaâ€ä¸­ä¸€æ ·ç®¡ç†å„ä¸ªå †åœºçš„é›†è£…ç®±æ˜ç»†ã€‚</span>
-                      ) : language === 'pt' ? (
-                        <span>Gerencie o detalhamento do estoque fÃ­sico por Ã¡rea. Ã‰ o mesmo que preencher no detalhamento do painel principal, agora diretamente no controlador lateral.</span>
-                      ) : (
-                        <>
-                          <span className="font-extrabold text-[10.5px] text-emerald-950 dark:text-emerald-200 block">åœ¨è¿™é‡Œï¼Œæ‚¨å¯ä»¥åƒåœ¨â€œDetalhamento de Ãreaâ€ä¸­ä¸€æ ·ç®¡ç†å„ä¸ªå †åœºçš„é›†è£…ç®±æ˜ç»†ã€‚</span>
-                          <span className="opacity-85 block mt-0.5">Gerencie o detalhamento do estoque fÃ­sico por Ã¡rea. Ã‰ o mesmo que preencher no detalhamento do painel principal, agora diretamente no controlador lateral.</span>
-                        </>
-                      )}
-                    </p>
-                  </div>
-
-                  {/* SELETOR DE ÃREA PARA O ESTOQUE */}
-                  <div className="space-y-1.5 font-sans">
-                    <label className="text-[9px] text-slate-500 dark:text-slate-400 font-extrabold uppercase block tracking-wider">
-                      {language === 'bilingual' ? 'Selecionar Ãrea / é€‰æ‹©å †åœºåŒºåŸŸ' : language === 'zh' ? 'é€‰æ‹©å †åœºåŒºåŸŸ' : 'Selecionar Ãrea'}
-                    </label>
-                    <select
-                      value={stockSelectedYardKey}
-                      onChange={(e) => setStockSelectedYardKey(e.target.value)}
-                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded-lg p-2 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-hidden focus:ring-1 focus:ring-emerald-500"
-                    >
-                      {(Object.entries(yards) as [string, Yard][]).map(([key, y]) => (
-                        <option key={key} value={key}>
-                          {y.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* HIGH-LEVEL KPI METRICS FOR SELECTED STOCK AREA */}
-                  {(() => {
-                    const stockYard = yards[stockSelectedYardKey];
-                    if (!stockYard) return null;
-                    const occupied = Number(stockYard.cheio || 0) + Number(stockYard.vazio || 0);
-                    const stockYardOcupacao = stockYard.capacity > 0 
-                      ? Math.min(100, Math.round((occupied / stockYard.capacity) * 100)) 
-                      : 0;
-                    return (
-                      <div className="grid grid-cols-3 gap-1.5 bg-slate-50 dark:bg-slate-900/60 p-2 rounded-lg border border-slate-200 dark:border-slate-800 text-[10px] text-slate-800 dark:text-slate-200">
-                        <div>
-                          <span className="text-[8px] text-gray-400 dark:text-gray-500 font-extrabold uppercase block">{language === 'bilingual' ? 'Capacidade / å®¹é‡' : language === 'zh' ? 'å®¹é‡' : 'Capacidade'}</span>
-                          <span className="font-mono font-bold text-gray-800 dark:text-slate-100">{(stockYard.capacity || 0).toLocaleString()}</span>
-                        </div>
-                        <div>
-                          <span className="text-[8px] text-gray-400 dark:text-gray-500 font-extrabold uppercase block">{language === 'bilingual' ? 'OcupaÃ§Ã£o / å ç”¨' : language === 'zh' ? 'å ç”¨' : 'OcupaÃ§Ã£o'}</span>
-                          <span className={`font-bold px-1 rounded ${
-                            stockYardOcupacao >= 89 
-                              ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' 
-                              : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                          }`}>{stockYardOcupacao}%</span>
-                        </div>
-                        <div>
-                          <span className="text-[8px] text-gray-400 dark:text-gray-500 font-extrabold uppercase block">{language === 'bilingual' ? 'Cheios / é‡ç®±' : language === 'zh' ? 'é‡ç®±' : 'Cheios'}</span>
-                          <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{(stockYard.cheio || 0).toLocaleString()}</span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* PESQUISA E FILTROS */}
-                  <div className="space-y-1.5 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-lg border border-gray-200 dark:border-slate-800">
-                    <input
-                      type="text"
-                      value={stockContainerSearch}
-                      onChange={(e) => setStockContainerSearch(e.target.value)}
-                      placeholder={language === 'bilingual' ? "Pesquisar contÃªiner... / æœç´¢ç®±å·..." : language === 'zh' ? "æœç´¢ç®±å·..." : "Pesquisar contÃªiner..."}
-                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-hidden focus:ring-1 focus:ring-emerald-500"
-                    />
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <select
-                        value={stockContainerStatusFilter}
-                        onChange={(e) => setStockContainerStatusFilter(e.target.value)}
-                        className="text-[10px] font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 outline-hidden"
-                      >
-                        <option value="ALL">Status: {language === 'bilingual' ? 'Todos / å…¨éƒ¨' : language === 'zh' ? 'å…¨éƒ¨' : 'Todos'}</option>
-                        <option value="CHEIO">CHEIO / é‡ç®±</option>
-                        <option value="VAZIO">VAZIO / ç©ºç®±</option>
-                      </select>
-                      <select
-                        value={stockContainerCategoryFilter}
-                        onChange={(e) => setStockContainerCategoryFilter(e.target.value)}
-                        className="text-[10px] font-bold border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 outline-hidden"
-                      >
-                        <option value="ALL">Cat: {language === 'bilingual' ? 'Todos / å…¨éƒ¨' : language === 'zh' ? 'å…¨éƒ¨' : 'Todos'}</option>
-                        <option value="GERAL">GERAL / é€šç”¨</option>
-                        <option value="PORTO">PORTO / æ¸¯å£</option>
-                        <option value="PRONTO_COLETA">PRONTO / å¾…æ</option>
-                        <option value="DELIVERED">DELIVERED / äº¤ä»˜</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* CONTAINER LIST TABLE */}
-                  {(() => {
-                    const activeContainers = containers.filter(c => {
-                      if (c.yardId !== stockSelectedYardKey) return false;
-                      if (stockContainerSearch && !c.id.toLowerCase().includes(stockContainerSearch.toLowerCase())) return false;
-                      if (stockContainerStatusFilter !== 'ALL' && c.status !== stockContainerStatusFilter) return false;
-                      if (stockContainerCategoryFilter !== 'ALL' && c.category !== stockContainerCategoryFilter) return false;
-                      return true;
-                    });
-
-                    return (
-                      <div className="space-y-3">
-                        <div className="border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden bg-white dark:bg-slate-900 max-h-[160px] overflow-y-auto">
-                          <table className="w-full text-left border-collapse">
-                            <thead>
-                              <tr className="bg-slate-50 dark:bg-slate-800 text-[8.5px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-extrabold border-b border-gray-200 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900">
-                                <th className="p-1.5 pl-2">{language === 'bilingual' ? 'ContÃªiner / ç®±å·' : language === 'zh' ? 'ç®±å·' : 'ContÃªiner'}</th>
-                                <th className="p-1.5">{language === 'bilingual' ? 'Status / Size' : language === 'zh' ? 'çŠ¶æ€ / å°ºå¯¸' : 'Status'}</th>
-                                <th className="p-1.5 text-center">{language === 'bilingual' ? 'AÃ§Ãµes / æ“ä½œ' : language === 'zh' ? 'æ“ä½œ' : 'AÃ§Ãµes'}</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800 text-[10.5px]">
-                              {activeContainers.map((c) => (
-                                <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 font-bold text-slate-800 dark:text-slate-200">
-                                  <td className="p-1.5 pl-2 font-mono">
-                                    <div className="tracking-tight">{c.id}</div>
-                                    <div className="text-[8px] text-gray-400 dark:text-gray-500 font-sans tracking-tight">{c.category} â€¢ {c.vesselName || 'N/A'}</div>
-                                  </td>
-                                  <td className="p-1.5">
-                                    <span className={`text-[8px] px-1 py-0.2 rounded font-extrabold uppercase ${
-                                      c.status === 'CHEIO' 
-                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300' 
-                                        : 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-400'
-                                    }`}>{c.status}</span>
-                                    <span className="text-[8px] text-slate-500 dark:text-slate-400 ml-1 font-mono">{c.size}</span>
-                                  </td>
-                                  <td className="p-1.5 text-center">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteContainer(c)}
-                                      className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors rounded hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                              {activeContainers.length === 0 && (
-                                <tr>
-                                  <td colSpan={3} className="p-4 text-center text-slate-400 dark:text-slate-500 text-[10px]">
-                                    {language === 'bilingual' ? 'Nenhum contÃªiner cadastrado. / æ— å·²ç™»è®°é›†è£…ç®±ã€‚' : language === 'zh' ? 'æ— å·²ç™»è®°é›†è£…ç®±ã€‚' : 'Nenhum contÃªiner cadastrado.'}
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-
-                        {/* REGISTRO DE CONTÃŠINER NA ABA */}
-                        <div className="p-3 bg-emerald-500/5 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/50 rounded-xl space-y-2.5">
-                          <h4 className="font-extrabold text-[10.5px] uppercase tracking-wider text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>{language === 'bilingual' ? 'Cadastrar Novo ContÃªiner / ç™»è®°æ–°ç®±' : language === 'zh' ? 'ç™»è®°æ–°ç®±' : 'Cadastrar Novo ContÃªiner'}</span>
-                          </h4>
-                          <form onSubmit={handleAddContainer} className="space-y-2 text-[10px] font-sans">
-                            <div>
-                              <label className="text-[8px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-extrabold block mb-0.5">ID do ContÃªiner / ç®±å·</label>
-                              <input
-                                type="text"
-                                required
-                                value={newContainerId}
-                                onChange={(e) => setNewContainerId(e.target.value)}
-                                placeholder="Ex: BYDU1234567"
-                                className="w-full border border-gray-200 dark:border-slate-700 rounded p-1.5 font-mono text-xs font-bold uppercase bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-hidden focus:ring-1 focus:ring-emerald-500"
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <div>
-                                <label className="text-[8px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-extrabold block mb-0.5">Tamanho / å°ºå¯¸</label>
-                                <select
-                                  value={newContainerSize}
-                                  onChange={(e) => setNewContainerSize(e.target.value)}
-                                  className="w-full border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 font-bold text-slate-800 dark:text-slate-100 outline-hidden"
-                                >
-                                  <option value="20' GP">20' GP</option>
-                                  <option value="40' HC">40' HC</option>
-                                  <option value="40' OT">40' OT</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="text-[8px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-extrabold block mb-0.5">Status / çŠ¶æ€</label>
-                                <select
-                                  value={newContainerStatus}
-                                  onChange={(e) => setNewContainerStatus(e.target.value as any)}
-                                  className="w-full border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 font-bold text-slate-800 dark:text-slate-100 outline-hidden"
-                                >
-                                  <option value="CHEIO">CHEIO / é‡ç®±</option>
-                                  <option value="VAZIO">VAZIO / ç©ºç®±</option>
-                                </select>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <div>
-                                <label className="text-[8px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-extrabold block mb-0.5">Categoria / ç±»åˆ«</label>
-                                <select
-                                  value={newContainerCategory}
-                                  onChange={(e) => setNewContainerCategory(e.target.value as any)}
-                                  className="w-full border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 font-bold text-slate-800 dark:text-slate-100 outline-hidden text-[9.5px]"
-                                >
-                                  <option value="GERAL">GERAL / é€šç”¨</option>
-                                  <option value="PORTO">PORTO / æ¸¯å£</option>
-                                  <option value="PRONTO_COLETA">PRONTO / å¾…æ</option>
-                                  <option value="DELIVERED">DELIVERED / äº¤ä»˜</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="text-[8px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-extrabold block mb-0.5">Navio / èˆ¹èˆ¶</label>
-                                <select
-                                  value={newContainerVessel}
-                                  onChange={(e) => setNewContainerVessel(e.target.value)}
-                                  className="w-full border border-gray-200 dark:border-slate-700 rounded p-1 bg-white dark:bg-slate-800 font-bold text-slate-800 dark:text-slate-100 outline-hidden text-[9.5px]"
-                                >
-                                  <option value="N/A">N/A</option>
-                                  {vessels.map(v => (
-                                    <option key={v.id} value={v.name}>{v.name}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <button
-                              type="submit"
-                              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold p-1.5 rounded text-xs transition-colors cursor-pointer"
-                            >
-                              {language === 'bilingual' ? 'Adicionar ContÃªiner / æ·»åŠ ' : language === 'zh' ? 'æ·»åŠ ' : 'Adicionar ContÃªiner'}
-                            </button>
-                          </form>
-                        </div>
-
-                        {/* EXCEL IMPORT INTERFACE */}
-                        <div className="p-3 bg-blue-500/5 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/50 rounded-xl space-y-2">
-                          <h4 className="font-extrabold text-[10.5px] uppercase tracking-wider text-blue-800 dark:text-blue-400 flex items-center gap-1.5">
-                            <FileSpreadsheet className="w-3.5 h-3.5" />
-                            <span>{language === 'bilingual' ? 'Planilha Excel / å¯¼å…¥è¡¨æ ¼' : language === 'zh' ? 'å¯¼å…¥è¡¨æ ¼' : 'Planilha Excel'}</span>
-                          </h4>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <button
-                              onClick={handleDownloadTemplate}
-                              className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-1.5 rounded text-[10px] cursor-pointer"
-                            >
-                              <Download className="w-3 h-3" />
-                              <span>{language === 'bilingual' ? 'Modelo / æ¨¡æ¿' : language === 'zh' ? 'æ¨¡æ¿' : 'Modelo'}</span>
-                            </button>
-                            <label className="flex items-center justify-center gap-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-1 px-1.5 rounded text-[10px] cursor-pointer text-center">
-                              <Upload className="w-3 h-3" />
-                              <span>{language === 'bilingual' ? 'Importar / å¯¼å…¥' : language === 'zh' ? 'å¯¼å…¥' : 'Importar'}</span>
-                              <input
-                                id="excel_upload_input_stock"
-                                type="file"
-                                accept=".xlsx, .xls"
-                                onChange={handleImportExcel}
-                                className="hidden"
-                              />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-
-              {/* TAB: NAVIOS */}
-              {activeTab === 'vessels' && (
-                <div className="space-y-4 text-slate-800 dark:text-slate-200">
-                  <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-100 dark:border-blue-900/50">
-                    <p className="text-[11px] text-blue-800 dark:text-blue-300 font-medium flex flex-col gap-1.5">
-                      {language === 'zh' ? (
-                        <span>åœ¨æ­¤é…ç½®æ˜¾ç¤ºåœ¨çœ‹æ¿å³ä¾§è¡¨æ ¼ä¸­çš„é¢„è®¡åˆ°æ¸¯èˆ¹èˆ¶è®¡åˆ’ã€‚</span>
-                      ) : language === 'pt' ? (
-                        <span>Configure a escala dos navios que aparecem na tabela Ã  direita do painel.</span>
-                      ) : (
-                        <>
-                          <span className="font-extrabold text-[12px] text-slate-900 dark:text-slate-100 block leading-normal">åœ¨æ­¤é…ç½®æ˜¾ç¤ºåœ¨çœ‹æ¿å³ä¾§è¡¨æ ¼ä¸­çš„é¢„è®¡åˆ°æ¸¯èˆ¹èˆ¶è®¡åˆ’ã€‚</span>
-                          <span className="text-[10.5px] block opacity-85 leading-tight">Configure a escala dos navios que aparecem na tabela Ã  direita do painel.</span>
-                        </>
-                      )}
-                    </p>
-                  </div>
-
-                  <form onSubmit={addVessel} className="p-3 border border-dashed border-gray-200 dark:border-slate-800 rounded-lg bg-gray-50/50 dark:bg-slate-900/50 space-y-2">
-                    <span className="text-[10px] font-black text-gray-500 dark:text-gray-450 uppercase block">Novo Navio / æ–°åˆ°èˆ¹èˆ¶</span>
-                    <input 
-                      type="text" 
-                      placeholder="NOME DO NAVIO / èˆ¹å"
-                      value={newVesselName}
-                      onChange={(e) => setNewVesselName(e.target.value)}
-                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 uppercase text-slate-800 dark:text-slate-100 outline-hidden focus:ring-1 focus:ring-blue-500"
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <input 
-                        type="text" 
-                        placeholder="ETA / é¢„è®¡åˆ°æ¸¯"
-                        value={newVesselEta}
-                        onChange={(e) => setNewVesselEta(e.target.value)}
-                        className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-hidden focus:ring-1 focus:ring-blue-500"
-                      />
-                      <input 
-                        type="number" 
-                        placeholder="Qtd Cntrs / ç®±é‡"
-                        value={newVesselCntrs}
-                        onChange={(e) => setNewVesselCntrs(Number(e.target.value))}
-                        className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-hidden focus:ring-1 focus:ring-blue-500"
-                      />
-                    </div>
-                    <button 
-                      type="submit"
-                      className="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Adicionar / å¢åŠ 
-                    </button>
-                  </form>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center pb-1">
-                      <span className="text-xs font-bold text-gray-700 dark:text-slate-300">Lista Cadastrada / è®¡åˆ’åˆ—è¡¨:</span>
-                      <button
-                        type="button"
-                        onClick={autoSortVesselsByDate}
-                        className="text-[10px] bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 font-extrabold px-2 py-1 rounded transition-all cursor-pointer flex items-center gap-1 uppercase"
-                        title="Ordena os navios automaticamente com base na data do ETA / åŸºäºé¢„è®¡åˆ°æ¸¯æ—¥æœŸè‡ªåŠ¨æ’åº"
-                      >
-                        <Sparkles className="w-3 h-3 text-[#d97706] animate-pulse" />
-                        {language === 'zh' ? 'æŒ‰é¢„è®¡æ—¥æœŸæ’åº' : language === 'pt' ? 'Ordenar por Data' : 'Ordenar p/ Data / è‡ªåŠ¨æ’åº'}
-                      </button>
-                    </div>
-
-                    {vessels.map(v => (
-                      <div key={v.id} className="p-2 border border-gray-150 dark:border-slate-800 rounded flex justify-between items-center text-xs bg-white dark:bg-slate-900">
-                        <div className="flex-1">
-                          <p className="font-extrabold text-gray-800 dark:text-slate-100">{v.name}</p>
-                          <p className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">ETA: {v.eta} | Qtd: {v.cntrs}</p>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          {/* BotÃµes de DireÃ§Ã£o (Up/Down) */}
-                          <button
-                            type="button"
-                            onClick={() => shiftVessel(v.id, 'up')}
-                            className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800/40 rounded cursor-pointer transition-colors"
-                            title="Mover para cima / ä¸Šç§»"
-                          >
-                            <ChevronUp className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => shiftVessel(v.id, 'down')}
-                            className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800/40 rounded cursor-pointer transition-colors"
-                            title="Mover para baixo / ä¸‹ç§»"
-                          >
-                            <ChevronDown className="w-4 h-4" />
-                          </button>
-
-                          {/* BotÃ£o de Excluir */}
-                          <button 
-                            type="button"
-                            onClick={() => deleteVessel(v.id)}
-                            className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded cursor-pointer transition-colors"
-                            title="Excluir Navio / åˆ é™¤"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* TAB: GRÃFICOS */}
-              {activeTab === 'charts' && (
-                <div className="space-y-4 text-slate-800 dark:text-slate-200 font-sans">
-                  
-                  {/* COEFICIENTE DE BACKLOG */}
-                  <div className="bg-amber-50 dark:bg-amber-950/20 p-3 rounded-lg border border-amber-100 dark:border-amber-900/50 space-y-2">
-                    <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium flex flex-col gap-1">
-                      {language === 'zh' ? (
-                        <span>é€šè¿‡è°ƒæ•´ä¸‹æ–¹çš„ç§¯å‹ç³»æ•°ï¼Œæ¨¡æ‹Ÿç‰©æµå±æœºæˆ–å¿«é€Ÿæ¶ˆç®±ã€‚</span>
-                      ) : language === 'pt' ? (
-                        <span>Simule crises logÃ­sticas ou reduÃ§Ãµes rÃ¡pidas ajustando o multiplicador de backlog abaixo.</span>
-                      ) : (
-                        <>
-                          <span className="font-extrabold text-[12px] text-amber-950 dark:text-amber-200 block">é€šè¿‡è°ƒæ•´ä¸‹æ–¹çš„ç§¯å‹ç³»æ•°ï¼Œæ¨¡æ‹Ÿç‰©æµå±æœºæˆ–å¿«é€Ÿæ¶ˆç®±ã€‚</span>
-                          <span className="text-[10px] block opacity-85 leading-tight">Simule crises logÃ­sticas ou reduÃ§Ãµes rÃ¡pidas ajustando o multiplicador de backlog abaixo.</span>
-                        </>
-                      )}
-                    </p>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button 
-                        onClick={() => applyMultiplierToBacklog(1.3)} 
-                        className="py-1 bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold rounded text-[10px] hover:bg-red-200 dark:hover:bg-red-900/40 transition-all cursor-pointer font-sans"
-                      >
-                        {language === 'bilingual' ? 'Aumento / å¢åŠ  +30%' : language === 'zh' ? 'å¢åŠ  +30%' : 'Aumento +30%'}
-                      </button>
-                      <button 
-                        onClick={() => applyMultiplierToBacklog(0.7)} 
-                        className="py-1 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold rounded text-[10px] hover:bg-emerald-200 dark:hover:bg-emerald-900/40 transition-all cursor-pointer font-sans"
-                      >
-                        {language === 'bilingual' ? 'ReduÃ§Ã£o / å‡å°‘ -30%' : language === 'zh' ? 'å‡å°‘ -30%' : 'ReduÃ§Ã£o -30%'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* SEÃ‡ÃƒO CHART LEFT: SEMANAS / BACKLOG */}
-                  <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/40 space-y-3.5">
-                    <div className="flex items-center gap-1.5 border-b pb-1.5 border-slate-200 dark:border-slate-800">
-                      <TrendingUp className="w-4 h-4 text-emerald-500" />
-                      <span className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase">
-                        {language === 'zh' ? 'æ¯å‘¨ç§¯å‹ä¸åˆ°æ¸¯ç®¡ç† (å›¾è¡¨1)' : language === 'pt' ? 'Gerenciar semanas e backlog (GrÃ¡fico 1)' : 'Semanas & Backlog (GrÃ¡fico 1)'}
-                      </span>
-                    </div>
-
-                    {/* Cadastrar Nova Semana FormulÃ¡rio */}
-                    <form 
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        handleAddChartLeft(newWeekName, newWeekArrivals, newWeekBacklog);
-                        // Auto-increment standard W numbers
-                        const match = newWeekName.match(/^W(\d+)$/);
-                        if (match) {
-                          const nextNum = parseInt(match[1]) + 1;
-                          setNewWeekName(`W${nextNum}`);
-                        }
-                      }}
-                      className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2 text-[11px]"
-                    >
-                      <div className="font-extrabold text-[#111827] dark:text-slate-200 mb-1">
-                        {language === 'zh' ? 'â• æ·»åŠ æ–°å‘¨æ•°æ®' : language === 'pt' ? 'â• Cadastrar nova semana' : 'â• Cadastrar nova semana / æ·»åŠ æ–°å‘¨æ•°æ®'}
-                      </div>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        <div className="space-y-0.5">
-                          <label className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase block">Semana / å‘¨</label>
-                          <input 
-                            type="text"
-                            value={newWeekName}
-                            onChange={(e) => setNewWeekName(e.target.value)}
-                            required
-                            placeholder="W30"
-                            className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
-                          />
-                        </div>
-                        <div className="space-y-0.5">
-                          <label className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase block">ETA / åˆ°æ¸¯</label>
-                          <input 
-                            type="number"
-                            value={newWeekArrivals}
-                            onChange={(e) => setNewWeekArrivals(Math.max(0, Number(e.target.value)))}
-                            required
-                            className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
-                          />
-                        </div>
-                        <div className="space-y-0.5">
-                          <label className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase block">Backlog / ç§¯å‹</label>
-                          <input 
-                            type="number"
-                            value={newWeekBacklog}
-                            onChange={(e) => setNewWeekBacklog(Math.max(0, Number(e.target.value)))}
-                            required
-                            className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
-                          />
-                        </div>
-                      </div>
-                      <button 
-                        type="submit"
-                        className="w-full py-1 bg-slate-800 hover:bg-slate-900 dark:bg-slate-750 dark:hover:bg-slate-600 text-white rounded font-bold text-[10px] uppercase transition-all cursor-pointer flex items-center justify-center gap-1"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> {language === 'zh' ? 'æ·»åŠ å‘¨æ•°æ®' : language === 'pt' ? 'Adicionar Semana' : 'Adicionar Semana / æ·»åŠ '}
-                      </button>
-                    </form>
-
-                    {/* Lista Sincronizada de Semanas */}
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-black text-gray-500 dark:text-gray-450 uppercase tracking-wider block">
-                        {language === 'zh' ? 'ğŸ“š å·²é…ç½®å‘¨åˆ—è¡¨ (å¯æ»šåŠ¨/å¯ç¼–è¾‘)' : 'ğŸ“š Semanas Configuradas (Lista EditÃ¡vel/RolÃ¡vel):'}
-                      </span>
-                      <div className="max-h-56 overflow-y-auto pr-1 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 bg-white dark:bg-slate-900 space-y-1.5 shadow-inner">
-                        {chartLeft.map((item, idx) => (
-                           <div key={`edit-left-${idx}`} className="p-1.5 border border-slate-250 dark:border-slate-800 rounded bg-slate-50/50 dark:bg-slate-900/50 flex flex-col gap-1 text-[11px]">
-                            <div className="flex justify-between items-center bg-slate-200/50 dark:bg-slate-800/50 px-1.5 py-0.5 rounded">
-                              <span className="font-extrabold text-slate-800 dark:text-slate-100 font-mono">{item.week}</span>
-                              <button 
-                                type="button" 
-                                onClick={() => handleDeleteChartLeft(idx)}
-                                className="p-0.5 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 rounded transition-all cursor-pointer"
-                                title="Deletar semana"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="text-[9px] text-gray-400 font-bold uppercase">ATA:</span>
-                                <input 
-                                  type="number"
-                                  value={item.arrivals || 0}
-                                  onChange={(e) => handleChartLeftChange(idx, 'arrivals', e.target.value)}
-                                  className="w-16 text-center border border-slate-200 dark:border-slate-750 rounded font-mono p-0.5 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 font-bold outline-none"
-                                />
-                              </div>
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="text-[9px] text-gray-400 font-bold uppercase">Backlog:</span>
-                                <input 
-                                  type="number"
-                                  value={item.backlog || 0}
-                                  onChange={(e) => handleChartLeftChange(idx, 'backlog', e.target.value)}
-                                  className="w-16 text-center border border-slate-200 dark:border-slate-750 rounded font-mono p-0.5 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 font-bold outline-none"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* SEÃ‡ÃƒO CHART RIGHT: ENTREGAS DIÃRIAS */}
-                  <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/40 space-y-3.5">
-                    <div className="flex items-center gap-1.5 border-b pb-1.5 border-slate-200 dark:border-slate-800">
-                      <Database className="w-4 h-4 text-cyan-500" />
-                      <span className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase">
-                        {language === 'zh' ? 'æ¯æ—¥å‡ºå¢ƒäº¤ä»˜æ•°æ®é…ç½® (å›¾è¡¨2)' : language === 'pt' ? 'Configurar Entregas DiÃ¡rias (GrÃ¡fico 2)' : 'Entregas DiÃ¡rias (GrÃ¡fico 2)'}
-                      </span>
-                    </div>
-
-                    {/* Cadastrar Nova Entrega FormulÃ¡rio */}
-                    <form 
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        handleAddChartRight(newDeliveryDate, newDeliveryValue, newDeliveryType);
-                      }}
-                      className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2 text-[11px]"
-                    >
-                      <div className="font-extrabold text-[#111827] dark:text-slate-200 mb-1">
-                        {language === 'zh' ? 'â• æ·»åŠ æ¯æ—¥äº¤ä»˜æ•°æ®' : language === 'pt' ? 'â• Cadastrar nova entrega' : 'â• Cadastrar nova entrega / æ·»åŠ æ¯æ—¥äº¤ä»˜æ•°æ®'}
-                      </div>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        <div className="space-y-0.5">
-                          <label className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase block">{language === 'zh' ? 'æ—¥æœŸ' : 'Data Ex.'}</label>
-                          <input 
-                            type="text"
-                            value={newDeliveryDate}
-                            onChange={(e) => setNewDeliveryDate(e.target.value)}
-                            required
-                            placeholder="21/05"
-                            className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
-                          />
-                        </div>
-                        <div className="space-y-0.5">
-                          <label className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase block">{language === 'zh' ? 'ç±»å‹' : 'Tipo'}</label>
-                          <select 
-                            value={newDeliveryType}
-                            onChange={(e) => setNewDeliveryType(e.target.value)}
-                            className="w-full text-center border border-slate-200 dark:border-slate-700 rounded p-1 font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:ring-1 focus:ring-slate-400 outline-none"
-                          >
-                            <option value="A">Tipo A (Stable)</option>
-                            <option value="B">Tipo B (High)</option>
-                            <option value="C">Tipo C (Normal)</option>
-                          </select>
-                        </div>
-                      </div>
-                      <button 
-                        type="submit"
-                        className="w-full py-1 bg-slate-800 hover:bg-slate-900 dark:bg-slate-750 dark:hover:bg-slate-600 text-white rounded font-bold text-[10px] uppercase transition-all cursor-pointer flex items-center justify-center gap-1"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> {language === 'zh' ? 'æ·»åŠ äº¤ä»˜æ•°æ®' : language === 'pt' ? 'Adicionar Entrega' : 'Adicionar Entrega / æ·»åŠ '}
-                      </button>
-                    </form>
-
-                    {/* Lista Sincronizada de Entregas DiÃ¡rias */}
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-black text-gray-500 dark:text-gray-450 uppercase tracking-wider block">
-                        {language === 'zh' ? 'ğŸ“š å·²é…ç½®äº¤ä»˜åˆ—è¡¨ (å¯æ»šåŠ¨/å¯ç¼–è¾‘)' : 'ğŸ“š Entregas Cadastradas (Lista EditÃ¡vel/RolÃ¡vel):'}
-                      </span>
-                      <div className="max-h-56 overflow-y-auto pr-1 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 bg-white dark:bg-slate-900 space-y-1.5 shadow-inner">
-                        {chartRight.map((item, idx) => (
-                          <div key={`edit-right-${idx}`} className="p-1.5 border border-slate-250 dark:border-slate-800 rounded bg-slate-50/50 dark:bg-slate-900/50 flex flex-col gap-1 text-[11px]">
-                            <div className="flex justify-between items-center bg-slate-200/50 dark:bg-slate-800/50 px-1.5 py-0.5 rounded">
-                              <span className="font-extrabold text-indigo-900 dark:text-indigo-300 font-mono">{item.date}</span>
-                              <button 
-                                type="button" 
-                                onClick={() => handleDeleteChartRight(idx)}
-                                className="p-0.5 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 rounded transition-all cursor-pointer"
-                                title="Deletar entrega"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'zh' ? 'æ•°é‡:' : 'Valor:'}</span>
-                                <input 
-                                  type="number"
-                                  value={item.value || 0}
-                                  onChange={(e) => handleChartRightChange(idx, 'value', e.target.value)}
-                                  className="w-16 text-center border border-slate-200 dark:border-slate-750 rounded font-mono p-0.5 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 font-bold outline-none"
-                                />
-                              </div>
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'zh' ? 'ç±»å‹:' : 'Tipo:'}</span>
-                                <select 
-                                  value={item.type}
-                                  onChange={(e) => handleChartRightChange(idx, 'type', e.target.value)}
-                                  className="w-16 border border-slate-200 dark:border-slate-750 rounded font-mono p-0.5 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 font-bold text-center outline-none"
-                                >
-                                  <option value="A">A</option>
-                                  <option value="B">B</option>
-                                  <option value="C">C</option>
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              )}
-
-              {/* TAB: DEPÃ“SITOS */}
-              {activeTab === 'depots' && (
-                <div className="space-y-4 text-slate-800 dark:text-slate-200 font-sans">
-                  
-                  {/* DEPOTS LIST WITH CAPACITY CONTROLS */}
-                  <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/40 space-y-3">
-                    <div className="flex items-center gap-1.5 border-b pb-1.5 border-slate-200 dark:border-slate-800">
-                      <Sliders className="w-4 h-4 text-red-500" />
-                      <span className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase">
-                        {language === 'zh' ? 'åè®®å †å­˜å®¹é‡ä¸é€šé“çŠ¶æ€' : language === 'pt' ? 'Capacidade de DepÃ³sitos e PortÃµes' : 'Capacidade & PortÃµes'}
-                      </span>
-                    </div>
-
-                    <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
-                      {depots.map((depot, idx) => {
-                        const utilPercent = depot.maxCapacity > 0 ? Math.round((depot.avgVolume / depot.maxCapacity) * 100) : 0;
-                        const utilColor = utilPercent > 95 ? 'text-red-600 bg-red-50 dark:bg-red-950/35' : utilPercent > 75 ? 'text-amber-600 bg-amber-50 dark:bg-amber-950/35' : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/35';
-                        
-                        return (
-                          <div key={depot.id} className="p-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 space-y-1.5">
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{depot.name}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[9px] text-gray-400 font-bold uppercase">AVG: <strong className="text-slate-750 dark:text-gray-300 font-mono font-bold">{depot.avgVolume}</strong></span>
-                                <span className={`text-[10px] font-mono font-extrabold px-1.5 py-0.2 rounded-md ${utilColor}`}>{utilPercent}%</span>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="text-[8px] text-gray-400 dark:text-gray-500 font-bold uppercase block mb-0.5">Cap. MÃ¡xima / æœ€å¤§å®¹é‡</label>
-                                <input 
-                                  type="number"
-                                  min="1"
-                                  value={depot.maxCapacity || 0}
-                                  onChange={(e) => {
-                                    const val = Math.max(1, Number(e.target.value));
-                                    const next = [...depots];
-                                    next[idx].maxCapacity = val;
-                                    setDepots(next);
-                                  }}
-                                  className="w-full text-xs font-bold border border-slate-200 dark:border-slate-700 rounded p-1 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-center font-mono focus:ring-1 focus:ring-red-500 outline-none"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-[8px] text-gray-400 dark:text-gray-500 font-bold uppercase block mb-0.5">PortÃ£o / é€šé“çŠ¶æ€</label>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const next = [...depots];
-                                    next[idx].status = next[idx].status === 'Open' ? 'Closed' : 'Open';
-                                    setDepots(next);
-                                  }}
-                                  className={`w-full py-1 text-xs font-black rounded text-center transition-colors border uppercase ${
-                                    depot.status === 'Open'
-                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/40 dark:text-emerald-400'
-                                      : 'bg-red-50 border-red-250 text-red-700 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400'
-                                  }`}
-                                >
-                                  {depot.status === 'Open' ? (language === 'zh' ? 'å¼€å¯ / OPEN' : 'Aberto') : (language === 'zh' ? 'å…³é—­ / CLOSED' : 'Fechado')}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* SHIPOWNER MATRIX EDITOR */}
-                  <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/40 space-y-3">
-                    <div className="flex items-center gap-1.5 border-b pb-1.5 border-slate-200 dark:border-slate-800">
-                      <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-                      <span className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase">
-                        {language === 'zh' ? 'èˆ¹ä¸œåè®®é…ç½® (çŸ©é˜µ)' : language === 'pt' ? 'Matriz de Compatibilidade (Armadores)' : 'Compatibilidade Armadores'}
-                      </span>
-                    </div>
-
-                    <p className="text-[9.5px] text-gray-500 dark:text-gray-400 leading-tight">
-                      {language === 'zh' ? 'åœ¨ä¸‹æ–¹çŸ©é˜µä¸­ï¼Œç›´æ¥é€‰æ‹©å„å †å­˜ç‚¹ä¸èˆ¹ä¸œçš„åˆä½œå…³ç³»ï¼ˆæˆæƒã€åˆçº¦ã€ç¦æ­¢ï¼‰ã€‚' : 'Selecione abaixo as regras de liberaÃ§Ã£o de cada depÃ³sto para os principais armadores.'}
-                    </p>
-
-                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                      {depots.map((depot) => { const depotName = depot.name; return (
-                        <div key={depotName} className="p-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 space-y-1.5">
-                          <span className="text-[11px] font-black text-slate-800 dark:text-slate-100 block border-b pb-1 border-slate-100 dark:border-slate-800">{depotName}</span>
-                          <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
-                            {['MSC', 'Maersk', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'COSCO', 'Evergreen'].map((armador) => {
-                              const currentVal = depotMatrix[depotName]?.[armador] || 'Authorized';
-                              return (
-                                <div key={armador} className="flex items-center justify-between gap-1 text-[10px]">
-                                  <span className="font-bold text-gray-600 dark:text-slate-350">{armador}</span>
-                                  <select
-                                    value={currentVal}
-                                    onChange={(e) => {
-                                      const nextVal = e.target.value as any;
-                                      setDepotMatrix(prev => ({
-                                        ...prev,
-                                        [depotName]: {
-                                          ...(prev[depotName] || {}),
-                                          [armador]: nextVal
-                                        }
-                                      }));
-                                    }}
-                                    className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border outline-none max-w-[90px] ${
-                                      currentVal === 'Authorized'
-                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/40 dark:text-emerald-400'
-                                        : currentVal === 'Blocked'
-                                        ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400'
-                                        : 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/40 dark:text-amber-400'
-                                    }`}
-                                  >
-                                    <option value="Authorized">âœ… Auth</option>
-                                    <option value="Blocked">âŒ Block</option>
-                                    <option value="Contract Only">ğŸ“ Contract</option>
-                                  </select>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                      })}
-                    </div>
-                  </div>
-
-                </div>
-              )}
-
-              {/* TAB: CONFIGURAÃ‡ÃƒO */}
-              {activeTab === 'config' && (
-                <div className="space-y-4 text-slate-800 dark:text-slate-200">
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-gray-500 dark:text-gray-450 font-bold uppercase block">TÃ­tulo em PT / è‘¡è„ç‰™è¯­æ ‡é¢˜ (PT)</label>
-                    <input 
-                      type="text" 
-                      value={slideTitlePT}
-                      onChange={(e) => {
-                        const val = e.target.value.toUpperCase();
-                        setSlideTitlePT(val);
-                        updateGlobalDoc('slideTitlePT', val);
-                      }}
-                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-none"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-gray-500 dark:text-gray-450 font-bold uppercase block">TÃ­tulo em Mandarim / ä¸­æ–‡æ ‡é¢˜ (ZH)</label>
-                    <input 
-                      type="text" 
-                      value={slideTitleZH}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSlideTitleZH(val);
-                        updateGlobalDoc('slideTitleZH', val);
-                      }}
-                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-none"
-                    />
-                  </div>
-
-                  {/* SLIDE WIDTH CONTROL (SLIDER) */}
-                  <div className="space-y-1 pt-1">
-                    <div className="flex justify-between items-center">
-                      <label className="text-[10px] text-gray-500 dark:text-gray-450 font-bold uppercase block">Largura do Painel (Slide) / çœ‹æ¿æ¼”ç¤ºå®½åº¦</label>
-                      <span className="text-xs font-mono font-bold text-red-600 bg-red-50 dark:bg-red-950/20 px-2 py-0.5 rounded-md">{slideWidth}px</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="1200" 
-                      max="1750" 
-                      value={slideWidth}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setSlideWidth(val);
-                        updateGlobalDoc('slideWidth', val);
-                      }}
-                      className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-600 mt-1"
-                    />
-                    <span className="text-[9.5px] text-gray-400 dark:text-gray-500 block leading-tight">Escolha dimensÃµes maiores para dar mais espaÃ§o e evitar cortes de layout. / è®¾ç½®æ›´å®½çš„çœ‹æ¿ä»¥ä¿è¯å„åŒºåŸŸä¸å‘ç”ŸæŠ˜å æŠ˜è§’ã€‚</span>
-                  </div>
-
-                  {/* SIDE PANEL WIDTH CONTROL (SLIDER) */}
-                  <div className="space-y-1 pt-1">
-                    <div className="flex justify-between items-center">
-                      <label className="text-[10px] text-gray-500 dark:text-gray-450 font-bold uppercase block">Largura do Painel de EdiÃ§Ã£o / ä¾§æ ç¼–è¾‘åŒºå®½åº¦</label>
-                      <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-md">{sidePanelWidth}px</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="380" 
-                      max="700" 
-                      value={sidePanelWidth}
-                      onChange={(e) => setSidePanelWidth(Number(e.target.value))}
-                      className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 mt-1"
-                    />
-                    <span className="text-[9.5px] text-gray-400 dark:text-gray-500 block leading-tight">Aumente para dar mais espaÃ§o Ã  Ã¡rea de ediÃ§Ã£o e evitar cortes ou quebras de linhas nas tabelas de dados. / åŠ å®½ä¾§æ¡†ï¼Œé˜²æ­¢ç¼–è¾‘ data è¢«æŠ˜å é®æŒ¡ã€‚</span>
-                  </div>
-
-                   {/* CONFIGURAÃ‡ÃƒO DE AJUSTE AUTOMÃTICO DO CONTEÃšDO */}
-                  <div className="space-y-1.5 pt-1">
-                    <div className="flex items-center justify-between p-2.5 border border-emerald-100 dark:border-emerald-900/30 rounded-lg bg-emerald-50/40 dark:bg-emerald-950/10">
-                      <div className="flex flex-col pr-2">
-                        <span className="text-xs text-emerald-800 dark:text-emerald-450 font-bold">Auto-Ajustar Ã  Tela / è‡ªåŠ¨è‡ªé€‚åº”</span>
-                        <span className="text-[9.5px] text-gray-400 dark:text-gray-500 leading-tight">Redimensiona o slide de forma automÃ¡tica para evitar cortes na tela. / è‡ªåŠ¨ç¼©æ”¾æ¼”ç¤ºåŒºå†…å®¹ä»¥å®Œç¾é€‚åº”æ‚¨çš„å±å¹•çª—å£ã€‚</span>
-                      </div>
-                      <input 
-                        type="checkbox" 
-                        checked={autoFit}
-                        onChange={(e) => setAutoFit(e.target.checked)}
-                        className="rounded text-emerald-600 focus:ring-emerald-500 h-4.5 w-4.5 cursor-pointer accent-emerald-600"
-                      />
-                    </div>
-                  </div>
-
-                  {/* SLIDE CONTENT SCALE CONTROL (SLIDER) */}
-                  <div className="space-y-1 pt-1">
-                    <div className="flex justify-between items-center">
-                      <label className="text-[10px] text-gray-500 dark:text-gray-450 font-bold uppercase block">Zoom do ConteÃºdo / å†…å®¹ç¼©æ”¾</label>
-                      <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${autoFit ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30' : 'text-blue-600 bg-blue-50 dark:bg-blue-950/20'}`}>
-                        {Math.round(slideScale * 100)}% {autoFit && "(Auto)"}
-                      </span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="0.45" 
-                      max="1.2" 
-                      step="0.01"
-                      value={slideScale}
-                      disabled={autoFit}
-                      onChange={(e) => setSlideScale(Number(e.target.value))}
-                      className={`w-full h-1.5 rounded-lg appearance-none mt-1 ${autoFit ? 'bg-gray-100 dark:bg-slate-800 cursor-not-allowed accent-gray-400' : 'bg-gray-200 dark:bg-slate-700 cursor-pointer accent-red-600'}`}
-                    />
-                    <span className="text-[9.5px] text-gray-400 dark:text-gray-500 block leading-tight">
-                      {autoFit 
-                        ? "Desative o Auto-Ajustar acima para alterar a escala de zoom manualmente. / å…³é—­ä¸Šæ–¹çš„è‡ªåŠ¨è‡ªé€‚åº”é€‰é¡¹æ¥æ‰‹åŠ¨è°ƒæ•´ç¼©æ”¾ã€‚"
-                        : "Arraste para ajustar horizontal ou verticalmente a escala de zoom do painel. / æ‹–åŠ¨ä»¥è°ƒæ•´ç¼©æ”¾æ¯”ä¾‹ã€‚"}
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-gray-500 dark:text-gray-450 font-bold uppercase block">Identificador do RodapÃ© / é¡µè„šæ°´å°æ ‡è¯†</label>
-                    <input 
-                      type="text" 
-                      value={watermarkText}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setWatermarkText(val);
-                        updateGlobalDoc('watermarkText', val);
-                      }}
-                      className="w-full text-xs font-bold border border-gray-200 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-red-500 outline-none"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-2 border border-gray-150 dark:border-slate-850 rounded-lg bg-gray-50/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200">
-                    <span className="text-xs text-gray-600 dark:text-slate-350 font-bold">Mostrar Identificador de RodapÃ© / æ˜¾ç¤ºé¡µè„šæ°´å°</span>
-                    <input 
-                      type="checkbox" 
-                      checked={showWatermark}
-                      onChange={(e) => {
-                        const val = e.target.checked;
-                        setShowWatermark(val);
-                        updateGlobalDoc('showWatermark', val);
-                      }}
-                      className="rounded text-emerald-500 focus:ring-emerald-500 h-4 w-4 cursor-pointer accent-emerald-500"
-                    />
-                  </div>
-                </div>
-              )}
-
-            </div>
-
-            {/* ASSINATURA INFERIOR DO EDIT */}
-            <div id="side-editor-footer" className="p-4 border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 flex items-center justify-between">
-              <span className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold font-sans">BYD Slide Builder v2.5 (ZH Supported)</span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-450 font-bold flex items-center gap-1 font-sans">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> CN/BR Connected
-              </span>
-            </div>
-
-          </aside>
-        )}
-
-        {/* FLOATING MODAL FOR EDITING BUFFER SLOT */}
-        {editingSlot && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4 select-none">
-            <div className={`w-full max-w-md rounded-2xl border shadow-2xl p-6 ${
-              theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 text-slate-800'
-            }`}>
-              
-              {/* Header */}
-              <div className="flex justify-between items-center border-b pb-3.5 mb-4 border-gray-150 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <div className="bg-red-50 dark:bg-red-950/40 p-2 rounded-xl text-red-600">
-                    <Boxes className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-black uppercase tracking-wider text-red-600 dark:text-red-400">
-                      {language === 'zh' ? 'ç¼–è¾‘ç¼“å†²åŒºå †ä½åæ ‡' : 'Editar PosiÃ§Ã£o do Buffer'}
-                    </h4>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase">
-                      Slot Coords: <span className="text-slate-800 dark:text-gray-100 font-black">{getSlotCoordsLabel(editingSlot.row, editingSlot.col)}</span>
-                    </p>
-                  </div>
-                </div>
-                <button 
-                  type="button"
-                  onClick={() => setEditingSlot(null)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer text-sm font-extrabold"
-                >
-                  âœ•
-                </button>
-              </div>
-
-              {/* Form */}
-              <form onSubmit={handleSaveSlot} className="space-y-4">
-                
-                {/* Container Number */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10.5px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {language === 'zh' ? 'é›†è£…ç®±å· / Container ID' : 'NÃºmero do ContÃªiner'}
-                  </label>
-                  <input 
-                    type="text"
-                    required
-                    placeholder="Ex: BYDU9910293"
-                    value={editingSlot.containerNo || ''}
-                    onChange={(e) => setEditingSlot(prev => prev ? { ...prev, containerNo: e.target.value.toUpperCase() } : null)}
-                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-mono font-black tracking-widest uppercase rounded-lg outline-none focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
-                  />
-                </div>
-
-                {/* Cargo / Model Selector */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10.5px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {language === 'zh' ? 'è´§ç‰©ç±»å‹æˆ–è½¦å‹ / Cargo Type' : 'Tipo de Carga / Modelo'}
-                  </label>
-                  <input 
-                    type="text"
-                    required
-                    placeholder="Ex: Dolphin Mini EV"
-                    value={editingSlot.cargoType || ''}
-                    onChange={(e) => setEditingSlot(prev => prev ? { ...prev, cargoType: e.target.value } : null)}
-                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100 mb-1"
-                  />
-                  
-                  {/* Quick select buttons */}
-                  <div className="flex flex-wrap gap-1">
-                    {["Dolphin Mini EV", "Dolphin EV SUV", "Seal EV Luxury", "Yuan Plus EV", "Song Plus DM-i", "King DM-i Sedan", "Blade Battery Packs", "Chassis Modules", "Motor Assemblies"].map(model => (
-                      <button
-                        key={model}
-                        type="button"
-                        onClick={() => setEditingSlot(prev => prev ? { ...prev, cargoType: model } : null)}
-                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-600 dark:text-gray-300 rounded text-[9px] font-bold transition-all border border-transparent hover:border-red-200"
-                      >
-                        {model}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Row: Status & Size */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10.5px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {language === 'zh' ? 'å°ºå¯¸ / Container Size' : 'Tamanho'}
-                    </label>
-                    <select
-                      value={editingSlot.size || "40' HC"}
-                      onChange={(e) => setEditingSlot(prev => prev ? { ...prev, size: e.target.value } : null)}
-                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none cursor-pointer focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
-                    >
-                      <option value="40' HC">40' HC</option>
-                      <option value="20FT">20FT</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10.5px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {language === 'zh' ? 'çŠ¶æ€ / Status' : 'Status'}
-                    </label>
-                    <select
-                      value={editingSlot.status || 'CHEIO'}
-                      onChange={(e) => setEditingSlot(prev => prev ? { ...prev, status: e.target.value } : null)}
-                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none cursor-pointer focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
-                    >
-                      <option value="CHEIO">{language === 'zh' ? 'é‡ç®± (Cheio)' : 'CHEIO'}</option>
-                      <option value="VAZIO">{language === 'zh' ? 'ç©ºç®± (Vazio)' : 'VAZIO'}</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Priority & Entry Time */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10.5px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {language === 'zh' ? 'æç®±ä¼˜å…ˆçº§ / Priority' : 'Prioridade'}
-                    </label>
-                    <select
-                      value={editingSlot.priority || 'NORMAL'}
-                      onChange={(e) => setEditingSlot(prev => prev ? { ...prev, priority: e.target.value } : null)}
-                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none cursor-pointer focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
-                    >
-                      <option value="CRITICAL">CRITICAL</option>
-                      <option value="HIGH">HIGH</option>
-                      <option value="NORMAL">NORMAL</option>
-                      <option value="LOW">LOW</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10.5px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {language === 'zh' ? 'å…¥åº“æ—¶é—´ / Entry Time' : 'Tempo de Entrada'}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ex: 2026-07-07 13:14:30"
-                      value={editingSlot.entryTime || ''}
-                      onChange={(e) => setEditingSlot(prev => prev ? { ...prev, entryTime: e.target.value } : null)}
-                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs font-bold rounded-lg outline-none focus:ring-1 focus:ring-red-500 text-slate-800 dark:text-slate-100"
-                    />
-                  </div>
-                </div>
-
-                {/* WMS Metadata Details */}
-                {(editingSlot.danfe || editingSlot.origin || editingSlot.loteNo || editingSlot.statusRecebimento) && (
-                  <div className="p-3.5 rounded-xl border border-dashed border-red-200 dark:border-red-900/45 bg-red-50/15 dark:bg-red-950/5 flex flex-col gap-2.5 shadow-sm">
-                    <span className="text-[10.5px] font-black text-red-600 dark:text-red-400 uppercase tracking-wider flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5" />
-                      {language === 'zh' ? 'WMS ç³»ç»Ÿå¯¼å…¥ä¿¡æ¯' : 'InformaÃ§Ãµes de Origem (WMS)'}
-                    </span>
-                    
-                    <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                      {editingSlot.danfe && (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase">DANFE</span>
-                          <span className="font-mono bg-white dark:bg-slate-900/60 p-1.5 rounded border border-gray-150 dark:border-slate-850 text-slate-800 dark:text-slate-100 select-all truncate" title={editingSlot.danfe}>
-                            {editingSlot.danfe}
-                          </span>
-                        </div>
-                      )}
-                      {editingSlot.loteNo && (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase">{language === 'zh' ? 'æ‰¹æ¬¡å· / Lote' : 'NÂº do Lote'}</span>
-                          <span className="font-mono bg-white dark:bg-slate-900/60 p-1.5 rounded border border-gray-150 dark:border-slate-850 text-slate-800 dark:text-slate-100 truncate select-all" title={editingSlot.loteNo}>
-                            {editingSlot.loteNo}
-                          </span>
-                        </div>
-                      )}
-                      {editingSlot.origin && (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase">{language === 'zh' ? 'æ¥æº / Origin' : 'Origem'}</span>
-                          <span className="bg-white dark:bg-slate-900/60 p-1.5 rounded border border-gray-150 dark:border-slate-850 text-slate-800 dark:text-slate-100 truncate select-all" title={editingSlot.origin}>
-                            {editingSlot.origin}
-                          </span>
-                        </div>
-                      )}
-                      {editingSlot.statusRecebimento && (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] text-gray-400 dark:text-gray-500 uppercase">{language === 'zh' ? 'æ¥æ”¶çŠ¶æ€' : 'Recebimento'}</span>
-                          <span className="bg-white dark:bg-slate-900/60 p-1.5 rounded border border-gray-150 dark:border-slate-850 text-slate-800 dark:text-slate-100 select-all">
-                            {editingSlot.statusRecebimento}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Multi-container Stacking Controller */}
-                <div className="p-3 rounded-xl border border-dashed border-purple-200 dark:border-purple-800 bg-purple-50/20 dark:bg-purple-950/5 flex flex-col gap-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10.5px] font-black text-purple-600 dark:text-purple-450 uppercase tracking-wider flex items-center gap-1">
-                      <Layers className="w-3.5 h-3.5" />
-                      {language === 'zh' ? 'é›†è£…ç®±é‡å å æ”¾é«˜åº¦ / Pilha de ContÃªineres' : 'Pilha (Stacking Layers)'}
-                    </span>
-                    <span className="text-[9.5px] font-extrabold text-purple-500">
-                      H: {editingSlot.stack ? editingSlot.stack.length : 1}
-                    </span>
-                  </div>
-
-                  {/* Layers visual list */}
-                  <div className="flex flex-col gap-1 text-[10px]">
-                    {editingSlot.stack && editingSlot.stack.map((item, idx) => {
-                      const isEditingThisLayer = editingStackIndex === idx;
-                      return (
-                        <div 
-                          key={idx}
-                          onClick={() => {
-                            // Save current layer before switching
-                            const updatedStack = editingSlot.stack ? [...editingSlot.stack] : [];
-                            updatedStack[editingStackIndex] = {
-                              row: editingSlot.row,
-                              col: editingSlot.col,
-                              containerNo: editingSlot.containerNo ? editingSlot.containerNo.trim().toUpperCase() : '',
-                              cargoType: editingSlot.cargoType || '',
-                              size: editingSlot.size || "40' HC",
-                              priority: editingSlot.priority || 'NORMAL',
-                              isOptimalPickup: !!editingSlot.isOptimalPickup,
-                              status: editingSlot.status || 'CHEIO',
-                              entryTime: editingSlot.entryTime || '',
-                              updatedAt: new Date().toISOString().split('T')[0]
-                            };
-
-                            const nextLayer = updatedStack[idx];
-                            setEditingSlot(prev => prev ? {
-                              ...prev,
-                              containerNo: nextLayer.containerNo || '',
-                              cargoType: nextLayer.cargoType || '',
-                              size: nextLayer.size || "40' HC",
-                              priority: nextLayer.priority || 'NORMAL',
-                              isOptimalPickup: !!nextLayer.isOptimalPickup,
-                              status: nextLayer.status || 'CHEIO',
-                              entryTime: nextLayer.entryTime || '',
-                              stack: updatedStack
-                            } : null);
-                            setEditingStackIndex(idx);
-                          }}
-                          className={`flex justify-between items-center p-1.5 rounded cursor-pointer transition-all border ${
-                            isEditingThisLayer 
-                              ? 'bg-purple-100 dark:bg-purple-950/40 border-purple-400 font-extrabold text-purple-700 dark:text-purple-300' 
-                              : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800 text-gray-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-                          }`}
-                        >
-                          <span className="flex items-center gap-1 font-mono">
-                            <span className="text-[8px] bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-1 rounded-sm">L{idx + 1}</span>
-                            <span>{item.containerNo || (language === 'zh' ? 'ç©ºå±‚' : 'Vago')}</span>
-                          </span>
-                          <span className="text-[9px] truncate max-w-[120px]">{item.cargoType || 'N/A'}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Actions for Stack */}
-                  <div className="flex gap-2 justify-end pt-1">
-                    {editingSlot.stack && editingSlot.stack.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updatedStack = editingSlot.stack ? [...editingSlot.stack] : [];
-                          if (updatedStack.length <= 1) return;
-                          updatedStack.splice(editingStackIndex, 1);
-                          const nextIdx = Math.max(0, editingStackIndex - 1);
-                          const nextLayer = updatedStack[nextIdx] || {};
-
-                          setEditingSlot(prev => prev ? {
-                            ...prev,
-                            containerNo: nextLayer.containerNo || '',
-                            cargoType: nextLayer.cargoType || '',
-                            size: nextLayer.size || "40' HC",
-                            priority: nextLayer.priority || 'NORMAL',
-                            isOptimalPickup: !!nextLayer.isOptimalPickup,
-                            status: nextLayer.status || 'CHEIO',
-                            entryTime: nextLayer.entryTime || '',
-                            danfe: nextLayer.danfe || '',
-                            origin: nextLayer.origin || '',
-                            loteNo: nextLayer.loteNo || '',
-                            statusRecebimento: nextLayer.statusRecebimento || '',
-                            stack: updatedStack
-                          } : null);
-                          setEditingStackIndex(nextIdx);
-                        }}
-                        className="px-2 py-1 text-[9px] font-black text-red-600 bg-red-50 dark:bg-red-950/20 rounded hover:bg-red-100 transition-colors cursor-pointer"
-                      >
-                        {language === 'zh' ? 'åˆ é™¤å½“å‰å±‚' : 'Remover Camada'}
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updatedStack = editingSlot.stack ? [...editingSlot.stack] : [];
-                        // Save current layer before appending
-                        updatedStack[editingStackIndex] = {
-                          row: editingSlot.row,
-                          col: editingSlot.col,
-                          containerNo: editingSlot.containerNo ? editingSlot.containerNo.trim().toUpperCase() : '',
-                          cargoType: editingSlot.cargoType || '',
-                          size: editingSlot.size || "40' HC",
-                          priority: editingSlot.priority || 'NORMAL',
-                          isOptimalPickup: !!editingSlot.isOptimalPickup,
-                          status: editingSlot.status || 'CHEIO',
-                          entryTime: editingSlot.entryTime || '',
-                          danfe: editingSlot.danfe || '',
-                          origin: editingSlot.origin || '',
-                          loteNo: editingSlot.loteNo || '',
-                          statusRecebimento: editingSlot.statusRecebimento || '',
-                          updatedAt: new Date().toISOString().split('T')[0]
-                        };
-
-                        const newLayer: BufferSlot = {
-                          row: editingSlot.row,
-                          col: editingSlot.col,
-                          containerNo: '',
-                          cargoType: 'Dolphin Mini EV',
-                          size: "40' HC",
-                          priority: 'NORMAL',
-                          isOptimalPickup: false,
-                          status: 'CHEIO',
-                          entryTime: '',
-                          danfe: '',
-                          origin: '',
-                          loteNo: '',
-                          statusRecebimento: '',
-                          updatedAt: new Date().toISOString().split('T')[0]
-                        };
-                        updatedStack.push(newLayer);
-                        const nextIdx = updatedStack.length - 1;
-
-                        setEditingSlot(prev => prev ? {
-                          ...prev,
-                          containerNo: '',
-                          cargoType: 'Dolphin Mini EV',
-                          size: "40' HC",
-                          priority: 'NORMAL',
-                          isOptimalPickup: false,
-                          status: 'CHEIO',
-                          entryTime: '',
-                          danfe: '',
-                          origin: '',
-                          loteNo: '',
-                          statusRecebimento: '',
-                          stack: updatedStack
-                        } : null);
-                        setEditingStackIndex(nextIdx);
-                      }}
-                      className="px-2 py-1 text-[9px] font-black text-purple-600 bg-purple-100 dark:bg-purple-950/35 rounded hover:bg-purple-200 transition-colors cursor-pointer"
-                    >
-                      {language === 'zh' ? 'æ·»åŠ å æ”¾å±‚ L' + (editingSlot.stack ? editingSlot.stack.length + 1 : 2) : 'Adicionar Camada'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Toggle Checkbox: Is Optimal Pickup */}
-                <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-gray-150 dark:border-slate-800 flex items-start gap-2.5">
-                  <input 
-                    type="checkbox"
-                    id="chk-optimal"
-                    checked={editingSlot.isOptimalPickup || false}
-                    onChange={(e) => setEditingSlot(prev => prev ? { ...prev, isOptimalPickup: e.target.checked } : null)}
-                    className="mt-1 w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 cursor-pointer"
-                  />
-                  <div className="flex flex-col leading-tight cursor-pointer">
-                    <label htmlFor="chk-optimal" className="text-xs font-extrabold text-slate-800 dark:text-slate-100 cursor-pointer flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5 text-yellow-500 inline" />
-                      {language === 'zh' ? 'æ ‡è®°ä¸ºæœ€æ˜“æå–ä½ç½® (âš¡ Quick-Out)' : 'Melhor Posicionamento (âš¡ Quick-Out)'}
-                    </label>
-                    <span className="text-[9.5px] text-gray-400 mt-1">
-                      {language === 'zh' ? 'æ­¤ç®±ä½äºå¤–å›´æˆ–å•å±‚ï¼Œæ— éœ€ä»»ä½•ç§»ç®±æ“ä½œå³å¯ç›´æ¥å‡ºåº“ã€‚' : 'Este contÃªiner estÃ¡ desobstruÃ­do na borda, pronto para envio sem custo de remoÃ§Ãµes.'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Buttons */}
-                <div className="flex gap-2 pt-3 border-t border-gray-150 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setEditingSlot(null)}
-                    className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-lg text-xs transition-colors cursor-pointer"
-                  >
-                    {language === 'zh' ? 'å–æ¶ˆ' : 'Cancelar'}
-                  </button>
-
-                  {getSlotAt(editingSlot.row, editingSlot.col)?.containerNo && (
-                    <button
-                      type="button"
-                      onClick={handleClearSlot}
-                      className="px-4 py-2 bg-red-100 dark:bg-red-950/40 hover:bg-red-200 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 font-bold rounded-lg text-xs transition-colors cursor-pointer"
-                      title="Desocupar esta vaga"
-                    >
-                      {language === 'zh' ? 'é‡Šæ”¾å †ä½' : 'Desocupar'}
-                    </button>
-                  )}
-
-                  <button
-                    type="submit"
-                    className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs transition-all shadow-md shadow-red-600/15 cursor-pointer"
-                  >
-                    {language === 'zh' ? 'ä¿å­˜' : 'Salvar'}
-                  </button>
-                </div>
-
-              </form>
-
-            </div>
-          </div>
-        )}
-
-      </main>
-
-      {/* AREA LISTS MODAL FOR CONTAINERS AND VESSELS */}
-      {selectedYardKey && yards[selectedYardKey] && (() => {
-        const selectedYard = yards[selectedYardKey];
-        const yardOcupacao = getYardOcupacao(selectedYard);
-        
-        // Filtered containers
-        const filteredContainers = containers.filter(c => {
-          if (c.yardId !== selectedYardKey) return false;
-          if (containerSearch.trim()) {
-            if (!matchContainerSearch(c, containerSearch)) return false;
-          }
-          if (containerStatusFilter !== 'ALL' && c.status !== containerStatusFilter) return false;
-          if (containerCategoryFilter !== 'ALL' && c.category !== containerCategoryFilter) return false;
-          return true;
-        });
-
-        // Associated vessels from the containers in this yard
-        const uniqueVessels = Array.from(new Set(
-          containers
-            .filter(c => c.yardId === selectedYardKey && c.vesselName && c.vesselName !== 'N/A')
-            .map(c => c.vesselName)
-        ));
-
-        return (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className={`relative rounded-2xl shadow-2xl w-full max-w-5xl max-h-[85vh] flex flex-col overflow-hidden border transition-all ${
-              theme === 'dark' 
-                ? 'bg-[#1e293b] border-slate-800 text-white' 
-                : 'bg-white border-slate-100 text-slate-800'
-            }`}>
-              
-              {/* Modal Header */}
-              <div className={`p-4 border-b flex justify-between items-center ${
-                theme === 'dark' ? 'border-slate-800 bg-[#0f172a]' : 'border-gray-100 bg-gray-50'
-              }`}>
-                <div>
-                  <h3 className="font-extrabold text-sm md:text-base flex items-center gap-2">
-                    <Boxes className="w-5 h-5 text-blue-500" />
-                    <span>
-                      {language === 'bilingual' 
-                        ? `Detalhamento de Ãrea: ${selectedYard.name} / å †åœºç»†åŒ–: ${selectedYard.name}`
-                        : `Detalhamento de Ãrea: ${selectedYard.name}`}
-                    </span>
-                  </h3>
-                  <p className="text-[10px] text-gray-400 mt-0.5">
-                    {language === 'bilingual'
-                      ? 'Visualize e gerencie os contÃªineres e navios presentes no terminal / æŸ¥çœ‹å¹¶ç®¡ç†ç»ˆç«¯å†…çš„é›†è£…ç®±å’Œèˆ¹èˆ¶'
-                      : 'Visualize e gerencie os contÃªineres e navios presentes no terminal'}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setSelectedYardKey(null)}
-                  className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-500 transition-colors"
-                >
-                  <Plus className="w-5 h-5 rotate-45 transform" />
-                </button>
-              </div>
-
-              {/* Modal Body Info Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4 border-b dark:border-slate-800 bg-blue-50/20 dark:bg-[#111827]/40 text-xs">
-                <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
-                  <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Capacidade / å®¹é‡' : 'Capacidade'}</span>
-                  <span className="font-mono text-base font-black text-slate-700 dark:text-slate-150 mt-1">{selectedYard.capacity.toLocaleString()} <span className="text-xs text-gray-400 font-normal">CNTRs</span></span>
-                </div>
-                <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
-                  <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'OcupaÃ§Ã£o / å ç”¨ç‡' : 'OcupaÃ§Ã£o'}</span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-sm font-black px-1.5 py-0.2 rounded ${
-                      yardOcupacao >= 89 
-                        ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300' 
-                        : yardOcupacao >= 65 
-                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300' 
-                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
-                    }`}>{yardOcupacao}%</span>
-                    <span className="text-[10px] text-gray-400 font-bold">({(selectedYard.cheio + selectedYard.vazio).toLocaleString()} CNTRs)</span>
-                  </div>
-                </div>
-                <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
-                  <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Cheios / é‡ç®±' : 'Cheios'}</span>
-                  <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 mt-1">{selectedYard.cheio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">CNTRs</span></span>
-                </div>
-                <div className="p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
-                  <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Vazios / ç©ºç®±' : 'Vazios'}</span>
-                  <span className="font-mono text-sm font-bold text-gray-500 mt-1">{selectedYard.vazio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">CNTRs</span></span>
-                </div>
-                <div className="col-span-2 md:col-span-1 p-2.5 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 shadow-xs flex flex-col justify-between">
-                  <span className="text-[9px] text-gray-400 font-bold uppercase">{language === 'bilingual' ? 'Pronto Coleta / å¾…æ”¶ç®±' : 'Pronto Coleta'}</span>
-                  <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-450 mt-1">{(selectedYard.prontoColeta || 0).toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">CNTRs</span></span>
-                </div>
-              </div>
-
-              {/* Modal Core Area */}
-              <div className="flex-1 overflow-y-auto p-4 flex flex-col lg:flex-row gap-4 min-h-0">
-                
-                {/* Left Side: Vessels and Add form */}
-                <div className="w-full lg:w-[320px] flex flex-col gap-4">
-                  
-                  {/* Vessels list */}
-                  <div className={`p-3.5 rounded-xl border ${
-                    theme === 'dark' ? 'bg-[#152033] border-slate-850' : 'bg-slate-50 border-slate-100'
-                  }`}>
-                    <h4 className="font-extrabold text-[11px] uppercase tracking-wider flex items-center gap-1.5 text-blue-600 dark:text-blue-400 mb-2.5">
-                      <Ship className="w-4 h-4" />
-                      <span>{language === 'bilingual' ? 'Navios Associados / å…³è”èˆ¹èˆ¶' : 'Navios Associados'}</span>
-                    </h4>
-                    
-                    <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
-                      {uniqueVessels.map((v) => (
-                        <div key={v} className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-[#1e293b] border dark:border-slate-800 text-[11.5px] font-bold">
-                          <span className="text-gray-850 dark:text-gray-250 truncate mr-1">{v}</span>
-                          <span className="text-[9px] bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 px-1.5 py-0.2 rounded">
-                            {containers.filter(c => c.yardId === selectedYardKey && c.vesselName === v).length} cntrs
-                          </span>
-                        </div>
-                      ))}
-                      {uniqueVessels.length === 0 && (
-                        <div className="text-center py-4 text-[10px] text-gray-400">
-                          {language === 'bilingual' ? 'Nenhum navio associado nesta Ã¡rea. / è¯¥åŒºåŸŸæ²¡æœ‰å…³è”èˆ¹èˆ¶ã€‚' : 'Nenhum navio associado nesta Ã¡rea.'}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Add Container Form */}
-                  <div className={`p-3.5 rounded-xl border ${
-                    theme === 'dark' ? 'bg-[#152033] border-slate-850' : 'bg-slate-50 border-slate-100'
-                  }`}>
-                    <h4 className="font-extrabold text-[11px] uppercase tracking-wider flex items-center gap-1.5 text-emerald-600 dark:text-emerald-450 mb-2.5">
-                      <Plus className="w-4 h-4" />
-                      <span>{language === 'bilingual' ? 'Cadastrar Novo / ç™»è®°æ–°é›†è£…ç®±' : 'Cadastrar Novo'}</span>
-                    </h4>
-                    
-                    <form onSubmit={handleAddContainer} className="space-y-2.5 text-xs">
-                      <div>
-                        <label className="text-[9px] uppercase tracking-tight text-gray-400 font-bold block mb-1">NÃºmero do ContÃªiner / ç®±å·</label>
-                        <input 
-                          type="text"
-                          required
-                          value={newContainerId}
-                          onChange={(e) => setNewContainerId(e.target.value)}
-                          placeholder="EX: BYDU1234567"
-                          className="w-full rounded-lg border dark:border-slate-800 p-2 font-mono text-xs font-bold uppercase bg-white dark:bg-[#1e293b] text-slate-800 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-[9px] uppercase tracking-tight text-gray-400 font-bold block mb-1">Tamanho / å°ºå¯¸</label>
-                          <select 
-                            value={newContainerSize}
-                            onChange={(e) => setNewContainerSize(e.target.value)}
-                            className="w-full rounded-lg border dark:border-slate-800 p-2 bg-white dark:bg-[#1e293b] focus:outline-hidden text-xs font-bold"
-                          >
-                            <option value="20' GP">20' GP</option>
-                            <option value="40' HC">40' HC</option>
-                            <option value="40' OT">40' OT</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-[9px] uppercase tracking-tight text-gray-400 font-bold block mb-1">Status / çŠ¶æ€</label>
-                          <select 
-                            value={newContainerStatus}
-                            onChange={(e) => setNewContainerStatus(e.target.value as any)}
-                            className="w-full rounded-lg border dark:border-slate-800 p-2 bg-white dark:bg-[#1e293b] focus:outline-hidden text-xs font-bold"
-                          >
-                            <option value="CHEIO">CHEIO / é‡ç®±</option>
-                            <option value="VAZIO">VAZIO / ç©ºç®±</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-2">
-                        <div>
-                          <label className="text-[9px] uppercase tracking-tight text-gray-400 font-bold block mb-1">Categoria / ç±»åˆ«</label>
-                          <select 
-                            value={newContainerCategory}
-                            onChange={(e) => setNewContainerCategory(e.target.value as any)}
-                            className="w-full rounded-lg border dark:border-slate-800 p-2 bg-white dark:bg-[#1e293b] focus:outline-hidden text-xs font-bold"
-                          >
-                            <option value="GERAL">GERAL / é€šç”¨</option>
-                            <option value="PORTO">PORTO / æ¸¯å£</option>
-                            <option value="PRONTO_COLETA">PRONTO COLETA / å¾…æ”¶ç®±</option>
-                            <option value="DELIVERED">DELIVERED / å·²äº¤ä»˜</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-[9px] uppercase tracking-tight text-gray-400 font-bold block mb-1">Navio Associado / å¯¹åº”èˆ¹èˆ¶</label>
-                          <select 
-                            value={newContainerVessel}
-                            onChange={(e) => setNewContainerVessel(e.target.value)}
-                            className="w-full rounded-lg border dark:border-slate-800 p-2 bg-white dark:bg-[#1e293b] focus:outline-hidden text-xs font-bold"
-                          >
-                            <option value="N/A">N/A (Nenhum / æ— )</option>
-                            {vessels.map(v => (
-                              <option key={v.id} value={v.name}>{v.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <button 
-                        type="submit" 
-                        className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold p-2 rounded-lg text-xs tracking-wide shadow-xs transition-colors mt-1"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>{language === 'bilingual' ? 'Adicionar ContÃªiner / æ·»åŠ é›†è£…ç®±' : 'Adicionar ContÃªiner'}</span>
-                      </button>
-                    </form>
-                  </div>
-
-                  {/* Excel Import/Template card */}
-                  <div className={`p-3.5 rounded-xl border ${
-                    theme === 'dark' ? 'bg-[#152033] border-slate-850' : 'bg-slate-50 border-slate-100'
-                  }`}>
-                    <h4 className="font-extrabold text-[11px] uppercase tracking-wider flex items-center gap-1.5 text-blue-600 dark:text-blue-400 mb-2">
-                      <FileSpreadsheet className="w-4 h-4" />
-                      <span>{language === 'bilingual' ? 'IntegraÃ§Ã£o Excel / ç”µå­è¡¨æ ¼é›†æˆ' : 'IntegraÃ§Ã£o Excel'}</span>
-                    </h4>
-
-                    <p className="text-[10px] text-gray-400 mb-3 leading-relaxed">
-                      {language === 'bilingual'
-                        ? 'Baixe o modelo padrÃ£o ou carregue uma planilha para cadastrar mÃºltiplos contÃªineres de uma sÃ³ vez. / ä¸‹è½½æ ‡å‡†æ¨¡æ¿æˆ–ä¸Šä¼ è¡¨æ ¼ä»¥ä¸€æ¬¡æ€§æ³¨å†Œå¤šä¸ªé›†è£…ç®±ã€‚'
-                        : 'Baixe o modelo padrÃ£o ou carregue uma planilha para cadastrar mÃºltiplos contÃªineres de uma sÃ³ vez.'}
-                    </p>
-
-                    <div className="space-y-2">
-                      {/* Button 1: Download Standard Template */}
-                      <button
-                        onClick={handleDownloadTemplate}
-                        className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold p-2 rounded-lg text-xs tracking-wide shadow-xs transition-colors"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>{language === 'bilingual' ? 'Baixar Modelo / ä¸‹è½½æ ‡å‡†æ¨¡æ¿' : 'Baixar Modelo'}</span>
-                      </button>
-
-                      {/* Button 2: Upload Excel File */}
-                      <label className="w-full flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold p-2 rounded-lg text-xs tracking-wide shadow-xs transition-colors cursor-pointer text-center">
-                        <Upload className="w-4 h-4" />
-                        <span>{language === 'bilingual' ? 'Importar Planilha / å¯¼å…¥ Excel æ–‡ä»¶' : 'Importar Planilha'}</span>
-                        <input
-                          id="excel_upload_input"
-                          type="file"
-                          accept=".xlsx, .xls"
-                          onChange={handleImportExcel}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-
-                    {/* Standard layout guideline for user */}
-                    <div className="mt-3.5 pt-3 border-t border-slate-200 dark:border-slate-800">
-                      <span className="text-[9px] uppercase tracking-wider text-gray-400 font-extrabold block mb-1.5">
-                        {language === 'bilingual' ? 'Layout de Colunas / åˆ—å¸ƒå±€è§„èŒƒ' : 'Layout de Colunas'}
-                      </span>
-                      <div className="space-y-1 text-[10px] leading-tight">
-                        <div className="flex justify-between items-center py-0.5 border-b border-dashed border-gray-200 dark:border-gray-800 font-mono">
-                          <span className="font-bold text-blue-600 dark:text-blue-400">Identificacao</span>
-                          <span className="text-gray-400 text-[9px]">{language === 'bilingual' ? 'ID (Ex: BYDU1234567)' : 'ID (Ex: BYDU1234567)'}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5 border-b border-dashed border-gray-200 dark:border-gray-800 font-mono">
-                          <span className="font-bold text-blue-600 dark:text-blue-400">Tamanho</span>
-                          <span className="text-gray-400 text-[9px]">20' GP, 40' HC, 40' OT</span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5 border-b border-dashed border-gray-200 dark:border-gray-800 font-mono">
-                          <span className="font-bold text-blue-600 dark:text-blue-400">Status</span>
-                          <span className="text-gray-400 text-[9px]">CHEIO / VAZIO</span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5 border-b border-dashed border-gray-200 dark:border-gray-800 font-mono">
-                          <span className="font-bold text-blue-600 dark:text-blue-400">Categoria</span>
-                          <span className="text-gray-400 text-[9px]">PORTO, DELIVERED, GERAL...</span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5 font-mono">
-                          <span className="font-bold text-blue-600 dark:text-blue-400">Navio</span>
-                          <span className="text-gray-400 text-[9px]">{language === 'bilingual' ? 'Nome ou N/A' : 'Nome ou N/A'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* Right Side: Search, Filter & Containers Table */}
-                <div className="flex-1 flex flex-col min-h-[250px] lg:min-h-0">
-                  
-                  {/* Filter and Search Bar */}
-                  <div className="flex flex-col sm:flex-row gap-2.5 mb-2.5">
-                    <div className="flex-1 relative">
-                      <input 
-                        type="text"
-                        value={containerSearch}
-                        onChange={(e) => setContainerSearch(e.target.value)}
-                        placeholder={language === 'bilingual' ? "Buscar por nÃºmero... / æœç´¢ç®±å·..." : "Buscar por nÃºmero..."}
-                        className="w-full rounded-lg border dark:border-slate-800 p-2 pl-2.5 bg-white dark:bg-[#1e293b] text-xs font-bold text-slate-800 dark:text-white"
-                      />
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <select 
-                        value={containerStatusFilter}
-                        onChange={(e) => setContainerStatusFilter(e.target.value)}
-                        className="rounded-lg border dark:border-slate-800 p-2 bg-white dark:bg-[#1e293b] text-xs font-bold"
-                      >
-                        <option value="ALL">{language === 'bilingual' ? 'Status: Todos / æ‰€æœ‰çŠ¶æ€' : 'Status: Todos'}</option>
-                        <option value="CHEIO">CHEIO / é‡ç®±</option>
-                        <option value="VAZIO">VAZIO / ç©ºç®±</option>
-                      </select>
-
-                      <select 
-                        value={containerCategoryFilter}
-                        onChange={(e) => setContainerCategoryFilter(e.target.value)}
-                        className="rounded-lg border dark:border-slate-800 p-2 bg-white dark:bg-[#1e293b] text-xs font-bold"
-                      >
-                        <option value="ALL">{language === 'bilingual' ? 'Categoria: Todas / æ‰€æœ‰ç±»åˆ«' : 'Categoria: Todas'}</option>
-                        <option value="GERAL">GERAL / é€šç”¨</option>
-                        <option value="PORTO">PORTO / æ¸¯å£</option>
-                        <option value="PRONTO_COLETA">PRONTO COLETA / å¾…æ”¶</option>
-                        <option value="DELIVERED">DELIVERED / å·²ä»˜</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Bulk Actions Toolbar */}
-                  <div className="flex items-center justify-between gap-2 mb-3 p-2 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/25">
-                    <div className="flex items-center gap-2 pl-1">
-                      <input 
-                        type="checkbox"
-                        id="bulk_select_all_top"
-                        checked={filteredContainers.length > 0 && filteredContainers.every(c => selectedContainerIds.includes(c.id))}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            const newSelection = [...new Set([...selectedContainerIds, ...filteredContainers.map(c => c.id)])];
-                            setSelectedContainerIds(newSelection);
-                          } else {
-                            const filteredIds = filteredContainers.map(c => c.id);
-                            setSelectedContainerIds(selectedContainerIds.filter(id => !filteredIds.includes(id)));
-                          }
-                        }}
-                        className="rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
-                      />
-                      <label htmlFor="bulk_select_all_top" className="text-[10.5px] font-bold text-gray-500 dark:text-gray-400 cursor-pointer select-none">
-                        {language === 'bilingual' 
-                          ? `Selecionar tudo / å…¨é€‰ (${selectedContainerIds.length} / ${filteredContainers.length})` 
-                          : `Selecionar tudo (${selectedContainerIds.length} / ${filteredContainers.length})`}
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {selectedContainerIds.length > 0 && (
-                        <button
-                          onClick={handleBulkDeleteContainers}
-                          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-extrabold px-3 py-1.5 rounded-lg text-xs shadow-xs transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>{language === 'bilingual' ? 'Excluir Selecionados / åˆ é™¤æ‰€é€‰' : 'Excluir Selecionados'}</span>
-                        </button>
-                      )}
-                      <button
-                        onClick={handleClearYard}
-                        className="flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 font-extrabold px-3 py-1.5 rounded-lg text-xs border border-amber-500/20 transition-colors"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        <span>{language === 'bilingual' ? 'Esvaziar PÃ¡tio / æ¸…ç©ºå †åœº' : 'Esvaziar PÃ¡tio'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Containers Table */}
-                  <div className={`flex-1 overflow-auto rounded-xl border ${
-                    theme === 'dark' ? 'border-slate-800 bg-[#0f172a]/30' : 'border-slate-100 bg-slate-50/20'
-                  }`}>
-                    <table className="w-full text-left text-xs font-sans min-w-[1200px]">
-                      <thead>
-                        <tr className={`border-b font-extrabold uppercase text-[9.5px] tracking-wider text-gray-400 sticky top-0 z-10 ${
-                          theme === 'dark' ? 'border-slate-800 bg-[#1e293b]' : 'border-gray-150 bg-slate-50'
-                        }`}>
-                          <th className="p-3 w-10 text-center">
-                            <input 
-                              type="checkbox"
-                              checked={filteredContainers.length > 0 && filteredContainers.every(c => selectedContainerIds.includes(c.id))}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  const newSelection = [...new Set([...selectedContainerIds, ...filteredContainers.map(c => c.id)])];
-                                  setSelectedContainerIds(newSelection);
-                                } else {
-                                  const filteredIds = filteredContainers.map(c => c.id);
-                                  setSelectedContainerIds(selectedContainerIds.filter(id => !filteredIds.includes(id)));
-                                }
-                              }}
-                              className="rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
-                            />
-                          </th>
-                          <th className="p-3 w-[110px]">BL</th>
-                          <th className="p-3 w-[120px] font-mono">CONTAINER</th>
-                          <th className="p-3 w-[140px]">Warehouse</th>
-                          <th className="p-3 w-[160px]">Navio</th>
-                          <th className="p-3 w-[90px]">ETA</th>
-                          <th className="p-3 w-[90px]">Free Time</th>
-                          <th className="p-3 w-[100px]">Componente</th>
-                          <th className="p-3 w-[140px]">Modelo</th>
-                          <th className="p-3 w-[100px]">Lote</th>
-                          <th className="p-3 w-[100px]">ProgramaÃ§Ã£o</th>
-                          <th className="p-3 w-[120px]">Transportadora</th>
-                          {isEditMode && <th className="p-3 w-[60px] text-right">AÃ§Ã£o</th>}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-slate-800/60 font-semibold text-slate-700 dark:text-gray-300">
-                        {filteredContainers.map((container) => {
-                          return (
-                            <tr key={container.id} className={`hover:bg-gray-50/40 dark:hover:bg-slate-800/10 transition-colors ${
-                              selectedContainerIds.includes(container.id) ? 'bg-blue-500/5 dark:bg-blue-500/5' : ''
-                            }`}>
-                              <td className="p-3 w-10 text-center">
-                                <input 
-                                  type="checkbox"
-                                  checked={selectedContainerIds.includes(container.id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedContainerIds([...selectedContainerIds, container.id]);
-                                    } else {
-                                      setSelectedContainerIds(selectedContainerIds.filter(id => id !== container.id));
-                                    }
-                                  }}
-                                  className="rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
-                                />
-                              </td>
-                              
-                              {/* BL */}
-                              <td className="p-1 truncate">
-                                {isEditMode ? (
-                                  <input
-                                    type="text"
-                                    value={container.bl || ''}
-                                    onChange={(e) => handleUpdateContainerField(container.id, 'bl', e.target.value)}
-                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans"
-                                  />
-                                ) : (
-                                  <span className="p-1 block truncate text-xs">{container.bl || '-'}</span>
-                                )}
-                              </td>
-
-                              {/* CONTAINER */}
-                              <td className="p-3 font-mono font-black text-slate-900 dark:text-slate-100 select-all truncate">
-                                {container.id}
-                              </td>
-
-                              {/* Warehouse */}
-                              <td className="p-1 truncate">
-                                {isEditMode ? (
-                                  <select
-                                    value={container.yardId}
-                                    onChange={(e) => handleUpdateContainerField(container.id, 'yardId', e.target.value)}
-                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs font-bold text-slate-800 dark:text-slate-100"
-                                  >
-                                    {Object.entries(yards).filter(([_, y]) => y && (y as any).type !== 'BUFFER').map(([key, y]) => (
-                                      <option key={key} value={key}>{(y as any).name}</option>
-                                    ))}
-                                  </select>
-                                ) : (
-                                  <span className="p-1 block truncate text-[11px] font-extrabold text-blue-600 dark:text-blue-400">
-                                    {yards[container.yardId]?.name || container.yardId}
-                                  </span>
-                                )}
-                              </td>
-
-                              {/* Navio */}
-                              <td className="p-1 truncate">
-                                {isEditMode ? (
-                                  <input
-                                    type="text"
-                                    value={container.vesselName || ''}
-                                    onChange={(e) => handleUpdateContainerField(container.id, 'vesselName', e.target.value)}
-                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans"
-                                  />
-                                ) : (
-                                  <span className="p-1 block truncate text-xs">{container.vesselName || '-'}</span>
-                                )}
-                              </td>
-
-                              {/* ETA */}
-                              <td className="p-1 truncate">
-                                {isEditMode ? (
-                                  <input
-                                    type="text"
-                                    value={container.eta || ''}
-                                    onChange={(e) => handleUpdateContainerField(container.id, 'eta', e.target.value)}
-                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
-                                  />
-                                ) : (
-                                  <span className="p-1 block truncate text-xs">{container.eta || '-'}</span>
-                                )}
-                              </td>
-
-                              {/* Free Time */}
-                              <td className="p-1 truncate">
-                                {isEditMode ? (
-                                  <input
-                                    type="text"
-                                    value={container.freeTime || ''}
-                                    onChange={(e) => handleUpdateContainerField(container.id, 'freeTime', e.target.value)}
-                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
-                                  />
-                                ) : (
-                                  <span className="p-1 block truncate text-xs font-mono font-bold text-amber-600 dark:text-amber-400">{container.freeTime || '-'}</span>
-                                )}
-                              </td>
-
-                              {/* Componente */}
-                              <td className="p-1 truncate">
-                                {isEditMode ? (
-                                  <input
-                                    type="text"
-                                    value={container.componente || ''}
-                                    onChange={(e) => handleUpdateContainerField(container.id, 'componente', e.target.value)}
-                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
-                                  />
-                                ) : (
-                                  <span className="p-1 block truncate text-xs">{container.componente || '-'}</span>
-                                )}
-                              </td>
-
-                              {/* Modelo */}
-                              <td className="p-1 truncate">
-                                {isEditMode ? (
-                                  <input
-                                    type="text"
-                                    value={container.modelo || ''}
-                                    onChange={(e) => handleUpdateContainerField(container.id, 'modelo', e.target.value)}
-                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
-                                  />
-                                ) : (
-                                  <span className="p-1 block truncate text-xs font-bold text-slate-550 dark:text-slate-300">{container.modelo || '-'}</span>
-                                )}
-                              </td>
-
-                              {/* Lote */}
-                              <td className="p-1 truncate">
-                                {isEditMode ? (
-                                  <input
-                                    type="text"
-                                    value={container.lote || ''}
-                                    onChange={(e) => handleUpdateContainerField(container.id, 'lote', e.target.value)}
-                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
-                                  />
-                                ) : (
-                                  <span className="p-1 block truncate text-xs text-blue-500 dark:text-blue-400 font-bold">{container.lote || '-'}</span>
-                                )}
-                              </td>
-
-                              {/* ProgramaÃ§Ã£o */}
-                              <td className="p-1 truncate">
-                                {isEditMode ? (
-                                  <input
-                                    type="text"
-                                    value={container.programacao || ''}
-                                    onChange={(e) => handleUpdateContainerField(container.id, 'programacao', e.target.value)}
-                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
-                                  />
-                                ) : (
-                                  <span className="p-1 block truncate text-xs">{container.programacao || '-'}</span>
-                                )}
-                              </td>
-
-                              {/* Transportadora */}
-                              <td className="p-1 truncate">
-                                {isEditMode ? (
-                                  <input
-                                    type="text"
-                                    value={container.transportadora || ''}
-                                    onChange={(e) => handleUpdateContainerField(container.id, 'transportadora', e.target.value)}
-                                    className="w-full bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 rounded-sm font-sans text-xs"
-                                  />
-                                ) : (
-                                  <span className="p-1 block truncate text-xs">{container.transportadora || '-'}</span>
-                                )}
-                              </td>
-
-                              {/* Actions */}
-                              {isEditMode && (
-                                <td className="p-3 text-right">
-                                  <button 
-                                    onClick={() => handleDeleteContainer(container)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 p-1.5 rounded-lg transition-all"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </td>
-                              )}
-                            </tr>
-                          );
-                        })}
-                        {filteredContainers.length === 0 && (
-                          <tr>
-                            <td colSpan={isEditMode ? 13 : 12} className="text-center py-8 text-gray-400">
-                              {language === 'bilingual'
-                                ? 'Nenhum contÃªiner correspondente encontrado. / æœªæ‰¾åˆ°åŒ¹é…çš„é›†è£…ç®±ã€‚'
-                                : 'Nenhum contÃªiner correspondente encontrado.'}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                </div>
-
-              </div>
-
-              {/* Modal Footer */}
-              <div className={`p-3 border-t flex justify-between items-center text-[10px] text-gray-400 ${
-                theme === 'dark' ? 'border-slate-800 bg-[#0f172a]' : 'border-gray-100 bg-gray-50'
-              }`}>
-                <span>{language === 'bilingual' ? `Total nesta Ã¡rea: ${containers.filter(c => c.yardId === selectedYardKey).length} contÃªiner(es) / è¯¥åŒºåŸŸå…± ${containers.filter(c => c.yardId === selectedYardKey).length} ä¸ªé›†è£…ç®±` : `Total nesta Ã¡rea: ${containers.filter(c => c.yardId === selectedYardKey).length} contÃªiner(es)`}</span>
-                <button 
-                  onClick={() => setSelectedYardKey(null)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-black px-4 py-1.5 rounded-lg text-xs shadow-xs transition-colors"
-                >
-                  {language === 'bilingual' ? 'Fechar / å…³é—­' : 'Fechar'}
-                </button>
-              </div>
-
-            </div>
-          </div>
-        );
-      })()}
-
-      {confirmConfig && confirmConfig.isOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className={`relative rounded-xl shadow-2xl w-full max-w-md p-6 border transition-all ${
-            theme === 'dark' 
-              ? 'bg-[#1e293b] border-slate-800 text-white' 
-              : 'bg-white border-slate-100 text-slate-800'
-          }`}>
-            <h3 className="text-base font-black uppercase mb-2 tracking-wide flex items-center gap-2">
-              <span className="text-amber-500 font-bold font-mono text-lg">âš ï¸</span> {confirmConfig.title}
-            </h3>
-            <p className="text-xs font-semibold leading-relaxed mb-6 opacity-90 whitespace-pre-line">
-              {confirmConfig.message}
-            </p>
-            <div className="flex justify-end gap-2.5">
-              <button
-                onClick={() => setConfirmConfig(null)}
-                className={`px-4 py-2 rounded-lg text-xs font-extrabold border transition-all ${
-                  theme === 'dark' 
-                    ? 'border-slate-800 bg-[#0f172a] text-slate-300 hover:bg-slate-800' 
-                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                {language === 'bilingual' ? 'Cancelar / å–æ¶ˆ' : 'Cancelar'}
-              </button>
-              <button
-                onClick={() => confirmConfig.onConfirm()}
-                className="px-4 py-2 rounded-lg text-xs font-black bg-red-600 hover:bg-red-700 text-white shadow-xs transition-all"
-              >
-                {language === 'bilingual' ? 'Confirmar / ç¡®è®¤' : 'Confirmar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 1: GOOGLE SHEETS & LOCAL EXCEL IMPORT SYNC */}
-      {sheetsModalOpen && (
-        <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className={`relative rounded-2xl shadow-2xl w-full max-w-lg p-6 border transition-all ${
-            theme === 'dark' 
-              ? 'bg-[#1e293b] border-slate-700 text-white' 
-              : 'bg-white border-slate-100 text-slate-800'
-          }`}>
-            <div className="flex justify-between items-center border-b pb-3 mb-4 border-slate-100 dark:border-slate-800">
-              <h3 className="text-sm font-black uppercase flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-emerald-600 shrink-0" />
-                {language === 'zh' ? 'é›†æˆæ•°æ®æºï¼šåœ¨çº¿ Google Sheets ä¸æœ¬åœ° Excel/CSV' : 'Importador e Sincronizador de LogÃ­stica'}
-              </h3>
-              <button 
-                onClick={() => setSheetsModalOpen(false)} 
-                className="text-gray-400 hover:text-rose-600 p-1 rounded-lg cursor-pointer"
-              >
-                âœ•
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs font-bold">
-              {/* OpÃ§Ã£o A: Sincronizador de Link do Google Sheets */}
-              <div className="space-y-2">
-                <span className="text-[10px] text-emerald-600 uppercase tracking-widest block">OpÃ§Ã£o A: Sincronizar link da Planilha Google (Publicado)</span>
-                <input 
-                  type="text" 
-                  value={sheetsUrl} 
-                  onChange={(e) => setSheetsUrl(e.target.value)}
-                  placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv" 
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-2.5 rounded-lg text-xs font-semibold outline-none"
-                />
-                <button 
-                  onClick={handleSyncGoogleSheets}
-                  className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black uppercase tracking-wider cursor-pointer"
-                >
-                  Sincronizar Planilha Online
-                </button>
-              </div>
-
-              <div className="relative flex py-2 items-center">
-                <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
-                <span className="flex-shrink mx-4 text-gray-400 uppercase text-[9px] tracking-widest font-black">ou</span>
-                <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
-              </div>
-
-              {/* OpÃ§Ã£o B: Drag and Drop Local Excel/CSV File Loader */}
-              <div className="space-y-2">
-                <span className="text-[10px] text-blue-600 uppercase tracking-widest block">OpÃ§Ã£o B: Carregar arquivo Excel/CSV local</span>
-                <div className="border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl p-6 text-center hover:bg-slate-50 dark:hover:bg-slate-800/35 transition-all cursor-pointer relative">
-                  <input 
-                    type="file" 
-                    accept=".xlsx, .xls, .csv" 
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      try {
-                        const reader = new FileReader();
-                        reader.onload = async (evt) => {
-                          const bstr = evt.target?.result;
-                          const wb = XLSX.read(bstr, { type: 'binary' });
-                          const firstSheet = wb.Sheets[wb.SheetNames[0]];
-                          const rows = XLSX.utils.sheet_to_json(firstSheet);
-                          await handleImportParsedRows(rows);
-                          setSheetsModalOpen(false);
-                        };
-                        reader.readAsBinaryString(file);
-                      } catch (err) {
-                        console.error(err);
-                        alert("Erro ao ler o arquivo selecionado.");
-                      }
-                    }}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  />
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <div className="bg-blue-100 text-blue-600 dark:bg-blue-950 p-2.5 rounded-full">
-                      <FileSpreadsheet className="w-6 h-6" />
-                    </div>
-                    <span className="text-xs font-black">{language === 'zh' ? 'æ‹–æ‹½æˆ–ç‚¹å‡»ä¸Šä¼ æœ¬åœ° Excel / CSV' : 'Arraste ou clique para selecionar arquivo local'}</span>
-                    <span className="text-[9.5px] text-gray-400 font-bold">Aceita .XLSX, .XLS, .CSV contendo colunas: Container, BL, Lote, Navio...</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: MONTHLY CALENDAR DAY DETAILS */}
-      {selectedDayCalendar && (
-        <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className={`relative rounded-2xl shadow-2xl w-full max-w-4xl p-6 border transition-all ${
-            theme === 'dark' 
-              ? 'bg-[#1e293b] border-slate-700 text-white' 
-              : 'bg-white border-slate-100 text-slate-800'
-          }`}>
-            <div className="flex justify-between items-center border-b pb-3 mb-4 border-slate-100 dark:border-slate-800">
-              <h3 className="text-sm font-black uppercase flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-red-600 shrink-0" />
-                {language === 'zh' ? `åˆ°è´§æ¸…å•è¯¦æƒ… - ${selectedDayCalendar}` : `Equipamentos Agendados para: ${selectedDayCalendar}`}
-              </h3>
-              <button 
-                onClick={() => setSelectedDayCalendar(null)} 
-                className="text-gray-400 hover:text-rose-600 p-1 rounded-lg cursor-pointer"
-              >
-                âœ•
-              </button>
-            </div>
-
-            <div className="overflow-x-auto max-h-[300px]">
-              <table className="w-full text-left text-xs border-collapse font-mono">
-                <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-800 text-[9px] uppercase text-gray-500 border-b border-gray-150 dark:border-slate-800 font-black">
-                    <th className="p-2.5 pl-3">ID Container</th>
-                    <th className="p-2.5">BL</th>
-                    <th className="p-2.5">Batch / Lote</th>
-                    <th className="p-2.5">Warehouse / PÃ¡tio</th>
-                    <th className="p-2.5">Model / Modelo</th>
-                    <th className="p-2.5">Process / Status</th>
-                    <th className="p-2.5">Status Entrega</th>
-                    <th className="p-2.5">Transportadora (Carrier)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800/60 font-semibold text-slate-700 dark:text-slate-350">
-                  {logisticsEntries
-                    .filter(e => normalizeDate(String(e.estimatedDeliveryDate)) === selectedDayCalendar)
-                    .map((entry, index) => {
-                      const matchedCntr = containers.find(c => c.id === entry.cntrsOriginal);
-                      const lotNumber = matchedCntr?.lote || entry.batch || '-';
-                      const warehouseName = matchedCntr ? (yards[matchedCntr.yardId]?.name || matchedCntr.yardId) : entry.bondedWarehouse;
-                      const modelName = matchedCntr?.modelo || entry.component || '-';
-                      
-                      return (
-                        <tr key={entry.id || index} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                          <td className="p-2 pl-3 font-bold text-slate-900 dark:text-white select-all">{entry.cntrsOriginal}</td>
-                          <td className="p-2">{entry.bl}</td>
-                          <td className="p-2 font-sans font-bold">{lotNumber}</td>
-                          <td className="p-2 font-sans uppercase text-[10.5px]">{warehouseName}</td>
-                          <td className="p-2 font-sans font-extrabold text-blue-600 dark:text-blue-400">{modelName}</td>
-                          <td className="p-2 font-sans uppercase">
-                            <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-black ${entry.statusComex === 'CARGO DELIVERED' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/20'}`}>
-                              {entry.statusComex}
-                            </span>
-                          </td>
-                          <td className="p-2 font-sans uppercase">
-                            <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-black ${entry.status === 'ENTREGUE' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'}`}>
-                              {entry.status || 'PENDENTE'}
-                            </span>
-                          </td>
-                          <td className="p-2 font-sans font-bold">{entry.carrier || 'N/A'}</td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isBufferMapMaximized && (
-        <div className="fixed inset-0 z-[120] bg-slate-950/98 backdrop-blur-lg flex flex-col overflow-hidden text-white font-sans animate-fade-in">
-          
-          {/* Header */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-5 border-b border-slate-850 bg-[#0b0f19]/80 backdrop-blur-md sticky top-0 z-20">
-            <div>
-              <div className="flex items-center gap-2">
-                <Boxes className="w-5 h-5 text-red-500 animate-pulse" />
-                <h3 className="text-sm font-black tracking-widest uppercase text-slate-100">
-                  {language === 'zh' ? 'å…¨å± 2D æ™ºèƒ½ç›‘æ§ï¼šå †åœºé€šé“ alocaÃ§Ã£o' : 'Monitoramento 2D Maximizado do Buffer'}
-                </h3>
-              </div>
-              <div className="text-[10.5px] text-gray-400 font-bold mt-1.5 flex flex-wrap items-center gap-2">
-                <span>{language === 'zh' ? 'å½“å‰åŒºåŸŸ:' : 'Ãrea Ativa:'}</span>
-                <select
-                  value={activeBufferId}
-                  onChange={(e) => setActiveBufferId(e.target.value)}
-                  className="bg-[#1e293b] text-white border border-slate-700 text-[10.5px] font-black rounded px-2 py-0.5 outline-none cursor-pointer"
-                >
-                  {bufferAreas.map((area) => (
-                    <option key={area.id} value={area.id}>
-                      {area.name}
-                    </option>
-                  ))}
-                </select>
-                <span className="font-mono bg-slate-850 px-2 py-0.5 rounded text-gray-400">
-                  COORD: {getCurrentBufferArea().rows}x{getCurrentBufferArea().cols}
-                </span>
-              </div>
-            </div>
-
-            {/* Middle Stats Bar */}
-            <div className="flex items-center gap-4 flex-wrap bg-[#1e293b]/40 border border-slate-800 p-2 rounded-xl">
-              <div className="flex flex-col text-center">
-                <span className="text-[9px] text-gray-400 uppercase font-bold">{language === 'zh' ? 'å ç”¨ç‡' : 'OcupaÃ§Ã£o'}</span>
-                <span className="text-sm font-black text-white font-mono">
-                  {getCurrentBufferOccupancy().occupied} / {getCurrentBufferOccupancy().total} Slots ({getCurrentBufferOccupancy().percentage}%)
-                </span>
-              </div>
-              <div className="h-6 w-px bg-slate-800"></div>
-              <div className="flex flex-col text-center">
-                <span className="text-[9px] text-blue-400 uppercase font-bold">{language === 'zh' ? 'é‡ç®±' : 'Cheios'}</span>
-                <span className="text-sm font-black text-blue-400 font-mono">
-                  {getCurrentBufferOccupancy().totalFull}
-                </span>
-              </div>
-              <div className="h-6 w-px bg-slate-800"></div>
-              <div className="flex flex-col text-center">
-                <span className="text-[9px] text-slate-400 uppercase font-bold">{language === 'zh' ? 'ç©ºç®±' : 'Vazios (Swap)'}</span>
-                <span className="text-sm font-black text-slate-300 font-mono">
-                  {getCurrentBufferOccupancy().totalEmpty}
-                </span>
-              </div>
-              <div className="h-6 w-px bg-slate-800"></div>
-              <div className="flex flex-col text-center">
-                <span className="text-[9px] text-emerald-400 uppercase font-bold">{language === 'zh' ? 'ç›´æ¥æè½¦' : 'Rota RÃ¡pida'}</span>
-                <span className="text-sm font-black text-emerald-400 font-mono">
-                  {getCurrentBufferOccupancy().optimalCount}
-                </span>
-              </div>
-            </div>
-
-            {/* Actions & Filters */}
-            <div className="flex items-center gap-3 self-stretch md:self-auto justify-between">
-              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-2 py-1 rounded-lg">
-                <span className="text-[10px] text-gray-400 uppercase font-black tracking-wider flex items-center gap-1">
-                  <Filter className="w-3 h-3 text-red-500" />
-                  {language === 'zh' ? 'è¿‡æ»¤:' : 'Filtro:'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setBufferStatusFilter('ALL')}
-                  className={`px-2 py-0.5 rounded text-[10px] font-black transition-all cursor-pointer ${
-                    bufferStatusFilter === 'ALL'
-                      ? 'bg-red-650 text-white'
-                      : 'bg-transparent text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {language === 'zh' ? 'å…¨' : 'Todos'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBufferStatusFilter('CHEIO')}
-                  className={`px-2 py-0.5 rounded text-[10px] font-black transition-all cursor-pointer ${
-                    bufferStatusFilter === 'CHEIO'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-transparent text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {language === 'zh' ? 'é‡' : 'Cheios'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBufferStatusFilter('VAZIO')}
-                  className={`px-2 py-0.5 rounded text-[10px] font-black transition-all cursor-pointer ${
-                    bufferStatusFilter === 'VAZIO'
-                      ? 'bg-slate-500 text-white'
-                      : 'bg-transparent text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {language === 'zh' ? 'ç©º' : 'Vazios'}
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsBufferMapMaximized(false)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-lg flex items-center gap-1.5 shadow-lg shadow-red-600/10 transition-all cursor-pointer border border-transparent"
-              >
-                <Minimize2 className="w-3.5 h-3.5" />
-                {language === 'zh' ? 'æ”¶èµ·åœ°å›¾ / è¿”å›' : 'Fechar'}
-              </button>
-            </div>
-          </div>
-
-          {/* Grid Area - Expansive scroll stage */}
-          <div className="flex-1 overflow-auto p-6 bg-slate-950 flex justify-center items-start">
-            <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 shadow-2xl flex flex-col items-center min-w-max">
-              
-              {/* Columns Header */}
-              <div className="flex mb-2 pl-8">
-                {Array.from({ length: getCurrentBufferArea().cols }).map((_, c) => (
-                  <div key={c} className="w-40 text-center text-[10.5px] font-black text-gray-500 font-mono tracking-wider">
-                    COL {c + 1}
-                  </div>
-                ))}
-              </div>
-
-              {/* Rows */}
-              <div className="space-y-2.5">
-                {Array.from({ length: getCurrentBufferArea().rows }).map((_, r) => {
-                  const isNumericArea = activeBufferId.includes('buffer-e') || activeBufferId.includes('buffer-b');
-                  const rowLetter = isNumericArea ? String(r + 1) : String.fromCharCode(65 + r);
-                  return (
-                    <div key={r} className="flex items-center gap-3">
-                      {/* Row Label */}
-                      <div className="w-8 text-center text-xs font-black text-gray-400 font-mono bg-slate-850 py-1 rounded">
-                        {isNumericArea ? `R${rowLetter}` : rowLetter}
-                      </div>
-
-                      {/* Columns */}
-                      <div className="flex gap-2.5">
-                        {Array.from({ length: getCurrentBufferArea().cols }).map((_, c) => {
-                          const slot = getSlotAt(r, c);
-                          const isOccupied = !!slot?.containerNo;
-                          const isVazio = slot?.status?.toLowerCase().includes('vaz') || slot?.status?.toLowerCase().includes('emp');
-                          const isFilteredOut = isOccupied && (
-                            (bufferStatusFilter === 'CHEIO' && isVazio) ||
-                            (bufferStatusFilter === 'VAZIO' && !isVazio)
-                          );
-
-                          return (
-                            <div
-                              key={c}
-                              onClick={() => handleSlotClick(r, c)}
-                              className={`
-                                w-40 h-28 rounded-xl transition-all duration-300 cursor-pointer select-none relative flex flex-col justify-between p-3 text-left border shadow-sm
-                                ${isOccupied
-                                  ? (slot.isOptimalPickup
-                                    ? 'bg-emerald-950/25 border-emerald-500 hover:border-emerald-400 hover:bg-emerald-950/45 text-white'
-                                    : (slot.priority === 'CRITICAL' || slot.priority === 'HIGH'
-                                      ? 'bg-red-950/25 border-red-500 hover:border-red-400 hover:bg-red-950/45 text-white'
-                                      : (isVazio
-                                        ? 'bg-slate-900/60 border-slate-700 hover:border-slate-500 text-slate-400'
-                                        : 'bg-blue-950/20 border-blue-500 hover:border-blue-400 hover:bg-blue-950/40 text-white'
-                                      )
-                                    )
-                                  )
-                                  : 'border-dashed border-slate-800 bg-transparent hover:border-red-500 hover:bg-slate-850/45 hover:shadow-inner'
-                                }
-                                ${isFilteredOut ? 'opacity-10 saturate-50 blur-[0.4px] pointer-events-none' : ''}
-                              `}
-                            >
-                              {/* Top Indicators Row */}
-                              <div className="flex justify-between items-start">
-                                <span className="text-[8.5px] font-mono font-black text-gray-400 bg-slate-800/80 px-1.5 py-0.5 rounded">
-                                  {isNumericArea ? `${activeBufferId.includes('buffer-e') ? 'E' : 'B'}_${rowLetter}_${c + 1}` : `${rowLetter}${c + 1}`}
-                                </span>
-
-                                {isOccupied && (
-                                  <div className="flex gap-1 items-center">
-                                    {slot.isOptimalPickup && (
-                                      <span className="flex h-2.5 w-2.5 relative">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                                      </span>
-                                    )}
-                                    <span className="text-[7.5px] font-mono font-black bg-slate-800 px-1.5 py-0.5 rounded text-gray-200">
-                                      {slot.size === '40\' HC' ? "40' HC" : "20' FT"}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Container Identity Box */}
-                              {isOccupied ? (
-                                <div className="flex flex-col gap-0.5 mt-1.5">
-                                  <div className="text-[11.5px] font-black text-slate-100 font-mono tracking-wide flex justify-between items-center">
-                                    <span className="truncate select-all select-text">{slot.containerNo}</span>
-                                    {isVazio && (
-                                      <span className="text-[7.5px] font-black px-1.5 py-0.2 bg-slate-800 text-slate-400 rounded">
-                                        {language === 'zh' ? 'ç©ºç®±' : 'VAZIO'}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-[9px] font-bold text-gray-400 truncate">
-                                    {slot.cargoType}
-                                  </div>
-
-                                  {/* WMS Metadata Details (Lot & Free Time End Date) */}
-                                  {(slot.loteNo || slot.validade) && (
-                                    <div className="text-[8.5px] font-black truncate flex flex-col gap-0.5 mt-1 border-t border-slate-800 pt-1">
-                                      {slot.loteNo && (
-                                        <span className="text-blue-400 flex items-center gap-1">
-                                          <span className="text-[7.5px] text-gray-500 font-bold uppercase">LOTE:</span>
-                                          <span className="font-mono tracking-tight">{slot.loteNo}</span>
-                                        </span>
-                                      )}
-                                      {slot.validade && (
-                                        <span className="text-amber-400 flex items-center gap-1" title="Free Time End Date (Data de validade)">
-                                          <span className="text-[7.5px] text-gray-500 font-bold uppercase">FREE TIME:</span>
-                                          <span className="font-mono tracking-tight">{slot.validade}</span>
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="flex-1 flex flex-col items-center justify-center text-gray-600">
-                                  <Plus className="w-5 h-5 text-slate-800 hover:text-red-500 transition-colors" />
-                                  <span className="text-[8px] font-black tracking-widest uppercase mt-1">
-                                    {language === 'zh' ? 'ç©ºä½ç½® / å¿«é€Ÿåˆ†é…' : 'Alocar Slot'}
-                                  </span>
-                                </div>
-                              )}
-
-                              {/* Footer Priority and Height details */}
-                              {isOccupied && (
-                                <div className="flex justify-between items-center text-[8px] font-bold mt-1">
-                                  <span className={`px-1.5 py-0.5 rounded text-[7.5px] font-black ${
-                                    slot.priority === 'CRITICAL' ? 'bg-red-950 text-red-400 border border-red-900/50' :
-                                    slot.priority === 'HIGH' ? 'bg-orange-950 text-orange-400 border border-orange-900/50' :
-                                    slot.priority === 'NORMAL' ? 'bg-blue-950 text-blue-400 border border-blue-900/50' :
-                                    'bg-slate-800 text-gray-400'
-                                  }`}>
-                                    {slot.priority}
-                                  </span>
-
-                                  {slot.stack && slot.stack.length > 1 && (
-                                    <span className="text-[7.5px] font-black text-purple-400 bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-800/40 flex items-center gap-1">
-                                      <Layers className="w-3 h-3 inline text-purple-500" />
-                                      <span>ALTURA: {slot.stack.length}</span>
-                                    </span>
-                                  )}
-
-                                  {slot.isOptimalPickup && (
-                                    <span className="text-[8.5px] font-extrabold text-emerald-400 flex items-center gap-0.5 animate-pulse">
-                                      âš¡ QUICK-OUT
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Legend Footer */}
-              <div className="mt-6 text-[10.5px] text-gray-500 font-bold max-w-2xl text-center leading-relaxed flex items-center gap-2">
-                <Info className="w-4 h-4 text-blue-500 shrink-0" />
-                <span>
-                  {language === 'zh' ? 'ğŸ’¡ åœ¨å…¨å±æ¨¡å¼ä¸‹ï¼Œæ‚¨å¯ä»¥ç›´æ¥çœ‹åˆ°æ‰€æœ‰é›†è£…ç®±çš„æ‰¹æ¬¡å·(Lote)å’Œæœ‰æ•ˆåˆ°æœŸæ—¥(Free time)ã€‚å•å‡»ä»»æ„æ ¼å­å¯ç›´æ¥è°ƒå‡ºç¼–è¾‘ä¾§è¾¹æ ï¼Œæ”¯æŒå æ”¾é«˜åº¦ç®¡ç†ã€‚' : 'ğŸ’¡ No modo tela cheia, o NÂº do lote e a Data de validade (Free Time) sÃ£o mostrados diretamente sobre o contÃªiner. Clique em qualquer slot para editÃ¡-lo.'}
-                </span>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
-
-      </div> {/* Closing right-side workspace wrapper */}
-    </div>
-  );
-}
-
-// SUBCOMPONENTE DE CARD DE PÃTIO (BILINGUE)
-interface YardCardProps {
-  key?: React.Key;
-  yard: Yard;
-  ocupacao: number;
-  isEdit: boolean;
-  isSmall?: boolean;
-  theme: string;
-  t: (key: string) => string;
-  language: string;
-  renderLabel: (key: string, colorClass?: string) => React.ReactNode;
-  widescreenMode?: boolean;
-  onClick?: () => void;
-}
-
-function YardCard({ yard, ocupacao, isEdit, isSmall = false, theme, t, language, renderLabel, widescreenMode = false, onClick }: YardCardProps) {
-  const isRed = ocupacao >= 89;
-  const isYellow = ocupacao > 65 && ocupacao < 89;
-
-  const currentTotal = (yard.cheio || 0) + (yard.vazio || 0);
-  const previousTotal = yard.previous_total;
-  let trendIcon = null;
-  if (previousTotal !== undefined && previousTotal > 0) {
-    if (currentTotal > previousTotal) {
-      trendIcon = (
-        <span className="inline-flex items-center text-rose-500 dark:text-rose-400 ml-1 hover:opacity-80" title={`Aumento de contÃªineres em relaÃ§Ã£o ao perÃ­odo anterior (${previousTotal}) / æ¯”ä¸ŠæœŸå¢åŠ  (${previousTotal})`}>
-          <TrendingUp className="w-3.5 h-3.5" />
-        </span>
-      );
-    } else if (currentTotal < previousTotal) {
-      trendIcon = (
-        <span className="inline-flex items-center text-emerald-500 dark:text-emerald-400 ml-1 hover:opacity-80" title={`ReduÃ§Ã£o de contÃªineres em relaÃ§Ã£o ao perÃ­odo anterior (${previousTotal}) / æ¯”ä¸ŠæœŸå‡å°‘ (${previousTotal})`}>
-          <TrendingDown className="w-3.5 h-3.5" />
-        </span>
-      );
-    }
-  }
-
-  let themeColor = "bg-blue-600 text-white"; 
-  if (yard.type === 'WAREHOUSE') {
-    themeColor = "bg-emerald-600 text-white";
-  } else if (yard.type === 'BUFFER') {
-    themeColor = "bg-amber-500 text-white";
-  }
-
-  let ringClass = "";
-  if (isRed) {
-    ringClass = "ring-2 ring-red-500 animate-pulse";
-  } else if (isYellow) {
-    ringClass = "ring-2 ring-amber-500";
-  }
-
-  let textStatusColor = "text-[#10b981] font-black"; // safe green
-  if (isRed) {
-    textStatusColor = "text-red-500 font-black";
-  } else if (isYellow) {
-    textStatusColor = "text-amber-500 dark:text-amber-400 font-black";
-  }
-
-  let barColorClass = "bg-gradient-to-r from-blue-500 to-indigo-600";
-  if (isRed) {
-    barColorClass = "bg-red-550 bg-red-500";
-  } else if (isYellow) {
-    barColorClass = "bg-amber-500";
-  }
-
-  return (
-    <div 
-      onClick={onClick}
-      className={`rounded-lg border relative transition-all cursor-pointer hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 ${
-        widescreenMode ? (isSmall ? 'p-1.5' : 'p-2') : 'p-2.5'
-      } ${
-        theme === 'dark' 
-          ? 'bg-[#1e293b] border-slate-800 text-white' 
-          : 'bg-white border-slate-100 shadow-sm'
-        } ${ringClass}`}
-    >
-      
-      {/* Topo do Card */}
-      <div className={`flex justify-between items-start ${widescreenMode ? 'mb-0.5' : 'mb-1'}`}>
-        <div>
-          <h4 className={`font-extrabold tracking-tight text-gray-900 dark:text-white uppercase leading-none ${
-            widescreenMode ? 'text-[11px]' : 'text-[12.5px]'
-          }`}>{yard.name}</h4>
-          <div className="block mt-0.5">{renderLabel('activeSupplier', "text-gray-400 dark:text-gray-500 text-[8px]")}</div>
-        </div>
-        <span className={`font-black rounded uppercase tracking-wider ${
-          widescreenMode ? 'text-[7.5px] px-1 py-0.5' : 'text-[8.5px] px-1.5 py-0.5'
-        } ${themeColor}`}>
-          {yard.type}
-        </span>
-      </div>
-
-      {/* Barra de Progresso / OcupaÃ§Ã£o */}
-      <div className={widescreenMode ? 'mt-0.5' : 'mt-1'}>
-        <div className={`flex justify-between font-bold mb-0.5 ${widescreenMode ? 'text-[8.5px]' : 'text-[10px]'}`}>
-          <span className="text-gray-400 flex items-center gap-1">
-            {renderLabel('usedCapacity', "text-gray-400 dark:text-gray-500")}
-          </span>
-          <span className={`${textStatusColor} flex items-center gap-1`}>
-            {ocupacao}%
-            {trendIcon}
-            {isRed && (
-              <span className="text-[9.5px] bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-200 px-1 py-0.5 rounded font-bold flex items-center">
-                {ocupacao >= 100
-                  ? (language === 'bilingual' ? 'çˆ†ä»“ / Estouro' : (language === 'zh' ? 'çˆ†ä»“' : 'Estouro'))
-                  : (language === 'bilingual' ? 'è¿‡è½½ / CrÃ­tico' : (language === 'zh' ? 'è¿‡è½½' : 'CrÃ­tico'))
-                }
-              </span>
-            )}
-            {isYellow && (
-              <span className="text-[9.5px] bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200 px-1 py-0.5 rounded font-bold flex items-center">
-                {language === 'bilingual' ? 'æ³¨æ„ / AtenÃ§Ã£o' : (language === 'zh' ? 'æ³¨æ„' : 'AtenÃ§Ã£o')}
-              </span>
-            )}
-          </span>
-        </div>
-        <div className="w-full bg-gray-100 dark:bg-slate-700 h-1 rounded-full overflow-hidden">
-          <div 
-            className={`h-full rounded-full transition-all duration-500 ${barColorClass}`}
-            style={{ width: `${Math.min(ocupacao, 100)}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Dados NumÃ©ricos Centrais */}
-      <div className={`grid grid-cols-3 gap-0.5 bg-gray-50/50 dark:bg-slate-800/40 rounded-md text-center ${
-        widescreenMode ? 'mt-1 p-0.5' : 'mt-1.5 p-1'
-      }`}>
-        <div className="flex flex-col justify-between py-0.5">
-          <span className="block leading-none">{renderLabel('totalCap', "text-gray-400 dark:text-gray-500")}</span>
-          <span className={`font-extrabold text-gray-700 dark:text-gray-200 block mt-0.5 leading-none font-mono ${
-            widescreenMode ? 'text-[10px]' : 'text-[11.5px]'
-          }`}>{yard.capacity.toLocaleString()}</span>
-        </div>
-        <div className="flex flex-col justify-between py-0.5 border-l border-r border-gray-100 dark:border-slate-800/60">
-          <span className="block leading-none">{renderLabel('full', "text-blue-500 dark:text-blue-400")}</span>
-          <span className={`font-extrabold text-blue-600 dark:text-blue-400 block mt-0.5 leading-none font-mono ${
-            widescreenMode ? 'text-[10px]' : 'text-[11.5px]'
-          }`}>{yard.cheio.toLocaleString()}</span>
-        </div>
-        <div className="flex flex-col justify-between py-0.5">
-          <span className="block leading-none">{renderLabel('empty', "text-slate-400 dark:text-slate-500")}</span>
-          <span className={`font-extrabold text-slate-500 dark:text-slate-400 block mt-0.5 leading-none font-mono ${
-            widescreenMode ? 'text-[10px]' : 'text-[11.5px]'
-          }`}>{yard.vazio.toLocaleString()}</span>
-        </div>
-      </div>
-
-      {/* Sub-informaÃ§Ãµes adicionais da parte de baixo */}
-      <div className={`grid grid-cols-3 gap-0.5 font-bold uppercase pt-0.5 leading-tight ${
-        widescreenMode ? 'mt-0.5 text-[8.2px]' : 'mt-1 text-[9px]'
-      } text-gray-400`}>
-        <div className="text-left">
-          <span className="text-gray-400">{language === 'bilingual' ? 'æ¸¯å£/Porto' : (language === 'zh' ? 'æ¸¯å£' : 'Porto')}:</span> <span className="text-gray-700 dark:text-gray-200 font-extrabold leading-none">{yard.porto}</span>
-        </div>
-        <div className="text-center">
-          <span className="text-gray-400">{language === 'bilingual' ? 'å¾…æ/Coleta' : (language === 'zh' ? 'å¾…æ' : 'Coleta')}:</span> <span className="text-blue-500 font-bold leading-none">{yard.prontoColeta}</span>
-        </div>
-        <div className="text-right">
-          <span className="text-gray-400">{language === 'bilingual' ? 'å·²äº¤ä»˜/DL' : (language === 'zh' ? 'å·²äº¤ä»˜' : 'Deliv.')}:</span> <span className="text-emerald-500 font-bold leading-none">{yard.delivered}</span>
-        </div>
-      </div>
-
-    </div>
-  );
-}
+              xœì}k{ÕÕö÷÷Wl\ZË­åSìÜÄ\Š­$zPlc+á¡yó6cilM3Òˆ™Qb×õu%”@8„ğ”%M¡´„>%¤-…pøàB#ÙùÔş„wæ°g´O#ÉC=\ÄÒhf×^{íu¸ äšø?€s,ØšSESsœi­¢ê9ŸŞ30Êèß08VM­ºT×–tpèĞ!Ğûór/xô6ï\ÚøènãÒÍ¿¼Ù|óvóÊ­^0z¢Ûš
+õ’Õ»Æ©ôààBİu­*»QKÆ9ÖOŞŒ_Vægó¹xzfîÉùÙÌdËM²Úp–C÷wÉ6J ı“.Z¦“æÒ8õu,iµô(X4õeø£uN·Më|ºl”JzTÜôp»+Ì›¨±ùìª­ã Ÿ›~<™Ë›91Ÿ“3Ó…Ln:;7ÏéAKVÏÀ6Ãæ¦šV…mEíµ­zµ¤—ÒË&X°ì’nƒÇWİ²^ñ¦±¤ÙgñD.,¥O}oX9°gá´÷dÚ15WOï®¾ì¦Ï—WÇÓÆ_¢§¬•à¨8•Ş5<Td¼`›ÀÏêk,®¤t÷¼G,Á•´Vw­3k<ê<¸hÙ`UçëÃ=´ZÖª%SŸ×ÎéÏ”&­ª«UİÎ[K,¿è¬Ñs
+Ç¡¨Ã
+öp¦†EÑV£Iñ»¹ já·%[[A}hÇ#ƒ±hHP)§Z8¤']Ô«.œ'\µ°XÊáºa–ŒêRléÂ…;JfÍ†“?6„fÆ6ªgÓCh1‹Ë,F‡8²µË,‘2OÔ–O“ÏAwÉ P÷†á½z­¦ÛEÍÑ, x¶4íKeWÒ/Àa7÷ş§qëÚı{o4î¾ñà·/lşáÒÆ­¿‚Ôıo~·qóµÁ¿û=ùÔ‡©ô¤Q-ÖMÈ‡*%Ì®ßp>[òÆ`°<*œ={
+sÂM†á
+‚L.§pÄ)-Qãê/asIF„£JFÖ]©Á‘G{$ÏZÕIÓ(=´šê‡à y GwŸ)ÍËz©nêÇ­’ê-ú£ßÛ÷céûdqS{ŞYÒS==Ò—×ÄS
+"Œ²—®GË)c*_0!‰R$ë|¥„¨·êpªiÍ4!•öd%2„ŠÃ¡¾<¦Œ–ïŞ1šû<vÙQ)®ü*æVc‘UŠoÂ[eÄ‹é•»Ï®å—‘¡!Y­kgÄÑŞÊo¾úR°à›¯ıjãæ+xÏZÔò–.j‘Ä<µ#Ñ‚™dõ6¿SËv~w½p/îzi¾ùiãÊ›àpÄ¼“ƒ"†aË·AùŠ‘l…|yİû½Fo“t1H¢i0u‰>é*”5“ĞbE/õŠpŸdŒ—pà`Ş¿÷,ï½Ğ¸~÷__^.d¡xşÏsÓ…ìÜñÌ\®;Ùøø¥}ùRóò[÷ï\Ø¼ü"¦Ü¿óñƒ/5_ù¨ñùßîßyùş—ïm\{>de—ßò¦éœ•Ôá|Øüæ·›7^½÷ƒû÷~C&îŸ“´Nì¼nêE¸ĞtP¯ ´Ñ¬ÿ‹<Vİ€…­JÍÔ]5ÛÖ—àš UË5,Á¿š­¢m@y©^Ñ@Í¶à@W´õ×ÿ`¸¡PŠŞÌÁÁšh¦c"‘/œ@	Oì²#7xd
+%9BÆ¸Ó.8o¸eøY³‹eHÙµºË=1…M‘ì¦¶ ›tsLr9š@™ÌOLµ1U¸'Eª¯JO€“+JŒËÏ?ì¥	@öÙºQƒ½®Bj	DføXŸ´âqaÅqRo©ş¤>÷Â“( Itaµ!#†‰^*ÔJÎh^!%Û:äûÆ9]:Å½JÙ* -8–Y‡»—©/ºdXµp­øLPzšƒ¨?Ò™#*\&Ï pN3ëP€DŠû@ÆM&G`A‹%PÒ±(DªŒ”>àjö’îà*úäeÖàúÓËğdªÛ‡˜;aJ¼”qşûİ__Í×¯o|ú~°(W?G¼ù¥/š¹‘jüé9`Z.éÀTK½„Èv4¯¾‰›ÿRZŠ™2–äRÙ]•¥ƒ”¾<ÎnŠ÷
+l
+÷Y…áŒPãbÊl53½îé= 	ôiuŒuXõ”L]ÈÈKC²/r´õ· o·ª–Ç_¥KÑ@<«îšp”   w¿E«XwÆm$Ó_<=ˆŒ¸eÊ‰8ƒ.	óF4)[²Ù×T"y\/Qçæ\iMşzË‚ä¿/ËV:JB6˜»ñ©©ä(ÊáR¤¦m¤†ÓjÕĞQÈ›µ‰tš#½o~ò9Ù1~Ô•ñ,úÔÒéƒƒ¤ly#VJt	Ó-ªK0Aê±(×ïƒ;[·«ğ¨W×å'Tà?^ÑÜb9è)1Uì±Òå%®õT´šz`÷¬hv	‘'8„?:§Šèo®tú‰*ºÿ‹_ ÿ–J¯H©†ã/ü,ØôuÒY(:º3àX=eê¨¥¦>P„w²í*<½ Ù/%…c(c#äò©î¬¾rhU±æ³üEN1äò^…ğæò8s*?ŒÃC=¹µvú¢QDzã»RğgÇÕÜº³ÖVé‚tşí…÷Á©àÎé^R€Z·”) %2’U{p°Yq…x—ß2ö~Øì„«j¡]vşØypôiaç‡óIùxÆ†Ã:°h[•TU?Ï0nŠbíO,,˜}>§?lY¦®Uûú‚;æIÄ}¶ÿNù,b¼‘‚ ¬¤ú\+o‡‚<L§”˜!jÔ³ˆÅØ®ó´á–S½Hæ…â6dá-÷uøCŸR_ı–Â—
+º]í}vÀÖñq#5øÿRğö/Py}ÿ×ùÑ`?äZ}^TšppjÂğæÌ&27?ø˜wå¦<Öû…«£jÀ¨ÍzIwR^{û”¢Âj½¦zmÀmâVş,uÅ^¥Ğ".Éïr|èSé¹'4$"~Bx×„ÜÊ…Á¥¢]í0õê’[V_şæéÀ*Ä«\TkÀ¤úÜÓC1ŸMl­,‚Û#ä›²4â½¥‹`BÖÈäôÑò‡3ğ3Ë¨¦zúAÂ6‡›¸Cå
+¡>Sz*EZ®£È½hÙà©ºQ<2u×JÃ	7m©Ô–-õTª\eJW¾Á)j¨, £zÏ„¿Õj@IåXM&—®ÚÒ“A¹­MíØasÇIkXÍÚøğ”8ZÕñ•ãÃBß"©…¢-³uG9#|dÛÉpZ;gX uRwà2ßÄHšÒ.A’·w‰2¸:%J9ó~Dğa¤âƒ ©	vİãö´Í‡ÑË»T\"+öìŠHç¦WvE>­ÙzÙª;ú£µÒLÕ\‘¾\2mÁÔK^«Ÿá$´·?!íæp6©bİv,~v‘—<Ö•>ÏEó”nçt{øJbşnÈË¾_°¿8şıî—À”æj`r
+Ìš<c‚î„EâÏl›Ş.÷¦ËèÌÆÜó¼ÒÇ§§¦ä}`.AÂue¬MO|õ¡{¸k«L;æû¦”ª‘,Üm0ª
+ÙöÍbÛ,@–¸=©.„„šı•©¦­>qÀ¯ïÊ%Á•Xm?›ÊN²P<ğ>©k€bEeÀdæxnúØLÏDğ±ıÂ¦r™)TşÛv1°CsÙ£'`÷üOm5™™Ìæq£‚ª…©)¹şsÏJä(]³lW+Y¶2·ÙÊmwR³m£}¯.ïõ]Î\»zàyí@R&ö3ö6\
+¤oü›²æ,ñì×ƒ«i{#”òDõÛnfŸÊÎOfæfz&üO u¢jZZ©¯ímşéÌ,”øà¿ 5^«µ_ÒäL~6
+LÏ€Écë¿D[eìHÍB]²ÎWÛ¯e*{r&bıETÜTœÌü$7ƒÆ£õ.HÍûœ^©¹+Ê5vi»~8ÇØ+ o5“ÍLæ!)o/™©¢ògÑyqfÑ¯³mÂ,m—·lo	ƒïG )ÑßÚ^ªT!û"Eîk»ÈÃ'ÉÎá¡‰àc7Ú7i_WŠ9Üv‘G³s™|Ïş³ÃÒßIˆùÜÁø"šf8ç¯ <‚%´HK†×k¥m€¼EH $‚n€w,GÇŸIxbğó¾0–Ñ{(Šõ@³]:ğ‰rÖğâ¡ZEÁŒ;ëéc¾·fÜ€pŞ@\§Á `Ë©¸P”å–pFvö(1ÖÉÆ[›·> !y/>k¼şjóã?F‘tYÒ«»	£äÄA•à……ùÒXÏå‹`ŠÉåA$3=
+™Ãù,¢ˆ*ÒCƒŠìç€ŠğAüı%Dao$Šh!o…s†cyTJãø³mÇT´‡Mg~•P¢å•â5ùa_À[˜m9–…xD ÕpÃÁ„`r¥=æ	8G;iºP°a‰4JË,\[ÏqFëÕãÅcqıàp¾l^ş¢ñú•¸X{×!S²AF ÏaWô˜°c[+NÅ£­(^$U$š
+	V|VÉ¥ñÎ¦`#DŞ‘‹×qº#®Â“VE_nŸø¨BZ¨Oqâ·L€Â%Ğ2	·¼˜n9…)ö&G ¼ °ñògÍ‰¯:1‡àûã `•,§wMEkQ"ÏEÇÓ|îdv.;…TÉ‘mÙ?ù´KÙ$>aÖ{ÙX1ñ§uIsÈû® ó%L½XÖ‹g¬e!c‡TÓKÔ"Cn³PŠB™äè*\fT1á2ój/´ÈRóVFxÚßµGú
+ ô*:ÒÂÎ5²‘¼ÃY$÷ï]jşæëî6¯ÿ™ 5à5’©éUÍ¨Óˆ<ğÁ¥ÈP¨ˆNDÌ9ÎšáiC­ùvHF)§OíÙ…ú_òq‘û	cÄ„Ä“ÈÁßãwPş2µš#¢íƒnY×JÂ)qmu&LiTÑÖ^PdŞô)r‘)ÙİˆÜGûáŞ·ËÜT(–tËÉ‚<ÕªÂuf ‡Ô1ìİ^IÄÛ¤°hÔv)y]èÚ,ƒÌáº=ØM…œ´JÈ_¥İv¶0k	Ü°ºÑ6z£l{şˆñ¬“æØeK’=â"+şn‹8•dyt¬Ò
+İÈ…àRH¯ ïC`¢w?\³„-àî‹¬Uro_q5}+G?ğEW	Bg±“JH‰íqğó8v‰&Å$~Ãñx±Hb^dUqŠ§’.Xø‚ùD·‹DÔe7Â[”J¢5Ó‘†ÊTâ‘	¤Nà1´ÇCá¸õF÷Â–ÃŸXï$kY¤fJ@¢ë#’†ï­Ñ›¬å`Ì51¶Î€cE=6ØA÷‚ıı zŞ’‡‚ÑRBj¥é.cqQ(7|*†ß0p¤~=óJt˜”80èK±_ 
+İå¤ =¨	¥‡Åû4œä ã$î	öšiÂ#éGd½BÑJ=Üv„g{¿à…NKCv› ´È2m¿`<ğ¤;á[£>×Ç#F°Ï~gu{gµØŒùG‰°Aè‚TòëÖ!Wà´F¼Gqômº·ãŒiµˆŠ$ÊÂSÃ#Hï®ášºOóXD	Å'Ø÷q³¦34,"Å(°r|@Š¢C.£Õ±‚1m#Ç6‘7ªşÜëÍz1?Œ©	|Ìj½¢Ûš‰N€1­‹ÿÃˆğoÂõöÈ2F¢2~ğÓ’W|Ôk­² k©ŒÜª"_éŠÈF5Ş¤’5>vôbš_ı¡„ !;š†ÏuLè­ËºHÜnQm(ìÒlLeäÆ¹ğŠã¸ª½å~xU#‘©u»üŞƒw>Øxé£æ?.nŞºİøêMLqÙe(6vc€'^5l¿ÆŠ³ÄªO±"x¦ùÜÍ··®mşéâı{¯#†¹¢eëàşI£CÁÇ™ÛØ¸ö<İ±ÆëoÿëËwÏ(·bœ™Òıg
+‘1Ñ‘V‡Ÿ*hcF¥Dg@(¬ŒRğ—œFÁ‡‚¾<qFu\³õgë°hx
+_4l¸ƒV5…§¿ÍI?Ğœ•j¨¢ûìE‚§ĞÎk†JPüpõ)«˜*¡ÿúAo »¡cto? …«ŞŞ¾¾«öJ‘ ˆƒüRºm[¶*°¹*M0YT)§ÌÀí[a¥¦@®Ÿ-dûÁ™HËÄÂµ3Š°¸ÍŠO®)–¹¦àßƒ®ã
+”Æ¾ú’B&rc ºú‚
+e"ˆî>Øò^ƒ’@Õõß
+£7°€È4ß¢›à’½Â¼ïiP¹<éEÀæhÖ¦´U©mŠò&J»¢
+F8yR¾c‰U*èê<[””Ô!Œ¡"QIª÷¶TËœ‡²À¡ÕkQ*İ £šÒ˜ò4ïSE$ÙŠ9 Ö×k¾ıÉ+óÏÏm~òùÆs_4^¼×¸ú÷ûw^n¾õ8jYKp[/ëºë â’Ñ¼üÁPn^ÿKãúíæ[/Ş¿÷Yó•·š¯|…‘”!õMëÕr½5^ûG°6v„Qñüñ¼]{C)¥=ˆ¾Šôk|KVË·ç5ÏğpWÄ&5UŸl
+‹{LDLc±Ñ?>›RNœÂ@Ymå=ßd%İ‚å§PŞªZ£ğ|BÂrBJpÄB³šI\„ş¬ úñ¿”ÁnÖ_7Ã2£8-¿Æı1R5t÷¸æ–à~Kƒá~0,æP4»ğNÃ²|&~Æ­šV4\42wÊ¿4fßkËşíÛÏƒzİ°ì¶ı´ZOÀxaÖ50Vñ¨uÃLñ8ú Ø¯†å6ÃöidâPkIçtT?‚´óİ#Y{ıïËFÅß¾u·mÒiË®Ëû…}ŸY§„ƒ€$ÅyÓğ ‰÷3‰*z>7•ûÇÁ,JC–ÙÿÎN(äNâè¢ŸÎÌ£hñ¶6
+±B£t¨ÇAõ¤K-)[7{"Z#±ãßã«H1ämø£)C± œ>e×b
+ÒÈ÷ÓûÇjË}§ã‚x—¯UdàŞ»o$8OÇÂ¸…vÆcÙÌTv ê¿R¹Õ3ÛumH”uöydo× =×ê»ÅSGuêúß;äĞK‡ºalPÊ;jÙ”ênùk’áõ»ö­ŠÕ¼éZİttÁ9Aè*.t9XŞ#Ë©æT¾Ï$ıœ¸ÏI2«ÅÄìÃ4Ğw£§\}Ÿ™ÎfærÓGÁ|!SÈÍLÃM®óÆkÏ5^¸Ô¸rgóÓÿyáâæ7¯o~ıñk\}¹që÷Í·?»÷ƒæõw›¯}Ø¸ü¢Z¦\ßfYa½f	½¬Ë{óÁÊ:Ã ,axˆtfhpgHo\øõı;ÃÎ7àñäú»èÃç#îDË·á Ñ‰b6_~}şõå«+W/D8K7›ÿ¸¸qó8XÍ7/oÜº±ñúğ™ï\¹ÿÕkÍ{¿G/~úÅƒ?¼öàğÕ%tÑ—õbİ5ÎiH öìRºàD†Óá=ÛÏ¢ƒE[wuxÛ*; y=Ã?H'G¥Œù'd‰bx?uÅå)i:ÅQ²[P:˜xlD¸†Y¶•C@7{%Ÿ™.dÀTn~6S˜<Æ'¾”ØnòÔÇgàâšÌÌMÍw:uí&á×½Âİ`õ§ƒ«Y‹|?Àr˜„mÈ°ú‘ÖÂ²É¶î„1a“†b‰//â‚ëUw¼¾İ“×úå-,1a³}¯ÀhËÉYØoxàAÊö>£ÍØ£,æ$h<íàõ4ÚŠù¿õ%én€vAõŞÓ  V¶¢ÆV__jÇ_öQnwè;İ_|ƒ6›E,Çmu7lk².bº%²Àhçó`ÌØb&äÛ©7GÇÚì!ij¢îî&aIìl=F°”ÁµÅ¬Ê0½Š,­‘÷ÛÎĞO&Iwüª¿“Zµ¨›-sŠãâüŞAr¾†}§û‰o´tßmw:Ã¶Êºxš`>kvIä\ƒ¹7w"Y"`~Òî“­j ßO‚¸@z¨²<òDşUO€*òÔÏmAô|µ‡q¾Š>ÁˆPËñ*ja›Aö /}á	•òÜG¹0P0ù¬Áo%ÆˆTÔ¨@±{² Ú¡İË…ÁM™@-E«SC™„ë»Hø½¯bÙ7Ö3Aº…WŠ\?¯>†Næ§x U“ºHútğ0–·°¸ :ï#ö3ğ[¼³Oyí”¨lùâ&[ñ)¡2“x@¡0³ó(3d!;‚ÃËü:Ot
+¼Ôî,q–Î:O|ôş1<(A¶säKnsõÌ¬Ä-ì1Ì‹<Ø}]à5¯W0p`/ÂŞ'~%øÛQ¸Hkãç¢„¶nâ®°„÷êgeÏ¡9d¢Vá´[Íc.LøZ„õòJq—5%LÁjBaŠŸ“ y„Ò=XøßOÄ,ÌUòsMz1(÷Ğc¥ü‹xPsÀœ^„<ğ ™‘~È91ÊÿDß©`pNs+„òœ‰¢œ‘Oc½RÑì²™9SŞPA 8Â–Ö1Z‹ŸC!Òùè.X¢1uÈøú˜/¾°yD–iÁóÀ>¯ÕÚ«ÄôªUR«»SÖùj{õÄ!cë$´’E@/ín+€U7§riÌÌ°\ĞÙÚhL÷‰Ô¤cCÔ–Ş»rK±Ó\±—‚¢ÚV^ªZ=p¹:Ñpå0ô $r.ââ”!“8›VJ0ÊÜ©ƒèÆ>Âëê-‡Gs†¶+4[Õ¢mûlŞºÑ¸ü+OÅ†ƒ“SÍ·?{ğö§ÿúòQ1¢Ğ"
+9!áê?ÓJÚx/’I\Ûª.	„¾–¶fb'\P0Á¥)¸š(¥¤GW’´ôèJœš]PÒŸŒì-©š­ŸKâÌæ¥Ò±j+G­‚\Âš`“Rw}¬­„û*”tmŠÜUKÒ6ÕVÃÔÒ0©xAEıÇèóó—0eùŒubaÃ±ƒ­«˜È•WÊ¢jY/ÏMŒ–ZxI«}³ñåÏk²š’a“dºlûõÛW¯¾…_8nTŠñsÍVI~«â kñÁÉ²~®b´ÙËx*†–^9Qã¾àÛĞòf«ú¬©x|+Bºuc#ŠŒ¤Ô•×ßhˆ­8•q£Š$útBÔ£c±Ú
+­F×)@ ÇÁ*%Ë®_ ï"&º‡HŞ£%BtËiğ~\j[§f\Åw_yJtÄ–xbÈÃ3™‰Yf’D)£áÊ8.­Ñ)ë%^Zşv" Æ¼’¯|¬?ok5ÏĞ[s…ŞaŠ³v–r‹Ÿé8ôk'Çè;KèÍR ?œ8 _hè
+Ä4…¥òïwßø#G#–_ÏªÃñì]‹­¬.06ù¸ÕêvÍU½ŞWzô¼[-èİßª1üõóœ1Döñ+ïx–»^È¶eìx††cŒeçØ‚qûö//şëÎUŞAàõ¯üœÚ\V<‚~½-ƒÈ¶4´ZÆ–…­ÀwîñğÁ…İõ–o¨5`aÎâÑlÙå¶CV‘çb– ¥ÈyñV¡„È@QÂ'mÿ[åîÕ£Œı{Œ‡…2ÌÜ˜÷ÓnH* (Tÿ"›_=ÅAƒ ç¢”M2<A±tBÈŠ¡ÁL`Ãæ!ãé°Løó*ğPIf³£[(É‡mÕ{„Î}¡æ+ğïCfÒHÜ1ÎB”AzJÍ&Ùˆ‚,õ?š_¤<„åa•GòxO©-×.€¥îåã¥04l{Æ’á@ñ6"gcƒ
+·S×óxQ¨h¡è¥Iøn<crµäg.6Jxwa„j*áyª}/OW	q”gUjVEÇ!Ûİxê¤¾†êØŸ¼8'y›>,ünïdP˜FwY§¦E£ˆÔú¤ôP¢ôËD€4¢j%E–OšQâ°}å"Gª.Br(ÀÖ‹šBí¾
+mhÁö‘ ˆA×ˆ !"ô­œ+›\³ş	ÄJHÒÃdC¢Ï<Í 2(zÅˆÏèÑ¡x"¯‰F>!¨#psg‹ìÏb­^5kë)€Ï¡‹­M2}ª©èËC_õù m/Dı
+l±ŠĞş¢Fzğz2<ÿB¦ó(~+µ‰DÃ›T'WÒ{r‘Àûz’Ş÷Ã!ˆ4{Äº·–$6Ÿ\t„~²ø|rñ¢ôã1ú'f‘[K·bô½¶'z^Éˆ^Ñøµ¤Œİd Ñì3‘VVú–r¨víf2úJ¶slEAù$ã”ºE‰y„ã´ÅIz"u+%»ˆ¾ÑáN´Íûç—Å9ÚçñõÈì8¾OôîV“àéïöV³m[I'¹WÅv–‡UTp›9YEv’ŸUPl'¹Z#Ånû¾2Lk‡[5†cÉöÅ©ô¥˜¥õ*é‹ZİtOÒÛ×A¹Gœe¤õ²ª‡ÍºİéŞµısv÷›DO·½ßœOì÷_°ù m„‘€~,ºıx	èÇüÉÒÄËÓ2Ux¼-‹Æ¦jwûR#×6Ì›qQ=ÿ5ŸÿOáV^·wùS¢§;‘‡ğ…*©Š°´àOª¦ëŠp° Òº†â¬bj5ä¨£ãiBîµ˜”šM]jNÌ
+¶;ê1>š]øÌıC@!x—Ó[vÿ$¨L±’YøKÄøKÆá&Gëçr3àxvz>“Gª£©Ü|a.wøD(“€0!àO”¤òÑÁa’%­” RZ½ÌGœ˜yÕÏ‰$Õ<>3]8–Æ›—ÌÁÊóÇr³p~
+ 7}dÆK·©¨¸z&H±	»İRc")I*N~øT|Rüˆ+bõ¨¥øäN”?YÇtr4°áÜƒó†[çı<p­¥%şÄ›V›£Mt*jhZÈ!vBo7$Ìsb±ª…Æ‰23âò˜aÜLÍÒ²£ßÅõÍ—{ÙMz+QÔšL\ãúÔŞ¿÷’ä·ùö¯½ ~ æËF¹–ƒ\uÑÂ‰´hı†mĞ^[NË³â-QÅËQø#"ø“¹ìÓ 0sôh>;'¤m\£D)ä@H ’Ä „ˆÔò)TaKÀÖ
+AáSÊI¸àÑ6•ê­@²-›+*ñ?ñ\¾?­,‡?Ğ*†)ñ¸Ê! ë!O¿JòÙ UT¬RAÒ¥€hTäY,¤åÈäõò!/ü«m8éë—7?|¡ñÛ¯Ih˜^u4SÕY1ºê¡Q¸ãqœŸˆãì:çq•è?ÚÉİU ²
+şıî¯ğÂoşçfãîŸáG6¼Í7A*²uõ‘¸ú|B¯hUÍœ2ğÖ××¥Õ£Œ%x +A‰«*´'õâ´F†ı¼Œ5
+„I8	>Ïª(<c:1çè¥§ák*Z›–¿Ê1âóTMñ<Ûjê(ª)mÅg|)†²%aÕI²z{KyŒgŸb  íP`±À®%ÈÕÉtÚ
+J¢„”…Ô§mP5UD¯º=dFSHÔ¶K+ô¥àí+®R7bzÃ"®‚åÂ£7ËW‚kæqô¦‚‚•¯|&VLœxŠ}DÈBÖ	UK	ÁÈ‚©9¯è‘l¹´4¡+!ÚNL¡¸Ïh[Òã¨g:Œa,¨@÷ Aœ²*d4ñ·y}‰úV@9£ƒoOÕµÈ7#òŞ2ımıÆ‚
+òƒ4$h$ödÌNb½{¼áAE¨Á¥šAÜ­0öƒ5¡î§ı ¤¸Ñxh5Do{3#™Î<ŞÊÒ¯zÈt%œşb ¦•æ‘F05Òz‡àÙL!Õ©®¤­(báDãç:ò«H‰‘ñú^¤/
+Û£ôQHbøQú"aŠvç–äŒÈI3DVoêq¤†Ø¨¨Z5éÓ´géA\ ©n[“¶‰•ë´9vÆV:<£‹Ùkuãuxl&šiÊÇFòÒñ£:n#q-A4İ},Wo-2jÄÂ“éøµf}pl(Æ}ğĞ½
+‡stÉèèRYåC¦²C¶YQm¾¸`êJ)Nöü‰UÌ‰¤ ­ôµÊ& %ˆNÈŞ¸_‚¦ïph‹ì <h,¦á’%îP7’·vpdŸR¶š«¤‚.N9²NÊ¦eö÷N•,2ÙŞrG¥äÒmá™¨9tî8I$òt6ûäàT&—': ©ìOfóğ‘ùÙÜ\vªeÇ¦š(ÁÅ¥QqG‰¹9™ÌMñëÉdÅ@ Z½òN}ohqxßˆvZ~B-Ü	eÇ5£
+²ËEİœŠ1eb©ÄpN}oaúïtìˆZøL*)§·ÎÇ^)&f0
+a
+Ëá¡µ¸ß]«”Å¦äˆèK9ôlE»AÔVèe
+LEÊàHC€ñÛÚ‚®ÄjTĞÔü‚M0á—±Å].ãã²[ˆIdLè*Â9aœºâVy…9İ§<§LD“e|vñÅ!Uf„"ÁITGLrÂÈ=ãW]ª,ßT|’I§	„„Àd!ï9,#Xød•),;â+F(9#"§ é›„’‘­à—\J[¸êÊê&uôLÎo­˜&÷!šì™˜
+‘1F÷ÕAwº:èÈ¥÷aT<9]˜Oyu?­ÙzÙª;úÃ¨<PĞ>ŒÊ	X6sÑª+7 -ÖiŠCİÛ‘‡ä¸C±¸Ã8êPr(†}-vÿŠÀ<É¥‹”:"õà È,ÙõÜ~tOeVC	z”çU;a
+½Ä×»)må\2Dì@•‡R8$Óë©:ø#µ]Îk¦Êğy‹<Q«	ÇßK±°|¡ i¡4‰!K$	™ğÓdD;Æ(TµOkb-w´ñ*^Izã¥Ğl×¡é 4àÔLÃMõ¦{ÄsxêdT~`Zš®#ÜÍ®àÔĞé¾~¹3|ºäşÜ9­NdÁ„,énn~{ ”ú"s‚î©OF¢JéCŠTçiÃ-§âÊzÅÎ¬õ©-z(eÖ‹z*¥‹^\Q3v¨ô‡GdŞÊç‡“ªO©fÁ°ÑÌ Q!7}4}8¯ˆMæuV_!¶Ôôµ_<¾º`ªØ8È…ÖÎcpÀNÁRN'Y ş;~ö Ü—~Ø¯~<„ış>0Nkİ&3¿ö¯–Zİ)“ùQTaQI#³ø×Z?Xe¥PX‡
+1§N£òó2‘¿¡ùßNãçÁÚD7÷}y|–©óI}±®™…ŸÁÅ> ËtRÑÍµo =˜R+oA¹±IjT“&/a¨'_ÿ4ÌP@E³	G¡yÛDøâøù}õFã¥+Íë—ïßûªù·Íë/×ökÏ{îoŞn^¹EõjJu°¸™‘Ä¿zÇQh%K”Î·e@bšê¾İéåE–Ø¬I=ß§ÄN?YS°BƒC–«Š¹FÂ=„X¨qyè{÷xÃ8òV9v—‰¯s¯}ŞßS§û|ñx	ÓÒ Ùò¼mjÖè°˜çæJËàmôDÀ¢¹jI_öëX ù­Èx,$ƒ5œ#†í¸ş†‰+CŒG‰q¾ğÕ§êZÕ5Ü•`büİÃ—œzeT±È7°q2lH­×ä€/´éÏzaœÑa(¼%êĞ"êN– ¹F[EÁÿŸä ­a-È­lTVªğ'<ÌTÔÒ–X«GÁQÖn@«zCuî.>m‘Ïè¤`™õJ5’c²=öÓ‡b…ÿt…'M¸oş)}é7HUt{	HQ7MxÖÑ9z…LDŸ’†Ÿ*Ù_;‰”ÂdhJIƒímë<Ù€¶İ„E©©Õ}IúbÂÁ¢Şë¥TÕ±Ø·8
+ÿ;M‡µ‘‘=c§eÖ8~HŸ‡&O!KÕtÅ(•3j„ˆc 2ŠİeÚõ(4Ñ %CB’qŠòX%SRµÔËtãÀöÃPÎóİ3Hn»Xª;‰ÁkDÙ
+½VN‡÷Û¤$›Ìé!òÓ$ôz$VJàMw·&‚™aä'ê‹OZtyt>ş+3‹ªÁ±.¶54‰±¬“"İ`YÂçp>á^Âêô¹y*Ú€	§ybBXõ¥Î¸%ø6š¤›:%6=´Á]`â€OxeúxçûºwŞ	Ôy£=;³c(Ã“Gy¾5¸Kt@È1Xó­Vln}ÈäÛÑºÇíß¶á
+3æÇÍB•í"}rŞòÑÌÜ åb](5€g4»”ôì³£hĞB¾1açğz
+»_¶&û}ÇC8L<‚`ÂAk©:Jó5İÊ•Ğ=ĞêvÁô°}÷ÆÒHòMìF¸eÃ!ª6J% }³¶U1} –œŠªÅ°:ëÜBUØÖäTèKí×9¸_àıÈxµï—à/1ÄŸä¯S¸ê‘xfÚİ:âÛÉ‚ıóÔLÖÁømßë4à†GØ-Ögğ0œ˜ÎÏd¦ÚŒä]èR­)fOÀÔÌÓÓ]ª€aa.[817²Çg‘³\[XÚ‰A¯ÛÜ#Şeÿ9Û#-Ûû_óùGqOÜ¾İ‹H»»o©<¿»oí”}«0;Ù3ÿé÷ŸËNÎGìşéR‘…ìÑãp[ÅºTdnº;™[¿RÈ¡²£ß»TI~æh-şÓ¥"ŸÈr°À	ÿS·Æx.3=?›ÿ®_„CM}ëR¬|şÓ¥âÏåòÇ28IIğq‡‹ó.‰AL°ª¨ı³Éê3‹AŸĞÎøtf.{læÄ|ŒŒíJ"é9†»²„×ş]YâQ•%hĞ3AëÛ§ŠÜ©`_·ö•GdçÀ0Š)ó?v¿íC‘¶oAÃ‘
+†»TÁÑì\îâøÏİlÕ]WW£ÖúRR¯#¥D
+id˜¼vŞã£H%Î¥€B›£- b)(;=f€ŸÌÌóª<=—™õ@²#oa|„ÌÜdLõ®_<z"àcó3Ó™|î'™©R.‘d“3s³3s™Bîd«¹wÕ)[çŸ†üÒ®@>ŠœŞêü¬fk%c©B¼²k5·—å÷XÒË¬c¼×µ*¢YÑÓ{ù0ê‚Íèïº€wÏ_+­Ÿƒ;,Lëüg¨8¿@yè{Fµ=ûÙæ©ÕóşàÃkàÛïÇ}Õ¸Áï&Aişä×÷ï^ÛüæÏ/}ÔüÇÅæõ»O^ ƒpì§´Èôd.“‡Ÿ™B>ënª·hUacª®ßgĞ#Ûk†ARQ/–8-Æ¿c›&7Íƒ<MæHNìT#lÉªádK†‹#ÃbsPsPH;pÂt©Ã—¿VÕÍxŸã® ÿˆU ç›Î”îœu­Šx|½>‹^{ı¼V[Æ(MGo\ˆiE-‰çˆğóO„9r¢şteòZ,}ƒŸ²l† üTÅÑ¡oYŒş:Ã#Z˜™Ç²™)¼}|İÔÒ{Bø§1ˆ¡–…ß’Á}ìkÕ–¶<|§€±iRƒ(Ì¦ñ ‡Ù,ïiqG„%Ûm–f¸ÈQînÏdæ¦ĞÚ+ÌÍäóÙ¹ƒƒå=Ìªj¼'Jhå¼ôLùAŞùÁ1c©œÎC>fLİ)Üÿú·»¿~ğÆ×Í×>l\ş¬qã×~÷~ówßà€–Yä
+a¢ü“$ˆ`aë£Ò¬Şµƒƒ5ÆP²ööÍØÌ31® Y«w!æ¥;@,×Tk¾1TÊXº	BQ	G2ƒ×à¨5¿¹Ğüô£¼Õš¦‚ÑaÖæŒm™ÃóxƒÌæ³­¼5Px‰ÄWXÀ\hÕœ:?0ÊGiÄL¡“^p«éÍ.1<ãÈâvt—Œ]A[HõârØ!¸ƒƒ`^w=d;ä7ò¤¾\¸o–u'´sšabØTŸ4AÕ‚¿˜¶®•P5¢9·ŒÇÕáÖ0ƒÂæÎRsˆÛcøQ-šu¸‡§"míããƒğÄ£ØaVÅ­›0ãäO=E ŞöğNÆ>½Äàœb>é-‰š?md=©Ã‡á èü/Áe˜½Ø`ËY>È@Áıã{p{[±¥+×ß{ï…Æõ»¨æèÏH„?Ï®ß€u·#Ÿáòö^j]Ôlè¥Åã¸V‘3ŸxñàrØ‹gËH×éÇp(Pú<ãùG”àÉp?J÷ÆÇ¿á|vèÙ:Ifæ}FO^ê*ÁŸÓxŠ’ïQòöŞbDÊüûíy„(`óòÍëïr)`Z;çs<òÎ¿÷JWç¿XFĞ	§Ÿ¼´cfßkÎ#4ùß~½yã&wòÚë7¡ğNæ?ø†X y±«$PÒk–	È7=R{×C)¨” ©±¾cD#„çœ7}§ïDbä.Ü¡çË:RØøÜĞ‘A³ıG`vìäÆ£D•W®nŞº…Ä*ÁÖG~ıï°ßqz)“~¹»,
+©¾–’²(üÒÎaQ¤91<¸teã«[\2˜Ä Y"ÉgHŞKjÓÏ;j#-LvıÚÔ˜Ê s7>sOæf¦‘ZåÔMC%¯ˆM”j6HÌÚr®}õÎûã`vıb!73Ïğ-àœ¸˜!àÜ±lE2˜5@¡ZèÉÙ|–WÃp4ê”m§E”2”Z¡b›ó£›r=)„º›\µ„lİA
+-rØÎzş÷7¿>Gæh<Z©3rd=Î®"
+E•¤òñ’Úò3å€wjØäÑš¹%o1Ã§u,HÃêV½q4UC’;T(3ÛÁİ	1ÄÛÎF#ÂÒ—b	IT«“2•48İËÕBµyá^ãÖ^¼Ê%¡È-EôJS’0À¹  +.v?™1WS1”¢R@¨4è|`i(–~ÀB^Yyb ¨†^ÂĞ+}®•· ‡ÓÖ·–tÊÜAxu¤£'ü]h®İ%zL¿3ÅzM[ÿ!ÇÕmŸèïõFãÊ{¿¾¹ñÚ‹"Ò?×R\ò°z†A÷„¨#)0Î§+Úr`(¦ƒQBO%ú6­Z¸Š[‘œº¶FÄ¾t3Ê:ÜÔºÕTX;­8©ı¼{­8‡
+KØŠºk „Æ`fVó	p\sËxöS©5\?¢Zİ‰Ù­üÀEŠü$†ÄµzĞE¸Ú‰C`ÿH –ì>{bàë-D*_Jë´ "eø·èrü{Ñ²ü»¨<Qó‘7÷g(åK¶…İuò(®b·i…`‡«ïïnÉ[¶%áOÒ˜<xñÊÆ­¿ÂÍV$†ÆŠ²%Rh€«±glmîJ›iÏÚR´LİÕĞyıëKÍ«¯Kh;şP´”-!n»İ^ú®á~‘n=ŠdÎıIàä[|9k$®	“HRªÒøÊğ’-BéŠ§×bxjån Ãío‘êöÄR?ø(v¶njË:Ë‰\L*OòÄæ'Ÿ7®ß¼ç•æ[_<¸ğRó•_|F4¨×Ÿ¿çÏD‹ÕøÕ«“S×oÜúıƒw.5®>×|óö?/<'Ì>ŞVÖ¦¬yJY°ï5¢{ƒ‹	¹Ùº–´ÍX¶b¿4·°Û5şZwC»¯Q+ª’~ {¶k#@CÊre­Ğ1ÜêúŸŠîÈ{#h¹Ğ³›É#Z¼!#ˆÆ±8i`§-¢ØÜÊ‰c¶ÙwyŞ?¼ÌQëÚ™Ó…øw*yšV†“¢ˆ¿ 59¶ ·Ù©¬§ªlŸu¯°N´ä¦¶ ›r5ùØö¨É±×ÜŞ-_G§™Xbê6œg(_ÒÄ´¸ùÍo7o¼Ê³éø²¦à…*¹Jt<v<ëö?âŒ'ñİã…b°’ŞG}ùâï9q\F2ÔG÷§À©SšlSlØ?¦”Ä¨!e¿øÔ~ÀñPgÇ«q©Î—w¼MJà9å'O@ãy‰>8~¸CÁç4s“ö"ŸB(horÑg¡¶2P…“±Rğ“»RÓÁC²ª>.÷áGQ‰YÊøz"¿~q.7	Œ˜šQáHbÅÑA`ÿÙCøs*²N³ó8İÈ
+só3Å@"f?+AófÆ´ŠfcÑŒ$Õ¦-[A²íáVp,0ÎîQÊÁôµf'çdÁäÊ”¤áµf0ƒ¤¬x%YV]ùdÙ‘H&ğt†fœ¬ ]Ş1ƒˆA”cÿ°LßîØşşœMĞo7^×
+‚‘4·3ÏŸ„¾Peğ@‚ŸGó*x@ÑW		^xuÆÜÍeQ‘(µ˜fšø˜jq]è%¥H‹ıŒgQWÎ‚ÇàÆŸ¬•/ä¾dóá%‰1'À¸=Ùå¢Y7lÊàò{Şù€H(â©ã‚q‡Ìrœ‰àeÇî² Şá–>Py$ëØX(b/Qï!QO$Ë¸`kNy$*³ìë®ŒşeQQ/KsÄJÖ›2{æøFÈe)–Tjh F¡,Xà¿Tå@yåİ eFµV—â†NE’¥ôÈöä)ÌO}«ÈB‡´ÈÎ°-iòC”Ÿõƒ^¿Ç¡&Vû×V‰×€Ds®Ši¶»!Zû—díÉv².·![NÜØ¦ä[)@
+kûvqã–me£ÒwÉš{=|²5-ñ¾*6±ç‚îî0ÂÆÆá-#l\ú.as¯G°g-ÛE„İ¼óIãêva×pË¶Š°qé»„Í½>akˆbb’¹§FØLãò lÊ°»uôMU²KæÜëá“9í\Àôğ““º‡]‡wÌµ;ÌKA«¶ŠÆƒv	œ{uNàôX-3ô­=·
+İÛ–?gâ[ŠÌ]?„eÜ¿óróú»Ä#hG	0°‘†Uw~JìâHwŠhdN]	<XÏŒƒ¡-ÙèJv÷êd±ˆşø?²A30Œ!Ç|89“Ïgfçs‡óY09—ÃY$N¦C57åéÚ?7È	"Óâ8gR	¢KæšŠÉ…‘¶lÏ”04ÉË®¤s¢7˜ğ=Ä4/&&Ä0Ï=ˆëÊCpbÁØÊqÙTŒ\ªl1#¶a<8kÖ-!‚Õ&4,ˆCñlC³Á´uÎ¢Œ:ïÿ¾ñò{Í·nóP€|wÑÖçZËã&ú’8?Š3¸†»XÏÄjŒ
+QÓ¾½ü+Üœ‰VÅæÍ–ÚY¦¢ü«»¾P1ÜC«ymmÂO»Š<Ã_7ƒûZÅĞºéÛîG|2ñL>ÛD´EöŸı”·ŸŠÒ%êÆH/ØoÚª@bÅC•¯_Ùøğv×eÔ<©äRC8èeØhİ>Ô3=s<‹Z…Û#¯ödª~2™@Ár»š_Wuºò¯-Ÿ„$DA^6ÏÖÈ:wäñµ›k¡`ÔÂ°ñ×{ß¿¢¶ÔÒ(D©!æw@èõ]ê”ÔÇáÜg¦§²S=ä/šëKo¼pI¼œ°Ş319~ Bˆux¼÷FãîmL æÈùA°ñåşÖxõ®Z*°êj‡ˆv7À=ÛGb	O˜ô] ­ÜúbãÃOÖy>²+Â%9”l3ôûÑËñ‹ğ#ƒbÜ‡=LÔ’gÅ¨ê‘<õĞvÁ¨ÓD”ÚcNBjxMìRKLé¨9z—Æ¹×Ã§ñNå¼¨Å r…¹‰R9îCTßß¥rîÕì¼ìõèØël,á2Ã]è`™á÷w—÷zø›I‡ÓÎpêˆî%#I‰œòĞè„Ö©bvI{=|’ŸÄ"ÂÇİË#B÷û’}à¬ÒÍeì<÷ÚjQJX¼t1`WèJˆyEœ.¸¨¬‹«"~®ÌN|+ ¸Kb²îT)¬ŒGu]ÈW…`MHI^$J¨ÅÁvTQ+˜iåüÂHàß¾¡h–6¶›ZT5‚H!‰œµ¡ˆªQ…Âp{6"èç÷/¿'ÉÒ“) Bóã5Iâ­ØMtšÁ…qõòÀÄƒƒÈĞÍñÁaºÌ°y$;áf‹³N >_˜™|¤²ğïS'²`*[Èäe¦päÿ$'_¿8—Íô)À…{ùj’Á…«$K»é0@™$à•rp&ÿéx0}PÊĞĞ #¡ × 1H“_Æ~¦œµ­`Më77¿yçÁ‹¯şëËW›Ïİl\ıäş½?6~yŞÿöÂõ)(±›eØ	ä§^Ò!!Øºöí…ßİ¿óñı;šï}¾qëÆÆë/Ğè@×ğÛ6ÿp	Áûıæµ{/l¨ÓQ(_U‹Bn)Ejˆ?‹ë;FÑ5Ëë7`ãÀúKğùŠîT,€¨Ù:,¤'¾ÚZL¤ ¬Ù¬§¦™ı@[²l”>‰ÓÑkE’Ÿ¡¯D²pwòEùz£ v50ûÈEŠz„i l#œ”‡&…9˜ÍÌeÀğùıÃE•âjêuÒ™û¨ÀĞÒÜÀ1Çp¥¯Şm¼ËÈbÅ@”
+m)tË£X)ñ’ H1Säí|)5‡‘¨›×ûšRv|W°¤Œf»¤åKç³'³y”¡Ïær“óWÊƒ·ËNyrg±¤öq¤ğRx†“b-¦TP‚°©Ó*ë5CGUzgØ Œ0Š¨ü¨õç š‡‘ëÎOPÔP7U‡ï{‚€³9SêáiÃg
+.ŠşºvĞşAF¡>¬v¯d.ÜvBÔ-¦uËóãyğC¡{/İù‚{xh`»ı¶HãÂ“‡ÄÕ7‘Ã4¢q°{Ä[ zbì$+f%ƒ‘cóäPŒRna§¸–ÊÕƒ°ñi…–Tb¥á1*	J9‡2”ğg,ø™z­[=NÎT¢”œ0˜I;!Q	‡Y)†‡(ôµ€0B(©Vôâ^YáÑ”A-'í¨€}úîÔ…RR¬¶ÀÚ÷¿³”ƒõ— ú>¢âŸ„‡0b,$Ü»Ì?º!7›êDn>²àH._˜cfãÃµ
+ÎaÔF9ÈÜ+G¥j.qŒï|‡œa¢:1“pšÑÛ×5»XN|ˆ‰½¯zˆ¡m!"òï™Õgë†Ot!PôÀ Ê	Ù|ıúÆ§ïCšo\ıŞéá,ŒÆs¼R{¶ûÌÕın·8Ê¥ˆ*Q  øDÍ#GWsëÎ-É?W)%UzXGy¼mÆ-^°§Z†€¿FÃ2ù|Ï¡q±º¦`•HèK7üR ?“7Ğ$‹‹ˆµiòX67Ó3ÿPÏ	K9™ù	*ÿ¡JÅ¥È¢3Ú"äI8wK–½Ò9)GKÚ%f1Ã1Ú1”|4;—MÂ°zó<6$.evf® )ÿ¡\6“–273]˜ùéäL>[ÈÀÒğWÊ;.aqSÙ|îdvEl)Ÿ£N–Y9aüäÎ™ÜtväsódWÍó4ë*Z-bW–B>._|Äã¢¼©¶ŠH#–+a`–Z,Ğx-j¦£ó QQ,aÙy+%,hŸGÂÑS}FµhÖKºÃ|)úl_Û- öUÜ½^¸ş°å¹8ààßÂN3_j·â(ŒW]ô~eT}Q­z?Q]ç<²OİĞÅ0õ	BÛÛè€8‡ ¿¢¢-§ËpÃØ‹wŒXòs±“»‹!Æ9‚3†ÄğÚ¥HS«¡L`BÃA·¬k%i¼¦kÇd¶?PYƒCÑ^Ï	 ™”†ıì
+p­ZzH0’ññÆ(ŠÉ€óM„w Ö1‡ $+á“wc¦^C»£[n¯’¶Û5oü\ç·êåÏš.¢íöİÆ'wˆ5¿ÙIÓÈÜœI33ë®ÿCGíl¾qåşW×ùIƒŸıwÔZŸ±eÁÅ
+Kä »`•VèB®é<½¼˜Z¯ïf«ú^ÄA®ÕøFJrE‰%.l­M¬qh—‹àNpÑõ»½;	ÅuYíèv•Ø
+4¥rZ™zÀ|\c©ìB¢Ã=—zŸ
+Lª¨D~€Ñk]ß^xÀçt
+r¨ß7=˜éUo($V)3ÇÏ1FZuhÙ‰ÂÉXĞ™Áı#WO+ÑÇ‡W ûàÏ°RÍyx½÷B©]ƒ”ÿkTso©èèÃ‹hëƒ•RÁŞ!ÖFÉØóD:úğÂÚzP”Èø—Tá.Ş‘+&V~k5î	šĞ	F÷µş
+qÎâ—zª™ğŠá HÀ)œZ&`Ï1ËB"ü+Úçoé(ó	;ëIœÁ·•õ$¼Ôft–	…*Fš…~V…òäò ß­$¼Z÷g/	b`C"P0ª%ò†ÇàB±Ìy¸ş­î‰‡ÒKÄs|E½W˜P|›Ö«åz…²€¢VÒHœ%Ş~¯ñùß6Ş¹·yëvàPùÏÏñÅ<ÁâÚìÔ`vFÄÕÁ"À(Âg½ö'şf.{47_˜#>ï3Ó…õ—±2g:2‡yîI^é¬drsÇàÓ}8+[ÍåœÆº¤êÄ§áò¨²Ç°ø *v]Ç‡Ñv3Æ	P¥|8„Kœb‰{°ŠÑ3'^'Í·n‹,Üñ‡ø%*™¾Ë£Âßc ‡d¿Ì”J¯\c)pF"şM*9qe
+R³0b®›Ú‹H]n
+ù`3J‘¥SuxÉÖá¥{‡®0‚.˜³œ4¦”?G•‘ß-û—]‡Ÿ™:1<²gtlï>yá`í›yÉìc®);Â$^2ş#?wvlÇ¦RØ{Êr-h­Z¶E˜â*•Û6Ã‹±ªjNEj‘­,TNòµÕÍõ!¢{e-Rë
+/q%	:j„'ş£³=ä¯*¢!£ QXÀ±É	ò·Ã‚f
+¤ ™‚zA*°ˆä9•}r/Ï@™MôÕÛ´:‰ö¥ë—[¡(îB«®ì.ÔğêK·¼¶œ[¨Òº·Úv·]ŒëÆÆ†ğ‰/ÿïö,mß¦İÅí—õ]^ŞŞáì 1^mÅZoÓé‡[^›î?üò:tâÜ‘KUêŠ(0­Ã¨›—¿Ø¼üÙö°‹“Øb×fAJúNÊê[Ï#¦áÊƒÿ$Ym«ÄÚJìççÔ¬çtÕØŠ~[Ñ=Â8GbV'üIZ#7,l»˜¡d?SÅßAƒ‡NÅ˜¢ü›b,Z~Ç×½´¶ƒ.©û…Ğe%€Ğ‰¨÷<®a#ø™Y€Äz¡bÁğßåæ„ìOfó wí› 7]ÈÎÉLòB½bÙv†’2"ø6øVş%n> ómÛd9ÀÍˆ²ÀO³]›ÁÃÔçk¶®•œ²®»[h>˜…?fYÙå¢@İŸ|Ù¸ôÇÍ7›ï}Éwã=+¦+†‚îpÔX`Ä÷Ì÷Öùªii¥‚^©¡í,!?oMÁ
+ˆ0¼À+%Îí£[A®5Ë­ìÎ3Št“ÁôG FyˆîŒó
+twÜ*é&†»y£ù»oø|1øÙ{E…¶TZETõé#	‘Çèùó&wa9»<QÛÒÙÊUPÖnÍøƒ„3àùò_R›1e›–Q:Ô£#.óÓ:îôOñk?Å^ér¹’ˆ*‹¿ÊŸÕŠE½æêX6å~€şÈ_
+E|ÂKÈ(`¶(îhOL%Å™Ô~#GãÜöäšJ¥pı¦3'sÌ¸â8lŸ'ÛopŸ*\ŸïtØ"â` ¾=üøe™Ä“ o8ŠıÍUâĞ|˜¢Ğ^+İhÛèk~üÁƒKW6¾ºÕüÍ×Ü…w6®¿™}ãêßïı!.îßùa­½ÿüæ­Ë·›w>!{üõW[ÁïEc©në@ºSÔL ğ¶*R.8[M«i¶^Ô+ğpÑÓÀú{<Ípµ_í¡ãåÄ<;pëD‹âc2VáIA3{¶i–˜İ‰Êà¤y\ßRÏ‘z»&l¸#/¨§abgõyFIƒ‡…RòÀ%ße™‡¶06$=Tqg/ŒˆÅ9Å£~ññ$cC­ ØÉWê¡d²—oûª=AâV!Â´BjÎÖ”œS3dß!ªÅÆëW$(UıüÉÀ‘?	üÃ4ıâÃ¯“)P‡ã®ù¯øºîã)ğ•2Pr¥|®Qw¤BY*(¦ÈæâD“%¦R|³­öGCL,	YmÆ¥ô‘9Ê-Éªk;ÄŸïÁ‹WÕç¿×æ¬ãw9Àó»óÏº-8ºH çU”İŒŒö´‘šŞ'®Ğ'DQEAiÀ5XGÙê%.Ì ÔXûéá9cÎWÊøÚi…s•T‰=Ì£İ=¯CrŠ`m!=,ÀÙaÉ6‘)	e(Çt^Ì3}×êòh ÒqãòÛPˆ—ä»—h1Õ—-'
+3Ÿ·l—0çğÊ”PÉÉ‘ëDçÛÑ8ygÙèmÍ‹”=2NÇq.”··ÅD\[†û?V¿ËJ´:xzûPØá±k¸&§Ø$xĞ hÈ+šk=hí¢UHl‚O•4r!Cãİ»÷ï¾FËÍ·ÿØ¼şîæ‹n¼|³ùÚ¯w¹»ŠàØ2Ï?gM=¾Ñ*öÎŠß+Ø·ohïi U
+"ÜZİ„]é˜8é'^}‰4Ÿ4œ4™›‡‚•qÌ!jÒ¿9ˆï¡ÕBuŸk«}E.uC0f/”İ7r&aí—Ãc’S³(Ÿé´dÀâˆ‡_©ÉtøÓÀüÍ<ı²«¡¹‹ZT5	C…gÎà Êç~ †¿±D%l~¥Ø< b…BšËÃ–‹J:˜2l`¢¦NÔ‘¥…•ƒ$Ò#–zìj,bÕ)‹ŞNBİzëµ^õLEÂ0Õ(¾eü‡Ñ)H 80.—¸¥$nì÷ßcÑÇQ rE!¿#ù¬6>¼'zY¢mŸ,ëçl«z¢e²£ÉJ1Jüm&ƒ$Íÿ,BXĞŒeSÂ+]¡´¸;¡¦òœ³$»\4ë†­ÆGTR¯µAA%ôN‘P¤CbÒ‡ÔƒÔ»J	ş(úúÆÆå÷¼óAdÀŠrï7hÛ.·•·Î­_<’›T2ÎËšín…mNÊ¸E€î²°å¹ìte
+‡3“Oæg*‚Sî \Fn¨ØúÈ“qcŸ÷¾¢ş]l÷#eEÇ‹ÜS°üu×î÷àÂµÍo^Ü¼ıËæ›ŸB.Û|ë‹kÏo|øIãµW6ş~¯ùæm”¢éææ+ïn¼ôQóWşÚ¼~·yù­Æ7ÿûàÂ»ÍÏ.“€ÿ­±ûÍ•:‚W³Êj¦µ´ş1‚Ó`Õä:uÊ^¿Q3JÈ…	íZŞ, _uäˆ8YdÊZñ,,hx[ÙA¦À€6[èJšµ=3ÅlDË ±ü=Ä)ë1°înÒ½=¶[kµš¹rÜë¿n¬Ã¤ë©á=}kübè]{…¸Bù¹béÅŸP³%ı¥Bc9DEöû‘®ÆÓ‰Õ9Á†Xm"öô­“lj¾ÒühÏĞ÷ùQÑg‚·ñö]œõ¡}	g½Ö#Š2ËU¥ ½òÿ  ÿÿì}{wG–çÿû)ÂUÚÖ[ˆ‡Ä)¤´#$V¸İ,kRU	ÊuUeuf•ÖêÜ6ÚÆ¸Çø1¡ÇnÓİc°ÛnÌÃ>gõMzT%ñWÏGØ¸‘™‘™‘‘¥’6ylT••qï{oÜû»‘ªÉTÀöS$òÄ¨aŠÊZêäâÕúW¿E]Jz_ÃİßÕ<E4	ó;[½¸úú$9ššAã¹Ã3CøÜ±ìDv¿MJe(UÙ".r›E†'–~ğA]¥ÒPÛm`ŠÂ@ğ=¡×r!<ã˜eX„.€X5z…°ëDS°NŠuáÀcÚ‰{÷jı··éz¿vïê‰¦•0Q¦şñ÷·n÷uHº¬~¥á ×,e¼ìkkæ^‹ÏBéJÚ@û4»ätHt‰œ *W/¨û<ÆhĞaÛÁÁê-[2KšFçH:¼ ¶I+G84»+9©qÔ<k`œ‘Nƒ# É£iÜ<[Í”Í…Mó NÄ¾dÇš7Š®‚§¢å”­Uí.«œwLXÑ îÜ‹ˆî}»òE`z—Œj~@\ºÉ¹LÏÿ~1ó¿
+?ëx¾GÑ€¢&—w(Ë{VS÷6S€»Æ5ÇÊUzï©¾ÓP–®OşÄöË½.fÎ¼øü2knåŒ¢2ê[ÑˆÅQ@@'Ô¯I›1\¤>iVTÂD…¤Èhø‡¾¾¾½ı{N…KIµm*“+û×÷Y.Dsıö66$WîH	\0k˜•J"9¤¿ú	W¡‡È%‰Ê™¢Yß/Åş‹7{½Iøf‰g7HÄ¥±¦½AÂc£#*‡.ÔTöâ±¢ÚK(‰{ñù8U®¬ÆU(¢çÅ%IÓ3ô¹:š…›*ÕV™²+›	ò©½@›²]V&E(<–)·Ñ8ı³v¢Ó´”şY¸X
+ğí¦¹Àk C£‹™ŞN$	k{<#xôô¼§X÷ ªÑ?a¢gİišæ=¯Å3’ß!$¯ş1ÉI¥‡ ªD¡‘ˆlûÙ.ş™=’åHÖf»>”ËOG&
+Õl"˜+) SbÒ8YçÂ9§U;z2€4hÖS%ø¤&:˜œËÔ.[¯BÌdÁD¯@jËëŠ¦ŒğÜTöJ)€Iá”¦Ò}úŞuTÿëŸiş7+Š2õ«w®×s»ZøÁÆ÷¿¥r‡7D^NØG(C‡3W°ª«·æÍbÏ”]$:†šr°ÄGš5Ü­g„*piS^Al+CÉ÷q¦0\æÎü`«\V&M/ç=?
+­›,Ú‰¬Âbrı” úïŒ‰Ç’”\êz~ß»r&ø#¯˜èìíÔ†|éàã’ıç÷÷
+:Å*Â°ìvR Ä÷n$g¯ëì_ªG¾&t»¿À+ºyç:Q1p„"c’/WU†ğıx@t©òÂ+dhµãcBQ5ZÑÏ9ô4Z†¼ŠïáMºMƒk³5!4AZ®¨˜5#W<S\p-‹W,™ °	Ú†³3Ù„„îQf =ôz0“€°«ÁŒXRá¼)$5Ê^>cÑ_½:Q»×z{'Ú,´ZßîfuÿÁŞ°VI°Â)7oVû÷¦XWË§‡?i‚îH"g6â#tolKèœ5şŒÌù£dxIÂr/„*±{ùScGÎ¡ÜÄÌTîHv­¾65–Eh’¦Ÿmæ†Ì#’£%ÛÊÏ/å§`¿ñáçõ‹÷ë¿{¢ÆRëŸ•ŞV~¿|+ß7#”+Wó¶&G-Ø$³Òß¨§-´'\²{ù¬OÉfşD1Ân>Ö¦-¬¾“TL²ï8	<tf¯?Ò<Û—Şô¾4áWÒìN›”üdÛÓìç`:ş°g»ÔÌ]&h$©”Œ/IÍ-vÂÜÚÄæÙ¶©í¾­ŞÌîïëé|¶MÑî˜Q bÂ¿¾EeÆªØzLBÁ¥Õ\§~X‘6EıĞ@:êÿéj‚iAÏ¶Ãd£,ÊL“ú‘z ä‘f±f¡ÌQ¬¡4×Èkde& œV3É çÏv";‘Z*V°ï˜ã4«ØÙ'´7w~z“tõö&ıñ
+píM†G<ï›…i7'£{“4òlsr6'­rÁ:gGÀUÙÉ Å–Û,€¹°³·'©gâG°?ÉLîg”‰Íì˜½‰ÖğşW/^"«ÉI£h;CºĞòÛµ»CK»µbo‡p_hs‡´ılk‡?~ä;˜*³~È·ëÓ0uOª«‰Ö==ÒÑ3´ÚrŞY$Ì3W:rN@‘¹ŸªŞYÜÌ?´‰Û±Ÿ¢®ñvV.Ûû±iásFsÇWß››ÑÂÏ)˜{áçà¾OÎL£ñ±éôâØÌQ4’=›y	LNÌLMï¼ç·ß<]›Ü•n735y'ï6×¯\İ¸s§~óÍú—Õï|‡Õµµ{ï<>ıñkïÑÚÜòmf ^
+FÁ$‰feõlØ8~Üvx"Yò¸ë^~iõ¾²sO3u&œ$n‘GA™D¹–öäs`ÙËw—iîs­jãi$íˆÜ©/t<ªKhõâq$1„+Øºùs'íb­d¢ø]è¿#¼²øP¯|Ë:èÀ€©áÇóFûa}İM—JŞôãŒ¾A˜Çp{‚‚"ZjT-ÚL{Rİ ,IğòW•şà˜ÕšSÖô¿ĞqND‡MájÒs2µÚ±’Ş;8iB¸±ºKGÁÆj¹F´Du²¼ù€Ú“G†pUÇ.Ÿ‹µq÷Í…<CAÃşHøœÃAÚÖ×ôÃï³|&æ:jò@Ù¾‹¬ß'¿R=¿ìsÿÊ™•áe}WşQs²¶¯î½çCcU%¬›ß°åêÛWºÑ±Õ[‹¶qã|ı³/è²©_¹zË%«| Mº'ÄÌXŒ¯IM{BTP ÁA×%üt¼"ù© }ÒTP:H´Q€Á­êîî¦köi½»á¾SxI?‡ĞI½\³:J˜¦´ú,ùâôµ>ÒìšsŠwsÕ>x«™OâMtÏaü¤ÜEO^tÍ—`ñÚµ¾ÔĞ*‹‡>0="Û
+iyó<çVjÍ%`DÑS`jLVÌ256Š¶kh¥8·SXsùO 0ŞB y^i€X­sÆÇí<¯7T€ÇFLë^ãV¾™ÄàqûÄˆ€½?,q"è~qAÌDº}"}d–	kŸ KŠ°*9«%Ò'{2Œj©Ù¬DµÄ¸,™2ÀºèÏ×ß½‹ÅÆäñÜ¥ÀKeÕn'ø³â[.|óøÃ/ñ-#ã“Ó¹QrÓa3ÛÙIèğpèmzmÛO4-…km.ãèØñÉ'rSèXvfjì(7:639õÌ–äSÖ½ú07.}·vïõ‰yùëŸşáñGÿ!O·Àz¬c½
+>°»T1ª ŒwW&ë” §Øti@MôwÿçÖ{ÃğâûhaVuè>k–9ÆÄ’çÆm†<MmíŞ—øöúÇß6ŞùüñùË·şP÷êk\ÿ5éwèx¯_£şî¥µG7°àZÿæÁß^j¼s©ñÉëÿyş5|~ışïñ‡õß¿Öøòwxù?ÏÿšaPMˆ(3ô32\ä˜ø-HÉ–¢……¤AÑYñ×<ş%xü r„í¢
+VMóVÅ°\dxSÑ-™‚Êó8àû{[áw¤ÊS¼ÈxœïX'ÌÏ“}^AsÛI./Y ]Ÿ(€.aï¨ß!~§(€?'î¸ÑÑ@C×ñp,²¿:^¿åSíÇ¦GÚ;A¶˜û
+|9–E#GÁÇ£ØH=×5^´—
+ğur"G.˜œ™„9Lgçë§)ù0ÚÖÒî)yåkƒ×“ÄN'CA„Üâ)XNì>ÅÚ=Nƒöl­:gc9ˆ•ô$5[Ã1Ë,!Vö¨•&vıùè[¿¢,~,RFk·€è Ê»ßU]ÇŸ¿É¯¥3ÇM0A:æJÓîŞÎ£ÄöĞ€Ì5ÊKzÆX`QbÊ@‰ÔíBØĞ„»:µoà(vHû¥Ù“H¹€Î—W:ôïñÈ7†Ú7ëM,hÂšn2-Ë	\Ğû|Ù+ö;‘¦tåà<d\À5PÓ¬E!	ú'^´Gği0oÁÀ¾ë!X¸Ò¿¨ÀFîİ^Ù{¡v~#0TÇïıÊ÷)T~G\W'Ô/zZ»g:ö»éñi³møo7. >÷\šx% ÜÚ'o#òeSÍ`ÖuŒ|M–‹KmÃÿõé{Ÿ ï\ªX"Íp M·l‚Ø’YøZOPş¼õN…´qD#“‡Çœ˜ÊR Z\$Åb‰„’4Fæ¸Ò£uB%¹/Š¼É™Õ/«µ¢Ì:>5f{kãİ7Ö/ÿËÆİ/7/>şİG(s|¦CéUWï¿q	Å²K˜æBğÏD®Ÿ‘‘j
+½‹ßkYİUûÄNV¯¦¹>eğÍŠ«kHi8R´gâ¨Ï´óïƒíÕİ:;¯>ıæ÷¦„+¹fGòÍ1R-Â*‘¢™_6>¸èñÍ/n7ßüòè–ò&§üòhóœòË£Ï8¥œB|ğãc£9ôâØ(Ä¢ÒT”!'§då–¥†*U9—µ,¦jëøu“qÍ!5æx¤‹x$€è: üÆ[O~h<¼¶şÙıúGõû¿OØDV{ÕÃ¡L½ 	ì'Ùyı°«±P„=^´
+Õ¹•Ê¢†[ø“†°q@BH¥†•Fz…±ˆ¯Ø3(¿‚—Xô…Z+¯Äa/Ér‹ô¥)©EîlÌšó„MD8‹&p˜Î<myæˆä¼y`8ŸúJUY‚»dIİøÄpP‡qdû#çæíâæD«d–]R˜²dX°S@·p;pÂE&~øêx‰Eæ¼YŒyÛ©ÒúñEc	KÌnĞWï|¿şèNãão1ãBqNÂÊk>_ûá“»¯ÁæÈÛ÷ëŸ~ºvïJıêo×¯}ÚøÍGõ«7ñ¿_ü³²2g‚hÉz<;‘&_%ò 
+–Wpíû/7¯Òdx˜’­³~‰õhuï{¢¤Å}ÜÀİßÒv`o‚°İ£Æ¬¿’®¼Éº3#	)|Â²ÍŸò!ÜhESS"ÉVo¢Õ[I`3L7¢âÍ®¡_ÕÌYÛµ<‡?˜}x…-ÛñÅî<æºõæß¾ıø£?7¾üå2|QÕ@¿ûy_»ÓxûV“"ÕùT° ÌşÓ3øÏ‰™Éc«¯ÍŒà³“DæV¯ŠÜ.ä1rÔRP¹[EüÂ:¼dkÜ=İƒ<Ş¾Ç4âĞîSDtˆúíCTe¨¶T†Üãa«ÃwšóH³jweIåg(q, ÿXÿÍmüïãó¿®ß¿–XîysLa—)“j€cƒlD* o ¢1lê—VoA)kÊPaFÁ·Tñ;tû/±şğkß3=¯1o^¨ßùëõ;o¯ÿ}¿Æ¯oCpÄ×Wëß½¿şÇëWÿ-±>·N)!öœŠúüœ™eÖ^T`RKÌÂexëÃVUî«‰ê,½)Î¬9…Ë—›ÃPH%ŸIÄYª\¼!aÆZ ÿŠ¥2×ˆ,bV&•›Œ7#¶.=3hz$;ûÉëd¿´í(d°5a®Ş/²Ì„)(§¤T¿Øî¥Dÿ«Tèyıì6~oP#S­7ÈqÓÔîÚ!=GJöË\z ‘7Óy£h²À•D~_xµe€¯:Ú6L&ü©5Êao÷®ÁS¼»_z[5+ĞF¯4½…·ÕÉ É†¡`¹ ³—,»„J¦ß|ó
+¦3N5L…	Jb˜&=u´/¦ÂªÊ¤[Ù®½€…$“pŞ*×Î¶g:­Ò(o—í£n£Ö*`˜¤Ìtµš®;ixùiF2ºÈ²mñkÃ)¬ã‰&êï« ›JF¹f‰ÆL”Ye½vï7îxıˆfòøüåÇ·¾k|òyãò[pş«×ïK^ÂåyC¨-ë`mÚÓÊÖA²ÃŒÅ—Q•{Şt@Ï ‰÷´ 1`ÖB?o}€;€¾»×Ö¾z"ÛòL¯vïœí±ë,¡‚íÀhLÙ£²úH¾¹õo\o|õmıÊW›7î¾¹-›˜»°’è¼2ƒ/~r»/òİHë@½Ã³}­Ø!Ô²EãÓ'FŒÚ†Œ¡¤™MF$™~ª˜IŞê;fSäõ›7>úL<+õşM4w|cÇ³|Ú*.fOSïğI½ÀßÜ>ÚcƒJ{¬±[lPf‹©XLët4GÄ`¤e§§Ç&²3'¦²hlâpnjlr
+F³Í#[¼èaı°À<ñ›µm0¥Âñõ»<¾­j¸½Ô|`\eY·S%0bìª„¨ÕËsuÍ’E5<tè¥QD”ct¨fx=šwVæ—GÑ4^ŸÁRèsjr¼©¸ü+’¼'%@RìéXÂÎu`
+d‘š£ŒUEüèJ­FìĞÈDÏ¡)0^Ëf¾Ãø½yœîö÷@?Áe<©IŸÌÎŒMAÇ&G³ãè0¦H G8sèÄaL£hz|2LË@Œ˜§‹v5/[~¬EÌÇVK˜®^ô*ÌAïéd(jbĞùWzñŒÿ»&.¦âŠ§qƒtÙóÀ4¢QÃØ"÷f¡±è­{—·Ÿ$ĞíÇWçÌKKrigvÓ©è3û÷ÌF1‚Ñ<ûˆ*±t‘ğò<Øñ‘¯0ƒG±-ƒß!îÛiC—KmPÓÒl \TJpß2K,R6°‹Ô«áS ùx™jqÈ^4# [ á*p•ûää>¹]q˜Ÿp$äLÄÂ¦SæÏÑ½õ‡ïÕßü3ø„o¾¹öèJı“w±¥B‹5ˆKù¸í²ílÛª=k:Ò´µ¹]’W¤Š!|ä¥ˆŒ±1µ¹C±.Ò-}F0ŞmÃËçÀÛbWisã`¢e8QÖíØˆ?‘·‹Ê¬’Â':­¯: ¸sğBhÙ\ĞıL‹=¡ó(:‚şÌPtf~ıDİÇ0"êWˆæıDø{ˆ†ğo7ŞŒŸ8‹\l‘ÅJ{	#)ùÔö¢¥ÓÆ¼	ã¶"ò8ìPhìÙ$
+¶èŠ#ô¹«·ÄTešäêÿÒ®Ğ+¯ aF±|yüñ›ÿvaıÎ×õ«| ÿõÇ(JÀÄê}¬~Û~õğ£P´(¼&*›+©^“²DR¨4Rnqa¥óÄ¾}}½xY7Ç¼/a1ÁŞyÂ&‰‹Á)rşòìê%¯‘¿Ñ²Ÿš†¸)#¹Ñ
+r)Û‹–Ğ-b)tdÚ¦rÈ¶H(Iòtp‚>r>…P®W’ÿ$Ù#šFÁ"/ó¨Ğê‚Î9Ø;:f0ï‘4qlŒıØ9{ãÛ/Ö/ÿBM7.}°ñè÷ø°8¨ÖäãO¨|ÚğÉŞ¹>j+sV³ÊÊÔçrxmxë-âq¯ù(‡ï4&ŠÛÖ±+­Ü¨Ç³R$âÿYÃZ³UdUyä»à%Ìûò©¶(1u"ÿTî$š>AÎL›F¾×kÎœy©†õXR6‰Ş3˜‘äûè±.Îü5ò‹›‚Q†S‡Š€ğqÈ¨bİj	Ç|íÂiLp®k¹Àwµ¢IN³A<e]×,Í-|¦í—ˆøRIB#‰ó¤yT…V˜ZqÕâú6	Ìï+c{ôXxÛS¯vIˆ wÇeñ ·›Í|¦A›á*'a®$?VÈäõ:ÊÄM_ªK=yj”&ñ>´ÚÔ®¦SöÂš¦hU/ iëUSk%b`ˆá‹š_„Ÿè2,…Àùê~ıî½r£FW_£d”çÄË­rÁM‰¬€.L^üÚvõ¶££#Ò¨æAxBÚõo‡­€Ñ¢{[¢¿**'‡µÙLÓ¿I©Ù‘›û{Ï´Ã¿êUYÜ)7*Ÿ^&¥à›˜I©d£€Rôã¶ğ&•§ šÍMJñ¿6ÁœäÏØ³…ìI¦JVäçñÅ+ëw¾F™‘9Ó²ÜÚ”||2ûKùSÖÿpŸ<å¤ñª÷r}ÒS4˜^rZ¨w,Û˜äH}È%4c•éş‰k¡]}OİÚÃê.­ßÿËoÉ4Ò/ ¸-¨âÍ È ‰É©cÙñ-BŞS‰¡VŠ¡©±™±‘ìxÛ°÷)¥„9:vähÛ0ü›òFJ'mÃôoÊ›Ç'_lÆÿ<ÓN¸CbB\ø¼~ÿ½Æ‡yüá·XN"–f‰úğà¼Q0š’Ä'éT’Oà¦ëïíßİÕ»ÿ‡ú†úvHí]0‚zŸKd	Q8ë6#‡ü<å‚h«$O!UB½àÅcÓè˜Y5H.ß(ş`Å¼åĞVnÁ(Ÿ%sÏŸÄÇ9«=‹ÿ7éÆM\Ÿ2óæ,$hUí12R\RTHä¹‚áÎù¸v>¦š3m0ˆêéŒE>
+J,÷E¦İRª¸J©t’"È$ASjÌgN_VW,î€jÖ¿y°şàÓúİ‡Xö­ıp«ñÚ]"ëÆÊ$·nõ’xeŞ$¦
+³„2ø©à“‡ ˆoĞªPÃãˆF¹E.Eßª
+‰ó€„jÅıŒTosèº‚¢I‚Ğ?.üc4;q8§Œ+DR%ÛŒr¨àİ½,–;‚*©î¬±gÁ¢ÑÀ…[ujå<>ßÆJPÇ§D‘›%C5j]Bºª¶NÖò²@@>%„$1•.×ø÷[4DaÜfAyÿï>„%ï: Ì;“ö<‚ãˆPH{tÓ»ãÉR[´ŸnêûäóÆıw¡àyZs†,;MÑİÓ@mtÚÒP»ãÉR[Lí{Ê	ïÏ×şT]mçŞì©#=âRUlF·›Â’òùÍ-¡cµbÕêÊ[€UªsSà]»XÔŒ5„
+1šÖI¥æTŠñJì4Ë$aßx”eÿ¤ÔLÑwÏ6)ÒÀa}ëÚì$$ƒ´ÎÌ7–bµ›7rüÈËÇ¯Ô¯ŞT¯kß?şÓGõû¿W°E0ÆL.ê’UO¦¿d|ú¡½jÆöQ§b‹Ê¿úÄ"·aÅÏÔÁ¨u¥»h–ÏUçğ+õµ.ã8MÓ¼åÖŒ"*Zn5uìï$Ô¨!x[¼èÄ_—TŞ rK®M³ -—ù²fæ,—¼$²v¡É1,	Máeùzz`B•Dá¨oªŠ==bµ=”{ Ã	fbÃë%V5?‡ßPÙ«fMòd,¸¡á©
+ÆÎŸÆ4w*¡0!ßö©Ø ŸÆK*\à@œL4?!áLwCÑ†ä{øèbI\óAÙ/İUÇ*e:"qÈXÌ´'>—‹x”ÇY&µÂBFa*I-p[J	ÛYI-Yîd¥j•ŒâqLËµÊzî9¾ÉÈÏ‰oæí·«¶ù“áıÔrÿxR+Œ˜³U(:²€Fñ2åcÓ“ÓUğãon¥hU3í3í§zO+Û[ù¹¸ì•wb<¡b&(é©æ½/~ÂËjV„	±ßÙx2@
+6àZi†	‚Û›g 1@Ğ`“äÏ½Õ&ˆ?h%%é?¢@5q{Û?Ú$ê/
+XÖU·)ëíğ)¯É™aS-š¸%ŒJM¨´#Ğ6†–&Ñ2•Ãå¬‡]½cÄO k–{DZü  %t†OÒ•í¾E’¢yõaëÜGÎÇ²~Ã‡ªÊL:o¥*“¼˜	VµDÙ'Å¬ƒ9ëL£72œİ›"¸*@ù¦)l_ƒÚˆ~†õ{Òg¤ƒÃËğŠQ),.j»ş‡ûõ¯iéÇ“Æ9(d«áIï3á=:÷Œ•°êë§vëtHèOôd“]4ÍT¥×¤Q›DÙ<HØPf‡4İìòÄ‘Y.¨pu­!fü£>•‹.)£¡©l•ÜjÃÂ:‹2|ëŞ8ì?€ú:˜­¦º?t/¨ly3³N:q[ªFmóçD1Igz;öe—vkBu=†ÕÊSª›Ñû´´¾Öè|›×ø6§ïµFÛk®·iMoózÙgåïöH’î¤Ûü­A˜IÒ½tƒ¿7FI$¨_;>~ü6†^‹)4]-=W¨å2†VÜ¨Ğs…É\±ÔªxôŠ²îˆ§‡¼ú4 šÈÀ‡ç]ºùø_>«?z¯~ùŠ§’L™%è1Jò¼Ä¤-Áf¹K¹.ê¬ŠÚkâÖ®ˆJ_ €Ÿ–*_àæ¼ti=ti½sOÂ3·y¯Üæ<r­ñÆµÎ·i/Üæ=plqÆ7ªïô'q¤ú^oqÇJ&@|qRï²'¶Ø:¤J…ôTÑ²Œ1 $‚A´ƒ$6·GÒÓ5Ø6‹6ÅŠg¢kê°\:æÒâ!=vÑcŒÔ,°ğjşUjî\Æ#v…:5÷Dö'6ò|Õ¼a¦a–=ãññ#â4¦‰†aÒ”Y¢ƒ[«e’pñ&‰îïÁ¸qÂyL›³ORfşõY"Ñ%Ø6Aãíèg(#Rà¥NºŸ¡><)ıDùÌ¬<T»I0lTfMi$3ö¹sE0\æ!4æ"Æzˆòvì”:MGY¥†Ïäc‰ œ¿êesˆ¥Á’| já5€*œŸ{¥Ë¦# ¾È‡¨V(Î ·‘Õj4¤˜`ŒbY§@E"%/ zÎ«WÎ9ü~šxØANT2‰³Ÿ”ÑB¡ŠÑG(óçª¥âaÛ	O©´j`dÛLrMSMğ6]Á£H«~ÈíÂ’	…EÈÈZeÈLK	Uî|µvï~ãÆùÆGï5®¾[¿úÁÚ£+ëî Ìß®ß¢xP]“µ*Mp?fçlŠyJdµA¢W6•4­_›¤$ß‘¾ç—ŸAÂ÷£+k÷ß©öAıão—>¨_y‹å¿?|»ñáÍÇ7Î¯=x°öèıõ/à+ï]Y{t£~å›úÕ»ëøâw>¯_¼_¿ÿŞ§.¦ÔÉûñÈt««·PÁtíY·êÔV¿,ØPdXÃ€Ôk†‰"+Ï[6fç&·JrG³dÓ¬ªîÔ¡„MHôC
+T/Å.T¥
+"\—ÚXí@KvŸ5‰ÛŠ¢/%º– |ƒ&š•_rA¸íg_ÕÄI¥~m†&4’4 „˜±¹DÁ0 ªQÑ‰zúƒhG“g«Éø¿CÎ6éVcªv/Äó §vîò	Áó]€²Cşí8ø‰§½I™Ÿ-'2H$‹ê)á%KGš7Î­Pc_ü(°şšÿœ&4P±[=Y&¸pX¢oIYÛ›‡ĞD…AæµgâyX‚p©à}b€$ãÖrëÚŸÔ¿üˆb!ÅùD^ÿ"Z ö÷@
+ï°°ä†ôD0eû{J˜ıÛIxÃT.‹ÆÇ¦g¦¹2P=1;6‘›šFÙ‰Qt27=Ÿæœeš‘b^2œÂ?™K –ğG÷Tä‡ÓDnD7J¨[…¿ÜÿóÈMpÕ$oŞ°ñMXœ½ÄÉğ·sö¬ÿ¡§¶ &„~yÒÍ<ã,»Âsñ“‚«»éï™|t÷"òİĞÃ±zCäe¼(j8ü<z§÷€i,şòsl£#â#‚+Ÿ+ÕüÜHøúLCK¦§:ä\‘>œ8(è‘whÏc»ÏbŞsşÃYáõšï7‚—Ós¶³$~Hı~LøùƒØy¬Âq§W:8¦€¬‹åŸş4oºx’°àØ%¨uÁM3VÉñË%$¡ZÙúUÍ<Én>€ ÊÜR74^E4mVùµR@hp„èÈ§›qº¡C»
+b2ö!DMu„ y¬õàêàš~\ÉIM{ƒj%»{#ÕJÀêJªuR‰ËÇJ˜8XÏ!5ùÚ%\Ñ’P‰“ÁEúi®ëÔŞÁù¹Ó‘ü+XDÎ‚Á5g
+fÙsSDÖˆä(1a­¬‰²·7\%v÷I9fŒ¢v©”å3\U¥Y”N+ˆÖŒTb:õ½gûöô§i¡˜H iPª)$*,ò*«G²n –¹õ”P©@Õ¼YHvKS®É+ªĞÆYµÚ^©i¿_çQ.f­¢ß‹Š Şƒè Åç˜qÔÕ×ÓÂSÅ–n°şW öæÍ7ë7î¯?x³şöâ‹ÎH6”êa’€^•u<7 <¯Yo¥TU¤!KÇVò¶˜ŠO’Ä8ØÓ7±êá˜å¼e"Ûå<	˜LT6æ-|¶‚¿ı¸¨l#(g•1'ö Æ§Ÿ¯ßx«şİ_ÖïÜZ÷Íõ—Öÿt·şæ…õëo5%şùíKßm\ú‹¬7C-éD+ÔvI_Â%nêO‡×5­2-•h]_ß#AÅcË#Aé1ãL¯Ë~N.ànÇ®Ò¢i´ePÌ…<¾v•Ø‡ìÂÌ¨/P¹{±v°T¾RxH’ïÒ*yLlñ™Íx}ëëÛÛ¿ç´o&/
+kÀÅvúÃK6ˆ.œ’^±UßS,üe=©Hé”6Ø€°D“\o¶=Ú$Ó;ß=¾x•yi¼óªhv¶
+·"E6Òän*ğåQÿjXşæIgªKİU{Ü†’ÛŞÎúŠNµQ`Ê€ Ul™˜™rÙKÉŞM&1~jôAŒSZaÓÇ•›ë×n¯¿CK?)ID¯œœÊ¯}¿å3¡U”´ OEe	/š~]9yòSÈ>€öîS)%í|p©çQÛ+ğÖFİnê¦¡X?vª2hO(Pô…~å{CÏÄúCO'eUQŞ+¾ê?Å;Á?Ç;{’÷Ã€,I
+´àeşİWş±	Äe•º¶áÌr&,F ‘ı,d¡vÏ ed!RBR¨”ô)]µ¸Ÿšà ğ×.ÔY'xØtQ!ç6³ ø<ïÛ?d­»»É©`¯n9NÚ‰œÄ-&éi‚€•MPôr–Â÷jËiÂW›E@~g £.h€j¿ş·>ô£§Œãt“zÄ.bƒ4ï/ £‘Ğ¯­%o¥
+Kïì®@!/%tSu÷ÿş_Ô+ZA¶¢’¬²È®È:¦¡YuSïv\ê2jF€°HÌ¹!òÙ±ˆ*·aã¼k®K´/	7ÏVÑ´U0‡ç”6Ê”-@°h¼·Ì“Šû²Ğuj ŸB³Æ`}DÕ@¥ÅÈ¼¾è	ûQ",QCåõ©û{¢¾ØÁ^¯(µÉu¹Š´-¡Ç‘t?\ëXä]<Õ×C™K«{Pcq•Ê‘ÎMÏY•ğ“P0E”Ë$WÉ™	êNb›(²Õ/|³ñÚ5æ°" £Ñ‹Ô	İòÊÊâË#¤ë•ª…Acşÿ>*"b¼ç¨BBÛ:uj¾CU6u…à<Í¯Äl´ŠşV,GñoDuWØ'b©J$éŞB]lƒøe‰ ~ÙÍÁ&Ê÷pv9Á‚7"”?À b¦j8¢d7ÕÖ\3ßÁÂ{ñŒ—«‘]½Èl
+Å@Ü¦Tl}ëMÛIFÕ#È%/JT´¾*W-0Ìò\­DİĞÈğ$*“ —Õ[x-íÆ"dãîçP¤ıÓO¾Õ¸q™—(^ĞFCÒdÑ­A°”¬{°îë$¥¸I3ÏV?õê§¡[&¬q÷}ÖÀ£`¸øM4aÏƒ[oı_lÜùªñÁWşsó×µvVrÇ”ç°š{¿7²Bß=kZÁ(HZãeŸdiX·Ìº™-ÚùWhåÛaaÁt\Rb]~L:¦È Gr18”E•éÁê®”Í´Ç
+	(±|€‰Ğİ™p1EU×hÉ˜_ĞÚí}ı»wïQ½Y\Ûç•–ÊJÄY	æ]¡ÇHÃî½@>È7ğj´°Y•OÊ‹ÁJ’à‹oò«VÅ‚¨f ­d!VTrR:5‘iWîL& x(Äª"Òd¢‡Òıf	XAšBÚ‹‘¹Š·º¢õEÛÑ‘ãPaş&ÿ6‘®¾©´‰ÉÚÄdB¥SÖ€¢¢˜w…zñxbœÁÊ.ãÕ„`Âo%c'm’5HæÀ:/2ÊK?aBÉ¤):gU@Éßs¾ä¾©U¦o¯2,×7óú×ê—ş´…ìä…şn¡¼V~Ò,u$7%'É`©ó××¯İnŠ¥ONÍ`–" ¢íŞİúÕk®¥©É‰™É—G&Çs3YÜ"ùŠèW~£©ÆGsãc'sS¹Ñ¶aÿ#4ú×?¯İÿlíÁG?ò5xa',¼ùİïê÷™[ey–:¦6Ç±´Ÿ¦~8ÑƒYÿƒ2Ìç…YìÃ›z<°<Ï9°çÕîëğÓ©»Û*¬x“:Ow‡½z=;.ÉÓ¶tU•Ç£Ò#”&¿,NI‰ÙãŠ‹ê	å®y'Eùk×,²-À%²n3n:rH6[%ï¥òô~2-OzÁ»t(´FØY&º4	Xè¥Ë‰~Qùos‹y,ÇJÛ©ö@‰` ¡SxæÇİš]LuÔéŠcwÎ4«-wåáÎâe”ÆgÒ‰ÇJíµÿ¨ùîÆ­Û›1‘6.½Ë*¨F¯ÕqéŠÒÍ`˜íğ2 jQ±Ï•6£DC2¬EÙ¨dÌ"€x=»ï˜ç°’\+às,“òI!ï;¶K«÷‹U«RŒæèmîê7hŞ|vxÖî½µñèQãæÅúÅ7·o5>ù¡qéƒµ{¿Y{x“ôÚƒÏ×îoüû­Æù/ßÜ®¿ùvı³ëk÷şè‹	Ø’¾ÊĞv½Š4kº"›kÉvµœê˜Ô7„Fí…rÑ6
+€?^.€òe’X‘‡&àG’î½gx-káĞ6±2ú‚À_ı­ß­[›Xı1oı’TŠ©í%R_´{Äì_¦¿&STÿ:Q!ïFÅHX!ÅÌ“&¦ÆM‡jCĞS»·VŠ–÷¶»U6<­ŸzªRàY=î‰ 0É N7›‹Æ×ĞšØµ5È˜Bõø+ôr¼âËä•ÙBÕå³˜DTWù¼Y©hë^,º‹ş¨.L?*|è«’Ğ«óÒF-°¦v~T F
+ÓÈ—¿Ec	Û‚è\ÓX„¤:DÍ•Ô¡$MGÖ ¬¥ƒ†(å‰`Õh¡òg(n¤Š›Àğ_àLPsUÒü8+R±X+$^ìÒ‡õ{¯×¿>¿ñÅo¿Nè=vø[)
+eÁa¡Ø–èX‚“5e\Ä$)vÂú¢áÜEşä^oÓˆ#uµÂúÛ†Ç0ûàw°ò9Òl,—O6¡%)¢Ln1´aMÉ„?l®ÌwòØ.oK§nEv"ºŸHÿÂ¦à³	L İkéø{û\d—êÙ°‡İßwjéÈ“MŒNäot"²AÒİİı¤¦a†’llŸÜŸ°K&Øá RCB9¹ï›“òŠSGoªP§È®Í± ğJJ
+½€8¤¨cVbNIÒCÂ94ñãTÿ ÕRÎÉ3A¤i¬[B{Š2ÍTÍê–Â‰)=¨¸”¼£‡â#W]b÷t"÷Ø–EKnPˆ6 ¢ ZÚ»O|HŠÚÕÜ<lğ 2wÄ‚<âïŞXÿöw4ÔŸiÃ\"¾¶-k&ÍöW¥Hæ7)€/÷§é“Í•	GÎÊÚÄ–5‘¸¡#"ß¬YRâšĞ'(î½Z´‡©½]©ÄámÊìøx‚ÜŸf ı36Mj\>ß¸q™†`QpDş‚vıÅÖD	µ"B(ØÇl±…Qîš$·p#?5‚óUDBRGs$N‰Eå‡¯i‚ìšŒ¤iMM34©[U„Î$ÇÍ¨·ø›Ìª9T+¾â—c±íâl:­FèªöÔp† 2K ’úåÅÂQ‚§¯˜Ğ#*šĞÓŸF‘a¾àE[B¯¥U©+&ÀnãY<ú/ÓY}Ù(_®Úù~…8”jP¾–¤ª	.0çMg‰¦æyÙx\„Ûm•óÅZÁt3ùn« 
+5‰‰IU¹€(–Zˆ‚¯Æ^Ó+šEÍ€{b~(|½C'Ô{¼:Ø‰_ít‡² .â!ÕøÖ3|ÔeÕ‘YtM­·ôz‹ÛÇ/™Ø÷æ:.œo–«i ñç¸~” t ~Qéoz7=0¤h­Œ8Ûû;™¾ùÍe­x`ˆ/¡‡.ßÑˆÔÂ1ª(Ö ’0ıˆä ïŠ—Ä è*Ûe¹Y×€%°$äA£ª5ºxáöãó—Q& –Q‰—‘Ûƒ—K•3jÜ¦Øs7û8ùFò>”ğ'½uAY xO&+Ò‡‚
+ba°fâ'VÍ`p4·øäEi€á¹½äEXÛ—¢p’’ÚDø€:¨sÿŒƒu…~IåN²Ö^rn?ËA>Å2(RPë¼˜Yh©Áu:>7U`4a:uÜ	)ö ÉöZbXI~ŒAO_,Ì Îö‡ÀŞÂà‰ôœ`4jÂÊaøY-ˆB™2Ï:¦;7²ĞéĞPNc°z÷”Ø °õK!Y¥œĞ%›ÈlJó×r¯
+¢0£ <dsA™*ë^É: ñæÍ€ş”¡™UòÂqÏ¡À"àş„Ìlq"/à5&Ä5/›+ü†FAA@U'4œ*x˜G¸ØºÀŠ>©°õ•e	aå„@Éc•âL¦›æ|ˆCŠ†æAG(
+Ğ¢uñ ûz¡E¤…Ä<uòÆš¶=v†ÁETf=š1¾Ø‹?aŒ›6Äè¡eñïİR£Lı*[fš±WO¸Ba¦±ÙIÆ=Ô^Ou.µœa°VmÃ‡Æ›¼ŸáºÌ~­Ÿ&ÜE;ô¢á˜svÍ5›lf7m†mK7ÓÄ>ÚBn&»©û;¦‰ vp“/Â–Ü»TÁ–1&’Í+ÿİ\_Æí¦{ÁZ8îØ˜‹J4óa3”×6<j1‰l-Ø‘ÔÖ²åB}@X¼ÄMïò&Î—:ª„ª:r5V©í¯Î:?×¬zb-§k	±~"tØI_Ur9T]3KVt#uOÜı2 Äß-ú¼ÎßXJ\†ÕDoíĞA¿]’*È«ˆáâ|[¼<Xiñ€m¥G‚†Âõ¬ƒeQyr¼g0Œ.GN=Q®Â‘ Ò‘)lR)$­h)†p¤SáğÄã—´äÂÑ„²Gó
+2E®ëñïuZKJ¥©:•¬8Y…p±3¢eköQãªDÕ	¨>Á¡T¡àÀ‚ZaÁÒ#ág²·8®È€ñŸåò>Sƒ»ù¥ì`bJ6y^R:Gpè!›G4ò {¶Ìí
+üDşˆq=uæ¨ÎÓ{Ø2‹…HéÄ¹ØŞ‰R%õ{GÜ’Pü&(ì Sí×1{¾!ä¼):šH¦uà…FkÒ£—ä-H†ÂêøÅ'°+Ùµë÷(‘Ş	oipoC4ÃD°œ¸ÎÍ>Qğ!Ñ((Ú—†CÚK«†À·v¢¡Õœ` Ø¸[.èc2Ñ& Òï<I¦8–'gÿ×n¬_:VŞHİO·Èœz¹-&ó@pŒ3KÚQ7,´jè¡‡ç¦Ú;¨Áp
+«÷şM:¤G=ÿãƒ‡Àçáeî±) D¼#ÙİHº)â·×j1Ì€D˜	Ê |½¦E‘£Üxú JøÍ0êö/ˆhJÆmÔ°8ñíÑ´‚>ebõ)Ñ¸"úD4/ñüi³«³ü…s.FòÉöé`(o*Ÿ'ù~ÿŸ8?Åã@†a{˜Ê{Ü3Îj1gÅ¬j_-€WñO!†ÑÂ“ñ,øÛh?q¶Ì±=Œ<ğknå¢™Ø'ÂeŠê§Ía4n{¸‹>ìgmÉ¢uÄÆq‘¥›ı'Â‚£ñgÀ¢½m‹<êóµšùç ĞéÉW'Íûa¼PhÓOœ+l,òÆv­ƒÜŸñãVª™Ñ©}"¼ıû‰3[5<ÛÃoá‡>c¹­d9Á?®ó ’Ù-m›<8‚`>Wgp“ê5ğ‡Ÿ;˜áÈ>’^Ê½¦&fÚw³Àû§öD³M£‘­p*zä®F±Øº a’i2T1×@B'er¤]Â«"®Éíò ÇEÓŠ¤'’È$®9!cÈÜ.NcÆ=^Tú°éë_‰QQ è·7Eeò6©Aü½#¨µÀ×ãcb1T.“Y†ß,’èØ?6._¿ôUıíï_¸²~ı=¬}ïJ÷Ä„õ-‰ÂÔä#ÏHî!Ñú²ŒT’`¹y”@ñYæ]3Šè°mW…øĞ¢Ú!$t2f¤¼v„ –>uNk<’^Àâû£$"Œ•OND>3cWñq•¼‡pï›¨×ÎUf÷	2cº|ñú…¯7Û8_”âÀFluÿÏHõÅY.¹ uö´LënB¾áÄYº¢4x³²ˆ¡a-ˆXS™Ô~ØÌÏAùæñ‡_
+¦çòG¶ş‰Ø9–½9á/_+<ªìÁYË)ÀŸs°…Nt[îdóthŠ¡|X‹fYe<…$]³NÓrx¸{ö¢Yü·àØ˜‡xB“ª3T°z™¨ò@;ùŒy6sıø#ÓüKÆb×BW	j5ìötü°¶•C1z¿öƒ‘‹É§€æb÷ÒªH”ciøáØL^tÅÄÖş¹Ø’>î‘iï ‰)J¡‹Ë"ØÊeíHùíâ¹¶á¿]¿ù÷{W™dˆZwÕª#e\ö÷ÌDŞ3^†ÈGğRÓ"Õ‡àmw#»bä­êR×¾^DF›¢ìW³ê!Ä^3Ò·’éº˜{£½«D:§ÂO6Ë’6>¨’¸@á»%‡¡Å™I6a]’hõn GOĞ#i±FáOº“4­èƒVğíî·+,7¶ƒ>Šò$ÇrSäW?hüåÃn¤gc¢\*Èõh!LŸøGú=£$‡¶dj ¢B±H¸.
+ìÅ´#Iß…åú­;w>£CéÖË¤å/ô•[ÿ@ÍC)«#““GÆshúh.73^@ã“#ø‡Ü/Frãhì a¢é—&F85y™”}s‰İÌBÙÇ/”{{·e¡ìW¬”˜@¶g¥Ü³M+ej{F¦h›x5Ùï€^áÑ*í9£k´>Pšºä d2²¢†|•OwÎ±Ê¯tõ
+İ.î|u°%-,Øxÿ«Æ•;ûïşıáõúÛë÷@Glû\ÑDÓ„ğ±­ñNãÆ¿×o|EKDõŒLŸäëClák­rŞ±ËÖ«ä;Ö?Æís«_È!àî¨ °"6D˜3g¢kv¬Äo•Và=k¶K—ğ©r2T'á¿İx?SR°W0h— À8¦×`á6Y¡{‡Ù!Á4`¢@;2¥‰N e‰@I™'ÎÀ¦¤ğ“[¥.ì¶aa÷T$=7‚Jeì2Çk³˜"ğvHMRi;·i"ú™í‘P‰Â)
+ˆJ~=íİ¡wÍCõ·ÍU«w¨§§`çİîsä!$¿™ÏÿnO¡§»»»Ç\†;%eê¼;/|ÅŞH˜èo¡ma‰•@Ó
+2]Ã×Ø½:Õ›3ÖG€Òq"PoûôR9O)y‚ó€Q‘RÖEæŞR(Ğ#ğbI™å"7Oï>O–aì6å(ˆó³¯"eˆ¿‰¸\TIãâˆ–‹SĞY4% {ñò1ğº¡Ò¢'ş|©Cy‹a¼ •?SmÃvM* ¶öİä®XOÖB£q”HÅÊ ^.óF1X`iMÌqÛ(è¸l7)­}ïš¶¨Æİ!m1İÎ¯jÖ¼Íõ½ï¢;ôlHûST|ŠoÒbtZ~ã#b"Æ6Ë˜Á¨VQa¦pµ+ÅÊVâe’_zËA” yâc´a½/Øh‡ïîÁîS½Rd9 G05Ü:Åå‘]Xu–ğ$ôñ°ŒáA< y„¬§È‰Œb¯Ş‚`Rõ ò^v¾šˆğBŸ9ëVá‰øöÒ»Ó­«*PzëÂ,¾ñãÓ¿è†^d ¥N´L¦,«l8KíhE	â»ãRÅ ·¸0ÛM×«SŞ' O‚ß¡½àz½ªU­¢ÛMô‚—«öËÿÇµ±ì?IÙ-cÁ°ªˆ¯xzÜp\³0…›ÏÀ3”wK5oÅiâÃŸ¬{ˆŒêt`[2„îd7® ¼QÍÏaZp\Œ›5)|™í‹å]1Š¦SÍ´åğ¥È°ş†l_ª¹hqw›¼[ÂóÜNø³¸—5¬kxÏ«;gzÌù#Ú¾n¶«‹k%•N–xÇD8Ûñ÷pŞ¹÷ó¾Á¨şHŞE
+q¦´‚wã¡Ø-1Pá——Ã·,Vá…ÙË·>h¼õ¨qéƒõ_W¿ø€VçMcÔƒ<ã8ë8†[%%æòEëW5“ÖzwtwÂÈj©Ë‘ÕÕe0·!-‰3³yÓª¨äF'ùƒÿ…¶öÌ2¶
+ó´ĞíP pÜ‰w’`ğNš4¯¬B(Óìt•¢M{ôú‡ğ‡‰™£ã/¡‘ìxnb4;…F³/¡ÑÜLvl|:äÆc[£ÆÒfy¨£ü´»òv1½ç™/oçúò|Z“9ñ<¿|zŞ™ú¥¯6¾ı¢qïBıÊûwßxıêBÏ‹(}…	ä°Ä©à”«¶‹²çàÀìÉ4$»¯ÕÎ»ø3Ø®×ÇçÃ½/RÀw`Ö¹®Sb0ô ëŒ†±Ô.o/XR¦U­FUoS{‡8S;bû•Z¢5{}´sqI*~¯vQŒUP*Å®¶á±Ñ`¥’#·ŠP#Kî ªfRÃ×Šïà¸zXá‚´-œH|w ¯øîã7]¨Çá•ŠNw?½åÊU°òÓŞ‰³Ï€³À2Y;âÀ:)®.ú-ÿº	 \¶=(œ\.Úç,ØçpsK8L^ü•	b°Ü¢õª9ŠÎ0³Û*¸•’²Ñ,Z€ˆ?wt„¢´8±Ù!~Ñ@®¥N¬»ÌEA	İ,Œ”‰ÕŠ+øvÒÒtwÿëN:Ö9l¹¥fm½hW'jO‚ÛætĞÏ»¢MÎn£Aêê<Ş"Ğ7¡F!Í‚BVq'ã Uñ!ŸõâF>ÿª»B²6ãİ8È¥s²ó²¬ŞPr:Ù‡F¦Ã“…ŸCæ?óŠõ(c}êXáXì=)8 NC(²h>[\ºZIŒÇõÀoh¶™»¹L>SĞ'àÍ5õ_³
+hø!‚nA¿ÓÀÀ-û$Ü¢·K*>±eID„i’Òó~£½|‘8¢„?Ï&Ø%Ôˆ]Âš8Ñ‰G²SG&‘_*´4ŞæDÄï yêwn-ÃÌ/NZâÿÎîÑÀèw<)=)Qç)œ0:W¹‰™©Ü‘¹è$ùæ¢w‚DŒÑéğƒ¿íÏFê'ò÷xnb÷!—˜°¥3ÀË&ş¨Dú8Ñ“mO`IU>‚dQ¥±Hò„™	Ízl,÷PíìYÓ9fT‹V	k?…´î—~ê~a
+æ»}{#.Øª¹8}SlÎ*Ìr,ZœÌƒQ&zW×YkˆV9ÄÜGğ:5;rj/k©0D>Ãî¢Ø•	Ó©Âu1Â.lÖÆ,¶Bz±—³½gûö;¤J…h•«şèŠ¾_ä¨kºÂãşCö¢é*=`0zã]©±ô†$úb¢”‘Å5 »ÕˆŞgîİú…Ûõ¯¯¢şQÔø—û¯?Zÿø·w¾€¨(RŒîñùë_{à¯%» D0³ËVÛ8Ä©÷2êÆ†„İP¢†ıÜ(B·id6ÂÕS%¾_TªPâ‚cT4'Q”,ãÑ£÷ê—¯Ğ,–!òş«¯9¦²UkŞ’;±å Ğ,âÆÈƒÓ“–CVu“İ¥zö{D*ÅóşK‰û3R¶–¢· âe±Ÿ.Šƒ¡ ˜¦"C–gÉ[eñè²Z*XG4°È!d¸–”Fñ†—}—-ô‚,ÙO‘C&‹ ’åpÈñ ?« °=`£ˆÌ†¡Lc™œœBË˜Fjƒ	ı?Œ™nØã\Y”ıŠ…µ šHLÒVyÉF^y òk.:$¨¯'owq|Ì“.x8D$K³ŞùBòqÏ£rİR—‘mIÅ…ç5çm*¡x¹rsıÚíõw.Ñ2™¯U˜¤UQ7"KEdÍ—8LQœl&óĞ…r~	S‡Ÿ-³ —•V!oMc«ÑEå¥00øHDùÇ¸;G›òâ39×µ-tUoÏË‚•¶’
+|äTğøâ•õ;_Ó9ÓRÖş0Ps@&öp­XÜ„ØÁSEr®Öÿpß›«“Æ«x®PfzÁ¨t´`Ê‚,¢ÍÎY®T©.ı8'Í³“ÓNÛÇß6Şù¼qõİG¿'“7…Ç	M­ŞªX£sÇwk32·ñâ^Âª[°2{¸$/@XZŠ;7·4€'ó,6ã\ØØ#ßÉŞ_ÄâÓ[ƒeÆWªtÅgj¿ÚTL¨tù[_d;¼O/IÇ:l$@u®‘(	í“óÆ>£	4ïØCB“K™À.xß¤?‹b®âÛÛ”†éæ}ÑL{v|¼=Á!>5±¾Ë&%<øŠ`UIıÂÙXÇèBç$FuÍ‘ğ„ÁPô‡äzê¦£ C0t„’¸]{i;ñx­üûÀ‚'40c@kP€kf«i`ähnlrçRí’üM„§°
+Òw%œÌşr'Sí’¼­Ã§ƒ°†Ê©§›à“‡š8â¤1&ğ‡{™Œ±Û…	ßš)İ‚dp>±Iªn°˜C|ûÄ©š+ ¸°nÂÍ}rÖşcV™ŒEPÌ¯ß™"»µqí/ÿñ×ú¯êè;?\«ü¯*,–tIç‘#U@àHB](·Xñ™7‘›wl<@.˜ø›Xmó7,ˆöH‚;¹0›1nAàİ†zí£0Ğ<g*Ñ*agAU‘—¬2`±‹1Õ/ò•–V(ÖJXıî©È†ˆBTŠ]{Úå2D]/uŸuìRfQ £!¤p÷¡VwîåN”—:WI?hİé•0]î
+UX–»ˆÃsJH–lÄL£å<úê-’ì¸WV”ùi’Ì€')Ç$´pc/¯NÃl,w¢†MJ+O8ì 
+oÕ£Ûé²Öe¶wÀjÒe³íÂ]R?éfÜ¬’…1òüƒˆÅl90)9D¿“—Á¢eÄ.˜™İƒøWqŞ‰2š' 6gEÃö”îŞ³™EãÆ¬YT`oF§yÁä‰:¼€v|Î
+UÕí™©ç—ı±'qËÁ7Ù+H€ò‚ğdş0á–áûpo^ä$§³¹ErÈp«àUÎV3Ü›œ7f¹“Ìkï~î9hæ`·Ş7aë´@ô&|;½™ÆPì®Úãö‚éŒ®‰ß+`¬yãUÊzz—›¥Š˜£½8Ì 6'kUÂş{%¢ÄfÔ64À^úİ\STi†¦óÚR4„_Xñkb¤@¬Ê·^%\%´"#§)%µÁ›-	—"DÖÌ¹®ş½|înDŸ,Ôƒ|çoD¹d1ƒd_5œÓîk$Ñ ˜ÄÒ3‡é3n)±ÇÏ/ä–x1ØH }‚ªG¼—Çñ@Ö*w¢H0‰,ó£?‚86_ßÿ°«W i mìÔ0ÔÂÇ{‰ŠcÙU]b35636’o÷<òûÑ±#GõÚçKá×ƒs'wEíœ&_¼ãRÍÂ†/Ócñ¡GldoE·åì%Nöôy^}‹Ğı®0Bæ>Ÿ~T,İU:×ğoáôÿÊïEˆ‘Ç`om=Ëøİ*ã…/y’»A*ğ‹¦/wÈ.^!–SCB±Nõvï›€‰±.s¿…KÄ1I÷>şH„âv•VŞ¨ÚKtCúy"TØ¤xóåª
+ÎPú^²éáÇ£j¨œÜ°Ä”Ïç—ul<Û92o‡ÚW^æÕUü…Zj$ßÿÅÿ!™¶¼ŠÄ—Ó(B¬m™šÛ—„#ì€h©Óí
+éô<‘4W\¾¡Ù¨pˆ4ÄåÜ“-öD’rÇ2ïøüt5ˆÏãò=ƒ°ß«WJAÚ1_ƒáûz:?¡höŞ´Osµfå	'ïQpr¸*‡ˆq9fï×®Sï‘¢k½Ê¼€»zÿW;::®À¶]½ğ±³d„÷iÓ|?í!S ğ‡FM•%ëÔ¢ef˜{PÂÙ‹z56|¡¡S”F¿ ¢&œêUÜG´ö‰½fA·Äm–ŒP¯ICqjöŠ«‰JŞG‚ 7Li3¨µ‹«À±ì×›‘—qóĞ¹xJoí“f½dO"ö°m`ÒdF%î†ÒO¡òuÕŸà`b8çì™¥Š$ºVØ{í‹M£cfÕ(UâVÑE™q»
+Q-~EñÀŒA6©†| -Só4'lßÚ›7ŠVÁ(àV´)V<Âñ$!ŸÕäÒ%ÍÆ­#UI°‰ğİøWKÁz2æBSDÁ¤{„Çß‚mB¢\*×øäLn(­^¢Ëö…m•ÖTâÇ/•¼#ÏIu½¦âÍ©GŸ­˜U¿¹tZÁ·?Ğç2”nÄñ9f{‰àğT.‡fÆm%xï¸3hA[ök´§Õ–^7Én¯>W(éQOÍ:^¬És±á)3F|V±¢(šµ¼$–}<`E’»UÒäR%díÑ•õGw ´ÿ‡?=>ÿiıÒ›/Ğh ,¤n9$2_K9Ñ%P=:YÑÑêY‘¦ã_ğAšÀnXœĞÅ=†¯WE/5ìRlb½¤3=ÒT¦GâÊ­$¦)z(]Ø!tzº+\K.é LDÍ>—¸ÆÙ3mòØ‚Ç²ïñ'{nöá“SÇ‚Wö±øÂÚKøÑô¢TnÖ¬ãtÖÈã¦ÇrèÓğ±âK½U 2Ì:Á7¯ß0êK¡ıêZkä|¥æTŠ¦çádß˜_Ìá9cw€St×æµÑıãÆ„Äâ´©³*ÔiyÄ¶t\†³ã3'¦²Cü˜{ÅÇÒ¨ú×&‹`86éÓÔğnGà9BÉÂYƒ9'Mëôß®ßBÿóÄØÈ?uM˜iıp&7¦·2nª¦ŠvªBe?	€<ÌjÜÄ=í:Œmx9İ	)“éş‚óøÈhİ¬‰ücå³v$ÔjºrkÆ`dá~‰5·ÿúôŸo¡úÛ4¿qûVıáÕµ{oııáÛ_ß®_½»öàsšµ´~ã­ú¥¯—Ï7n\ök ®_£qù»Æ¿ßª_ı+x?Ìú?¿/h¼	.¾ñiãÃÏ3ÄRÃLmvüçù_×¯¼®4Ş¸Ú¸ù°şå»ø!ô	_½^¿xıáßÿvíû/6¾ÿ®qó*täÚİÆÛ¯Õ¯Şl\ûşñŸ>ªßÿıú[ëï¾	•JA¿$¯0a(ÔH+(?gZF'²ÑÄÿ»p ñÊDŠˆ(ã›‘Èˆõ’í’š¥.*XVıJ¤–©kÏ:&²¹âŒİh„âËš%ô«šQÄ0D gÍ‚U]½ÕUÖ>UfPı7Á9é		ì=MıÕEÛ…íR™¹ËÇí‚í¼B‚
+d5W8¦ğ›Ã,‡ëéAÓ'L;>9°-h4‡F²S£ğ÷øêk3c“(shl|lâÈ‰\Ç#;¬g¡Y¨29‚ÿ?îØ—ÄY½b.BS¦‘¯vÿ“¹ø_CäRøfCöYŞ°‡P™@>Á9Zpw¯³6f©2=5×†âÁĞI‚°:„\HN`Ó?Ñ;Ec¿ı_=6àïp°„0²¾·KlXò`¨Aú2äß	»@ğÊˆ]•ÇUğÀp'YÄ>IC~æm«@ùl­LòáüQË,“±éôÇ¤“D§÷úè "!ëôÕñŸNÿ­:ùwéŒt)¸‘u­…g‹‚{{á_S$‚Íë>€öîû9÷ûKf±h/„.A»aÑöOì'·ø÷äix-›z€‚Æu»wgoú;7O\ôä\ğÄŠcÎ[vÍõn'Wz'_&I§d†Í*6vñ0ŒáÛ ¿V$ç_?ÜÄsX‚Nw³41ÚÂ?C¨Ñ÷†:?¾6@EçŸÌÁìDõ~ë1nã|ÕÁv9ÊJ©ØÕÇÜŞ®èŞ^Ï/¶|&[£ (xºqeº ¨`E¢•$ğÌ`Æ_ıD¦Åj=Ê<¿z§(ŸÛ¸{míŞo°(¯ÿî_ë¿¹)¸(lAìŸ÷Ç\r¢Qb…ÉaYÈ–údb*ùş-s>Ô+v^MLyÌ.5:¼ò±ÿÿ   ÿÿÄ»nA°ç+,£È±Db‡		¢à¥Dˆ;>K±î.d¹B=P@
+~%	|3³ÏÙİÛ3NÁõÜîÌìÎcç1!î·wöŞ=÷Kƒ{ıÉ±ÿ©}„'ÌE<µÕpBZõLEî.Ú˜“#tŒ[çW–/_¿¹º\S¤òÀÙuálˆG8p/Ü¼tiy¥¨i£ê‚TËÂcœuüEUtâ)¨l¾ÁªB¯ÕSrf¬ÇRhz®|‚8ñUY²N.Lè¤GçšíÓ‹s¶øQµî$•u<êC«)‚§cC‹¯¤’AºÙ<–;ß¯ÖÙÆ°}%a%ù@ÓîtacÎäƒ™´‚1ŞF÷…ºÀâërÈ	IË•»T¦sÉ2CP´bqÃdJÈÍ¤C|å¥²ªó&#LútdJ<×‹×õ:¡ Èù&¯0jw’7‰w”„sˆ¡h€@ii¤gƒÍR«Ëğ‘üùÈ†+v?i{çh‘{Ol|]8!½ÛTÜ—:âä2.j…¡îc™…^k€²Ğ;xœ‡ÀZ¯ŞB¼œãåİêog7øo»ÿ±ŒÑPqWãÔWf(Ål;®[Â*Ì]šµ|œ`·yÀÎã¾(^º±ÀÖâæ¾a+tQ71Leh)§Ó5ò·
+SŞì&iíXÅ©7oÖ¦moã ¯ÖG1c(äí+l+ÇV„.éQD/¡ôZ¸[4_j"çR#·/ìPË»‘µ:[TscÙùB+MÉ¶=¤@–@0µœ"àŞÜpoÜËy·|{X.ÚÁ=b£Éæ9L´vë‹†İ{&j,¯+ç¾­,»G¨qãğ^•ùœ|Şç7 0—•£¢‰ºNø¡²ŸFSüs­èr¯ÂPØjoi¼‡‡º¼+¾Y´jíê€fˆ`Úª#t]ãVÛzw¥¡äEÛ´„I¼V Œb-®=y¼ûõ9púr–¶R*9¾¢¤‘Ägjl=#ïı?ğ÷íßß¾aÇ!ĞàóîZä‰b¨(ˆ é{2}ïPİ#·4½'¡x¨À²MtS`yÁ×å‰ğ1ïx½ÿpP|>OúºägÇb¬¸fÖ£Îá”º\Qâåjªe]™·ğ Ä«wŠâú‰Øüìƒd#]”¼u‚t;¦½ºÁïYş íÕ!Ê5L›„ƒêj+ß˜íuûÓÆé«ª¦nóvjùòh‰œ¨×¶z?ß¤ÀùYå"ÖZnu³˜®µéüø ²™y}£PmUÎgé¦)e¯Ã¼ñ1=—¤[å.v(«Aä)íÖÕÛŠCr½ü·Bç‰I1¡Ùšš«#‘SÄÔ˜j±º#§|¨¸İmk•&Fi\ı²éÈú¹ˆ~¹&…3¥±®µ6™şí¯²d»C'eZlêøŞW§¨ŸUãdó $Æí¬É«İ@Ó€ÉÉiEğÿÈ‹^ßBÛƒ(ÁB†šB&„ÛíUs°-hr]¸ÿ“Jä‡ÿK*ùÂ`u«=ÓíSuÑ“¬ †Œ :-¼3Û&ÙnuïÇl•b	ˆÈÄ e]Â~.øešW˜"AaâÔóƒÉ1a¡S¡ãÜÈàyu$EéóÛ½—ƒ4©H4ŠV!FÖG*>5öøaàp®³mÄ…>åo÷±%²A{ßíï<m€&”ä­b‰aBQCKQ¤iÃvAT¤ğõ@ #©ù=4„|z¿ûåÕî×¥+|¨Q„j‹5[ûú$•h´•tÆ?FøÍô   ÿÿ [ËPğ
