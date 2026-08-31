@@ -39,6 +39,10 @@ export interface Vessel {
   name: string;
   eta: string;
   cntrs: number;
+  order?: number;
+  carrier?: string;
+  status?: string;
+  terminal?: string;
 }
 
 export interface ChartLeftItem {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, 
+import { Calculator, ArrowUp, ArrowDown, X,  
   Settings, 
   Tv, 
   RotateCcw, 
@@ -259,7 +259,7 @@ const TRANSLATIONS: { [key: string]: TranslationItem } = {
   },
   cntrs: {
     pt: "ContÃªineres",
-    zh: "ç®±é‡ (CNTRs/CNTRs)",
+    zh: "ç®±é‡ (CNTRs)",
     en: "Containers"
   },
   totalContainers: {
@@ -311,6 +311,396 @@ const TRANSLATIONS: { [key: string]: TranslationItem } = {
     pt: "LogÃ­stica Integrada",
     zh: "ç»¼åˆç‰©æµ",
     en: "Integrated Logistics"
+  },
+  overview: {
+    pt: "VisÃ£o Geral",
+    zh: "ç»¼åˆå¤§ç›˜",
+    en: "Overview"
+  },
+  yardManagement: {
+    pt: "GestÃ£o de PÃ¡tios",
+    zh: "å †åœºç®¡ç†",
+    en: "Yard Management"
+  },
+  bydBuffer: {
+    pt: "BYD Buffer",
+    zh: "æ™ºèƒ½ç¼“å†²åŒº",
+    en: "BYD Buffer"
+  },
+  depotsAllocation: {
+    pt: "DepÃ³sitos & AlocaÃ§Ã£o",
+    zh: "åè®®å †å­˜åŠæµå‘",
+    en: "Depots & Allocation"
+  },
+  routingPlan: {
+    pt: "Plano de Direcionamento",
+    zh: "æµå‘åŠä»“å‚¨è§„åˆ’",
+    en: "Routing & Storage Plan"
+  },
+  demurrageOverdue: {
+    pt: "Demurrage & Overdue",
+    zh: "æ»æœŸè´¹ç›‘æ§",
+    en: "Demurrage & Overdue"
+  },
+  vesselScheduleNav: {
+    pt: "Escala de Navios",
+    zh: "èˆ¹èˆ¶é æ³Šè®¡åˆ’",
+    en: "Vessel Schedule"
+  },
+  chartsProjections: {
+    pt: "GrÃ¡ficos & ProjeÃ§Ãµes",
+    zh: "æ™ºèƒ½è¿è¥å›¾è¡¨",
+    en: "Charts & Projections"
+  },
+  logisticsModule: {
+    pt: "MÃ³dulo LogÃ­stica",
+    zh: "ç‰©æµç®¡ç†æ¨¡å—",
+    en: "Logistics Module"
+  },
+  deliveryDashboard: {
+    pt: "Painel de Entregas",
+    zh: "äº¤è´§ç›‘æ§é¢æ¿",
+    en: "Delivery Dashboard"
+  },
+  calendar: {
+    pt: "CalendÃ¡rio",
+    zh: "äº¤ä»˜æ—¥å†",
+    en: "Calendar"
+  },
+  navMenu: {
+    pt: "MÃ“DULOS DO PORTAL",
+    zh: "å¯¼èˆªèœå•",
+    en: "PORTAL MODULES"
+  },
+  systemActions: {
+    pt: "AÃ‡Ã•ES DO SISTEMA",
+    zh: "ç³»ç»Ÿå¿«æ·æ§åˆ¶",
+    en: "SYSTEM ACTIONS"
+  },
+  syncGoogleSheets: {
+    pt: "Sinc Google Sheets",
+    zh: "åŒæ­¥è°·æ­Œè¡¨æ ¼",
+    en: "Sync Google Sheets"
+  },
+  liveDataUpdate: {
+    pt: "INTEGRAÃ‡ÃƒO PLANILHA",
+    zh: "å®æ—¶æ›´æ–°æ•°æ®",
+    en: "SHEET INTEGRATION"
+  },
+  editYard: {
+    pt: "Editar PÃ¡tio",
+    zh: "ç¼–è¾‘å †åœºå®¹é‡",
+    en: "Edit Yard"
+  },
+  closeEditYard: {
+    pt: "Fechar EdiÃ§Ã£o",
+    zh: "å…³é—­ç¼–è¾‘æ¨¡å¼",
+    en: "Close Edit Mode"
+  },
+  yardControl: {
+    pt: "YARD MANAGEMENT",
+    zh: "å †åœºæ§åˆ¶",
+    en: "YARD MANAGEMENT"
+  },
+  stockImport: {
+    pt: "IMPORTAÃ‡ÃƒO DE ESTOQUE",
+    zh: "åº“å­˜æ•°æ®å¯¼å…¥",
+    en: "STOCK IMPORT"
+  },
+  importStock: {
+    pt: "Importar",
+    zh: "ä¸Šä¼ åº“å­˜",
+    en: "Import"
+  },
+  downloadTemplate: {
+    pt: "Modelo",
+    zh: "æ¨¡æ¿",
+    en: "Template"
+  },
+  exportPdf: {
+    pt: "RelatÃ³rio PDF",
+    zh: "å¯¼å‡º PDF æŠ¥å‘Š",
+    en: "PDF Report"
+  },
+  generatingPdf: {
+    pt: "Gerando PDF...",
+    zh: "æ­£åœ¨ç”Ÿæˆ PDF...",
+    en: "Generating PDF..."
+  },
+  pdfReady: {
+    pt: "RelatÃ³rio Exportado!",
+    zh: "PDF å·²ä¸‹è½½",
+    en: "PDF Exported!"
+  },
+  themeLight: {
+    pt: "Claro",
+    zh: "äº®è‰²",
+    en: "Light"
+  },
+  themeDark: {
+    pt: "Escuro",
+    zh: "æš—è‰²",
+    en: "Dark"
+  },
+  resetData: {
+    pt: "Reset",
+    zh: "é‡ç½®æ•°æ®",
+    en: "Reset"
+  },
+  onlineStatus: {
+    pt: "Online",
+    zh: "åœ¨çº¿",
+    en: "Online"
+  },
+  connectingStatus: {
+    pt: "Sinc",
+    zh: "åŒæ­¥ä¸­",
+    en: "Syncing"
+  },
+  offlineStatus: {
+    pt: "Offline",
+    zh: "ç¦»çº¿",
+    en: "Offline"
+  },
+  connectFirebase: {
+    pt: "Conectar Firebase",
+    zh: "è¿æ¥ Firebase",
+    en: "Connect Firebase"
+  },
+  occupancyRate: {
+    pt: "Taxa de OcupaÃ§Ã£o",
+    zh: "ä½¿ç”¨ç‡",
+    en: "Occupancy Rate"
+  },
+  totalStock: {
+    pt: "Estoque Total",
+    zh: "æ€»åº“å­˜é‡",
+    en: "Total Stock"
+  },
+  activeYards: {
+    pt: "PÃ¡tios Ativos",
+    zh: "æ´»è·ƒå †åœº",
+    en: "Active Yards"
+  },
+  status: {
+    pt: "Status",
+    zh: "çŠ¶æ€",
+    en: "Status"
+  },
+  action: {
+    pt: "AÃ§Ã£o",
+    zh: "æ“ä½œ",
+    en: "Action"
+  },
+  actions: {
+    pt: "AÃ§Ãµes",
+    zh: "æ“ä½œé€‰é¡¹",
+    en: "Actions"
+  },
+  save: {
+    pt: "Salvar",
+    zh: "ä¿å­˜",
+    en: "Save"
+  },
+  cancel: {
+    pt: "Cancelar",
+    zh: "å–æ¶ˆ",
+    en: "Cancel"
+  },
+  confirm: {
+    pt: "Confirmar",
+    zh: "ç¡®è®¤",
+    en: "Confirm"
+  },
+  close: {
+    pt: "Fechar",
+    zh: "å…³é—­",
+    en: "Close"
+  },
+  delete: {
+    pt: "Excluir",
+    zh: "åˆ é™¤",
+    en: "Delete"
+  },
+  edit: {
+    pt: "Editar",
+    zh: "ç¼–è¾‘",
+    en: "Edit"
+  },
+  search: {
+    pt: "Buscar",
+    zh: "æœç´¢",
+    en: "Search"
+  },
+  filter: {
+    pt: "Filtrar",
+    zh: "ç­›é€‰",
+    en: "Filter"
+  },
+  all: {
+    pt: "Todos",
+    zh: "å…¨éƒ¨",
+    en: "All"
+  },
+  carrier: {
+    pt: "Transportadora",
+    zh: "æ‰¿è¿å•†/è½¦é˜Ÿ",
+    en: "Carrier"
+  },
+  driver: {
+    pt: "Motorista",
+    zh: "å¸æœº",
+    en: "Driver"
+  },
+  plate: {
+    pt: "Placa do CaminhÃ£o",
+    zh: "è½¦ç‰Œå·",
+    en: "Truck Plate"
+  },
+  deliveryDate: {
+    pt: "Data de Entrega",
+    zh: "äº¤ä»˜æ—¥æœŸ",
+    en: "Delivery Date"
+  },
+  notes: {
+    pt: "ObservaÃ§Ãµes",
+    zh: "å¤‡æ³¨/è¯´æ˜",
+    en: "Notes"
+  },
+  container: {
+    pt: "ContÃªiner",
+    zh: "é›†è£…ç®±",
+    en: "Container"
+  },
+  containers: {
+    pt: "ContÃªineres",
+    zh: "é›†è£…ç®±æ¸…å•",
+    en: "Containers"
+  },
+  yard: {
+    pt: "PÃ¡tio",
+    zh: "å †åœº",
+    en: "Yard"
+  },
+  yards: {
+    pt: "PÃ¡tios",
+    zh: "åˆä½œå †åœº",
+    en: "Yards"
+  },
+  newYard: {
+    pt: "Novo PÃ¡tio",
+    zh: "æ·»åŠ å †åœº",
+    en: "New Yard"
+  },
+  editYards: {
+    pt: "Editar PÃ¡tios",
+    zh: "ç¼–è¾‘å †åœº",
+    en: "Edit Yards"
+  },
+  manageContainers: {
+    pt: "Gerenciar ContÃªineres",
+    zh: "ç®¡ç†é›†è£…ç®±æ˜ç»†",
+    en: "Manage Containers"
+  },
+  viewDetails: {
+    pt: "Ver Detalhes / Gerenciar",
+    zh: "æŸ¥çœ‹è¯¦æƒ… & ç®¡ç†",
+    en: "View Details / Manage"
+  },
+  deleteYard: {
+    pt: "Excluir PÃ¡tio",
+    zh: "åˆ é™¤å †åœº",
+    en: "Delete Yard"
+  },
+  freeTimeDays: {
+    pt: "Free Time (Dias)",
+    zh: "å…å †æœŸ (å¤©)",
+    en: "Free Time (Days)"
+  },
+  daysOverdue: {
+    pt: "Dias em Atraso",
+    zh: "è¶…æœŸå¤©æ•°",
+    en: "Days Overdue"
+  },
+  estimatedCost: {
+    pt: "Custo Estimado",
+    zh: "é¢„è®¡è´¹ç”¨",
+    en: "Estimated Cost"
+  },
+  criticalAction: {
+    pt: "AÃ§Ã£o PrioritÃ¡ria",
+    zh: "ä¼˜å…ˆå¤„ç†",
+    en: "Priority Action"
+  },
+  shipowner: {
+    pt: "Armador",
+    zh: "èˆ¹ä¸œ/èˆ¹å…¬å¸",
+    en: "Shipowner"
+  },
+  berthingWindow: {
+    pt: "Janela de AtracaÃ§Ã£o",
+    zh: "é æ³Šçª—å£",
+    en: "Berthing Window"
+  },
+  discharged: {
+    pt: "Descarregado",
+    zh: "å·²å¸èˆ¹",
+    en: "Discharged"
+  },
+  scheduled: {
+    pt: "Agendado",
+    zh: "å·²æ’æœŸ",
+    en: "Scheduled"
+  },
+  inTransit: {
+    pt: "Em TrÃ¢nsito",
+    zh: "åœ¨é€”ä¸­",
+    en: "In Transit"
+  },
+  completed: {
+    pt: "ConcluÃ­do",
+    zh: "å·²å®Œæˆ",
+    en: "Completed"
+  },
+  delayed: {
+    pt: "Atrasado",
+    zh: "å·²å»¶è¯¯",
+    en: "Delayed"
+  },
+  pending: {
+    pt: "Pendente",
+    zh: "å¾…å¤„ç†",
+    en: "Pending"
+  },
+  currentWeek: {
+    pt: "Semana Atual",
+    zh: "å½“å‰å‘¨",
+    en: "Current Week"
+  },
+  startWeek: {
+    pt: "Semana Inicial",
+    zh: "èµ·å§‹å‘¨",
+    en: "Start Week"
+  },
+  endWeek: {
+    pt: "Semana Final",
+    zh: "æˆªæ­¢å‘¨",
+    en: "End Week"
+  },
+  inboundFlow: {
+    pt: "Aporte de Navios",
+    zh: "è¿›æ¸¯åˆ°ç®±",
+    en: "Inbound Flow"
+  },
+  drainCapacity: {
+    pt: "Escoamento / Dreno",
+    zh: "å·¥å‚å‡ºæ¸…èƒ½åŠ›",
+    en: "Drain Capacity"
+  },
+  inventoryBalance: {
+    pt: "Saldo de Estoque",
+    zh: "åº“å­˜ç»“ä½™èµ°åŠ¿",
+    en: "Inventory Balance"
   }
 };
 
@@ -354,6 +744,9 @@ export interface Vessel {
   eta: string;
   cntrs: number;
   order?: number;
+  carrier?: string;
+  status?: string;
+  terminal?: string;
 }
 
 export interface ChartLeftItem {
@@ -609,6 +1002,249 @@ function formatExcelDateIfNeeded(val: any): string {
   }
   
   return str;
+}
+
+interface YardCardProps {
+  key?: string;
+  yardKey: string;
+  yard: Yard;
+  ocupacao: number;
+  isEdit?: boolean;
+  theme?: string;
+  isSmall?: boolean;
+  t?: any;
+  language?: string;
+  renderLabel?: any;
+  widescreenMode?: boolean;
+  onClick?: () => void;
+  onYardChange?: (key: string, field: keyof Yard, value: string) => void;
+  onDeleteYard?: (key: string) => void;
+}
+
+function YardCard({
+  yardKey,
+  yard,
+  ocupacao,
+  isEdit,
+  theme,
+  isSmall,
+  language = "pt",
+  renderLabel,
+  widescreenMode,
+  onClick,
+  onYardChange,
+  onDeleteYard
+}: YardCardProps) {
+  if (!yard) return null;
+  const isHighOcc = ocupacao >= 85;
+  const isMedOcc = ocupacao >= 70;
+
+  return (
+    <div
+      onClick={isEdit ? undefined : onClick}
+      className={`rounded-xl border transition-all select-none relative overflow-hidden flex flex-col justify-between ${
+        isEdit
+          ? "p-3 border-amber-500/80 bg-amber-50/15 dark:bg-amber-950/20 shadow-md ring-1 ring-amber-400/50"
+          : `${theme === "dark" ? "bg-[#1e293b] border-slate-700 hover:border-slate-500 shadow-sm" : "bg-white border-slate-200/90 hover:border-slate-300 shadow-xs hover:shadow-md"} cursor-pointer p-3`
+      } ${isSmall ? "min-h-[140px]" : "min-h-[160px]"}`}
+    >
+      <div>
+        {/* HEADER */}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className={`p-1.5 rounded-lg shrink-0 ${
+              yard.type === "BONDED"
+                ? "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400"
+                : yard.type === "BUFFER"
+                ? "bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400"
+                : "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"
+            }`}>
+              {yard.type === "BONDED" ? <Anchor className="w-4 h-4" /> : yard.type === "BUFFER" ? <Layers className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+            </div>
+            <div className="min-w-0">
+              <h4 className="font-extrabold text-xs text-slate-800 dark:text-white truncate tracking-tight">
+                {yard.name}
+              </h4>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
+                {yard.type}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-black tracking-tight ${
+              isHighOcc
+                ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                : isMedOcc
+                ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+            }`}>
+              {ocupacao}%
+            </span>
+
+            {isEdit && onDeleteYard && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteYard(yardKey);
+                }}
+                className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors cursor-pointer"
+                title={language === 'zh' ? 'åˆ é™¤å †åœº' : 'Excluir PÃ¡tio'}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* OCCUPANCY BAR */}
+        <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mb-2">
+          <div
+            className={`h-full transition-all duration-500 ${
+              isHighOcc
+                ? "bg-rose-500"
+                : isMedOcc
+                ? "bg-amber-500"
+                : "bg-emerald-500"
+            }`}
+            style={{ width: `${Math.min(100, Math.max(0, ocupacao))}%` }}
+          />
+        </div>
+
+        {/* METRICS DISPLAY OR INLINE EDIT MODE */}
+        {isEdit ? (
+          <div className="space-y-1.5 my-1" onClick={(e) => e.stopPropagation()}>
+            <div className="grid grid-cols-3 gap-1 text-[10px]">
+              <div>
+                <label className="block text-[8px] font-extrabold uppercase text-slate-500 dark:text-slate-400 truncate">
+                  {language === 'zh' ? 'å®¹é‡' : 'Capacidade'}
+                </label>
+                <input
+                  type="number"
+                  value={yard.capacity}
+                  onChange={(e) => onYardChange?.(yardKey, 'capacity', e.target.value)}
+                  className="w-full p-1 text-xs font-mono font-bold rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 text-center"
+                />
+              </div>
+              <div>
+                <label className="block text-[8px] font-extrabold uppercase text-slate-500 dark:text-slate-400 truncate">
+                  {language === 'zh' ? 'å®é‡' : 'Cheios'}
+                </label>
+                <input
+                  type="number"
+                  value={yard.cheio}
+                  onChange={(e) => onYardChange?.(yardKey, 'cheio', e.target.value)}
+                  className="w-full p-1 text-xs font-mono font-bold rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-center"
+                />
+              </div>
+              <div>
+                <label className="block text-[8px] font-extrabold uppercase text-slate-500 dark:text-slate-400 truncate">
+                  {language === 'zh' ? 'ç©ºç®±' : 'Vazios'}
+                </label>
+                <input
+                  type="number"
+                  value={yard.vazio}
+                  onChange={(e) => onYardChange?.(yardKey, 'vazio', e.target.value)}
+                  className="w-full p-1 text-xs font-mono font-bold rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-center"
+                />
+              </div>
+            </div>
+
+            {!isSmall && (
+              <div className="grid grid-cols-3 gap-1 text-[10px] pt-1 border-t border-dashed border-slate-200 dark:border-slate-700/60">
+                <div>
+                  <label className="block text-[7.5px] font-extrabold uppercase text-slate-400 truncate">
+                    {language === 'zh' ? 'æ¸¯å£' : 'Porto'}
+                  </label>
+                  <input
+                    type="number"
+                    value={yard.porto || 0}
+                    onChange={(e) => onYardChange?.(yardKey, 'porto', e.target.value)}
+                    className="w-full p-1 text-[11px] font-mono font-bold rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-center"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[7.5px] font-extrabold uppercase text-slate-400 truncate">
+                    {language === 'zh' ? 'å¾…æ”¶' : 'Pronto Col.'}
+                  </label>
+                  <input
+                    type="number"
+                    value={yard.prontoColeta || 0}
+                    onChange={(e) => onYardChange?.(yardKey, 'prontoColeta', e.target.value)}
+                    className="w-full p-1 text-[11px] font-mono font-bold rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-center"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[7.5px] font-extrabold uppercase text-slate-400 truncate">
+                    {language === 'zh' ? 'å·²äº¤ä»˜' : 'Entregue'}
+                  </label>
+                  <input
+                    type="number"
+                    value={yard.delivered || 0}
+                    onChange={(e) => onYardChange?.(yardKey, 'delivered', e.target.value)}
+                    className="w-full p-1 text-[11px] font-mono font-bold rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-center"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-1.5 text-center">
+            <div className="bg-slate-50 dark:bg-slate-900/60 p-1.5 rounded-lg border border-slate-150 dark:border-slate-800/80">
+              <span className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-tight">
+                {language === "zh" ? "å®é‡" : "Cheios"}
+              </span>
+              <span className="font-mono font-black text-xs text-slate-800 dark:text-slate-200">
+                {yard.cheio || 0}
+              </span>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-900/60 p-1.5 rounded-lg border border-slate-150 dark:border-slate-800/80">
+              <span className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-tight">
+                {language === "zh" ? "ç©ºç®±" : "Vazios"}
+              </span>
+              <span className="font-mono font-black text-xs text-slate-800 dark:text-slate-200">
+                {yard.vazio || 0}
+              </span>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-900/60 p-1.5 rounded-lg border border-slate-150 dark:border-slate-800/80">
+              <span className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-tight">
+                {language === "zh" ? "å®¹é‡" : "Capacidade"}
+              </span>
+              <span className="font-mono font-black text-xs text-indigo-600 dark:text-indigo-400">
+                {yard.capacity || 0}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* FOOTER BUTTON / ACTION */}
+      <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick?.();
+          }}
+          className={`w-full py-1 px-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+            isEdit
+              ? "bg-amber-500 hover:bg-amber-600 text-white shadow-xs"
+              : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
+          }`}
+        >
+          <Sliders className="w-3 h-3" />
+          <span>
+            {isEdit
+              ? (language === 'zh' ? 'ç®¡ç†é›†è£…ç®±æ˜ç»†' : 'Gerenciar ContÃªineres')
+              : (language === 'zh' ? 'æŸ¥çœ‹è¯¦æƒ… & ç®¡ç†' : 'Ver Detalhes / Gerenciar')}
+          </span>
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function App() {
@@ -1550,10 +2186,13 @@ export default function App() {
           const data = docSnap.data();
           newVessels.push({
             id: Number(docSnap.id) || Date.now(),
-            name: data.name,
-            eta: data.eta,
+            name: data.name || '',
+            eta: data.eta || '',
             cntrs: Number(data.cntrs) || 0,
-            order: data.order !== undefined ? Number(data.order) : undefined
+            order: data.order !== undefined ? Number(data.order) : undefined,
+            carrier: data.carrier || 'BYD CHARTER',
+            status: data.status || 'SCHEDULED',
+            terminal: data.terminal || 'Porto de Santos'
           });
         });
         newVessels.sort((a, b) => {
@@ -2137,6 +2776,21 @@ export default function App() {
   const [newVesselName, setNewVesselName] = useState('');
   const [newVesselEta, setNewVesselEta] = useState('');
   const [newVesselCntrs, setNewVesselCntrs] = useState(1000);
+  // ESTADOS EXPANDIDOS PARA GESTÃƒO COMPLETA DE NAVIOS (VESSELS CONTROL TOWER)
+  const [showAddVesselForm, setShowAddVesselForm] = useState(false);
+  const [vesselFilterSearch, setVesselFilterSearch] = useState('');
+  const [vesselViewMode, setVesselViewMode] = useState<'monthly' | 'list'>('monthly');
+  const [newVesselCarrier, setNewVesselCarrier] = useState('BYD CHARTER');
+  const [newVesselStatus, setNewVesselStatus] = useState<string>('SCHEDULED');
+  const [newVesselTerminal, setNewVesselTerminal] = useState('Porto de Santos');
+  const [editingVesselId, setEditingVesselId] = useState<number | null>(null);
+  const [editVesselName, setEditVesselName] = useState('');
+  const [editVesselEta, setEditVesselEta] = useState('');
+  const [editVesselCntrs, setEditVesselCntrs] = useState<number>(0);
+  const [editVesselCarrier, setEditVesselCarrier] = useState('');
+  const [editVesselStatus, setEditVesselStatus] = useState('SCHEDULED');
+  const [editVesselTerminal, setEditVesselTerminal] = useState('');
+
 
   // Estado para novo PÃ¡tio / Warehouse
   const [newYardName, setNewYardName] = useState('');
@@ -2163,8 +2817,14 @@ export default function App() {
     if (language === 'pt') return TRANSLATIONS[key].pt;
     if (language === 'zh') return TRANSLATIONS[key].zh;
     if (language === 'en') return TRANSLATIONS[key].en || TRANSLATIONS[key].pt;
-    // Retorno BilÃ­ngue elegante com separador
     return `${TRANSLATIONS[key].pt} / ${TRANSLATIONS[key].zh}`;
+  };
+
+  const tt = (pt: string, zh: string, en?: string): string => {
+    if (language === 'zh') return zh;
+    if (language === 'en') return en || pt;
+    if (language === 'bilingual') return `${pt} / ${zh}`;
+    return pt;
   };
 
   // Elegant bilingual render helper - formats Chinese prominently for high-end feel
@@ -3739,7 +4399,7 @@ export default function App() {
     const c = containers.find(x => x.id === containerId);
     if (!c) return;
 
-    if (!window.confirm(`Deseja realmente remover o contÃªiner ${containerId} do estoque?`)) {
+    if (!window.confirm(language === 'zh' ? `ç¡®å®šè¦ä»åº“å­˜ä¸­åˆ é™¤é›†è£…ç®± ${containerId} å—ï¼Ÿ` : language === 'en' ? `Are you sure you want to remove container ${containerId} from stock?` : `Deseja realmente remover o contÃªiner ${containerId} do estoque?`)) {
       return;
     }
 
@@ -4126,35 +4786,110 @@ export default function App() {
   };
 
   // ADICIONAR NAVIO
-  const addVessel = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newVesselName || !newVesselEta) return;
+  const addVessel = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newVesselName.trim() || !newVesselEta.trim()) {
+      alert(language === 'zh' ? 'è¯·è¾“å…¥èˆ¹åå’Œé¢„æŠ¥åˆ°æ¸¯æ—¥æœŸï¼ˆETAï¼‰' : language === 'en' ? 'Please enter vessel name and ETA date' : 'Por favor, informe o nome do navio e a data de ETA.');
+      return;
+    }
     const newId = Date.now();
     const newV: Vessel = {
       id: newId,
-      name: newVesselName.toUpperCase(),
-      eta: newVesselEta,
+      name: newVesselName.toUpperCase().trim(),
+      eta: newVesselEta.trim(),
       cntrs: Number(newVesselCntrs) || 0,
-      order: vessels.length
+      order: vessels.length,
+      carrier: newVesselCarrier.trim() || 'BYD CHARTER',
+      status: newVesselStatus || 'SCHEDULED',
+      terminal: newVesselTerminal.trim() || 'Porto de Santos'
     };
     
     setVessels([...vessels, newV]);
     setNewVesselName('');
     setNewVesselEta('');
     setNewVesselCntrs(1000);
-
+    setNewVesselCarrier('BYD CHARTER');
+    setNewVesselStatus('SCHEDULED');
+    setNewVesselTerminal('Porto de Santos');
+    setShowAddVesselForm(false);
+    
     try {
       await setDoc(doc(db, 'vessels', String(newId)), {
         id: String(newId),
         name: newV.name,
         eta: newV.eta,
         cntrs: newV.cntrs,
-        order: newV.order
+        order: newV.order,
+        carrier: newV.carrier,
+        status: newV.status,
+        terminal: newV.terminal
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `vessels/${newId}`);
     }
   };
+
+  // INICIAR EDIÃ‡ÃƒO DE UM NAVIO
+  const startEditVessel = (v: Vessel) => {
+    setEditingVesselId(v.id);
+    setEditVesselName(v.name);
+    setEditVesselEta(v.eta);
+    setEditVesselCntrs(v.cntrs);
+    setEditVesselCarrier(v.carrier || 'BYD CHARTER');
+    setEditVesselStatus(v.status || 'SCHEDULED');
+    setEditVesselTerminal(v.terminal || 'Porto de Santos');
+  };
+
+  // SALVAR EDIÃ‡ÃƒO DE UM NAVIO
+  const saveEditVessel = async (id: number) => {
+    const updated = vessels.map(v => {
+      if (v.id === id) {
+        return {
+          ...v,
+          name: editVesselName.toUpperCase().trim() || v.name,
+          eta: editVesselEta.trim() || v.eta,
+          cntrs: Number(editVesselCntrs) || 0,
+          carrier: editVesselCarrier.trim() || v.carrier,
+          status: editVesselStatus.trim() || v.status,
+          terminal: editVesselTerminal.trim() || v.terminal
+        };
+      }
+      return v;
+    });
+    setVessels(updated);
+    setEditingVesselId(null);
+    try {
+      const vTarget = updated.find(v => v.id === id);
+      if (vTarget) {
+        await setDoc(doc(db, 'vessels', String(id)), {
+          id: String(id),
+          name: vTarget.name,
+          eta: vTarget.eta,
+          cntrs: vTarget.cntrs,
+          order: vTarget.order !== undefined ? vTarget.order : 0,
+          carrier: vTarget.carrier || 'BYD CHARTER',
+          status: vTarget.status || 'SCHEDULED',
+          terminal: vTarget.terminal || 'Porto de Santos'
+        }, { merge: true });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `vessels/${id}`);
+    }
+  };
+
+  // ATUALIZAÃ‡ÃƒO RÃPIDA DE CAMPO DE NAVIO
+  const handleUpdateVesselField = async (id: number, field: keyof Vessel, value: any) => {
+    const updated = vessels.map(v => v.id === id ? { ...v, [field]: value } : v);
+    setVessels(updated);
+    try {
+      await setDoc(doc(db, 'vessels', String(id)), {
+        [field]: value
+      }, { merge: true });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `vessels/${id}`);
+    }
+  };
+
 
   // SHIFT / MOVER NAVIO NA FILA (MANUAL)
   const shiftVessel = async (id: number, direction: 'up' | 'down') => {
@@ -4881,7 +5616,7 @@ export default function App() {
                 <h1 className="font-bold text-base md:text-lg text-gray-800 dark:text-white flex items-center gap-2 tracking-tight">
                   Portal BYD Logistics <span className="text-[10px] bg-red-100 dark:bg-red-950/40 text-red-850 dark:text-red-400 font-extrabold px-2 py-0.5 rounded-full tracking-wider">CONTROL TOWER</span>
                 </h1>
-                <p className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400">Sistema Integrado de Controle de PÃ¡tios, Escalas e Planejamento Operacional (Bilingue/Mandarim)</p>
+                <p className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400">{tt("Sistema Integrado de Controle de PÃ¡tios, Escalas e Planejamento Operacional", "æ¯”äºšè¿ªé›†è£…ç®±å †åœºã€ç­è½®èˆ¹æœŸä¸è¿è¥è®¡åˆ’ä¸€ä½“åŒ–æ§åˆ¶ç³»ç»Ÿ", "Integrated Yard, Vessel Schedule & Operational Planning Control System")}</p>
               </div>
             </div>
           </div>
@@ -4964,41 +5699,28 @@ export default function App() {
             </div>
 
             {/* Seletor de Idiomas */}
-            <div className="bg-gray-100 dark:bg-slate-800 p-1 rounded-lg flex items-center gap-1 border border-gray-200 dark:border-slate-700">
-              <button 
-                id="btn-lang-pt"
-                onClick={() => { setLanguage('pt'); updateGlobalDoc('language', 'pt'); }}
-                className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'pt' ? 'bg-white dark:bg-slate-700 shadow text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
-                title="PortuguÃªs Brasileiro"
-              >
-                ğŸ‡§ğŸ‡· PT
-              </button>
-              <button 
-                id="btn-lang-zh"
-                onClick={() => { setLanguage('zh'); updateGlobalDoc('language', 'zh'); }}
-                className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'zh' ? 'bg-white dark:bg-slate-700 shadow text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
-                title="ç®€ä½“ä¸­æ–‡ (Chinese Simple)"
-              >
-                ğŸ‡¨ğŸ‡³ ä¸­æ–‡
-              </button>
-              <button 
-                id="btn-lang-en"
-                onClick={() => { setLanguage('en'); updateGlobalDoc('language', 'en'); }}
-                className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'en' ? 'bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
-                title="English"
-              >
-                ğŸ‡ºğŸ‡¸ EN
-              </button>
-              <button 
-                id="btn-lang-bilingual"
-                onClick={() => { setLanguage('bilingual'); updateGlobalDoc('language', 'bilingual'); }}
-                className={`px-2.5 py-1 text-xs font-bold rounded flex items-center gap-1 transition-all ${language === 'bilingual' ? 'bg-white dark:bg-slate-700 shadow text-emerald-700 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
-                title="Multi / BilÃ­ngue"
-              >
-                ğŸŒ MULTI
-              </button>
+            <div id="ppt-language-selector-container" className="bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md p-1 rounded-xl flex items-center gap-1 border border-slate-200 dark:border-slate-700 shadow-sm">
+              {[
+                { id: 'pt', label: 'ğŸ‡§ğŸ‡· PT', name: 'PortuguÃªs Brasileiro', activeClass: 'text-blue-700 dark:text-blue-300' },
+                { id: 'zh', label: 'ğŸ‡¨ğŸ‡³ ä¸­æ–‡', name: 'ç®€ä½“ä¸­æ–‡ (Chinese)', activeClass: 'text-red-600 dark:text-red-400' },
+                { id: 'en', label: 'ğŸ‡ºğŸ‡¸ EN', name: 'English', activeClass: 'text-indigo-600 dark:text-indigo-400' },
+                { id: 'bilingual', label: 'ğŸŒ MULTI', name: 'Multi / BilÃ­ngue', activeClass: 'text-emerald-700 dark:text-emerald-400' }
+              ].map(lang => (
+                <button
+                  key={lang.id}
+                  id={`btn-lang-${lang.id}`}
+                  onClick={() => { setLanguage(lang.id); updateGlobalDoc('language', lang.id); }}
+                  title={lang.name}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer ${
+                    language === lang.id 
+                      ? `bg-white dark:bg-slate-700 shadow-sm ${lang.activeClass} font-bold scale-[1.02]`
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                  }`}
+                >
+                  {lang.label}
+                </button>
+              ))}
             </div>
-
             {/* Alternador de Tema do slide */}
             <button
               id="btn-toggle-theme"
@@ -5084,7 +5806,7 @@ export default function App() {
               title="Alternar para visualizaÃ§Ã£o limpa e expansiva em tela cheia do Portal"
             >
               <Tv className="w-4 h-4" />
-              Modo Monitor
+              {tt("Modo Monitor", "ç›‘è§†å¤§å±æ¨¡å¼", "Monitor Mode")}
             </button>
           </div>
         </header>
@@ -5100,7 +5822,7 @@ export default function App() {
             title="Retornar para o Inbound Portal"
           >
             <LayoutGrid className="w-5 h-5 text-white" />
-            <span>Retornar ao Inbound Portal</span>
+            <span>{tt("Retornar ao Inbound Portal", "è¿”å›ç»¼åˆé—¨æˆ·", "Return to Portal")}</span>
           </button>
 
           {/* Exportar PDF Flutuante */}
@@ -5133,7 +5855,7 @@ export default function App() {
               className="bg-[#1e293b] text-white hover:bg-slate-800 px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 font-semibold transition-all hover:scale-105 border border-slate-700"
             >
               <Sliders className="w-5 h-5 text-emerald-400" />
-              <span>Voltar ao Editor</span>
+              <span>{tt("Voltar ao Editor", "è¿”å›ç¼–è¾‘æ¨¡å¼", "Back to Editor")}</span>
             </button>
           )}
         </div>
@@ -5177,27 +5899,28 @@ export default function App() {
           {/* Telemetry Metrics & Quick Language Switcher on the Right Side of Topbar */}
           <div className="flex flex-wrap items-center gap-3 text-xs select-none">
             {/* Quick Topbar Language Pills */}
-            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-0.5 rounded-xl flex items-center shadow-3xs">
+            <div id="topbar-language-selector-container" className="bg-slate-100/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/90 dark:border-slate-750 p-1 rounded-xl flex items-center gap-1 shadow-sm ring-1 ring-black/5 dark:ring-white/5">
               {[
-                { id: 'pt', label: 'ğŸ‡§ğŸ‡· PT' },
-                { id: 'zh', label: 'ğŸ‡¨ğŸ‡³ ä¸­æ–‡' },
-                { id: 'en', label: 'ğŸ‡ºğŸ‡¸ EN' },
-                { id: 'bilingual', label: 'ğŸŒ MULTI' }
+                { id: 'pt', label: 'ğŸ‡§ğŸ‡· PT', name: 'PortuguÃªs Brasileiro' },
+                { id: 'zh', label: 'ğŸ‡¨ğŸ‡³ ä¸­æ–‡', name: 'ç®€ä½“ä¸­æ–‡ (Chinese)' },
+                { id: 'en', label: 'ğŸ‡ºğŸ‡¸ EN', name: 'English' },
+                { id: 'bilingual', label: 'ğŸŒ MULTI', name: 'Multi / BilÃ­ngue' }
               ].map(lang => (
                 <button
                   key={lang.id}
+                  id={`topbar-lang-${lang.id}`}
                   onClick={() => { setLanguage(lang.id); updateGlobalDoc('language', lang.id); }}
-                  className={`px-2 py-1 text-[9.5px] font-black rounded-lg transition-all cursor-pointer ${
+                  title={lang.name}
+                  className={`px-2.5 py-1 text-[10px] font-black rounded-lg transition-all cursor-pointer ${
                     language === lang.id 
-                      ? 'bg-white dark:bg-slate-800 shadow-xs text-red-600 dark:text-red-400 font-bold' 
-                      : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                      ? 'bg-white dark:bg-slate-800 shadow-sm text-red-600 dark:text-red-400 font-bold scale-[1.02]' 
+                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                   }`}
                 >
                   {lang.label}
                 </button>
               ))}
             </div>
-
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-3xs transition-transform hover:scale-101 duration-300">
               <Activity className="w-3.5 h-3.5 text-red-600 animate-pulse" />
               <div className="flex flex-col">
@@ -5208,7 +5931,11 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-3xs transition-transform hover:scale-101 duration-300">
+            <div 
+                id="topbar-vessels-metric-button"
+                onClick={() => setCurrentSlide(2)}
+                title={tt("Clique para abrir a Escala de Navios", "ç‚¹å‡»æ‰“å¼€èˆ¹èˆ¶è®¡åˆ’æ§åˆ¶å°", "Click to open Vessel Schedule")}
+                className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-3xs transition-all hover:scale-105 hover:border-blue-400 cursor-pointer">
               <Ship className="w-3.5 h-3.5 text-blue-500 animate-bounce-slow" />
               <div className="flex flex-col">
                 <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">
@@ -5293,7 +6020,11 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-lg">
+                <div 
+                  id="slide0-vessels-metric-button"
+                  onClick={() => setCurrentSlide(2)}
+                  title={tt("Clique para abrir a Escala de Navios", "ç‚¹å‡»æ‰“å¼€èˆ¹èˆ¶è®¡åˆ’æ§åˆ¶å°", "Click to open Vessel Schedule")}
+                  className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-lg transition-all hover:scale-105 hover:border-blue-400 cursor-pointer">
                   <Ship className="w-3.5 h-3.5 text-blue-500" />
                   <div className="flex flex-col">
                     <span className="text-[8px] text-gray-400 font-bold uppercase">{language === 'zh' ? 'æ´»è·ƒèˆ¹èˆ¶åˆ°æ¸¯' : 'Active Vessels'}</span>
@@ -5583,17 +6314,20 @@ export default function App() {
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                             {bondedYards.map(([key, yardItem]) => (
                               <YardCard 
-                                key={key}
-                                yard={yardItem} 
-                                ocupacao={getYardOcupacao(yardItem)} 
-                                isEdit={isEditMode} 
-                                theme={theme} 
-                                t={t} 
-                                language={language} 
-                                renderLabel={renderLabel} 
-                                widescreenMode={widescreenMode} 
-                                onClick={() => setSelectedYardKey(key)}
-                              />
+    key={key}
+    yardKey={key}
+    yard={yardItem} 
+    ocupacao={getYardOcupacao(yardItem)} 
+    isEdit={isEditMode} 
+    theme={theme} 
+    t={t} 
+    language={language} 
+    renderLabel={renderLabel} 
+    widescreenMode={widescreenMode} 
+    onClick={() => setSelectedYardKey(key)}
+    onYardChange={handleYardChange}
+    onDeleteYard={deleteYard}
+  />
                             ))}
                             {bondedYards.length === 0 && (
                               <div className="col-span-full text-center py-6 text-gray-450 dark:text-gray-500 text-xs font-semibold bg-gray-50 dark:bg-slate-800/40 rounded-lg border border-dashed border-gray-100 dark:border-slate-800">
@@ -5651,17 +6385,20 @@ export default function App() {
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                             {warehouseYards.map(([key, yardItem]) => (
                               <YardCard 
-                                key={key}
-                                yard={yardItem} 
-                                ocupacao={getYardOcupacao(yardItem)} 
-                                isEdit={isEditMode} 
-                                theme={theme} 
-                                t={t} 
-                                language={language} 
-                                renderLabel={renderLabel} 
-                                widescreenMode={widescreenMode} 
-                                onClick={() => setSelectedYardKey(key)}
-                              />
+    key={key}
+    yardKey={key}
+    yard={yardItem} 
+    ocupacao={getYardOcupacao(yardItem)} 
+    isEdit={isEditMode} 
+    theme={theme} 
+    t={t} 
+    language={language} 
+    renderLabel={renderLabel} 
+    widescreenMode={widescreenMode} 
+    onClick={() => setSelectedYardKey(key)}
+    onYardChange={handleYardChange}
+    onDeleteYard={deleteYard}
+  />
                             ))}
                             {warehouseYards.length === 0 && (
                               <div className="col-span-full text-center py-6 text-gray-450 dark:text-gray-500 text-xs font-semibold bg-gray-50 dark:bg-slate-800/40 rounded-lg border border-dashed border-gray-100 dark:border-slate-800">
@@ -5725,17 +6462,20 @@ export default function App() {
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {bufferYards.map(([key, yardItem]) => (
                                   <YardCard 
-                                    key={key}
-                                    yard={yardItem} 
-                                    ocupacao={getYardOcupacao(yardItem)} 
-                                    isEdit={isEditMode} 
-                                    theme={theme} 
-                                    t={t} 
-                                    language={language} 
-                                    renderLabel={renderLabel} 
-                                    widescreenMode={widescreenMode} 
-                                    onClick={() => setSelectedYardKey(key)}
-                                  />
+    key={key}
+    yardKey={key}
+    yard={yardItem} 
+    ocupacao={getYardOcupacao(yardItem)} 
+    isEdit={isEditMode} 
+    theme={theme} 
+    t={t} 
+    language={language} 
+    renderLabel={renderLabel} 
+    widescreenMode={widescreenMode} 
+    onClick={() => setSelectedYardKey(key)}
+    onYardChange={handleYardChange}
+    onDeleteYard={deleteYard}
+  />
                                 ))}
                                 {bufferYards.length === 0 && (
                                   <div className="col-span-full text-center py-6 text-gray-450 dark:text-gray-500 text-xs font-semibold bg-gray-50 dark:bg-slate-800/40 rounded-lg border border-dashed border-gray-100 dark:border-slate-800">
@@ -5851,7 +6591,7 @@ export default function App() {
                                                           <th className="py-1">{getColHeader('vessel')}</th>
                                                           <th className="py-1 text-center">{getColHeader('eta')}</th>
                                                           <th className="py-1 text-right">{getColHeader('cntrs')}</th>
-                                                          {isEditMode && <th className="py-1 text-center w-8">AÃ§Ã£o</th>}
+                                                          {isEditMode && <th className="py-1 text-center w-8">{tt("AÃ§Ã£o", "æ“ä½œ", "Action")}</th>}
                                                         </tr>
                                                       </thead>
                                                       <tbody className="divide-y divide-gray-50 dark:divide-slate-800/40">
@@ -5977,21 +6717,24 @@ export default function App() {
                         {/* OTHER DYNAMIC EXTRA YARDS FALLBACK */}
                         {otherYards.length > 0 && (
                           <div className="flex flex-col gap-3">
-                            <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Outros PÃ¡tios Adicionais / å…¶ä»–å †åœº</h4>
+                            <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{tt("Outros PÃ¡tios Adicionais", "å…¶ä»–é™„åŠ å †åœº", "Additional Yards")}</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                               {otherYards.map(([key, yardItem]) => (
                                 <YardCard 
-                                  key={key}
-                                  yard={yardItem} 
-                                  ocupacao={getYardOcupacao(yardItem)} 
-                                  isEdit={isEditMode} 
-                                  theme={theme} 
-                                  t={t} 
-                                  language={language} 
-                                  renderLabel={renderLabel} 
-                                  widescreenMode={widescreenMode} 
-                                  onClick={() => setSelectedYardKey(key)}
-                                />
+    key={key}
+    yardKey={key}
+    yard={yardItem} 
+    ocupacao={getYardOcupacao(yardItem)} 
+    isEdit={isEditMode} 
+    theme={theme} 
+    t={t} 
+    language={language} 
+    renderLabel={renderLabel} 
+    widescreenMode={widescreenMode} 
+    onClick={() => setSelectedYardKey(key)}
+    onYardChange={handleYardChange}
+    onDeleteYard={deleteYard}
+  />
                               ))}
                             </div>
                           </div>
@@ -6020,7 +6763,33 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
+                      {/* Add Yard Button */}
+                      <button
+                        onClick={() => setShowAddYardForm(true)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs cursor-pointer transition-all"
+                        title={language === 'zh' ? 'æ·»åŠ æ–°å †åœºæˆ–ä»“åº“' : 'Adicionar Novo PÃ¡tio'}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>{language === 'zh' ? 'æ–°å»ºå †åœº' : 'Novo PÃ¡tio'}</span>
+                      </button>
+
+                      {/* Edit Mode Quick Toggle */}
+                      <button
+                        onClick={() => setIsEditMode(!isEditMode)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-all border ${
+                          isEditMode
+                            ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                        }`}
+                        title="Alternar modo de ediÃ§Ã£o dos pÃ¡tios"
+                      >
+                        <Sliders className="w-3.5 h-3.5" />
+                        <span>{isEditMode ? (language === 'zh' ? 'é€€å‡ºç¼–è¾‘' : 'Concluir EdiÃ§Ã£o') : (language === 'zh' ? 'ç¼–è¾‘å †åœº' : 'Editar PÃ¡tios')}</span>
+                      </button>
+
+                      <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+
                       {/* Toggle Buttons */}
                       <button
                         onClick={() => setYardsViewMode('cards')}
@@ -6055,17 +6824,20 @@ export default function App() {
                         <div className={`grid grid-cols-2 ${widescreenMode ? 'gap-1.5' : 'gap-2.5'}`}>
                           {bondedYards.map(([key, yard]) => (
                             <YardCard 
-                              key={key} 
-                              yard={yard} 
-                              ocupacao={getYardOcupacao(yard)} 
-                              isEdit={isEditMode} 
-                              theme={theme} 
-                              t={t} 
-                              language={language} 
-                              renderLabel={renderLabel} 
-                              widescreenMode={widescreenMode} 
-                              onClick={() => setSelectedYardKey(key)}
-                            />
+    key={key}
+    yardKey={key}
+    yard={yard} 
+    ocupacao={getYardOcupacao(yard)} 
+    isEdit={isEditMode} 
+    theme={theme} 
+    t={t} 
+    language={language} 
+    renderLabel={renderLabel} 
+    widescreenMode={widescreenMode} 
+    onClick={() => setSelectedYardKey(key)}
+    onYardChange={handleYardChange}
+    onDeleteYard={deleteYard}
+  />
                           ))}
                         </div>
                       )}
@@ -6073,24 +6845,27 @@ export default function App() {
                         <div className={`grid ${widescreenMode ? 'grid-cols-4 gap-1.5' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5'}`}>
                           {nonBondedYards.map(([key, yard]) => (
                             <YardCard 
-                              key={key} 
-                              yard={yard} 
-                              ocupacao={getYardOcupacao(yard)} 
-                              isEdit={isEditMode} 
-                              theme={theme} 
-                              isSmall 
-                              t={t} 
-                              language={language} 
-                              renderLabel={renderLabel} 
-                              widescreenMode={widescreenMode} 
-                              onClick={() => {
-                                if (yard.type === 'BUFFER') {
-                                  setCurrentSlide(4);
-                                } else {
-                                  setSelectedYardKey(key);
-                                }
-                              }}
-                            />
+    key={key}
+    yardKey={key}
+    yard={yard} 
+    ocupacao={getYardOcupacao(yard)} 
+    isEdit={isEditMode} 
+    theme={theme} 
+    isSmall
+    t={t} 
+    language={language} 
+    renderLabel={renderLabel} 
+    widescreenMode={widescreenMode} 
+    onClick={() => {
+      if (yard.type === "BUFFER") {
+        setCurrentSlide(4);
+      } else {
+        setSelectedYardKey(key);
+      }
+    }}
+    onYardChange={handleYardChange}
+    onDeleteYard={deleteYard}
+  />
                           ))}
                         </div>
                       )}
@@ -6213,9 +6988,9 @@ export default function App() {
                                   <th className="p-2.5 w-[80px]">Component</th>
                                   <th className="p-2.5 w-[140px]">Modelo</th>
                                   <th className="p-2.5 w-[100px]">Lote</th>
-                                  <th className="p-2.5 w-[100px]">ProgramaÃ§Ã£o</th>
+                                  <th className="p-2.5 w-[100px]">{tt("ProgramaÃ§Ã£o", "äº¤è´§æ’ç¨‹", "Schedule")}</th>
                                   <th className="p-2.5 w-[120px]">Transportadora</th>
-                                  {isEditMode && <th className="p-2.5 w-[60px] text-center">AÃ§Ã£o</th>}
+                                  {isEditMode && <th className="p-2.5 w-[60px] text-center">{tt("AÃ§Ã£o", "æ“ä½œ", "Action")}</th>}
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-100 dark:divide-slate-800 font-medium">
@@ -6436,206 +7211,858 @@ export default function App() {
 
                 </div>
               ) : currentSlide === 2 ? (
-                /* SLIDE 3: NAVIOS (VESSELS ONLY) COM DUAS ÃREAS DE NOTAS */
-                <div id="slide-dashboard-grid-vessels" className={`grid grid-cols-12 gap-4 ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px]'}`}>
+                /* SLIDE 2: ESCALA DE NAVIOS (VESSELS MANAGEMENT & CONTROL TOWER) */
+                <div id="slide-dashboard-grid-vessels" className="flex flex-col gap-4">
                   
-                  {/* LADO ESQUERDO: TABELA DE NAVIOS INTEGRAL EXPANDIDA POR MÃŠS */}
-                  <div className="col-span-12 lg:col-span-5 flex flex-col h-full justify-between">
-                    <div className={`p-4 rounded-xl flex-1 border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
+                  {/* TOP CONTROL & ACTIONS BAR FOR VESSELS */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200/80 shadow-sm'} flex flex-col md:flex-row md:items-center justify-between gap-4`}>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-200/60 dark:border-blue-800/60 shadow-xs">
+                        <Ship className="w-6 h-6 animate-bounce-slow" />
+                      </div>
                       <div>
-                        {/* Header */}
-                        <div className="flex items-center justify-between border-b pb-2 mb-3 border-gray-100 dark:border-slate-800">
-                          <h3 className="font-extrabold text-sm flex items-center gap-2 text-[#2563eb] tracking-tight">
-                            <Ship className="w-5 h-5 text-blue-500" /> 
-                            {language === 'bilingual' ? 'æ´»è·ƒèˆ¹èˆ¶é æ³Šè®¡åˆ’ (ETA) / èˆ¹èˆ¶è®¡åˆ’' : t('vesselSchedule')}
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-extrabold text-base text-slate-850 dark:text-white tracking-tight flex items-center gap-2">
+                            {tt("GestÃ£o de Escala de Navios & Janelas (ETA)", "èˆ¹èˆ¶é æ³Šè®¡åˆ’ä¸åˆ°æ¸¯ç®¡ç†æ§åˆ¶å° (ETA)", "Active Vessel Schedule & Berthing Control")}
                           </h3>
-                          <div className="flex items-center gap-1.5">
-                            {(() => {
-                              const monthlyGroups = groupVesselsByMonth(vessels, language);
-                              const anyOpen = monthlyGroups.some(g => expandedVesselMonths[g.monthKey]);
-                              return (
-                                <button
-                                  type="button"
-                                  onClick={() => toggleAllVesselMonths(monthlyGroups)}
-                                  className="text-[9.5px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/80 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1 border border-blue-200/60 dark:border-blue-800/60 shadow-2xs"
-                                  title={anyOpen ? 'Recolher todos os meses' : 'Abrir todos os navios'}
-                                >
-                                  {anyOpen ? (
-                                    <>
-                                      <Minimize2 className="w-2.5 h-2.5" />
-                                      <span>{language === 'bilingual' ? 'Recolher / æŠ˜å ' : language === 'zh' ? 'å…¨éƒ¨æŠ˜å ' : 'Recolher'}</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Maximize2 className="w-2.5 h-2.5" />
-                                      <span>{language === 'bilingual' ? 'Abrir Todos / å±•å¼€' : language === 'zh' ? 'å…¨éƒ¨å±•å¼€' : 'Abrir Todos'}</span>
-                                    </>
-                                  )}
-                                </button>
-                              );
-                            })()}
-                            <span className="text-[10px] bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 font-bold px-2 py-0.5 rounded-full">{t('projected')}</span>
+                          <span className="text-[10px] bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                            {vessels.length} {tt("Navios", "è‰˜èˆ¹èˆ¶", "Vessels")} â€¢ {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()} CNTRs
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">
+                          {tt("Cadastre novos navios, edite ETAs, organize a ordem de atracaÃ§Ã£o e monitore o fluxo de entrada.", "åœ¨æ­¤æ·»åŠ æ–°åˆ°æ¸¯èˆ¹èˆ¶ã€ç¼–è¾‘é¢„æŠ¥ETAèˆ¹æœŸã€è°ƒæ•´é æ³Šé¡ºåºå¹¶å®æ—¶ç›‘æ§é›†è£…ç®±æµå…¥ã€‚", "Register new vessels, edit ETAs, adjust berthing sequence and monitor container inflows in real-time.")}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Quick Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Search / Filter input */}
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          value={vesselFilterSearch}
+                          onChange={(e) => setVesselFilterSearch(e.target.value)}
+                          placeholder={tt("Buscar navio, ETA, armador...", "æŒ‰èˆ¹åã€ETAã€èˆ¹å¸æœç´¢...", "Search vessel, ETA, carrier...")}
+                          className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 text-slate-800 dark:text-slate-200 placeholder:text-gray-400 w-44 sm:w-52 font-medium"
+                        />
+                        {vesselFilterSearch && (
+                          <button
+                            onClick={() => setVesselFilterSearch('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* View Mode Toggle (Monthly vs List) */}
+                      <div className="bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center">
+                        <button
+                          onClick={() => setVesselViewMode('monthly')}
+                          className={`px-2.5 py-1 text-xs font-bold rounded-md flex items-center gap-1 transition-all cursor-pointer ${
+                            vesselViewMode === 'monthly'
+                              ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
+                              : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
+                          }`}
+                          title={tt("VisÃ£o Agrupada por MÃªs", "æŒ‰æœˆä»½åˆ†ç»„å±•ç¤º", "Grouped by Month")}
+                        >
+                          <Calendar className="w-3 h-3" />
+                          <span>{tt("Mensal", "æŒ‰æœˆ", "Monthly")}</span>
+                        </button>
+                        <button
+                          onClick={() => setVesselViewMode('list')}
+                          className={`px-2.5 py-1 text-xs font-bold rounded-md flex items-center gap-1 transition-all cursor-pointer ${
+                            vesselViewMode === 'list'
+                              ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
+                              : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
+                          }`}
+                          title={tt("Lista ContÃ­nua CronolÃ³gica", "å¹³é“ºé¡ºåºåˆ—è¡¨", "Full List")}
+                        >
+                          <List className="w-3 h-3" />
+                          <span>{tt("Lista", "åˆ—è¡¨", "List")}</span>
+                        </button>
+                      </div>
+
+                      {/* PRIMARY ADD VESSEL BUTTON - VERY PROMINENT */}
+                      <button
+                        id="btn-open-add-vessel"
+                        onClick={() => setShowAddVesselForm(!showAddVesselForm)}
+                        className="px-4 py-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-lg text-xs font-black shadow-md flex items-center gap-2 transition-all transform hover:scale-[1.03] active:scale-[0.98] cursor-pointer ring-2 ring-blue-400/30"
+                        title={tt("Cadastrar novo navio no sistema", "åœ¨ç³»ç»Ÿä¸­ç™»è®°æ–°é æ³Šèˆ¹èˆ¶", "Add new vessel to schedule")}
+                      >
+                        {showAddVesselForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                        <span className="tracking-wide">{showAddVesselForm ? tt("Fechar FormulÃ¡rio", "æ”¶èµ·è¡¨å•", "Close Form") : tt("+ Adicionar Navio", "+ æ·»åŠ æ–°èˆ¹èˆ¶", "+ Add Vessel")}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* FORMULÃRIO DE CADASTRO DE NOVO NAVIO (EXPANSÃVEL) */}
+                  {showAddVesselForm && (
+                    <form
+                      id="form-add-vessel"
+                      onSubmit={addVessel}
+                      className={`p-5 rounded-xl border-2 border-blue-500/40 ${
+                        theme === 'dark' ? 'bg-slate-850/95 text-white' : 'bg-blue-50/70 text-slate-850'
+                      } shadow-lg animate-in fade-in slide-in-from-top-2 duration-200`}
+                    >
+                      <div className="flex items-center justify-between pb-3 mb-4 border-b border-blue-200 dark:border-slate-700">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-1.5 bg-blue-600 text-white rounded-lg">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-extrabold text-sm text-blue-700 dark:text-blue-400 uppercase tracking-tight">
+                              {tt("Cadastrar Novo Navio na Escala (Inbound Arrival)", "ç™»è®°æ–°å¢é æ³Šèˆ¹èˆ¶ (Inbound Arrival)", "Register New Vessel (Inbound)")}
+                            </h4>
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                              {tt("Preencha os dados do navio e clique em 'Salvar Navio no Sistema'", "å¡«å†™èˆ¹åã€ETAæ—¥æœŸåŠé›†è£…ç®±ç®±é‡åç‚¹å‡»ä¿å­˜", "Fill the vessel info and click 'Save Vessel to System'")}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddVesselForm(false)}
+                          className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+                        {/* Nome do Navio */}
+                        <div className="col-span-1 sm:col-span-2">
+                          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            {tt("Nome do Navio / èˆ¹å *", "èˆ¹å (Vessel Name) *", "Vessel Name *")}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Ex: BYD EXPLORER NO.1, MSC SANTOS"
+                            value={newVesselName}
+                            onChange={(e) => setNewVesselName(e.target.value)}
+                            className="w-full p-2.5 text-xs font-bold uppercase bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                          />
+                        </div>
+
+                        {/* Data ETA */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            {tt("Data ETA / é¢„æŠ¥åˆ°æ¸¯æ—¥ *", "é¢„æŠ¥åˆ°æ¸¯æ—¥ (ETA Date) *", "ETA Date *")}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="2026-08-28 ou 28/08/2026"
+                            value={newVesselEta}
+                            onChange={(e) => setNewVesselEta(e.target.value)}
+                            className="w-full p-2.5 text-xs font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                          />
+                        </div>
+
+                        {/* Volume CNTRs */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            {tt("Volume (CNTRs) / ç®±é‡ *", "é›†è£…ç®±ç®±é‡ (CNTRs) *", "Containers (CNTRs) *")}
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            value={newVesselCntrs}
+                            onChange={(e) => setNewVesselCntrs(Number(e.target.value))}
+                            className="w-full p-2.5 text-xs font-mono font-black text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                          />
+                        </div>
+
+                        {/* Armador / Carrier */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            {tt("Armador / èˆ¹å…¬å¸", "èˆ¹å…¬å¸ (Carrier)", "Carrier / Line")}
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Ex: MSC, COSCO, ONE"
+                            value={newVesselCarrier}
+                            onChange={(e) => setNewVesselCarrier(e.target.value)}
+                            className="w-full p-2.5 text-xs font-bold uppercase bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                          />
+                        </div>
+
+                        {/* Status Operacional */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            {tt("Status Operacional", "é æ³ŠçŠ¶æ€ (Status)", "Status")}
+                          </label>
+                          <select
+                            value={newVesselStatus}
+                            onChange={(e) => setNewVesselStatus(e.target.value)}
+                            className="w-full p-2.5 text-xs font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                          >
+                            <option value="SCHEDULED">{tt("AGENDADO (Scheduled)", "è®¡åˆ’ä¸­ (Scheduled)", "SCHEDULED")}</option>
+                            <option value="BERTHED">{tt("ATRACADO (Berthed)", "å·²é æ³Š (Berthed)", "BERTHED")}</option>
+                            <option value="DISCHARGED">{tt("DESCARREGADO (Discharged)", "å·²å¸èˆ¹ (Discharged)", "DISCHARGED")}</option>
+                            <option value="DELAYED">{tt("ATRASADO (Delayed)", "å»¶è¯¯ (Delayed)", "DELAYED")}</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* BotÃµes de AÃ§Ã£o do FormulÃ¡rio */}
+                      <div className="flex items-center justify-end gap-2.5 mt-4 pt-3.5 border-t border-blue-200 dark:border-slate-700">
+                        <button
+                          type="button"
+                          onClick={() => setShowAddVesselForm(false)}
+                          className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                        >
+                          {tt("Cancelar", "å–æ¶ˆ", "Cancel")}
+                        </button>
+                        <button
+                          type="submit"
+                          id="btn-submit-add-vessel"
+                          className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black shadow-md flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>{tt("Salvar Navio no Sistema", "ä¿å­˜èˆ¹èˆ¶åˆ°ç³»ç»Ÿ", "Save Vessel to System")}</span>
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* CARDS DE KPI & RESUMO DOS NAVIOS */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200/70'} flex flex-col justify-between shadow-xs`}>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                        {tt("Total de Navios", "åˆ°æ¸¯èˆ¹èˆ¶æ€»æ•°", "Total Vessels")}
+                      </span>
+                      <div className="flex items-baseline gap-1.5 mt-1">
+                        <span className="text-xl font-black font-mono text-blue-600 dark:text-blue-400">
+                          {vessels.length}
+                        </span>
+                        <span className="text-[11px] text-gray-500 font-medium">{tt("navios programados", "è‰˜è®¡åˆ’ä¸­", "vessels scheduled")}</span>
+                      </div>
+                    </div>
+
+                    <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200/70'} flex flex-col justify-between shadow-xs`}>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                        {tt("Volume Total Previsto", "é¢„è®¡é›†è£…ç®±æ€»é‡", "Total Expected Cargo")}
+                      </span>
+                      <div className="flex items-baseline gap-1.5 mt-1">
+                        <span className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+                          {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()}
+                        </span>
+                        <span className="text-[11px] text-gray-500 font-medium">CNTRs</span>
+                      </div>
+                    </div>
+
+                    <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200/70'} flex flex-col justify-between shadow-xs`}>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                        {tt("PrÃ³xima Chegada (Next ETA)", "ä¸‹ä¸€è‰˜æŠµæ¸¯èˆ¹", "Next ETA")}
+                      </span>
+                      <div className="flex flex-col mt-1 truncate">
+                        <span className="text-xs font-black truncate text-slate-800 dark:text-white">
+                          {vessels[0]?.name || '-'}
+                        </span>
+                        <span className="text-[11px] font-mono font-bold text-blue-500">
+                          {vessels[0]?.eta ? `ETA: ${vessels[0].eta}` : '-'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200/70'} flex flex-col justify-between shadow-xs`}>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                        {tt("MÃ©dia por Navio", "å•èˆ¹å¹³å‡ç®±é‡", "Avg per Vessel")}
+                      </span>
+                      <div className="flex items-baseline gap-1.5 mt-1">
+                        <span className="text-xl font-black font-mono text-purple-600 dark:text-purple-400">
+                          {vessels.length > 0 ? Math.round(vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0) / vessels.length).toLocaleString() : 0}
+                        </span>
+                        <span className="text-[11px] text-gray-500 font-medium">CNTRs/navio</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* GRID PRINCIPAL: TABELA/LISTA DE NAVIOS + NOTAS OPERACIONAIS */}
+                  <div className="grid grid-cols-12 gap-4">
+                    
+                    {/* LADO ESQUERDO: TABELA & LISTA DE NAVIOS COM EDIÃ‡ÃƒO INLINE E BOTÃƒO ADICIONAR */}
+                    <div className="col-span-12 lg:col-span-6 flex flex-col gap-4">
+                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200/80 shadow-sm'} flex flex-col justify-between`}>
+                        
+                        {/* Subheader da Tabela */}
+                        <div className="flex items-center justify-between border-b pb-2 mb-3 border-gray-100 dark:border-slate-800">
+                          <div className="flex items-center gap-2">
+                            <Ship className="w-4 h-4 text-blue-500" />
+                            <h4 className="font-extrabold text-xs text-blue-800 dark:text-blue-300 uppercase tracking-tight">
+                              {vesselViewMode === 'monthly' ? tt("Cronograma Agrupado por MÃªs", "æŒ‰æœˆåˆ’åˆ†é æ³Šè®¡åˆ’", "Monthly Berthing Schedule") : tt("Escala Completa CronolÃ³gica", "æŒ‰åˆ°æ¸¯å…ˆåå¹³é“ºåˆ—è¡¨", "Chronological Vessel Queue")}
+                            </h4>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {/* BotÃ£o rÃ¡pido adicionar navio no cabeÃ§alho da tabela */}
+                            <button
+                              type="button"
+                              onClick={() => setShowAddVesselForm(true)}
+                              className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/80 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1 border border-emerald-200/60 dark:border-emerald-800/60 shadow-2xs"
+                              title={tt("Adicionar novo navio", "æ·»åŠ æ–°èˆ¹èˆ¶", "Add new vessel")}
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>{tt("Novo Navio", "æ–°å¢èˆ¹èˆ¶", "New Vessel")}</span>
+                            </button>
+
+                            {vesselViewMode === 'monthly' && (
+                              (() => {
+                                const monthlyGroups = groupVesselsByMonth(vessels, language);
+                                const anyOpen = monthlyGroups.some(g => expandedVesselMonths[g.monthKey]);
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleAllVesselMonths(monthlyGroups)}
+                                    className="text-[9.5px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/80 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1 border border-blue-200/60 dark:border-blue-800/60 shadow-2xs"
+                                    title={anyOpen ? 'Recolher todos os meses' : 'Abrir todos os navios'}
+                                  >
+                                    {anyOpen ? (
+                                      <>
+                                        <Minimize2 className="w-2.5 h-2.5" />
+                                        <span>{tt("Recolher Todos", "å…¨éƒ¨æŠ˜å ", "Collapse All")}</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Maximize2 className="w-2.5 h-2.5" />
+                                        <span>{tt("Expandir Todos", "å…¨éƒ¨å±•å¼€", "Expand All")}</span>
+                                      </>
+                                    )}
+                                  </button>
+                                );
+                              })()
+                            )}
                           </div>
                         </div>
 
-                        {/* Monthly Groups Accordion */}
+                        {/* LISTAGEM DOS NAVIOS */}
                         {(() => {
-                          const monthlyGroups = groupVesselsByMonth(vessels, language);
-
-                          if (monthlyGroups.length === 0) {
+                          // Filtragem por busca
+                          const filteredVessels = vessels.filter(v => {
+                            if (!vesselFilterSearch.trim()) return true;
+                            const query = vesselFilterSearch.toLowerCase();
                             return (
-                              <div className="text-center py-10 text-gray-400 text-sm font-semibold">
-                                {t('noVessels')}
+                              v.name.toLowerCase().includes(query) ||
+                              v.eta.toLowerCase().includes(query) ||
+                              (v.carrier && v.carrier.toLowerCase().includes(query)) ||
+                              (v.status && v.status.toLowerCase().includes(query)) ||
+                              String(v.cntrs).includes(query)
+                            );
+                          });
+
+                          if (filteredVessels.length === 0) {
+                            return (
+                              <div className="text-center py-12 text-gray-400 flex flex-col items-center gap-3">
+                                <Ship className="w-10 h-10 opacity-40 text-gray-400" />
+                                <span className="text-xs font-semibold">
+                                  {vesselFilterSearch 
+                                    ? tt("Nenhum navio encontrado para a busca atual.", "æœªæ‰¾åˆ°ç¬¦åˆæœç´¢æ¡ä»¶çš„èˆ¹èˆ¶è®°å½•ã€‚", "No vessels match your search query.")
+                                    : tt("Nenhum navio cadastrado.", "æš‚æ— èˆ¹èˆ¶è®°å½•ã€‚", "No vessels registered.")}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowAddVesselForm(true)}
+                                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>{tt("Adicionar Primeiro Navio", "æ·»åŠ ç¬¬ä¸€è‰˜èˆ¹èˆ¶", "Add First Vessel")}</span>
+                                </button>
                               </div>
                             );
                           }
 
-                          return (
-                            <div className="flex flex-col gap-2.5">
-                              {monthlyGroups.map((group) => {
-                                const isExpanded = !!expandedVesselMonths[group.monthKey];
-                                return (
-                                  <div
-                                    key={group.monthKey}
-                                    className={`rounded-lg border transition-all duration-200 overflow-hidden ${
-                                      theme === 'dark'
-                                        ? isExpanded ? 'bg-slate-800/80 border-blue-900/60' : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600'
-                                        : isExpanded ? 'bg-blue-50/40 border-blue-200/80' : 'bg-slate-50/80 border-slate-200/70 hover:border-blue-300'
-                                    }`}
-                                  >
-                                    {/* Month Header Bar */}
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleVesselMonth(group.monthKey)}
-                                      className="w-full px-3 py-2.5 flex items-center justify-between text-left cursor-pointer select-none transition-colors hover:bg-blue-500/5"
+                          // VISÃƒO MENSAL AGRUPADA
+                          if (vesselViewMode === 'monthly') {
+                            const monthlyGroups = groupVesselsByMonth(filteredVessels, language);
+                            return (
+                              <div className="flex flex-col gap-3">
+                                {monthlyGroups.map((group) => {
+                                  const isExpanded = !!expandedVesselMonths[group.monthKey];
+                                  return (
+                                    <div
+                                      key={group.monthKey}
+                                      className={`rounded-xl border transition-all duration-200 overflow-hidden ${
+                                        theme === 'dark'
+                                          ? isExpanded ? 'bg-slate-800/80 border-blue-900/60' : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600'
+                                          : isExpanded ? 'bg-blue-50/40 border-blue-200/80' : 'bg-slate-50/80 border-slate-200/70 hover:border-blue-300'
+                                      }`}
                                     >
-                                      <div className="flex items-center gap-2 min-w-0">
-                                        <div className={`p-0.5 rounded transition-transform duration-200 ${isExpanded ? 'text-blue-600 rotate-0' : 'text-gray-400 -rotate-90'}`}>
-                                          <ChevronDown className="w-4 h-4" />
+                                      {/* Month Header Bar */}
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleVesselMonth(group.monthKey)}
+                                        className="w-full px-3.5 py-2.5 flex items-center justify-between text-left cursor-pointer transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                                      >
+                                        <div className="flex items-center gap-2.5">
+                                          <div className={`p-1 rounded-md transition-transform duration-200 ${isExpanded ? 'rotate-180 bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'text-gray-400'}`}>
+                                            <ChevronDown className="w-3.5 h-3.5" />
+                                          </div>
+                                          <span className="font-extrabold text-xs text-slate-800 dark:text-white tracking-tight">
+                                            {group.monthLabel}
+                                          </span>
+                                          <span className="text-[10px] bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full">
+                                            {group.vessels.length} {tt("navios", "è‰˜", "vessels")}
+                                          </span>
                                         </div>
-                                        <Calendar className="w-4 h-4 text-blue-500 shrink-0" />
-                                        <span className="font-extrabold text-sm text-slate-800 dark:text-slate-200 tracking-tight truncate">
-                                          {group.monthLabel}
-                                        </span>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                                          {group.vessels.length} {language === 'zh' ? 'è‰˜' : 'navio(s)'}
-                                        </span>
-                                      </div>
+                                        <div className="flex items-center gap-3">
+                                          <span className="font-mono font-black text-xs text-blue-600 dark:text-blue-400 bg-white/80 dark:bg-slate-900/80 px-2.5 py-1 rounded-md border border-blue-200/60 dark:border-blue-800/50 shadow-2xs">
+                                            {group.totalCntrs.toLocaleString()} <span className="text-[9.5px] font-normal text-gray-400">CNTRs</span>
+                                          </span>
+                                        </div>
+                                      </button>
 
-                                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                                        <span className="font-mono font-black text-xs text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-700 shadow-2xs">
-                                          {group.totalCntrs.toLocaleString()} <span className="text-[9px] font-normal text-gray-400">CNTRs</span>
-                                        </span>
-                                      </div>
-                                    </button>
-
-                                    {/* Collapsible Body */}
-                                    {isExpanded && (
-                                      <div className="border-t border-slate-200/70 dark:border-slate-700/60 p-2.5 bg-white/70 dark:bg-slate-900/60 animate-in fade-in-50 duration-150">
-                                        <table className="w-full text-left text-xs">
-                                          <thead>
-                                            <tr className="border-b border-gray-200 dark:border-slate-800 text-gray-400 font-extrabold uppercase text-[9.5px] tracking-wider">
-                                              <th className="py-1.5">{getColHeader('vessel')}</th>
-                                              <th className="py-1.5 text-center">{getColHeader('eta')}</th>
-                                              <th className="py-1.5 text-right">{getColHeader('cntrs')}</th>
-                                            </tr>
-                                          </thead>
-                                          <tbody className="divide-y divide-gray-100 dark:divide-slate-800/40">
-                                            {group.vessels.map((vessel, idx) => (
-                                              <tr key={vessel.id || idx} className="hover:bg-blue-50/50 dark:hover:bg-slate-800/40 transition-colors">
-                                                <td className="font-extrabold text-gray-800 dark:text-gray-200 text-xs tracking-tight py-2">{vessel.name}</td>
-                                                <td className="text-center text-gray-650 dark:text-gray-400 font-mono font-bold text-xs py-2">{vessel.eta}</td>
-                                                <td className="text-right font-black text-blue-600 dark:text-blue-400 text-xs py-2">{vessel.cntrs.toLocaleString()}</td>
+                                      {/* Collapsible Body Table */}
+                                      {isExpanded && (
+                                        <div className="border-t border-slate-200/70 dark:border-slate-700/60 p-2 bg-white dark:bg-slate-900/80 overflow-x-auto">
+                                          <table className="w-full text-left text-xs">
+                                            <thead>
+                                              <tr className="border-b border-gray-200 dark:border-slate-800 text-gray-400 font-extrabold uppercase text-[9px] tracking-wider">
+                                                <th className="py-2 px-2">{tt("Navio / èˆ¹å", "èˆ¹å", "Vessel")}</th>
+                                                <th className="py-2 px-2 text-center">{tt("Data ETA", "é¢„æŠ¥åˆ°æ¸¯æ—¥", "ETA Date")}</th>
+                                                <th className="py-2 px-2 text-center">{tt("Armador / Status", "èˆ¹å¸/çŠ¶æ€", "Carrier / Status")}</th>
+                                                <th className="py-2 px-2 text-right">{tt("Volume", "ç®±é‡", "Containers")}</th>
+                                                <th className="py-2 px-2 text-center w-28">{tt("AÃ§Ãµes", "æ“ä½œ", "Actions")}</th>
                                               </tr>
-                                            ))}
-                                          </tbody>
-                                        </table>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800/40">
+                                              {group.vessels.map((vessel, idx) => {
+                                                const isEditing = editingVesselId === vessel.id;
+                                                return (
+                                                  <tr key={vessel.id || idx} className="hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition-colors">
+                                                    {/* Navio Name */}
+                                                    <td className="py-2 px-2">
+                                                      {isEditing ? (
+                                                        <input
+                                                          type="text"
+                                                          value={editVesselName}
+                                                          onChange={(e) => setEditVesselName(e.target.value)}
+                                                          className="w-full p-1 text-xs font-bold uppercase bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
+                                                        />
+                                                      ) : (
+                                                        <div className="flex flex-col">
+                                                          <span className="font-black text-gray-850 dark:text-gray-100 text-xs tracking-tight">
+                                                            {vessel.name}
+                                                          </span>
+                                                          <span className="text-[9.5px] text-gray-400 font-medium">
+                                                            {vessel.terminal || 'Porto de Santos'}
+                                                          </span>
+                                                        </div>
+                                                      )}
+                                                    </td>
+
+                                                    {/* ETA */}
+                                                    <td className="py-2 px-2 text-center">
+                                                      {isEditing ? (
+                                                        <input
+                                                          type="text"
+                                                          value={editVesselEta}
+                                                          onChange={(e) => setEditVesselEta(e.target.value)}
+                                                          className="w-24 p-1 text-xs font-mono font-bold text-center bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
+                                                        />
+                                                      ) : (
+                                                        <span className="inline-block px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold text-xs">
+                                                          {vessel.eta}
+                                                        </span>
+                                                      )}
+                                                    </td>
+
+                                                    {/* Carrier / Status */}
+                                                    <td className="py-2 px-2 text-center">
+                                                      {isEditing ? (
+                                                        <div className="flex flex-col gap-1">
+                                                          <input
+                                                            type="text"
+                                                            value={editVesselCarrier}
+                                                            placeholder="Carrier"
+                                                            onChange={(e) => setEditVesselCarrier(e.target.value)}
+                                                            className="w-full p-1 text-[10px] font-bold uppercase bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
+                                                          />
+                                                          <select
+                                                            value={editVesselStatus}
+                                                            onChange={(e) => setEditVesselStatus(e.target.value)}
+                                                            className="w-full p-1 text-[9.5px] font-bold bg-white dark:bg-slate-800 border border-blue-400 rounded"
+                                                          >
+                                                            <option value="SCHEDULED">SCHEDULED</option>
+                                                            <option value="BERTHED">BERTHED</option>
+                                                            <option value="DISCHARGED">DISCHARGED</option>
+                                                            <option value="DELAYED">DELAYED</option>
+                                                          </select>
+                                                        </div>
+                                                      ) : (
+                                                        <div className="flex flex-col items-center gap-0.5">
+                                                          <span className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+                                                            {vessel.carrier || 'BYD CHARTER'}
+                                                          </span>
+                                                          <span className={`text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-full uppercase ${
+                                                            vessel.status === 'BERTHED' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
+                                                            vessel.status === 'DISCHARGED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
+                                                            vessel.status === 'DELAYED' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' :
+                                                            'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                                                          }`}>
+                                                            {vessel.status || 'SCHEDULED'}
+                                                          </span>
+                                                        </div>
+                                                      )}
+                                                    </td>
+
+                                                    {/* Volume (CNTRs) */}
+                                                    <td className="py-2 px-2 text-right">
+                                                      {isEditing ? (
+                                                        <input
+                                                          type="number"
+                                                          value={editVesselCntrs}
+                                                          onChange={(e) => setEditVesselCntrs(Number(e.target.value))}
+                                                          className="w-20 p-1 text-xs font-mono font-black text-right text-blue-600 bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
+                                                        />
+                                                      ) : (
+                                                        <span className="font-black text-blue-600 dark:text-blue-400 text-xs font-mono">
+                                                          {vessel.cntrs.toLocaleString()} <span className="text-[9px] font-normal text-gray-400">CNTRs</span>
+                                                        </span>
+                                                      )}
+                                                    </td>
+
+                                                    {/* Actions */}
+                                                    <td className="py-2 px-2 text-center">
+                                                      {isEditing ? (
+                                                        <div className="flex items-center justify-center gap-1">
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => saveEditVessel(vessel.id)}
+                                                            className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded cursor-pointer transition-colors shadow-2xs"
+                                                            title={tt("Salvar alteraÃ§Ãµes", "ä¿å­˜ä¿®æ”¹", "Save changes")}
+                                                          >
+                                                            <Check className="w-3.5 h-3.5" />
+                                                          </button>
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => setEditingVesselId(null)}
+                                                            className="p-1 bg-gray-300 hover:bg-gray-400 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded cursor-pointer transition-colors"
+                                                            title={tt("Cancelar", "å–æ¶ˆ", "Cancel")}
+                                                          >
+                                                            <X className="w-3.5 h-3.5" />
+                                                          </button>
+                                                        </div>
+                                                      ) : (
+                                                        <div className="flex items-center justify-center gap-1">
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => startEditVessel(vessel)}
+                                                            className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/60 rounded cursor-pointer transition-colors"
+                                                            title={tt("Editar navio", "ç¼–è¾‘èˆ¹èˆ¶", "Edit vessel")}
+                                                          >
+                                                            <Edit3 className="w-3.5 h-3.5" />
+                                                          </button>
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => shiftVessel(vessel.id, 'up')}
+                                                            className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer transition-colors"
+                                                            title={tt("Mover para cima", "ä¸Šç§»ä¼˜å…ˆçº§", "Move up")}
+                                                          >
+                                                            <ArrowUp className="w-3.5 h-3.5" />
+                                                          </button>
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => shiftVessel(vessel.id, 'down')}
+                                                            className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer transition-colors"
+                                                            title={tt("Mover para baixo", "ä¸‹ç§»ä¼˜å…ˆçº§", "Move down")}
+                                                          >
+                                                            <ArrowDown className="w-3.5 h-3.5" />
+                                                          </button>
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                              if (window.confirm(tt(`Remover o navio ${vessel.name} da escala?`, `ç¡®å®šè¦å°†èˆ¹èˆ¶ ${vessel.name} ä»é æ³Šè®¡åˆ’ä¸­åˆ é™¤å—ï¼Ÿ`, `Remove vessel ${vessel.name} from schedule?`))) {
+                                                                deleteVessel(vessel.id);
+                                                              }
+                                                            }}
+                                                            className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950/60 rounded cursor-pointer transition-colors"
+                                                            title={tt("Excluir navio", "åˆ é™¤èˆ¹èˆ¶", "Delete vessel")}
+                                                          >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                          </button>
+                                                        </div>
+                                                      )}
+                                                    </td>
+                                                  </tr>
+                                                );
+                                              })}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          }
+
+                          // VISÃƒO EM LISTA CRONOLÃ“GICA CONTÃNUA
+                          return (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs">
+                                <thead>
+                                  <tr className="border-b border-gray-200 dark:border-slate-800 text-gray-400 font-extrabold uppercase text-[9.5px] tracking-wider">
+                                    <th className="py-2 px-2.5">#</th>
+                                    <th className="py-2 px-2.5">{tt("Navio / èˆ¹å", "èˆ¹å", "Vessel")}</th>
+                                    <th className="py-2 px-2.5 text-center">{tt("Data ETA", "é¢„æŠ¥åˆ°æ¸¯æ—¥", "ETA Date")}</th>
+                                    <th className="py-2 px-2.5 text-center">{tt("Armador / Status", "èˆ¹å¸/çŠ¶æ€", "Carrier / Status")}</th>
+                                    <th className="py-2 px-2.5 text-right">{tt("Volume", "ç®±é‡", "Containers")}</th>
+                                    <th className="py-2 px-2.5 text-center w-28">{tt("AÃ§Ãµes", "æ“ä½œ", "Actions")}</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-slate-800/40">
+                                  {filteredVessels.map((vessel, idx) => {
+                                    const isEditing = editingVesselId === vessel.id;
+                                    return (
+                                      <tr key={vessel.id || idx} className="hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition-colors">
+                                        <td className="py-2 px-2.5 text-gray-400 font-mono text-[10px] font-bold">
+                                          {idx + 1}
+                                        </td>
+                                        <td className="py-2 px-2.5">
+                                          {isEditing ? (
+                                            <input
+                                              type="text"
+                                              value={editVesselName}
+                                              onChange={(e) => setEditVesselName(e.target.value)}
+                                              className="w-full p-1 text-xs font-bold uppercase bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
+                                            />
+                                          ) : (
+                                            <div className="flex flex-col">
+                                              <span className="font-black text-gray-850 dark:text-gray-100 text-xs">
+                                                {vessel.name}
+                                              </span>
+                                              <span className="text-[9.5px] text-gray-400 font-medium">
+                                                {vessel.terminal || 'Porto de Santos'}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </td>
+                                        <td className="py-2 px-2.5 text-center">
+                                          {isEditing ? (
+                                            <input
+                                              type="text"
+                                              value={editVesselEta}
+                                              onChange={(e) => setEditVesselEta(e.target.value)}
+                                              className="w-24 p-1 text-xs font-mono font-bold text-center bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
+                                            />
+                                          ) : (
+                                            <span className="inline-block px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold text-xs">
+                                              {vessel.eta}
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="py-2 px-2.5 text-center">
+                                          {isEditing ? (
+                                            <div className="flex flex-col gap-1">
+                                              <input
+                                                type="text"
+                                                value={editVesselCarrier}
+                                                placeholder="Carrier"
+                                                onChange={(e) => setEditVesselCarrier(e.target.value)}
+                                                className="w-full p-1 text-[10px] font-bold uppercase bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
+                                              />
+                                              <select
+                                                value={editVesselStatus}
+                                                onChange={(e) => setEditVesselStatus(e.target.value)}
+                                                className="w-full p-1 text-[9.5px] font-bold bg-white dark:bg-slate-800 border border-blue-400 rounded"
+                                              >
+                                                <option value="SCHEDULED">SCHEDULED</option>
+                                                <option value="BERTHED">BERTHED</option>
+                                                <option value="DISCHARGED">DISCHARGED</option>
+                                                <option value="DELAYED">DELAYED</option>
+                                              </select>
+                                            </div>
+                                          ) : (
+                                            <div className="flex flex-col items-center gap-0.5">
+                                              <span className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+                                                {vessel.carrier || 'BYD CHARTER'}
+                                              </span>
+                                              <span className={`text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-full uppercase ${
+                                                vessel.status === 'BERTHED' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
+                                                vessel.status === 'DISCHARGED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
+                                                vessel.status === 'DELAYED' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' :
+                                                'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                                              }`}>
+                                                {vessel.status || 'SCHEDULED'}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </td>
+                                        <td className="py-2 px-2.5 text-right">
+                                          {isEditing ? (
+                                            <input
+                                              type="number"
+                                              value={editVesselCntrs}
+                                              onChange={(e) => setEditVesselCntrs(Number(e.target.value))}
+                                              className="w-20 p-1 text-xs font-mono font-black text-right text-blue-600 bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
+                                            />
+                                          ) : (
+                                            <span className="font-black text-blue-600 dark:text-blue-400 text-xs font-mono">
+                                              {vessel.cntrs.toLocaleString()} <span className="text-[9px] font-normal text-gray-400">CNTRs</span>
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="py-2 px-2.5 text-center">
+                                          {isEditing ? (
+                                            <div className="flex items-center justify-center gap-1">
+                                              <button
+                                                type="button"
+                                                onClick={() => saveEditVessel(vessel.id)}
+                                                className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded cursor-pointer transition-colors shadow-2xs"
+                                                title={tt("Salvar alteraÃ§Ãµes", "ä¿å­˜ä¿®æ”¹", "Save changes")}
+                                              >
+                                                <Check className="w-3.5 h-3.5" />
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => setEditingVesselId(null)}
+                                                className="p-1 bg-gray-300 hover:bg-gray-400 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded cursor-pointer transition-colors"
+                                                title={tt("Cancelar", "å–æ¶ˆ", "Cancel")}
+                                              >
+                                                <X className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center justify-center gap-1">
+                                              <button
+                                                type="button"
+                                                onClick={() => startEditVessel(vessel)}
+                                                className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/60 rounded cursor-pointer transition-colors"
+                                                title={tt("Editar navio", "ç¼–è¾‘èˆ¹èˆ¶", "Edit vessel")}
+                                              >
+                                                <Edit3 className="w-3.5 h-3.5" />
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => shiftVessel(vessel.id, 'up')}
+                                                className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer transition-colors"
+                                                title={tt("Mover para cima", "ä¸Šç§»ä¼˜å…ˆçº§", "Move up")}
+                                              >
+                                                <ArrowUp className="w-3.5 h-3.5" />
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => shiftVessel(vessel.id, 'down')}
+                                                className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer transition-colors"
+                                                title={tt("Mover para baixo", "ä¸‹ç§»ä¼˜å…ˆçº§", "Move down")}
+                                              >
+                                                <ArrowDown className="w-3.5 h-3.5" />
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  if (window.confirm(tt(`Remover o navio ${vessel.name} da escala?`, `ç¡®å®šè¦å°†èˆ¹èˆ¶ ${vessel.name} ä»é æ³Šè®¡åˆ’ä¸­åˆ é™¤å—ï¼Ÿ`, `Remove vessel ${vessel.name} from schedule?`))) {
+                                                    deleteVessel(vessel.id);
+                                                  }
+                                                }}
+                                                className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950/60 rounded cursor-pointer transition-colors"
+                                                title={tt("Excluir navio", "åˆ é™¤èˆ¹èˆ¶", "Delete vessel")}
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
                             </div>
                           );
                         })()}
-                      </div>
 
-                      {/* Resumo do Volume Total a Descarregar */}
-                      <div className="mt-4 pt-3 border-t border-dashed border-gray-200 dark:border-slate-800 text-xs text-gray-400 flex justify-between items-center bg-blue-50/20 dark:bg-blue-950/20 p-2.5 rounded-lg border border-blue-50 dark:border-none">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold uppercase tracking-tight text-[10px]">
-                            {language === 'bilingual' ? 'é›†è£…ç®±åˆ°æ¸¯æ€»é‡ / Total Containers:' : t('totalContainers') + ':'}
+                        {/* RodapÃ© da tabela com soma de contÃªineres */}
+                        <div className="mt-3 pt-2.5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
+                          <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                            {tt("Soma Total de ContÃªineres / ç®±é‡æ€»è®¡", "é¢„è®¡æŠµæ¸¯é›†è£…ç®±æ€»è®¡", "Total Scheduled Containers")}:
                           </span>
-                          <span className="text-[10px] text-gray-400 font-medium">({vessels.length} {language === 'zh' ? 'è‰˜èˆ¹' : 'navios'})</span>
+                          <span className="font-mono font-black text-sm text-blue-600 dark:text-blue-400">
+                            {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()} <span className="text-xs font-normal text-gray-400">CNTRs</span>
+                          </span>
                         </div>
-                        <span className="font-black text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950 px-3 py-1 rounded font-mono">
-                          {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()} <span className="text-[10px] font-normal">CNTRs</span>
-                        </span>
                       </div>
+                    </div>
+
+                    {/* LADO DIREITO: 2 ÃREAS DE NOTAS OPERACIONAIS */}
+                    <div className="col-span-12 lg:col-span-6 flex flex-col gap-4">
+                      
+                      {/* NOTA 1: JANELAS OPERACIONAIS DE ATRACAÃ‡ÃƒO */}
+                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200/80 shadow-sm'} flex flex-col justify-between min-h-[220px]`}>
+                        <div className="flex items-center justify-between border-b pb-2 mb-2 border-gray-100 dark:border-slate-800">
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <h4 className="font-bold text-xs text-blue-850 dark:text-blue-200 uppercase tracking-wider block">
+                              {language === 'bilingual' ? '1. JANELAS OPERACIONAIS DE ATRACAÃ‡ÃƒO / èˆ¹æœŸä¸é æ³Šè¯´æ˜' : language === 'zh' ? '1. èˆ¹æœŸä¸é æ³Šè¯´æ˜' : '1. JANELAS OPERACIONAIS DE ATRACAÃ‡ÃƒO'}
+                            </h4>
+                          </div>
+                          <span className="text-[10px] bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold px-2 py-0.5 rounded">
+                            {isEditMode ? tt("Modo EdiÃ§Ã£o Ativo", "ç¼–è¾‘æ¨¡å¼", "Edit Mode") : tt("Notas Ativas", "å®æ—¶å¤‡æ³¨", "Active Notes")}
+                          </span>
+                        </div>
+                        <div className="flex-1 flex flex-col pt-1">
+                          {isEditMode ? (
+                            <textarea
+                              id="input-vessel-note1"
+                              value={vesselNote1}
+                              onChange={(e) => {
+                                setVesselNote1(e.target.value);
+                                updateGlobalDoc('vesselNote1', e.target.value);
+                              }}
+                              placeholder="Digite as observaÃ§Ãµes de escala, janelas de atracaÃ§Ã£o e detalhes dos navios... / åœ¨æ­¤ç¼–å†™é æ³Šçª—å£ä¸èˆ¹æœŸå¤‡å¿˜è¦ç‚¹..."
+                              className="w-full flex-1 min-h-[140px] p-2.5 text-xs font-semibold border border-gray-200 dark:border-gray-700 dark:bg-slate-800 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none resize-none text-slate-800 dark:text-slate-100 placeholder:text-gray-400 font-sans"
+                            />
+                          ) : (
+                            <div className="text-xs leading-relaxed font-bold text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans p-3 bg-slate-50/60 dark:bg-slate-900/60 rounded-lg border border-slate-100 dark:border-none flex-1">
+                              {vesselNote1 || "Escala regular de navios ativa - Monitoramento detalhado das janelas de atracaÃ§Ã£o. / å¸¸è§„æ´»è·ƒèˆ¹èˆ¶é æ³Šè®¡åˆ’ - è¯¦ç»†ç›‘æ§å’Œç®¡ç†æ³Šä½çª—å£ã€‚"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* NOTA 2: LOGÃSTICA DE LIBERAÃ‡ÃƒO E PRIORIDADE BYD */}
+                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200/80 shadow-sm'} flex flex-col justify-between min-h-[220px]`}>
+                        <div className="flex items-center justify-between border-b pb-2 mb-2 border-gray-100 dark:border-slate-800">
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-450" />
+                            <h4 className="font-bold text-xs text-emerald-800 dark:text-emerald-200 uppercase tracking-wider block">
+                              {language === 'bilingual' ? '2. LOGÃSTICA DE LIBERAÃ‡ÃƒO E PRIORIDADE BYD / å£å²¸æè¿ä¸å‡ºç®±ä¼˜å…ˆçº§' : language === 'zh' ? '2. å£å²¸æè¿ä¸å‡ºç®±ä¼˜å…ˆçº§' : '2. LOGÃSTICA DE LIBERAÃ‡ÃƒO E PRIORIDADE BYD'}
+                            </h4>
+                          </div>
+                          <span className="text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded">
+                            {isEditMode ? tt("Modo EdiÃ§Ã£o Ativo", "ç¼–è¾‘æ¨¡å¼", "Edit Mode") : tt("Prioridades", "ä¼˜å…ˆçº§", "Priorities")}
+                          </span>
+                        </div>
+                        <div className="flex-1 flex flex-col pt-1">
+                          {isEditMode ? (
+                            <textarea
+                              id="input-vessel-note2"
+                              value={vesselNote2}
+                              onChange={(e) => {
+                                setVesselNote2(e.target.value);
+                                updateGlobalDoc('vesselNote2', e.target.value);
+                              }}
+                              placeholder="Digite os destaques de escoamento e priorizaÃ§Ãµes... / åœ¨æ­¤ç¼–å†™é›†è£…ç®±æè¿å’Œå£å²¸æ”¾è¡Œå¤‡å¿˜è¦ç‚¹..."
+                              className="w-full flex-1 min-h-[140px] p-2.5 text-xs font-semibold border border-gray-200 dark:border-gray-700 dark:bg-slate-800 rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none resize-none text-slate-800 dark:text-slate-100 placeholder:text-gray-400 font-sans"
+                            />
+                          ) : (
+                            <div className="text-xs leading-relaxed font-bold text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans p-3 bg-slate-50/60 dark:bg-slate-900/60 rounded-lg border border-slate-100 dark:border-none flex-1">
+                              {vesselNote2 || "Destaques operacionais dos navios (Ex: Prioridades de descarga BYD). / èˆ¹èˆ¶è¿è¥é‡ç‚¹äº®ç‚¹ (ä¾‹å¦‚: æ¯”äºšè¿ªé‡ç®±å¸èˆ¹ä¼˜å…ˆé¡ºåº)ã€‚"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                     </div>
                   </div>
 
-                  {/* LADO DIREITO: DUAS ÃREAS EM BRANCO PARA NOTAS OPERACIONAIS */}
-                  <div className="col-span-12 lg:col-span-7 flex flex-col gap-3 h-full justify-between">
-                    
-                    {/* Nota 1: Janelas e AtracaÃ§Ãµes */}
-                    <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex-1 flex flex-col justify-between min-h-[160px]`}>
-                      <div className="flex items-center gap-2 border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
-                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        <h4 className="font-bold text-xs text-blue-800 dark:text-blue-200 uppercase tracking-wider block">
-                          {language === 'bilingual' ? '1. JANELAS OPERACIONAIS DE ATRACAÃ‡ÃƒO / èˆ¹æœŸä¸é æ³Šè¯´æ˜' : language === 'zh' ? '1. èˆ¹æœŸä¸é æ³Šè¯´æ˜' : '1. JANELAS OPERACIONAIS DE ATRACAÃ‡ÃƒO'}
-                        </h4>
-                      </div>
-                      <div className="flex-1 flex flex-col pt-1">
-                        {isEditMode ? (
-                          <textarea
-                            id="input-vessel-note1"
-                            value={vesselNote1}
-                            onChange={(e) => {
-                              setVesselNote1(e.target.value);
-                              updateGlobalDoc('vesselNote1', e.target.value);
-                            }}
-                            placeholder="Digite as notas operacionais e janelas de atracaÃ§Ã£o... / åœ¨æ­¤ç¼–å†™é æ³Šä¸èˆ¹æœŸå¤‡å¿˜è®°å½•..."
-                            className="w-full flex-1 p-2 text-xs font-semibold border border-gray-200 dark:border-gray-700 dark:bg-slate-800 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none resize-none text-slate-800 dark:text-slate-100 placeholder:text-gray-400 font-sans"
-                          />
-                        ) : (
-                          <div className="text-xs leading-relaxed font-bold text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans p-2 bg-slate-50/40 dark:bg-slate-900/40 rounded-lg border border-slate-50 dark:border-none">
-                            {vesselNote1 || "Sem observaÃ§Ãµes operacionais para este perÃ­odo. / æœ¬æœŸæ— é™„åŠ é æ³Šè¯´æ˜ã€‚"}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Nota 2: Escoamento de Contentores e Prioridade */}
-                    <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex-1 flex flex-col justify-between min-h-[160px]`}>
-                      <div className="flex items-center gap-2 border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
-                        <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-450" />
-                        <h4 className="font-bold text-xs text-emerald-800 dark:text-emerald-200 uppercase tracking-wider block">
-                          {language === 'bilingual' ? '2. LOGÃSTICA DE LIBERAÃ‡ÃƒO E PRIORIDADE BYD / å£å²¸æè¿ä¸å‡ºç®±ä¼˜å…ˆçº§' : language === 'zh' ? '2. å£å²¸æè¿ä¸å‡ºç®±ä¼˜å…ˆçº§' : '2. LOGÃSTICA DE LIBERAÃ‡ÃƒO E PRIORIDADE BYD'}
-                        </h4>
-                      </div>
-                      <div className="flex-1 flex flex-col pt-1">
-                        {isEditMode ? (
-                          <textarea
-                            id="input-vessel-note2"
-                            value={vesselNote2}
-                            onChange={(e) => {
-                              setVesselNote2(e.target.value);
-                              updateGlobalDoc('vesselNote2', e.target.value);
-                            }}
-                            placeholder="Digite os destaques de escoamento e priorizaÃ§Ãµes... / åœ¨æ­¤ç¼–å†™é›†è£…ç®±æè¿å’Œå£å²¸æ”¾è¡Œå¤‡å¿˜è¦ç‚¹..."
-                            className="w-full flex-1 p-2 text-xs font-semibold border border-gray-200 dark:border-gray-700 dark:bg-slate-800 rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none resize-none text-slate-800 dark:text-slate-100 placeholder:text-gray-400 font-sans"
-                          />
-                        ) : (
-                          <div className="text-xs leading-relaxed font-bold text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans p-2 bg-slate-50/40 dark:bg-slate-900/40 rounded-lg border border-slate-50 dark:border-none">
-                            {vesselNote2 || "Sem notas de priorizaÃ§Ã£o para este perÃ­odo. / æœ¬æœŸæ— æè¿æ”¾è¡ŒæŒ‡ç¤ºã€‚"}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                  </div>
                 </div>
+              
               ) : currentSlide === 3 ? (
                 /* SLIDE 4: GRÃFICOS (CHARTS ONLY) COM CAIXAS DE COMENTÃRIOS */
                 <div id="slide-dashboard-grid-charts" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
@@ -7184,7 +8611,7 @@ export default function App() {
                         <>
                           <input
                             type="text"
-                            placeholder="Buscar contÃªiner..."
+                            placeholder={tt("Buscar contÃªiner...", "æœç´¢é›†è£…ç®±...", "Search container...")}
                             value={bufferSearch}
                             onChange={(e) => setBufferSearch(e.target.value)}
                             className="px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-800 text-[11px] bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-red-500"
@@ -8320,1031 +9747,88 @@ export default function App() {
                                       : `ContÃªineres Filtrados: ${rangeLabel} (${colLabel})`}
                                   </h4>
                                   <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold mt-0.5">
-                                    {language === 'zh' 
-                                      ? `å…± ${matchingContainers.length} ä¸ªåŒ¹é…çš„é›†è£…ç®±ã€‚åœ¨è¿™é‡Œï¼Œæ‚¨å¯ä»¥ç›´æ¥æ›´æ–°â€œè®¡åˆ’æè´§æ—¶é—´ (ProgramaÃ§Ã£o)â€å’Œâ€œè¿è¾“å…¬å¸ (Carrier)â€ï¼Œæ•°æ®å°†è‡ªåŠ¨åŒæ­¥æ›´æ–°ï¼Œä»¥ååŠ©åŠæ—¶å½’è¿˜ç©ºç®±ï¼Œé¿å…äº§ç”Ÿè¶…æœŸæ»æœŸè´¹ã€‚`
-                                      : `Mostrando ${matchingContainers.length} contÃªiner(es). Agende a retirada e devoluÃ§Ã£o preenchendo as colunas abaixo para mitigar custos de demurrage.`}
-                                  </p>
-                                </div>
-                                <button
-                                  onClick={() => setSelectedDemurrageRange(null)}
-                                  className="px-2.5 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-950/40 dark:hover:bg-red-900/40 text-red-700 dark:text-red-400 font-extrabold text-[10px] rounded-md transition-all active:scale-95 border border-red-200 dark:border-red-900/30 cursor-pointer"
-                                >
-                                  {language === 'zh' ? 'æ¸…é™¤ç­›é€‰ âœ•' : 'Fechar Detalhes âœ•'}
-                                </button>
-                              </div>
+                             xœì½ë{Õµüıı+6~)–[Ë·Ä!ø$æ•%%Ñ©mùHJ8œ<yš±4±ç iÔ™±cãúyJH äÒ…B(„[-JsáòÁÿ	µdûSÏŸğ®µ÷\öÜ÷ÈvH z –ffïÙ—µ×^kíµ~‹úY©KÍ¹iN&$½ÏÎ÷’ÿ‡}$'ÛçşF]iHFu^iÎeÕ¦!)MYÓêrsÎ˜_%ë·>i¿|{ëÜÅ7Ÿßzë…Í÷ÏmÜüÛ¿Î<×¾zcó»?mùß_¿ÜyîFûògëw?ÜxëËÎ¥;ğï?ÿşÌÕÍ›×ÚşĞ¹|eóËë×¿ÚzıK’šÑÔ9MjHk××ŞWû¾?óvû/ã£ß]Ùüö•ö¹¿¶/ß"©¬¤iŠ¬ám¬şµÏ;o¶?aóü'í—n´¯¼ÜùÔ|	Ü…×¶/^n¿ôqûòKğ’ö7Øüîï@3áîÖÙïÚç.®ß¹¾ñê;›_ë\}§s÷Ïğïæ—·¡'jŒœœRuC“š55z¸ªpií¼–’õ¾’™“›5™HD“E“j‘IM^Tët HK“åfu^ÆŠ%Š×šğWš•”%¸+ii(†2'i¤º ª¥á¿Æ‚¦ÁŒœ\èÁÁÖxìckÊ¢Àc³†¡6Şª6³u¥úÌÁ•T98NtÙ(Ëu¹jÈµœÕü®œj.Ôë}"ı¨Ö%]Ÿ–òÁÖRzd`”´–ÓÃdv.­ÉµôğĞ™WemÌ¼0j’öŒõû‰Ñ¡Á½æ%×ƒOÑ†¼dĞß[í+{áÊ)˜Ù4\Ğ¤Yµ^cOj- šº “\K7à2Ğˆ¦6ÓR½N¤ª¡,ÊczUªËĞ 2«j5Y3ÿxZé\Ãí‚	×tUK·T¥iÈZOìÅÏ^ ³x’ôvnÛúÓŸ¾µuæEòıÕ×zâ{ÉÕy »œlHõyY§×ã§éÀ £¸Æ˜ô÷<ÄÏ;NÛ©ºz:½”–•4¤¥ô|úø!:öİez·G€œi¶.óo8>ôhMï0VK¿×åS†5o°JëRK—^€¯˜—¥šÈ“ø¬Æ·èS¯K†LiÛ"eveÿI°ÇŸÀ&.´Z²V•t	°úğ¦ôi)>ÃŠŒºÈš]³	{¶Å¬şÍZ_€S/û(”•„E"Ô}s\‹7=BZõôñBØ<ôÀ 1ß}…=ãÈ”É ™Ty»u=-i5¨jfí¬äíVvLÖu¹ÕMK‹Û­ÍgU¦a<_Éìdu‡`/"¥±ÍásWšS`;+Éº!Áo}'k.’± Ã¸æœıt›õ7”fú4,û=”p#fop¶ {‡á6X)ÿ÷Î+çˆKö!)*À»›†Ú·«·W¬oıï¢m{ó-RÁ«¥j†TSAè°E0ñ†Á“šCæˆŒYµ¶Ìwöàkéeb~¡j˜ÛÙÍë—¤ƒÑkÊBCh4„ú$6¤V*Uí'
+•wV'Fİ€–,ëä ™“|+É¨j?¤jöRÕ¾ÿHT§¢a?¬-ÀVÏêv|¶Èc±ÈPÒ*j@´FhãÉSıA2*ZâÑšjsrV­«4Æé*3œ<èZ¶B—_4töèP¯`³PC°ÇÆl‚ªã¾=j¶ñÀß®VàÆ,øfàU`0IÚ/—²&Õ¹1°.pM°.ñ­°®ùbİÀ¶üGœĞf}@åYĞš$%Üx‘—®(«üš·…uKñÈğöZÇ6{p¶úÕ¦ˆ0È7¤$°˜ŒÕÿÙ‹Ÿpq’ÓóŠ!ƒ¶ƒª¶ g|¥: ÔVë	
+¡M o×¡{N;híuxÈo~CzÓ½»ğÊ3[_Óû\]¦—ö"ï\YÁI?^À¿…Ú‰'šP-¶Íº´³4´…fæ€ê¸ÿàş×CÅ¨Ëah©ì…EWÇİ?w œ4â´‰Î¨L;8!ü{èw©1Ø=	ìğ,qœ¡eºİiO¢UÛ¦{×x2o0[£·¤&×•“h	@;ÀĞ€­]óª¹‡„9MıÑ÷6²zr5YgœÁ>Š¶4Vã*©h/ÔA’ê;‰¶#û†¹ÆÕßAìp²võÁ+·;®=t©pEvº«†$éíî­ÇdZ@†2§jËÌB’ËOåKù\ï+Ú­†™İŠÒ«³ãoÂ{<û·{Ís»²Ç²Ämîƒ£.K§˜‹Á1$+üØÃó ¶oPÔõ‹ƒ{8éq_°ÒdËÛİÑÉOç
+Ó‡ïÅXïæÚ]ü9É†¾d¦òÓ•"9TÈOæÈÏ½Ó¿ş9-|Ø?¡£	Çû€Òl-	‡ÚXn™Ì3Ş\ëş´€HäyØ£dí`O~iŒŒŒ=íÈ¾¤U-J ¡ôÓ2íUI¥Û¿€ùÖıQ›Ùy´Ñ\IÉT«…_µº|´Uik¦‡¹^K¡”ÛOz¹wööyÀ@+2h›~üvY˜P&aûÍ¡-º°Våh°…ŠJÕ¿>:d]ÔĞ†:Ìÿ°îs2'‰âš_Òƒ5„ı¶[537,uÁ¨Ã`¦›jSN6áƒ‰¶Í.–j¥”™.ÏK•L®XÊìĞj}ÀVã–'»^††Û´v¯V¢ûµ÷ÁbdwCÜ«‘*•QËÑ~à'´EM¬ø´®
+ÒAø¡7•“©ÕOT8; Ş“u¨õ2ˆ0W†‡Vİ|d¿_;¶´nŠé¥Qÿ!nwZBÈêß¯u®¾Ø¾z£óéí/lüíîú­ßu^ü¶}ás¿=`–›óÎe ¾jškèúCä&ŞÓ`ı2O Y‡‹§”º¡©	8H§0!ºêĞ‚/â~@ObO·õHÄÂXíKA·BnYØõ±š„Ú†jMu&¾i”ëJQÕh ¶	›qy²Ë“}c yÍ+$[œ®”Š“ä1’™œ,f3•Bqöfÿ›ñ ]©ìÑñéš¤ÏÏª’Vƒ¥¡ÔÒ5¹¥zË°rª./ü»Éÿ.è†rj9=+§e¹I]Áóe½Šî+SjŞçÓÇ«R½šVú³ôşÑÖRw$?¯Ô€¨)İãa<»oµĞÌI­ôŞŞëKÀ%*‘gì9:AKæx¸F!ˆB=+'áíö²T·¶¬GWŒyP¢Ù
+GFÒkÚõÿ¿ÃòÈ{fOßşåØ{M;<Û]â>£ÏÃ’>Ö½«Ä=ÌÚı®©§}CU5ô´{¸Ï±Ÿ&ãÃAÜfÀò:QĞWú‹‡ò@oyî€Å£dÁ¶n9ÜpFëĞl÷À!¥.—[š,ÕôyY6ÜâÇ>2ŸŞ×¾ÕF2‘âÀü×`ØÀõ	Ã‘8›ía(sóFä®ãÙefGàwbÄâ$í‹—7oŞl¿ûBûÓ7Öo]êÜú¬}ùıÎ?Î¶¯ü¾ıÒÎ™³›Ÿÿö#$ÒÀ,Aùˆ†DlPç÷DL@Ëgˆäqì½Ü³½Û®,ì¬7ÉØZ;øg—;¯İ:¹}û‹öÛç7Şú}çÒõ9Û¹z¦ıÁuÖûöÍÛğ ÀÖ{oÃ-¡Í·×o]m_¹°şÍÕ—¾‚gÖï|Ğ¾üâÆÍkW^Øxçã­7şAGe'M­ƒÀ¬4×Şk(UİùêJ(I‡‹k×4EÕûIUjIU¥&ÁM]%L
+0T"Ã×FK2¤z}µJø²%Dø F¬•('-1®®ç›œM³½ÉRö¹¸ªWzãMÿ>ëšÇ*‚‚‰aë/olÜ¹¾ñâÇ@?Õùóó·¿£“X–›Šª‘IuN]ÕÉŒÔ”ë¡cm}‹…Xÿ¯Hoçø“S„‚†-¢6ÅµV²é=MÂ]ŒF(!†“!
+G
+‡¤'óÇò“¤0]É.e*ù™,.”+…l™ür¦ ‡+©T„³s60TCªgçĞçŠI@™U9•Òı¤Æ¼[Aÿ©H‹sÇÔúBCî'C!r&WkVj	ÕÚ–²”#Ëqõª-¹yXBnbWŒ
+ƒ¬¥jXcm@g^S”Ô‹ğpoŸ©ÆEÕZÕ th0‹\s˜¿«`ÁPêXï
+§Çf)nÔ`ór=ÒG~NöÇÂUL'ƒÚ€¢gê2ˆF¿ù{Û8y"Äûd5ºËq³f{ç”ë0‘6(Ê)ì6?ÙºªËµŞ>«?PIXYS4«¾aMót3lŒÂRNelNœßc¡ô¶ÊH1ğ^Œç‡wë@„PEd`äñhy4Pˆßã–;w]ŒµÅø%=L{	ë¯«ôÊúÙôpŒM"rç‹œ}3|‘‹^ÿ°}ë“ˆ:gî¶¯ü¹}å
+ˆ@tx'NåI®°v¶T(‚fVÉL’TæØá>ô5ˆ?xŠ>yæ60ŸE¯gŞBf¡h¨‹W¬a bš¬·PÊˆ;K
+îÔR?äzæR
+•0QÖ®´1^Òj6ØYñõÁœ"m{¤ã\ÿ®î{¹º7>¾³şÍŸÚ—?ÛxõÆúİWÖ¿¹Øyís¶´3‡3eseÓ/å™âôÚÅcùBy;kÛqyòšçÍşá=“P‡|$Fì#€q¶%O*‹úšÿ¨8B¬ˆÅÜòÉ=f„¾ô!‹ˆlîƒÆ"¶Î¼¹uö•ö×gÚW>ë|öêú·¿cŠp¡r4³v~í·E’Ë< ^{-¿-ÖÀú	ğói›)Ğß^À”!+ò#ãq2‚­®Š,pÏj$+¦^c†¶šƒ·}vÃÈF½ä*–~ú>ˆ¥8|åÃõ[ŸR’ÌÊ¢ª‹àCô 1 ¿¼Ñ¾ø·öå×·şte°s÷Úæ7ßlüåOÏİ¦ãRI¥X&ÙÒÚÅJ!ßIf2_ªd¶ÃŠo NâCÈó!fœ ”Š8İYqv@±f%$<ÛM\aÔ´~ëÃ­ó7î¼·ùâß Ú¾¢dtXÒæ¤úNrÄ7#’CŒŸÅJ¥8E*–~YÉdóôÛáR!ÌA+Æô2<ÂÎcÙ‰d9X9	¦qÓ“{}Æ:uÆêátáŒÓ;VĞ™ªœ^Æ8 ¨Ñ±¦&ÿßùìÑJáX”NMeJO“§
+¹ÃùJ9Òw.n‚ğè×ù¹‡™Ê[G{ÔíWö”ÔçÄ§İ&½³×¢O¼aìùèv6Ì~Äî9N°{hP¼g7Â­ÌÖÕê3±n@Édî-ƒ˜Zû¸¦H$Gü$RAµ ıFr’R_&%fDÍ,Êˆ•ãï³Öêbõ¡‚%Xà¨	Ï@uREô‹²^{ÀÉÂ9| ¯ÛG‡Y¤Ú|:Î¶ÍŠ¾²_Òr¯¸0›t'~¸°vraŒÂìn½÷üú×Ÿ­«<t¹!`®)’%ˆ@ĞÇ­®‘Ñ4Ğ 1Ÿ•kæB»—LÄ–“J¸ÒÈÏ¡gÛYo\£GCÚ5ˆ§¿t=\Ab³?¬ æĞ+hë½·Ûw>Z¿õˆ½¡‹h’º£˜(S…ñBÔˆ•4%-‘Ìœ&ÃR¢eïåJŠGXC³õm¯"«Aî%dµiç×OBCÓƒ]MK€ÔšÅ *	ÈqCáÑşÔ1G!M•zÇjºÛp/™‡ÿİË+Â1Ğ¬j~oœŸ¥qFGtánÄ>¡g17ÿ†wWï°İnó·ß´_zkıÖ%k+ìüãwëw?Ù¼vcã­7ÂåÇşƒıMÕšÔÕì˜ô¬¢êD&3š¼¨è†Æµ°óS3•§M_ÚR¾r´4M²P,põ1ºà3O£»m>›)W
+Ó‡I.S>2QÌ”r±«~~ïn™<„üÍÌZ‚™ô!&+ëTCÃÏz=†P¸yóÚÆÍ×Û_¿ÖyåRèÑç³kg'³G'‹$sÔøµ³h¿¢ó@ïÂ8OÌüôáÂt^Ğš%Ğçç‹«aN'Mùt¡F’“”¯şêÑ•,„¦z8äÉøx»z¬f:ÿ”Ikº­ÍÀš‡EjÔe#GË¥°*úÉ
+Qjc¬±ı(Æ¬—ö[f#Cı„ãşô·
+ËäÇæÂğÀ4L©M’&‡4¥—»wD]ĞğæĞş1 “4~şö’Õ!7Vƒ§$ØY–R-X†8©h>şè'ÇÍ¦ƒ~ôN•³½h×^0æUMyV®ACz§$`ƒÏø¯g§2${xÊãôq.=YW—kş›E -UÅ2P¢ïr”QÜé›[duµ/¶÷«q#nsÄÆÆzáQk|È6A§Ã>ÄGû&ìÆûÂ¢é}LäÛ,ŸÊaÛ£’Ã¡©"¼„â2>\3S_ğìˆ{`GÜƒ[`˜µâŸ·ßû3ÛdB¹Ó´º¨ Ôµ/ *;[©ÕÈ´|šPúåöñ(;,Øx !£E’HØÇ ¨GK(ˆÛ^„ ÍÂ`G¼|‘F¹=êŞ=Æ‰wvÇ“FP¨¦B^°ñÜíö•‹×? DØ*j^Z¤4Hğ]ÑF ¡.M0Ş²g›HŠJğ}¢æ=îñ^fÚCwbfuĞí»»ÚS¤QĞ'Pÿ@Œí‡©	²~¨œ.Èu•?³Sœ
+xozÅ™‡Ù†,Dßë…©Éš&WË4tZßùæ*†ŒÒ‰‰¶_[R*™Q¹YU˜iËİxœ	zÛÀÛ–Qk7{ÀÎŞB›MÑ?Aï(¢ìDa/i‹‹–(EPÎÚİFn½~«}ù}ê#ğ&!míUc”4æ± a¶Ÿ6˜
+÷bX®7?ıˆ……¶˜*K¬yU5Ìc³¹ø›°ƒgæ ³3í&§Óû{ÆEjŠ&…µö¯`P
+À¨›Øì,M…â}Òïı o,%R¤0Ba6rÙ	§ %a~€
+”æ‹Ü‘ŞRf´D_T¸„·!®0_3ÒÄóZÑje“ƒŒÚõ:MG›hEĞ®¾mbµÄ>P—"áÉªÍS
+Ã
+™sÃh†;« >‡¦PÈM÷u†ûzV]š•ë!Ñ™Ìí	¦†sÛçÎm~õE¸øT,Me&áé¬j D‚àkŸ.ÊŒOØwÿkoga#GÉô¹ø¡¥A,©¢J(Ü°)0aT€RmÄ~ZÕ›:êF[İãÚ§±‚èßüêJK0âWÏl¿ˆúÓÅËí×^p|G‚pÅJ†äÿ;›Ïr(]’›òœ
+{·Æxô±|‰ü×Q|Èº7ì5Ì†.2«D®ƒ&€Á3Œ|Úæ¨‡ú3Ù>7@Ø£!»ŞÄ1Ã½ñÊW[ï]€AaÂ·Iæÿü{çîµA˜Šöùp­õp¦t83Y´È	M@×¸s+5v
+Œ3“ùé|ö—ğ“\õƒü$×óKUb©I£û	8Hßæ08OnØ~Ø÷<8( æ¨³Ş¹0+b7_Üè<gãÒ‡›ßı>†æ3•ü4óNS{˜ÑÖ¾@Ñ•Ù*ğ SO“L«¥©Å”IBóñèÃlçà’`hS§iñ…ÕSÌ†ÑÏ šÆˆNOyÈoHsF¿Û¹¬×L{&ƒ0p‚ßŠ ğØ6QfÇ„ZKæ	‘
+ì¢ô½”ˆ ÷Õ~rœvÿÄë²È@óÆU»6!P!\ôuŒ4p$zá¸`ìYè-6ğ½bK%ÔxšjúÂÊ[CE««svÇÍ¹?!Úü8¥éHà”ù+m¢FŞF¢@BfP§ı"Q|)‘çâÛ°* ; pü€¡	5ŸÂ‘3™F©‰Trù`xù/x¹ì˜V“~oØ´Îu€ÅøDû] |â…Lì<6ğ†xoïªx‘€y)Æ”¶‰†Ç÷$Drò *ğwÌ©„Z¸Œg58¶Ã®¼Ecíní±ìÄÆ(‘·,$‡ëïÙFß-A:úPåĞÎ¥]/P&‹.šFÊC¢ô•İêğ¾˜L9"ågÜ1ÍÄ:)?;AÁ¼!egi˜«ù§KÅÑNC÷'àç;¸ñøó\è `—V#¡!ìVç"|»é5Yîz†İ'	÷­ğæò¨Ùi)ÎUù‰s#C÷áİ‡·L|wÁéAŞ®$;&Ü1ŠÜ{_S¤ÃOïOÚì.e‘?×ëÿşQ+ØI$b–ÏÇ&ÜcçÑÎø;0;—(‘«,µßŠ’V’l ÷0·±Dë1™#«óqÌ›@yJ&ª²l?ñîAuwi©dŸ±W²ÏHèXV˜ñÓ}Älæ³]±JNÒŞc»º"Çı~™±>˜ÎG|}¨h’>?â™)¼TÅri[O‹-V1ˆ÷xoŞ˜ÍL ú=ô½Û8z¿whÃ`	ã'¤ÅöñD0t5&ÒÅ¿úÁSÂ<}##\š§T¹@ƒçé¿np}^SšÏ¤£Ã\èîâ`ôïüáÙøâîÆİw¶ÎÜİüö÷ÿşúÍ»ß­ß}ãJ>¸³ññ­×ÿŞ¾óÑÖ_Şø÷×/oİ}ÁnİÙüô£Î…?l¾nó›oàúÆ÷àú¿¿¾Ğ¾ğñÆ«76.ßüêÜæwçŸıÙ¿¿~‘"lô¹áác%Äå(å3ddi_½±~÷îú7¯™pÉ·~×~ûüæõÚ—oÛ|ñïæ«>ı¨ıû—şuæ9zxH›=)Ó¬Éè¢5¥ªÆ\`ô1rÔPêÊ³fzåşŒ“aúHjR™•1B_?y|4í#™HKuLÂlÈMZ î?ÁŠ4äú<Ü2!HšLÔÕ_/È
+¡iª‹ªN©Nïˆ‹Êè]J…ÃG*´ÃÉ==™*d)Ìm)“eØG
+3Å§¦ó%’-NÍd*…‰Â$ëLe*¥Â‡B„£5ŒşôĞ~D1r‘¨ù\¬Â÷àEË¹±ğ)¥ÿBq+ —ßğ_¦4…Y«ò
+dÂ´SWè¿~Ô¾rÁfvü‰(À½Ö~Ç®‡ÀÅ¯ñf:N‘šÔÎ–n- ·Šc¯İŒ8(F¤E©j(‹±€«±ñA0ÿC÷ æŸí~ÏİnŸ¿Ë¦sıÖ§o>ÏïGíËŸ­ßıpã­/;—>lûÉÆ¥ÏÚÎw.¾û¤ôDRK:oÿ¶|ÿç«¸ETŸÁ‹[¯mß|“]¤xÿ0\¤Ø¬/“ÔÆ‹·7oŞ2j_y¹Ïµ«©) ^Ãx`ò]Õdòk r¸£,º)‘ÊİÏ²Œ@j,MI#ÖGRß_=G°•v» <»ñöË¬™|ã¸ñï¼ò¶İÖ¾Ø4Â|Ô’CPÛF\›÷º#s€t¨ZşÆç˜v&BgØ,i¼úpïÛ±²¬½R.TŠ¢å+ÇiD£ÃÈE-zâÍÈD;Ñ}x‚z_›™/h ¥ÏÇ<óç0Ë­úÇÃ/Àç³óxYÒŠ5`U*6}±¦ÀûÂw~4Ìw>€€»ógfÓÖA¯ğÎtÌNÜ±W®ã²ƒ5¹&y›ş8BÚµÏ²Ì<”'$”Òœ¾‰ªü;»ì¬u—ÀâÆ¦×ôücSË¢¨¿Ú“ÇÍŠOP³<^,f6zhpStØU	5ÿĞ}UÖ…Šb¨@U®×ËÆr»á	pòŠP	Ø;|Ú*8 Vƒ+PÛ›9Z9"Xİ9GMSºöÔ$¾2]Ê=â~wr·»y¹kPLøGÁ^×pL³¿,È9zs£âï¶16¶³·Ïi;ÈÑÛëìØí%Ó-¼ËqÂì^¢ãï¤‰ŸšøAµqwuÔ 
+•ÁØñ#+–$)ì6N)(Ç¢¥‰b)_j“€4m¨ss@BÆ<hgsó„SLÒã¶:_]TÚÅãc$å|øÃğ»g)G¯æãğëù~ïã	 ÌœD,efS<a­Pğgñ[¥‰lœó–%£%e»Òã)×»~A†ûÈÏ¬2¼’„=EIT±Nƒúã6İ±„Äh¾•6™«7ì•Õ¾¤¦X[ş˜3ğ	+I–ÇZ §Äõx’Ú] v6Bô¨[?ô\öjÓĞêÆXÆ¬Àš®jé–J O]®ôˆİ# f™Óº¶òèŠ½Õ¬LÒC1êØ‹G–ûÿY=Tò³LB²ƒ¦y…M˜I%ÁëÅ98H¶ÖF•$r’Sµ$‡àb¡N "GtÌİƒqBç1÷GÄ¬µ?üıÆØù×¿¿~óØD©}ù¥J¾8'_[wßØ¼ù3bJÑŞì¼ö9³4v^ıvóÚËÿşúåõ»çĞğxùõoÃc[ï=õ¹ì…(És6¿ß”eÇ8cßohNÖ1R’©õĞ²õÅW…™÷›	)¹ƒƒÁá!¿Ù™ò½˜lœ°Ëò–&¹¬#È–Ü¬Õ—wá8-ìx:îá¡Ø|Ü3“™iš%W(å³…âtf*?])’—›Ÿ™Î—úeèÆ®V)šCºD×D¯ï]LÔ½Ìlµœí–¥î&P‡Z¯ÏJ°.ç•İÊäı“KÚmŸæ?ÌŞí”ş‘gï(Nçò9òT¦”?R<ZÎ–ºÁ•ÆÛd K­ß}¥ıÜê“ñ%¦ã¦‰¸7¯?ß¾ğ3 ]¸¶/'7Ÿr›õöÇÎ…+«]ÿúöË„­µ}óÏ×¿jßy¥ıé°™v.Şl_y¹óé‡,9T+ÿ/=SSİi·$ÛıD5”†í9‚÷`SœT]iÛkò÷`ûÂ]–Èè|£¥ òú®åŞ½Ï&{˜ãƒµ[{IKƒÛn¾{C&**]22ó©LašrsØø˜«Ox¦‹ÁArH6ªó˜¬O&…æ"N¶Lr’!…aúy¯ÈğúC†ºÒ\#Ë°ê>ıä@u=x0ğ¨?¼…·'52R6Ô#Ói6==n6ÕöfĞiHÉ›ï-Îucÿ¶zQiUÅ‡¾Uíbài!®½Ã#‘l1S‰gdMQkˆ®`ŠPæËç·…dıHk@Ñ(°¼5¥ª^q™ óK-ĞÄåšzĞı27êx‹CoĞâ|¦ğÈ—ÍÉÆŒ¦ş¯LMØ‰£&fØO¨øKyyŒôĞ¯t…ô€À~RÊs~Âöô£³>²VÊüá”3/8%­' lŒÏĞ@”o"X°ÙÖpuoHK3²ôŒÈãlLZğ´¹T¶rtëYefÈã\èSªFRæ›ˆzÊ=³Ñ–~³Ì.¼œƒğrÍ:ù9IÕI:‘šË}Ç­é;û=BxE*÷.ûg‘Í
+…S3³‘†ÉØw0¹õ =™iÏ[ã[)S`õü‚J—¢ó=ĞZĞçSæœÓ¹ñ)wÈŠNüL™—héÈ²Ã“á†ïû¡7ÌãÖ©~»•¡Ì7ÉÑ­
+wNh¬›Y¤ìí6„Å~wè÷¬ú8–‡a;‘Ùo },Y¬V]eÍ‹—©"9¦\:"î&
+^ÌˆÑİ1|Ä(×ãGŒ±Á~[Œ1úkÄì7ŠŒ˜]’˜SVhÄøÒæˆ¹*t¤ñƒ]9‚ÂZU}ÑıÅµcÄÌq«jS{]±R&U™åÄhÊ.iQ”SÕ %åˆŒ…Ùd(›”Wí=)f³Ä3exÚDm³YõN ıÅ¥’rº;w(ŠWo?UÄ0ÉU©P)d3“¤T(#ÂY¤TªŠ¦ İ+É¦II&YI›S#q·œæí
+k;^6È~pM´N·ùFfš `G@“&OƒØGr2d,Cû¦@ßBÏ~s“‰l^pƒxƒ¤IŞãeájV9s(mâÑSm”lÄp6{àhå±-LÔ²©=G)Ö˜‹pI®. CÊP
+–ÉSJ¨62¡¨İ-]‡«>3|Æ¸Üˆ;SSl.&·Ëºm÷MtîÅÉ2-:ãIi×¢"Ÿóğ™gœŞ}n{úÓšÔŠõgˆ¶‡ÙOy­ú4©T˜ë™;ñm¸Û>K…&
+!ËD[Ñ SáOJ³¦Ì©›œy‘Ë{ïÖÆÂ26ÙTàñhÄ@ˆ„™™h'â|ö­)r¹!'"§Ó­%b;y}‹Ñ8mZŞµ13XW¯3Í@KAºŠ±;Ÿ•ã‡š+fš•ŞJ>[œFàÜÿ¼’Ûªˆ€]r²ªòŠ4ÉªªÌdí6¹v~j˜Ï£!ìdŒƒO•˜óêª×+`¥çììNŠ;Ï±‚ÒLŸÆÅIW'°ÓKL0i KòPëÉıCæ“¡fÇtcÆk‘¦ÊvC _Ñ`õ¨˜•àÌ*Îšt¯x>¨5¶8•‰Úƒcú]LÁ;Ò¼æ]· DÇÓ+‚Ğ#1Vé€¡R–äZj¸oõgâZöbNå±ÅG!Åö0‰£œÏR/3F²ª ô SÉsËä1rh¨2U™z² ;ÛNˆ!;,qo_â°³nWâØãŠ3œõN{Bt—"ú’ÃØ­¬Ì5İwá„qÎ×™2ˆ¡Ë¤²U’Œ@´||V şäçE,îF äˆ=™ ìhtH  HĞÖ´ŒÙ{p§r˜b0éÇ#=/P©³˜ŠÅÄìNSÜÎÁT>¹šCeœû§9 '‰6FEB(D‰õ,ÎÍú¬ïİ»±•z§¾ÄÃCìÏ(ı3Â~À/3Z¥¡ÔñÈ¶ÉğšÄ|Îí8"»°Ëç<)#†’†u•Kf'…4"ºˆı¡GLÌtèÃëaÓ€—s°0#§ëâtz¨Ø“@…vüB·5§¤jBxÓ¦©³mB®9‡x¸£XÊq»¹'¨  ï÷óM€;&^ä‘ñ*‹º+„Ğ‡;óè
+×§'=bø`Ph6u¹£"K˜—UD{)HT´#‘å¼ä†ğú››â<ı“ ÜÂlGBÄ7ëÃB/4©¦¨	 ß¬O“MÄò«G9Ò>™ ûÍúTçeŒc8ÈÍ_2tüp@rìdX6füT˜ Ô¡ô1$óÕx±? @3n„†C”~^âóD’Pü Y~¥<ö˜¨N)ˆ\ x›÷ Å ¯j	¦ÂÔÕ’ôAºè’ô6	«t8ÇˆÓ¹ùz]]DÓò/7‹ö1gÅë­"–1ô›AÃ¬ƒûQJÛpÏ¸¹Œ•*ÉØN¼ä?)—UØ/A9€ï•49Ì5Êù˜`—æézWü”ùĞ-®äªÉç_³_©bÎ¦–®ì<aÚˆŠ´œa-^Ğá9ÜÿÃ402]‹¶qAW5¿sî¤¢.Õä:æ"–{4ÒUŒÃàÙ¾UÆ«ÏiJà?(è ³ÔçÆœŸ#‡NnKÏèôÙ1RhÎâø“Œ¦)@:\5ó"á1$·¢m>†Õ§ì¨®í9"Æ†]³BukK¢­*Ï+­PK’…k'bFÂ¥³ :³|¡f$^mŒë·*Ñ§„#…»ŠôuO5¿‹"‹0åSB¢ŠƒîçP½¢~Œ-
+WŠqª@çÃb"‚ÃèÍêRÇ}oèVÚ”Ú˜ÙÑˆPÇñeÚº.‹DÜåîYc¤³“³¶öˆç\òÆÈh)Ç‰*i!êt“øM­j‚"¼OWòbIèøøZ=!()"²òö%@èEªælcs³ñ ÿÛvz…¡X¢¼ ô V ›O»W‰Dç/H&—#3ùR¡˜`ebq­B‡I	w=;¤@ä@9€o¥ZôG’Dºv*]
+½Î*ãòü±Ôr4ÅŸíü'Óß¬ª‚´ÖìŠI›9úÜİD Ha,SŸå¬Ë2óA¥ĞÔn™5Ö*¶¨Ò¨9&7‹'ã¦DßÄ9ÈU”È°æ[/«¹-k¶ÄÇµe½Ğ aoÎWz¼u½Ï”…9ÕÂ>]248`Ö.n¢C1ú(Ğ¹8©Ø3\üğøÆeÎ
+Ì²ÙıÍ,!Ø+trÆgè0FÅyGÄ€Qu5*D&±eŠ…CŠÉ¥vIQçñã‘ôx6”êu&¢·Ÿ<ÂE•$3 ù“p[šcÎw„vÜ½)	ÌUã±âÛ£ƒÈÇÆ!²£ü‚—˜ùøã!kÎ­tÙV\*µEt™&‚º°À.z*O‡EzÎ[#Á0-’˜8“Y7=£~¤P®K…,×I¶óÃÌ81Qß’B]Ğ2]è»JË‚ËZÅºgËò	òÙJö/E»ÒídcÁOMÑÑPIíşÖŒm{9»%Ôˆõ{:=²ßu¢°^ıb\—\«Ø½ıPÀt¶+ë1Áá€ [”ıøl{j>ŒHnL¶Üi3š6€®´$EİQûÆ’8¸™mêz'N+ˆ÷*æTê\Ç\µ°’§i;½vètE{læâ^Ò"8¹Ì;´¼m3¶½ÄÍ+¦RË;S»×¹y‘[èæïJ7/ïwÓ‡ƒé»Çºôó‰q~Õ*"`¸e%	²·ç¤èeÒ„'qÍ¾ÀÄ5ºxæö1%’Ü€ú-SÙ®I6ÁœT'ëœ„f	ÌP²ş]p¹ÄÒM¢#ÑÃ	½
+õ2ìZÏKìÖÈÕäup\9éáèeAÈ[(¶\W>(â|™.‘{D\"	•w˜½ª©
+EØt$ØÏjd;“–;¬¸7àî¶ÈíHÏíÈÏî¯Æi†‡µDƒû²uyİ°¦’·OÔƒ{>é"÷¼t>B1A®Şø z®qˆ™j{ã”^ŠJa]çO2àÎ¢Zs*øäMDU0¯:uZ
+b1C­¶B‘ü­.˜.şV[w’·šÁÄl¿Õ,ê)`¤[Õàq¦×»åVµÛÖ2§PNvÍu>¶“.”÷ÅZ%õÑE'·›îö7Š—Ü‘3ùpw\»“É\ÄZÒz6Wu—.øÙ†Öi}LíÓ$IûXÇË¡ı,Í}W/ˆRKİoÙ!½Ôúl_?µ>n‘ox¯?»‰ß¨²nOEMpØB"LS;®eZŸÄ©I6íR1«‘Ù­G!A‘tL6îjiS®;BòÁÜÅqù‘1)k#ŞMe½ãAaPûøeÉŸ\xÃ;Â¤B²¶x£y^Æç|	Êå²ßCÛ1–0Æç²Æ ùæİ×0©^#æqîª?©VsÀ8¥ªF µ!ğpÜR·¡mW<tÈ‰ŸæE²8|z`ÑÕü»Æb¦ÄQ¾•ö!(§Ùı‚øõ&÷5
+VI¼h}>4ŸğKæ²I¾ºmÚêÏ’¯›mu´¬!¬$¢m(î¿Øşœ°0§Ì&åŸğä˜#À\jå¾«HÅ»>N]˜Á™'9Bâ>~TÀ}/>ŠKß#ò>¬#7Æ¡3ó0´9àheC“u=]‘uİ+$‘?"DÄô€Ä±1aqšª'ˆÃÈ„’…›b)6> #¡3²;o÷p®*rŒx@V)–µ”´ßÂ+v@TÙ¥bµêÆÉ²/Ïì‚–ÓH×Ôn¤j7ÒÁ-åÉ#p¹¹Ø\Ü8ZP¢Î(2(NgM°P~mT/Ïøu‡ö•¥ÀÄGüOÊAbENƒ„\´»ô™Æ7…Á»œÄÌ$‘1™ƒ£	€)º‰‘KâÂ{`~Ô—õƒgÑ¸ÜÅÃÔÄn!0¥ÑØ%¹+¯2{Çéw§UèÆ‡,¤ÃAQö1DÀ)ÂOJÔıÈœBäğÎ¨9Şÿ=ãƒ„–ş²šø‘¨Ú©$St„x|E8ÉÃõ#m®¸“°è'p'†JI†ÊiÒæg1c?ĞË9¡zàOqttàm2DÂeñ6W´-GZ0,È;±úËú„ØZ÷'Œ„YB/Ö6˜ !ü>0ƒäl ®•¡qøI¦µ'ê4êÉ–€¿»i_B/`Zä!ÁD¦=¸oÉ³>Ü;b90èfR	ÀY<LÕùFÅwo1Umû í0ÅêJ÷\M¦U3ò……Ÿ£ß2“æÀ¾Ñb
+Ş@Âá£DhÑ~0b/½ØÔyÊìÔ›6‘Ù7RáÜ	1/×mI°$™ı^mCÕc·vNàs‹œ° Ù°áİÄKp›]€Ÿ¡óƒ;%-Q°aŠ\l1ª.\zß1•±KÄ`óµ»$šŞ¯FÍm<z+²dHÿVûR½
+©K<íãÑih#Sk¯äNÒD´‡óåÊÚo‹d²xxíb³‚léh®,}¶®Î)À4«ÀCµ…š¾«	gYüô.å“=T,aÿØıòO/»ì+©ì0H‘z˜L–K&ëP÷Tf:s8Y§ÉT˜@’Îg¯®ßysó»OÚüqóË[›ß½Õ>§}ùıöÅ×6?;Û¾üÒÖ[/t.\ÙxñãÎ?Îv.]o_ø
+)50k—u¶ğÌD{õFçÓÚ\ßxë›×6®¼ĞyîÆÆ›Ï·ÏİØúíÖi€Í÷ÏmÜüKCû¯3ga6¯½Ü~ïÏíïv^½İyçÃÎ+×¿¹úï¯_nßşjó»?c¢÷«76î|·yíFçİ¯ÍçYFÛÿìüñs:„Sk_Ôê*åß©L“ê4í¯”Kn«÷“‰Iø9Kƒæ°U-M"åÌ‘‰Òh©š<F#hj¬]î®îZÖÚm0p;i,Lƒ?–¯ŒÉ§uØ†¤z±%7S††aßYH]pBvªÎQËÄ{jqAŒÂ”39»cD mêuSa£!YÀkÃõ„ô7b•Eæï¶ñbéQağr9¬ªˆ¦À&€p	™İ7ÊËÍj(Æø‰Ä¼Ô¬Õål]–´L½>iI7x&*L{9j˜C b˜ª´¡¦5rJSV6¼€©Ã6°»îkÖS6¶ıõ¸ÏŞD/Ûö{`_Ükñ8³*Óƒ·KÙ×÷¹6 ZçèP22EÃÍ.“©96æ5÷okm$.×]JšœÌ+š¤Ï$§îÎ­sßa¬Ÿñz¶Ó›•4RY¨©]uY¿ygá1RÎÉÃæ_˜>ŒÂï9T*N‘§3¥Ü½ÅeŞîåT¯H¼óèšÛ?Ş;ÊoÂ[C}/œÈ…Iv[.)NïÃÓ¹%–‰Öï^Z¿ûJûÎ+ƒ“íïş²uæÎ¥?lÜøİúÖï¾A§?3Çz>H)ÍêB¾f¡¹kŸ(M¹šJfP	_.Ñ"±Â½ Ş‰ñómñG’À£&:€€…°Ç¢"ïı¢ÌÓµru^)PF­:Õ[…Q”p{#(ìcá‰ÎF`uµQóròGW–]­`Äà´ÄäAg)¶ˆwTlï7o®s†Áá"xˆÜwgOŒ|rjï¼ü¢-àÓÆÍ¨<1G’pRÁ½¤œÙúN2³õ?­€:F:—¯€vlËÄä6ˆ¤[­ë”ª5€*Ê³Å°Dá²´(?]ËZ+×–ˆ]ŞC>„ğFÍ…îßËLFÖ1_(—Œg!ÛÉ’;¹‹ùñÿ»kên£–­3/v~÷±›¹$Ü%‰H¶‰:Í¢ÙB3RM7ómpDRˆIsâËÀH«İO–=€WÂœc>.k¦x<iD†¹‰™Ô¦Ê†E´<æÀBmQ|6Ú==ãétÚ ÉPŒn[h ÿ¡½‘túÀ «:†íÇ\xª"¾;V£©ŸN•z
+˜ÔRsÚ1¥V–%­¦¯àßBíÄ“ÔíOõ­Kø½×"z’Æ’³uz±,7(í‹=5‡èCúƒlDìÛ‘§C0W?UfÆv>’š˜ì£$›a
+øÀ<Ğ-5Wöı ¼l"&’9”…MÔò.{äò.Nr1.\Åâ+£iÒò šÀRMù4)ËF*ˆ‡!Ÿè³PÚ&L”ï¾>ú p¤\n¶nó8ø*Àá°@Šç®fSìÆÑÂ62'ŸUÂP n¶æŸ³=NöCó±`Òİ¼p{óÂWdLK‹°!ñÒo$uLÖa£øW,÷b`±ÊÔxÊ$ÌåkRÔÜevzÚ,—„§µêRU‡éµƒ=ù¥12UÎ’ÌáL®PŠjéıÂÃÛw~ü"}fÒÒo¿ûBûêK{5T`ºU®˜ìîñxJÒ€*t9ù°‹nkĞx0<ëÎ>\	?’•À[³;¯Ø¹ú]xlH˜a»&‘T¾ihòœt/v„uZ9£`´ehjk‚/dYÜ/ÄíÈ»ÉÜõ	!ó¿ÛüîJûµ€U(é+"Qr÷\Ú•Çêl6g%MSd-9íš\²VÎ"Ub·böŸåÉqøGDwğ=:Y(’raª˜/CÜ¯.*«”2ÓeRÊÿO~:—ïwıì¢:ËŒL”2åtÑs¡‹*‹G+¥"t”ı¯ N“úé±õo®®ßz³sãZûëËÌcM­ÉuıĞŠğiíúÚûÛ“ÅY‡µ{Ñ&t¿ùÑâÙHO._ÎfJ‡3=ãÖ7’ÊÉz†E"9E“©¯‹5W~*3Ó3ÿ’TES«Ò
+2ï.ë›9Z!¹âSÓ=ã+†‘²Ò¶ª‹‘IN^Të”ûzú	÷Hçw/lÜüuÈ|cãã;»G›uUª‘ÇH‰Fæ÷õô­vÑ¾R¾r´4MòS3•§Í6ò—°vóÈ1éY…5ÒıÌÆ[_v.}ÈµÒ}›5ä-cY¬™9™ÏÏ÷Òsí—ï€Ì¿ùåõöÕÏ7»Í\»€B©Ë­)í“¦D0S„q¯¢b³¬ò*ÅSJÎİ«yÈåzÊ”òGŠGËy22Ú3Îÿêb­gsdf23]i%©,óÛî†¹M¦d,&ö%—'SE¨óp~Šw]İHPu#]T7qôĞ¡|‰dóÓ Û@æşM&Îı Œˆ¹z–¾[:õ4ì¸2Ü;@.×q.åN¸ç¸ ·¸å¹;^¹–CGw«,;/WŸ	ğ{Œôs•2¿{»ıéÌ*c9IœR´†¤Áönzî–‡ºÑtï˜;2Ff2‡Ó™J>G(.SnËsÁi•ÌÄdşQKj¶3Ñm»é²;©èF Ù:Q]Û÷Õ^q1`E‰×‹PÚ¼ùyû›×:gîn^¿ÀŒ;( Hä°lF•dôÓTLªskŸ¢S˜ªwé÷ì“ğÜ‡Òq¾¸1 ´)€#DÙqÌYp(Ş)²nŸÎ†XÌŞ¾ÆF’!PV3zŒ¢Â¶»ŞÙ\Ñ†N~^s÷s:.A”·rHb@ĞÚ†Yû¢©í@Y–´ê¼{­Ø1Ä#¨K³:(9À^0Ùİv«ÁÂ ¸éƒËx!fƒˆ5˜‹!¹sB¦ûÊÕ/ß³}°şuæìÄ$üC„˜ƒËªÄô4#ñú‰}7ÚGÄğmdÃ™ĞMD{Û…sZÏ*éÚYÅ`êéı¤¥9qp»O­"¡ËãàE„Õ0{–Q¯®'CêéVs¼´ïïYJ Td&'#<‹Xè;©fû˜Zƒ=şc‡Óº°kQc‘o7@ï!šYA˜UqPíó5Èhär4:mû^‡ÿEšåîãèS;NõYµ!/m“âi©=µo¼ôUçÌYæGGÑEI¶8•ÿoaJ÷Lñü4‘që[7–Lé0‚L‚.SÊçzÆ=º®2;™Ïpš?wÌq+ğÅ‰PĞü²”z1Qî‰8ó%ôì	Îç	ËÃ|è\u©… ¡á#›B0,+g Ì]Û=–O
+¿Ì­'%Î±Í=™ ‘É ùYœdä´…øTÁÕMLv[’Š“İvÜ·º­ÁíĞm-ÌŠnšĞ»­Äå~Óm%&İfS(î®°+¡=Ê¬]_û‡¬ã±	Áo«Ns¢_$!63(ËÊ7bA-ó‹g‘»®FPãg%• ÔfPÚL ’kä ñ	b¦°…–ôe€nV£ÎWÅt£CTOƒ <&SÆªiHFuŞTw’GtŒG‰)Hkë@şÕ‹0İJVÀc‘€Ëî6(Íj}¡&ë)½¯^%ú¦Y®úÙª}j`{fşÂNõ®Ë;ó¦*sßáFˆ]ˆ¨=Áä=5ÏS‚Gùb"Hb½8±æ º¥}úHXùí â¯¿)æe3tÊ­œÛAåâ^oâÊóDƒl‹õU ªUqeÜB;„ò,Œ‰®‘ YyĞzË•&íiHK©á~ö½*+õ”Å,„ÔAû-qdÀ^€z3Tº6_ 4eoôs­ªŞK× ÜÊn^Wªr*e¿-M†ûÈÏí¶ö;íp.ÆªrŠ¤ì—¹bûb¹ pJÁc4k‘Z/·¤æÁ•á¡U÷æ¶ßŸ]ÔÂà„íFzÛOæáÿ†e>bCtîòc¬‡Ü«\xb<Ìi°%ğÍç:¯¿Û~ùöÖ¹‹o>ob90Órs~¡Î¬èhQ¯[vt	3i Bô®F lE5‘‡<kè`bïîvûüİõ[/uşxûû3Wƒğ˜¾?óvçÂm?‚Ç¿Î<G{U èa2YT$â®H] §¤µëQ‰D%2*	:¹¸ö±¡Ëxp¶P_»¦)1¬4$ñ¾‹eŠÉ³–CC›ØÇ\?Îò£ö K‰(³òT3^®Ô¾îÚş]ËÈ>(¶l¨Gqè.kïºKÃğù†Õüb©÷TF8ÉƒĞÚ^	ê·È‹ĞHw<EÛÉ¡¶bË[—œ±óïH?(x¡PjFñö»e»{Õ•İ˜¬vº²³3aÉ¾NÃı¸Ö1XJI^B`Æ…¶FsàÔ §6!@}¯Æ2î”–n˜ÑNQ~ÙÀÄ¿¦î„	×¸?ññ;&5õ™BéP?Àåï¾—]C
+:· hï‰GE’v—bÅ'tWË>šï*OL×tx(,}3Ÿæy”Ÿkë*Â	¾s, İ’ÍL¦“5|¶¾ ;­¦¿ø&ÓîöÒKÛml®É%l©é†Ê´‘¦)Ì¥«¥n¦xKñ=¦Fw^Ä~òobWÜ¯b×ß%œfbÅ5r”“™‡4÷	/ën{vÿ‰wğN¶ğÖ’ûpè\–_‘Åú¨:ú›+dÆK;‰7'8Mşõì:–&ªIrÕv^xwëOğîjTÍ/UëŠf;¨õŠd™ŒzÑÉk7Û7ßÜüè,{£íŞ;H vfëû¬Uí+¯ÿûëwNBÛNæd]ş_	FCª£ş+Ã·ji ;– •Ø¨ !oxòd’>Iúr³J’Í³Yò´¤¤&×eCÎ©ÕTÿŸí'½u¹·ŸX$ñH¼‘•ÿˆç=®V¬ÊU±Ç\rØñÉ63àzÔl{{qväR¶øêU¼=~×Ñ¾gÖÇPŒºŒPn"),hDŠ…:âq8–Î“ñÜ1ŞnMvaYVìÚñ@+Ü "ãwœ'€éÊİf²‘0peN¯ßsËˆÁÚREm­!Ã¿ş•ô’_—A~÷’­kÿ`( k×SùŸ
+»ô|è6â7Çš¢ãL×8?&Ú±ÉpŒ“HÕåb™jáUş˜¢Eíü	¼˜˜_eœÏ³Õş±`cwˆúèäCs[[–ÄùS\\Ç¢¦6'ÑÇ¤²ˆ¸BÔRŞñ9¹oÆ¿„RänL@¼Ÿ”ğñôVû£Ó[íÇ šÂt~#Ö˜¶)“”élö4ÉeÊG&Š™R®/0ÅUVÒæÔ’,Õ–é¦…D®å`WœU%­ĞLsÅÔQÅE¯ñ §j³Ì×äàŠõ-è)1î ‡ô$ÅÎ<È 4ƒî/RC.<a~	l“ÜRlıëÂG8ÓõDôt=1F²™IĞ½ÖÎ–
+E×œÅg «™&¬tÕÄÎÊAF3…%Ï<¶LOı™ÇÂòX	Æä3¹|éÕzP²‰™ÇJ<÷µÒ…‡æëş|*$AÃıZ,}§ŒÙì•-æL‰‹w^ÿ°}é…Ğ¬aÁö†p†//Xçå;W/¬ßıfıÖ%†Æ²wuŞùpãêï:/é\uÒl¼ù|çËo·Îœeãñ/øba/µ/¼°uî"TÂ³«İùˆÕ1E‡¹Pe *¤
+Û¾Z_ûb=
+Zª]2Ş¢±ö‰ßuªµËsğ¥¥©ĞÉ†„[’&‰œZ»6«AÁ,óWt°ôjÀ4Î‡KSf,ƒŠh4¨­Kõ),>AQEOiñ†Ìb»µ`E›Šáş†s¹ØÉ»—	TüB¿Å»)òi–à‚RB}ùf¹ğ„Ú?ºRõ4Š±«a»ûb§“Y\½ l{óúí·¾5Ó~ïºÊõy¥…öÖ_)ÍSêı7Ûîæ=hsÎ¶©owşzÍÀ1äíLú6ÊQÜ–G*…É|¤’ò‘ÂMšıAÒu%Ÿ‡ÉÔñ$ì ÅË¯=Y\Å>X9Ş[–çzûIoEÖğÏ-Hì‚Êòı’şÍ©ŞÔ!®çG[F=áj«>iÍÜK¼NgæÚÁJÀ‚‹:.kAd“˜DáQæ=>’t…0İ1²g˜¬ö“Ô¯ú‰{TÃ\ŠkÒòôBƒ$
+Ú®¢,àöóeCƒçO>êoÒZ>"¬Ú¾–T+£—Ù¶y2şº™±§Vlæ¤å¨Àì¢å”ìÒ7@ULı)ä'Ööh;¿éºKÔ€7»›b:BÇWô²™ë0¿B¶æ‡Ë‹µ&Ò[È•	=æğƒ-:%q‡Vimıí·F2®2ó™F4‹œ Á`^Ñ;_\&øØc"gVNŸÿ2Nê¤Käà•F‡Gƒ¬˜0éû‡œıTÄccÌ$¼q2”¨‰ò{(`fk5]½t1ó4!4á%¯Bi˜NÖ:sØûî(ñ?±§AjF°‰Šm"ÎŞÃ2ÏIhîÌPŸ<kÉŠz‰¬ØÔƒ6"¾¾6ŸÂç'uŠãÉš%ÚœXö³ıù:•­Í®Ó3³,j¡›¡q’ãŠKT#÷x§ÎÖUëV@‹¶Ğ¬Aˆú$ÑÁ2Ó¼±‹ú	ÌTt*»ªàq~Âw¤ÌCÏxZ¬©14ÛÙ`5´îˆZ£Æ$Ğ4ÜŠJ$ZJ¢k¯İ ¬‘ˆq€ÚHE>mIaN_ÊËcD§ÓÅrf§vT ¤­çSô¬‰g€Rİ#Xè5¬V?nÖu"&²N0:Ó^X½.&™õ´ìÓ¨y¥V“›"»Z¼t‰Ÿ ŠkxR-M^¤*Û
+À_ıÄ³1ò^±ÃZğ÷øVí‰1bLS¼?ŒGèôÄ?0‰ÉÿÛX¡-hÛH‚®Ú²t7ÙfpWáwƒÄœ¬6éŠî2ïˆ0š¹wY¾Wïº¾½ºk?ş³Â1'ÊÏ:ë´ğ 	mÄôAÓg#§v‡>¸ˆÀ±ep$M¿ÒD¾®ğLô´¦L`§F'´(‰O$šõYy„Ÿ¨ëY5È	%Ş“hY¹f;Qh¦«Á‰c4m€ßˆ“ñ}a¿{_ˆÖ­“OĞŒDhWt3NPuÜQw`‰$lKP¾GÖš¨Ùøé.ÕÕ•œ4´ûÁNœ£]wkbr¬‹ğÔíuK˜Ú"cÀ8„#	—ì…c¾¬ODì—@TWoL¸hĞ~„‚¬Ï6ƒ¬OÒéM8¹^vNßAşA¼Éd•†ÿ0%˜“¶ŒÇá€FÓ!	ˆÅıÏòdo"‰‰«/]".põ©#dd4ù[ÍS‚‡Å„Á
+wÂ
+Ğ] ğ´0¡Kkø’»ß£®Ÿ’bN7/¡áqçT1—¶~8_ÊOg<è,’<Éç
+kç×~K½¨fÖÎV
+x£Ö^*LÃ³Î9¨“[Òj  4Ç±{nœ r;²ˆ)Üø8hÚÁ¥şÃ÷¨‡‚ĞœÈfÆwäÃ*ûÜU*úen¾X…r$5'øT±ºĞ’ª’šÂZh
+ñpÆ’ı£Ş²SrM¬èãC¶ÁÀHö´·Kî>ººålH[g÷9 3Ô&òˆôã]µx:^|¾Ï²Tœ’ê<Ú”ëY`€sª¶üŠªy×ıw¡×X jšÒHõ¹#Ù˜ıšŸq×ÓáÈk@Ò¼ÎÄÑ‚ÿõë°L<Zó„F&ÜmmfM¦4ÕE4«¤Ár£%©ÿkd`*áûhÿà¾Ó÷…Í¥Ã¢Ìû†¶`ßæğ½¬µ“©×¹ãÓàõ`aR™g!É4ßP•Y¤XöİBMwúsßç´Äg¤ói4Ê4Niê²‘"Ï¢6F£ØAjDûĞ,ü­ijƒØ5zğ—F¥•Şë|#Ğ¾´”~‰}›™udqş„G³äÖÇÃÄtÁ+ Wœİ%O”¼1/¹ú$S{
+ó÷kı{C ZÃÅ¶xk jùxĞ©å^¿§w÷êŞB×ó@Õ7†tKe³6Q=¬xÀ|ğò‚[õ¥—B±Ç|M 9™¢šĞZĞZuw#ÌKv3Ìßî†˜#šâU¨‚P1\J–ûÖÕÀ7„…jÏ tõ@¦YWÃ<ıCKNJË¸ï‡–<0± ÔkJsn$ä¿„&_†9ÄmËtÀYZf]îUÑQl|›Rp`T”³¾O+
+2ö6`‚À¡ùS€®Âôb:ˆdÖÁpÅ,¸Ç!Á¶jÙp„ámƒ¤±Ğw˜Bó“;úšİ†Ñ‰0²¬ê«?â¿øîÆ«76.§Û*-•Ù6œHÂ]^âXÂƒ™BZıîí«wÚ7oo¿¼ñõ7¿ııú­K,JÅLAüÇOßèÜ:×¾hâmÔoR£)^É²*¡7PM‚¯2î5µ.ãY7Ô_/Ğ¯xyí”æd=8È$0¼$p<‚Ï(Â|ÇÃİäLm2…Êy€–’ÑÒ
++sdØÉctw‡	ZşCÊ0ğÆˆ4}Á™şÁûşêk¾‘rÆOGª›(æ&©r¶TœœÄL}±™%ÊO‰‚3º¯b"§½ÎÙ£§‰|v¼á14cTÈÓ™RÌdJ™©|%_
+òà8Yr‹c;E38´Ì’ã9 Rmˆ)Ò“$.(Tçç°0ô„îõÊ8l^Œ£GR›–ÔfÔy÷Vû»ß¶/?×yísÊŒŞäá>˜šc;y‹Õ¨f¦Ÿ(iXrºøó—XI”íÑºÜP"à
+¿¿úJK¦Üwóü'í—n°¬–,¯‹T_T‰Ü ¹ÑRII–ê!<4¸Ëa§º11#Do¸N_]g³û"H&üèÏŸİ™s¥ãÎu‚Ä: , p‡Áğ•3wM‘O9µé(t»H×ƒÈ"›¸2ÂO¬LÎ(W²ÔÍßì‹=„_µºLm)ôFÊc)í'½VˆÛ$•˜²6.$qO 3İîÒ¼ß±@ábæ/Í$°7œ(ÜÉá~¥[à[ç/ÑÎËŠj’-~‹¼º‡$‹ÍØQzÅ
+(bLö“#Õï X^ê˜ô¬EªôëOª‹ØŒ$UZáCRµæê#ÕÎ­ÏÚ—ß')š‹‘ê4Èøë'ÖMÍ…‡;I±´ÖbÃÔ˜ŸÅ¶¿=×yõ+Ê_g4xIµì;ÉªuÙ~xÒ¥­aÙy
+æ*HÈÖô=x„üÏ¿3@’¢şMŒYÚ½…P@{GÃ5nÇ	Ø®ù!õZ—À™*˜Òy£áÈÉärÔÕ	AKäP±4d2¤~ój³¼0ÛPŒƒ+lê25Çï`ug-Šáq½AæÄ]· ÒDYIÌ€fêÑ@zön Œ2ÿmüé.ÂgßşªóÏ»í—ŞíüñsçâÂçO?`öAÓ`S“tè°F¦ÕEÜõ¬£2-ë0Äq@fşKjvÃFÜÆ°ÑĞæŒğå’T!Çxp¡„ œRª&®½±;ì»ÆŒ[èü:]–5Ä¿#SåìÑá‘={G÷=ÃÀ›òiÎwH˜wë²1í*éAñ0Ô£8úÌ#ë2ë£7¿öFfØüŠ‚¬ğc‘.>¿ÓşìÖæõç;ï~M‰º"5¤æ¼JINiÈM=êl6Š¦Ùv.N~˜Á±[Ä²¢@r÷”è’ ‡Â>¹“»ïê%G²=ãìo\:wOá(tx¦gœıMXßX¬°7+IšÍovTúo…m¼ôUçÌY’Ú:qpãã;lë`^É÷fa…"&ã'viÑÒÅE$HÍåûyÅÁ5
+’möH¾Pì§è¢AaB?ˆ„+àXæ°*ú‡¤LÛï É7ZÆrL]?®ù_¾ùkûÂ»kJ©Ô{^éÎ“t=X¾úİ®«üƒ·&¶µçK™ÉqúVÂ™77^½‘t	ÌKXôI1›2h+W¿M\S	”Öâ¯²ÅÉ|%5ÒŸ„ı$)´ı]¾ë+iµ&Rs>×3n…êşù÷öù;í;¯n9»ùm\c»_­!^1r3Ì="”©:ÕÚÃdÜ ²\FOË%=a»MÛnWvš;ÎW+÷ˆÚÆiŒ03•Dxs!~šT5”EyLGpÇô£	I:B/B)ĞÆ™në‡”ŸejJµèèÃ(¼Ïd†´ÏDZzöŒqVÂô1Œ|+=ßHåH¡Ì¼Æî…«X`›PP4¼Şp°ùá{¤O5B„9•mÏI<0÷º "ÒıkÇlZîL:şI5DjNòº¹¾qiã.Ã¡Ï;®«}IÖ‰e{ª…g¸‘5êBL$•©x†™ ½{x›@$ÕrPŒV7éšB}é"1z'Nş’dè2äMH®+QdîP´P´¯j¶±‡Âá„l¿cfXX¨?“£©õœa……·`©=Àğ¦÷¾k#³ü½™³ÆL¿ñĞ¬ZŞ½ÊF—ëk8™m#»\Äöt²ó"ºğ±ôŒ$õhÔ\¯öÑLŒV½Ø‡c"ë£Ñ¬ALîZ ‰&'1eë²¤á‘’€\N?®}ÎŠúpmsô¢ÍvljóÄŠìõ`h²Dİ&9
+#zyr'*ğlÿñ¡ÀßñÄ EOŠ]İÒv¤àuëèĞÜYG^G'#IğjŞìå»LúPa’ºÛWŠÅÉ‰Lpb£d‡&QøMŞš4v4ŠÃä‘;^™Š+W7¾|ü4¤·ÛW.Â—‰É:7 °k¤ë'ÓÒ¢¢öv/lQšj»'ü=‰Æuİu¸U‡ùØ…D#œª¾Û."V’@Ì„î«`WóÛõ4d&'{ÂxÍad‚Ûçnlıö³W,Vk„,‚ì“;a˜¼×ÉDäéFÛèŠ@İU<$Q“D™QÖG¢hÚD…Î4Ó&'Ó Ãßn˜üvÆŞÇÜ­’ÖÕ…T`…\”BÃNÃ…¤;ôp‰…š{ö2»KìÅ`±…æ‹XD”Òë˜×¢y³j8L°1æe©ÆWˆøÉÏ,ƒ ÛJí”} ô„™!ÂS®Eåæ†¦{£fO§÷»ÑÁCÇˆtìÃ»ê¼\}fV]ŠÆò¥Oa~gNM4Æ˜½Æ" ÍgÍ7öÅ–"|2¯ˆ¦Bàq½Ô„Åbğ7Ñµ¯¹Ú}3ŸˆGäıÕèÛ•ˆ¦=HE‡Ä˜OB—aïä…{ÄÎ¼‰¹¨ğÎ);W7“É\Gò;UuÔ1çÍ¹/6Ï¾
 
-                              <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-                                <table className="w-full text-[11px] text-left border-collapse">
-                                  <thead>
-                                    <tr className="bg-slate-100 dark:bg-slate-800 text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-700">
-                                      <th className="p-2 pl-3">ID Container</th>
-                                      <th className="p-2">Batch / Lote</th>
-                                      <th className="p-2">Yard / PÃ¡tio</th>
-                                      <th className="p-2">Vessel / Navio</th>
-                                      <th className="p-2 text-center">ETA</th>
-                                      <th className="p-2 text-center">Free Time</th>
-                                      <th className="p-2 text-center">Dias Restantes</th>
-                                      <th className="p-2 text-center">Status / DevoluÃ§Ã£o</th>
-                                      <th className="p-2 min-w-[130px] font-black text-red-700 dark:text-red-400 bg-red-100/40 dark:bg-red-950/20">ğŸ“… ProgramaÃ§Ã£o (Agendamento)</th>
-                                      <th className="p-2 min-w-[130px] font-black text-slate-700 dark:text-slate-300">ğŸš› Transportadora (Carrier)</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-300">
-                                    {matchingContainers.map((c, i) => {
-                                      const days = getDaysRemainingForContainer(c);
-                                      const isOverdue = days !== null && days < 0;
-                                      const isUrgent = days !== null && days >= 0 && days <= 5;
-                                      
-                                      const daysBadgeColor = isOverdue ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-450'
-                                        : isUrgent ? 'bg-rose-105 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400'
-                                        : 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400';
-
-                                      return (
-                                        <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-all font-mono">
-                                          <td className="p-2 pl-3 font-bold text-slate-900 dark:text-white select-all">{c.id}</td>
-                                          <td className="p-2 font-sans font-bold">{c.lote || '-'}</td>
-                                          <td className="p-2 font-sans font-extrabold text-blue-600 dark:text-blue-400">{yards[c.yardId]?.name || c.yardId}</td>
-                                          <td className="p-2 font-sans truncate max-w-[120px]" title={c.vesselName}>{c.vesselName}</td>
-                                          <td className="p-2 text-center font-sans">{c.eta || '-'}</td>
-                                          <td className="p-2 text-center text-amber-600 dark:text-amber-450 font-bold">{c.freeTime || '-'}</td>
-                                          <td className="p-2 text-center">
-                                            {days !== null ? (
-                                              <span className={`px-2 py-0.5 border text-[10px] font-extrabold rounded-md ${daysBadgeColor}`}>
-                                                {days < 0 ? `${days} d (Atrasado)` : `${days} d`}
-                                              </span>
-                                            ) : (
-                                              <span className="text-gray-400">-</span>
-                                            )}
-                                          </td>
-                                          <td className="p-2 text-center font-sans">
-                                            {c.category === 'DELIVERED' ? (
-                                              <span className="px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 text-[9px] font-black rounded uppercase">
-                                                DELIVERED
-                                              </span>
-                                            ) : (
-                                              <span className="px-1.5 py-0.5 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200/50 text-[9px] font-black rounded uppercase">
-                                                PENDING
-                                              </span>
-                                            )}
-                                          </td>
-                                          {/* AGENDAMENTO FIELD */}
-                                          <td className="p-2 bg-red-100/10 dark:bg-red-950/5">
-                                            <input
-                                              type="text"
-                                              placeholder="Ex: 25/07/2026"
-                                              value={c.programacao || ''}
-                                              onChange={(e) => handleUpdateContainerField(c.id, 'programacao', e.target.value)}
-                                              className="w-full bg-white dark:bg-slate-800 p-1.5 border border-red-250 dark:border-red-900/50 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-md font-sans text-xs font-bold text-slate-800 dark:text-slate-100 text-center outline-none"
-                                            />
-                                          </td>
-                                          {/* TRANSPORTADORA FIELD */}
-                                          <td className="p-2">
-                                            <input
-                                              type="text"
-                                              placeholder="Ex: JSL"
-                                              value={c.transportadora || ''}
-                                              onChange={(e) => handleUpdateContainerField(c.id, 'transportadora', e.target.value)}
-                                              className="w-full bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-md font-sans text-xs font-bold text-slate-800 dark:text-slate-100 text-center outline-none"
-                                            />
-                                          </td>
-                                        </tr>
-                                      );
-                                    })}
-                                    {matchingContainers.length === 0 && (
-                                      <tr>
-                                        <td colSpan={10} className="p-8 text-center text-gray-400 dark:text-gray-500 font-extrabold font-sans">
-                                          {language === 'zh' ? 'æ²¡æœ‰åœ¨æ­¤åˆ†ç±»ä¸‹æ‰¾åˆ°åŒ¹é…çš„é›†è£…ç®±' : 'Nenhum contÃªiner correspondente encontrado para este filtro.'}
-                                        </td>
-                                      </tr>
-                                    )}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                      </>
-                    );
-                  })()}
-                </div>
-              ) : currentSlide === 5 ? (
-                /* SLIDE 6: DEPOT CONTROL & ALLOCATION */
-                <div id="slide-dashboard-grid-depots" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
-                  
-                  {/* TOP CONTROL HUB FOR DEPOT ALLOCATION */}
-                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3`}>
-                    <div className="flex items-center gap-3">
-                      <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
-                        <FileSpreadsheet className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
-                          {language === 'bilingual' ? 'DEPOT CONTROL & ALLOCATION / åè®®å †å­˜ä¸æ¸¯å£æµå‘åŠ¨æ€è°ƒé…' : language === 'zh' ? 'åè®®å †å­˜ä¸æ¸¯å£æµå‘åŠ¨æ€è°ƒé…' : 'DEPOT CONTROL & ALLOCATION'}
-                        </h3>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                          {language === 'zh' ? 'æ¯æ—¥æµé‡å¹³å‡ç›‘æ§ã€æœ€å¤§åŠ¨æ€å®¹é‡é…é¢ã€ä¸èˆ¹ä¸œåˆä½œçŠ¶æ€äº¤å‰ç®¡ç†çŸ©é˜µ' : 'Controle dinÃ¢mico de limites diÃ¡rios, capacidade sob contrato e compatibilidade de armadores.'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] bg-red-600 text-white font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
-                        {language === 'zh' ? 'é«˜çº§ç‰©æµæ¶æ„æ¿' : 'Senior Logistics Panel'}
-                      </span>
-                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold px-2 py-0.5 rounded border border-slate-200 dark:border-slate-750">
-                        UTC-3 LIVE
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* HIGH-LEVEL INTEGRATED LOGISTICS KPIs */}
-                  {(() => {
-                    const totalAvg = depots.reduce((sum, d) => sum + d.avgVolume, 0);
-                    const totalCap = depots.reduce((sum, d) => sum + d.maxCapacity, 0);
-                    const openGates = depots.filter(d => d.status === 'Open').length;
-                    const criticalCount = depots.filter(d => {
-                      const util = d.maxCapacity > 0 ? (d.avgVolume / d.maxCapacity) * 100 : 0;
-                      return d.isAlert || util > 95;
-                    }).length;
-                    
-                    const totalRemainingSlots = depots.reduce((sum, d) => {
-                      if (d.status === 'Closed') return sum;
-                      const remaining = d.maxCapacity - d.avgVolume;
-                      return sum + (remaining > 0 ? remaining : 0);
-                    }, 0);
-
-                    return (
-                      <div className="grid grid-cols-4 gap-3">
-                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? 'æ—¥å¸¸å¹³å‡æ€»ååé‡' : 'VOLUME DIÃRIO TOTAL (AVG)'}</span>
-                            <span className="text-gray-400 font-mono text-xs font-bold">AVG baseline</span>
-                          </div>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">{totalAvg}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">CNTRs/Dia</span>
-                          </div>
-                        </div>
-
-                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? 'ç©ºä½™å¯ç”¨ä»“ä½æ•°' : 'VAGAS DIÃRIAS DISPONÃVEIS'}</span>
-                            <span className="text-emerald-500 font-bold text-[10px] px-1 py-0.1 bg-emerald-50 dark:bg-emerald-950/20 rounded">Slots Livres</span>
-                          </div>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">{totalRemainingSlots}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">CNTRs Slots</span>
-                          </div>
-                        </div>
-
-                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? 'é€šé“å¼€å¯æ¯”ä¾‹' : 'SITUAÃ‡ÃƒO DE PORTÃ•ES'}</span>
-                            <span className="text-blue-500 font-bold text-[10px] px-1 py-0.1 bg-blue-50 dark:bg-blue-950/20 rounded">Gates Status</span>
-                          </div>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">{openGates} <span className="text-xs text-gray-400 font-bold">/ {depots.length}</span></span>
-                            <span className="text-xs text-emerald-600 dark:text-emerald-450 font-extrabold">{language === 'zh' ? 'æ­£å¸¸è¿è¥ä¸­' : 'Ativos'}</span>
-                          </div>
-                        </div>
-
-                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? 'é«˜å±å—é™/æ»¡è½½ç«™ç‚¹' : 'PONTOS CRÃTICOS / ALERTA'}</span>
-                            <span className="text-red-500 font-bold text-[10px] px-1 py-0.1 bg-red-50 dark:bg-red-950/20 rounded">Alert Count</span>
-                          </div>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-black font-mono tracking-tight text-red-600 dark:text-red-400">{criticalCount}</span>
-                            <span className="text-xs text-red-500 dark:text-red-400 font-bold uppercase">{language === 'zh' ? 'ä¸¥é‡çº¢è‰²é™åˆ¶' : 'Gargalos'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* BOTTOM WORKSPACE WORKGRID */}
-                  <div className="grid grid-cols-12 gap-4 flex-1">
-                    
-                    <div className={`col-span-7 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
-                      <div className="space-y-3 flex-1">
-                        {/* EXECUTIVE SUMMARY WIDGETS */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
-                          <div className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#1e293b]/50 border-slate-700/50' : 'bg-white border-slate-100'} shadow-sm flex flex-col justify-between`}>
-                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold mb-1 block">
-                              {language === 'zh' ? 'æ—¥å¸¸å¹³å‡æ€»ååé‡' : language === 'pt' ? 'MÃ©dia DiÃ¡ria Total' : 'Total Daily Return Average'}
-                            </span>
-                            <span className="text-xl font-black text-slate-800 dark:text-white">{depots.reduce((sum, d) => sum + d.avgVolume, 0).toLocaleString()} <span className="text-xs font-bold text-slate-400">{language === 'zh' ? 'CNTRs/å¤©' : language === 'pt' ? 'CNTRs/Dia' : 'CNTRs/Day'}</span></span>
-                          </div>
-                          <div className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#1e293b]/50 border-slate-700/50' : 'bg-white border-slate-100'} shadow-sm flex flex-col justify-between`}>
-                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold mb-1 block">
-                              {language === 'zh' ? '25å¤©é¢„ä¼°æ€»ååé‡' : language === 'pt' ? 'Estimativa Total (25 Dias)' : 'Total 25-Day Estimated Return'}
-                            </span>
-                            <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">{(depots.reduce((sum, d) => sum + d.avgVolume, 0) * 25).toLocaleString()} <span className="text-xs font-bold text-emerald-600/50 dark:text-emerald-400/50">CNTRs</span></span>
-                          </div>
-                          <div className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#1e293b]/50 border-slate-700/50' : 'bg-white border-slate-100'} shadow-sm flex flex-col justify-between`}>
-                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold mb-1 block">
-                              {language === 'zh' ? '25å¤©åè®®æ€»é¢åº¦ä¸Šé™' : language === 'pt' ? 'Limite Total Acordado (25 Dias)' : 'Total 25-Day Max Agreed Limit'}
-                            </span>
-                            <span className="text-xl font-black text-blue-600 dark:text-blue-400">{(depots.reduce((sum, d) => sum + d.maxCapacity, 0) * 25).toLocaleString()} <span className="text-xs font-bold text-blue-600/50 dark:text-blue-400/50">CNTRs</span></span>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between items-center border-b pb-2 border-gray-100 dark:border-slate-800">
-                          <div className="flex items-center gap-1.5">
-                            <Sliders className="w-4 h-4 text-slate-500" />
-                            <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">
-                              {language === 'zh' ? 'ç©ºç®±å †åœºååèƒ½åŠ›ä¸25å¤©é¢„æµ‹ä»ªè¡¨ç›˜' : language === 'pt' ? 'Capacidade de Retorno de Vazios e PrevisÃ£o (25 Dias)' : 'EMPTY DEPOT RETURN CAPACITY & 25-DAY FORECASTING DASHBOARD'}
-                            </h4>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] text-gray-400 font-mono font-bold mr-2">{language === 'zh' ? '100% è‡ªåŠ¨è®¡ç®—å¼•æ“' : language === 'pt' ? '100% CÃLCULO AUTOMÃTICO' : '100% FORMULA ENGINE'}</span>
-                            <button
-                              onClick={() => {
-                                const newId = `depot_${Date.now()}`;
-                                const newName = `NEW DEPOT ${depots.length + 1}`;
-                                setDepots([...depots, { id: newId, name: newName, avgVolume: 0, maxCapacity: 0, operatingDays: 'Mon - Fri', operatingHours: '08:00 - 17:00' }]);
-                                setDepotMatrix(prev => ({...prev, [newName]: { 'MSC': 'Authorized', 'Maersk': 'Authorized', 'CMA CGM': 'Authorized', 'Hapag-Lloyd': 'Authorized', 'ONE': 'Authorized', 'COSCO': 'Authorized', 'Evergreen': 'Authorized' }}));
-                              }}
-                              className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded transition-colors flex items-center gap-1"
-                            >
-                              <Plus className="w-3 h-3" /> {language === 'zh' ? 'æ–°å¢å †åœº' : language === 'pt' ? 'Novo DepÃ³sito' : 'Add New Depot'}
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left border-collapse text-xs">
-                            <thead>
-                              <tr className="bg-slate-50 dark:bg-slate-800/60 text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-800">
-                                <th className="p-2 pl-2.5">{language === 'zh' ? 'å †å­˜ç‚¹åç§°' : language === 'pt' ? 'Nome do DepÃ³sito' : 'Depot Name'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? 'æ—¥å¸¸å¹³å‡ååé‡ (CNTRs)' : language === 'pt' ? 'MÃ©dia DiÃ¡ria (CNTRs)' : 'Daily Avg Returns (CNTRs)'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? 'åè®®æœ€å¤§æ—¥é™é¢ (CNTRs)' : language === 'pt' ? 'Limite DiÃ¡rio Acordado (CNTRs)' : 'Max Daily Agreed Limit (CNTRs)'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? '25å¤©é¢„ä¼°ååé‡' : language === 'pt' ? 'Estimativa Retorno (25d)' : '25-Day Return Estimate'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? '25å¤©æ½œåœ¨æœ€å¤§é‡' : language === 'pt' ? 'MÃ¡ximo Potencial (25d)' : '25-Day Max Potential Return'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? 'è¿è¥æ—¥' : language === 'pt' ? 'Dias de OperaÃ§Ã£o' : 'Operating Days'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? 'é—¸å£è¥ä¸šæ—¶é—´' : language === 'pt' ? 'HorÃ¡rio do Gate' : 'Gate Operating Hours'}</th>
-                                <th className="p-2 text-center">{language === 'zh' ? 'è¿è¥é¢„è­¦çŠ¶æ€' : language === 'pt' ? 'Alerta Operacional' : 'Operational Alert Status'}</th>
-                                <th className="p-2 text-center w-8"></th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800 font-bold text-slate-850 dark:text-slate-200">
-                              {depots.map((depot, idx) => {
-                                const utilPercent = depot.maxCapacity > 0 ? Math.round((depot.avgVolume / depot.maxCapacity) * 100) : 0;
-                                const remaining = depot.maxCapacity - depot.avgVolume;
-                                const estimate25 = depot.avgVolume * 25;
-                                const max25 = depot.maxCapacity * 25;
-                                
-                                let alertConfig = { bg: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-450 border-emerald-200 dark:border-emerald-900/30', label: language === 'zh' ? 'æ­£å¸¸ - é¢åº¦å……è¶³' : language === 'pt' ? 'NORMAL - Cota DisponÃ­vel' : 'NORMAL - Quota Available' };
-                                if (depot.avgVolume > depot.maxCapacity) {
-                                  alertConfig = { bg: 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-450 border-rose-300 dark:border-rose-900/50', label: language === 'zh' ? 'è¶…é¢ - éœ€é‡æ–°åå•†é™åˆ¶' : language === 'pt' ? 'COTA EXCEDIDA - Renegociar' : 'OVER QUOTA - Renegotiate Limit' };
-                                } else if (utilPercent > 95) {
-                                  alertConfig = { bg: 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-450 border-red-200 dark:border-red-900/30', label: language === 'zh' ? 'ç“¶é¢ˆ - æ—¥å¸¸é¢åº¦å·²æ»¡/è¶…å‡º' : language === 'pt' ? 'GARGALO - Cota MÃ¡xima Atingida' : 'BOTTLENECK - Daily Quota Maxed/Exceeded' };
-                                } else if (utilPercent >= 75) {
-                                  alertConfig = { bg: 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-450 border-amber-200 dark:border-amber-900/30', label: language === 'zh' ? 'æ³¨æ„ - æ¥è¿‘é™åˆ¶' : language === 'pt' ? 'ATENÃ‡ÃƒO - Limite PrÃ³ximo' : 'ATTENTION - Approaching Limit' };
-                                }
-
-                                const handleUpdate = (field: keyof Depot, value: string | number) => {
-                                  const oldName = depots[idx].name;
-                                  const newDepots = [...depots];
-                                  newDepots[idx] = { ...newDepots[idx], [field]: value };
-                                  setDepots(newDepots);
-                                  if (field === 'name' && typeof value === 'string') {
-                                    setDepotMatrix(prev => {
-                                      const newMatrix = { ...prev };
-                                      if (newMatrix[oldName]) {
-                                        newMatrix[value] = newMatrix[oldName];
-                                        delete newMatrix[oldName];
-                                      }
-                                      return newMatrix;
-                                    });
-                                  }
-                                };
-
-                                return (
-                                  <tr
-                                    key={depot.id}
-                                    className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all"
-                                  >
-                                    <td className="p-1 pl-2.5 font-sans">
-                                      <input 
-                                        type="text" 
-                                        value={depot.name || ''} 
-                                        onChange={(e) => handleUpdate('name', e.target.value)}
-                                        className="w-full bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1.5 py-1 text-[11px] font-extrabold outline-none"
-                                      />
-                                    </td>
-                                    <td className="p-1 text-center font-mono">
-                                      <input 
-                                        type="number" 
-                                        value={depot.avgVolume || 0} 
-                                        onChange={(e) => handleUpdate('avgVolume', parseInt(e.target.value) || 0)}
-                                        className="w-16 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1 py-1 text-center font-bold text-gray-500 dark:text-slate-400 outline-none"
-                                      />
-                                    </td>
-                                    <td className="p-1 text-center font-mono">
-                                      <input 
-                                        type="number" 
-                                        value={depot.maxCapacity || 0} 
-                                        onChange={(e) => handleUpdate('maxCapacity', parseInt(e.target.value) || 0)}
-                                        className="w-16 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1 py-1 text-center font-bold text-slate-800 dark:text-slate-100 outline-none"
-                                      />
-                                    </td>
-                                    <td className="p-2 text-center font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                                      {estimate25}
-                                    </td>
-                                    <td className="p-2 text-center font-mono text-blue-600 dark:text-blue-400 font-bold">
-                                      {max25}
-                                    </td>
-                                    <td className="p-1 text-center">
-                                      <input 
-                                        type="text" 
-                                        value={depot.operatingDays || ''} 
-                                        onChange={(e) => handleUpdate('operatingDays', e.target.value)}
-                                        className="w-20 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1 py-1 text-[10px] text-center outline-none"
-                                      />
-                                    </td>
-                                    <td className="p-1 text-center">
-                                      <input 
-                                        type="text" 
-                                        value={depot.operatingHours || ''} 
-                                        onChange={(e) => handleUpdate('operatingHours', e.target.value)}
-                                        className="w-24 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1 py-1 text-[10px] text-center font-mono outline-none"
-                                      />
-                                    </td>
-                                    <td className="p-2 text-center">
-                                      <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-black border uppercase tracking-wider ${alertConfig.bg}`}>
-                                        {alertConfig.label}
-                                      </span>
-                                    </td>
-                                    <td className="p-1 text-center">
-                                      <button 
-                                        onClick={() => {
-                                          setDepots(depots.filter(d => d.id !== depot.id));
-                                          setDepotMatrix(prev => {
-                                            const newMatrix = { ...prev };
-                                            delete newMatrix[depot.name];
-                                            return newMatrix;
-                                          });
-                                        }}
-                                        className="text-slate-300 hover:text-red-500 transition-colors p-1"
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </button>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                      <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 font-bold flex items-center gap-1.5">
-                        <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                        <span>{language === 'zh' ? 'ğŸ’¡ ç³»ç»Ÿé€»è¾‘ï¼šç»¿ä»“è¡¨ç¤ºç©ºé—²åº¦é«˜ï¼Œé»„ä»“ä¸ºè­¦æˆ’è£…è½½ï¼Œçº¢ä»“ï¼ˆåˆ©ç”¨ç‡è¶…è¿‡95%ï¼‰é™åˆ¶æµå…¥ï¼ŒVBR / AREA 23 åœ¨ä»»ä½•çŠ¶æ€ä¸‹å‡è§¦å‘é»„è‰²è­¦æˆ’è­¦å‘Šã€‚' : 'ğŸ’¡ Legenda do Motor de Regras: UtilizaÃ§Ã£o <75% Verde (Liberado), 75-95% Amarelo (AtenÃ§Ã£o), >95% Vermelho (Gargalo - Bloqueio de novos volumes).'}</span>
-                      </div>
-                    </div>
-
-                    {/* RIGHT WORKSPACE: DYNAMIC INTERACTIVE SHIPOWNER COMPATIBILITY MATRIX */}
-                    <div className={`col-span-5 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
-                      <div className="space-y-3 flex-1">
-                        <div className="flex justify-between items-center border-b pb-2 border-gray-100 dark:border-slate-800">
-                          <div className="flex items-center gap-1.5">
-                            <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-                            <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">
-                              {language === 'bilingual' ? 'MATRIZ DE COMPATIBILIDADE DE ARMADORES / èˆ¹ä¸œåè®®ç¬¦åˆçŸ©é˜µ' : language === 'zh' ? 'èˆ¹ä¸œåè®®ç¬¦åˆçŸ©é˜µ' : 'MATRIZ DE ARMADORES'}
-                            </h4>
-                          </div>
-                          <span className="text-[9px] text-emerald-600 font-black animate-pulse bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.2 rounded">Interactive</span>
-                        </div>
-
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
-                          {language === 'zh' ? 'ğŸ’¡ ç‚¹å‡»çŸ©é˜µä¸­çš„ä»»ä½•çŠ¶æ€å¯ä»¥ç›´æ¥å¾ªç¯åˆ‡æ¢ï¼šAuthorized (æˆæƒ) âœ Blocked (é”å®š) âœ Contract Only (ç‰¹è®¸åˆåŒ)ã€‚' : 'ğŸ’¡ Clique diretamente sobre qualquer status na matriz para alternar: Liberado (âœ… Auth) âœ Bloqueado (âŒ Block) âœ Contrato (ğŸ“ Contract).'}
-                        </p>
-
-                        <div className="overflow-x-auto mt-2">
-                          <table className="w-full text-center border-collapse text-[10.5px]">
-                            <thead>
-                              <tr className="bg-slate-50 dark:bg-slate-800/60 text-[8.5px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-800">
-                                <th className="p-1.5 text-left pl-2 font-black">{language === 'zh' ? 'å †å­˜ç‚¹' : 'DEPÃ“SITO'}</th>
-                                {['MSC', 'Maersk', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'COSCO', 'Evergreen'].map(armador => (
-                                  <th key={armador} className="p-1.5 font-black text-center text-slate-750 dark:text-gray-300">{armador}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-slate-850 font-bold text-slate-800 dark:text-slate-200">
-                              {depots.map((depot) => { const depotName = depot.name; return (
-                                <tr key={depotName} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
-                                  <td className="p-1.5 text-left pl-2 font-extrabold text-[10px] text-slate-750 dark:text-gray-300">{depotName}</td>
-                                  {['MSC', 'Maersk', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'COSCO', 'Evergreen'].map((armador) => {
-                                    const value = depotMatrix[depotName]?.[armador] || 'Authorized';
-                                    
-                                    // Visual color states
-                                    let cellStyle = 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/45 dark:text-emerald-400';
-                                    let cellText = 'AUTH';
-                                    if (value === 'Blocked') {
-                                      cellStyle = 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/45 dark:text-red-400';
-                                      cellText = 'LOCK';
-                                    } else if (value === 'Contract Only') {
-                                      cellStyle = 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/45 dark:text-amber-400';
-                                      cellText = 'CONT';
-                                    }
-
-                                    return (
-                                      <td key={armador} className="p-1 text-center">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            // Click interaction to toggle through Authorized -> Blocked -> Contract Only
-                                            const states: ('Authorized' | 'Blocked' | 'Contract Only')[] = ['Authorized', 'Blocked', 'Contract Only'];
-                                            const currentIndex = states.indexOf(value);
-                                            const nextState = states[(currentIndex + 1) % states.length];
-                                            setDepotMatrix(prev => ({
-                                              ...prev,
-                                              [depotName]: {
-                                                ...(prev[depotName] || {}),
-                                                [armador]: nextState
-                                              }
-                                            }));
-                                          }}
-                                          className={`px-1 py-0.5 text-[8.5px] font-extrabold rounded-md border tracking-tighter cursor-pointer select-none transition-all active:scale-95 ${cellStyle}`}
-                                          title={`${armador} @ ${depotName}: Clique para alterar status / ç‚¹å‡»åˆ‡æ¢çŠ¶æ€`}
-                                        >
-                                          {cellText}
-                                        </button>
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                              );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 font-bold flex items-center justify-between">
-                        <span>{language === 'zh' ? 'ğŸ’¡ å¥‘çº¦é™åˆ¶ï¼šVBRåŠTEON 23 é»˜è®¤é”å®šå¤§å¤šæ•°ç›´æ¥æ”¾è¡Œï¼Œä»…æ¥å—ç‰¹å®šé¢„çº¦ã€‚' : 'ğŸ’¡ AUTH: Liberado | LOCK: Bloqueado | CONT: Requer Contrato.'}</span>
-                        <span className="text-[8px] bg-emerald-500/10 text-emerald-600 px-1 rounded uppercase tracking-widest font-black">Excel Friendly</span>
-                      </div>
-                    </div>
-
-                  </div>
-
-                </div>
-              ) : currentSlide === 10 ? (
-                /* SLIDE 6: PLANO DE DIRECIONAMENTO (ALLOCATION PLANNER) */
-                <div id="slide-dashboard-allocation-planner" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-y-auto overflow-x-hidden scrollbar-thin' : 'min-h-[660px] gap-4'}`}>
-                  
-                  {/* TOP CONTROL HUB */}
-                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shrink-0`}>
-                    <div className="flex items-center gap-3">
-                      <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
-                        <FileSpreadsheet className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
-                          {language === 'bilingual' ? 'BONDED WAREHOUSE SPACE & ALLOCATION PLANNER / ä»“å‚¨ç©ºé—´ä¸æµå‘è§„åˆ’' : 'BONDED WAREHOUSE SPACE & ALLOCATION PLANNER'}
-                        </h3>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                          {language === 'zh' ? 'åŠ¨æ€å®¹é‡è§„åˆ’ï¼Œæˆæœ¬ä¼˜åŒ–åŠå®æ—¶åº“å­˜æ•°æ®åŒæ­¥' : 'Planejamento dinÃ¢mico de capacidade, otimizaÃ§Ã£o de custos e sincronizaÃ§Ã£o de estoque em tempo real.'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin pb-4">
-                    {(() => {
-                  {/* MAIN CONTENT AREA */}
-                      // Fetch Live Inventory Data
-                      const liveTecon = { 
-                        inv: yards.tecon?.cheio || 0, 
-                        cap: yards.tecon?.capacity || 2000 
-                      };
-                      const liveInter = { 
-                        inv: yards.intermaritima?.cheio || 0, 
-                        cap: yards.intermaritima?.capacity || 800 
-                      };
-                      const liveTpc = { 
-                        inv: yards.tpc?.cheio || 0, 
-                        cap: yards.tpc?.capacity || 1200 
-                      };
-
-                      const activePeriods = plannerPeriods.filter(p => !p.isHistoric);
-                      const totalExpectedVolume = activePeriods.reduce((sum, p) => sum + p.totalVolume, 0);
-
-                      const getProjections = (liveInv: number, allocKey: "allocTecon" | "allocInter" | "allocTpc", outflowKey: "outflowTecon" | "outflowInter" | "outflowTpc") => {
-                        let prevEnd = liveInv;
-                        let maxPeak = liveInv;
-                        const peaks: { start: number, end: number }[] = [];
-                        
-                        for (const p of activePeriods) {
-                          const pVol = Math.round(p.totalVolume * ((p as any)[allocKey] / 100));
-                          const currentOutflow = (p as any)[outflowKey];
-                          
-                          const start = prevEnd - currentOutflow;
-                          const end = start + pVol;
-                          
-                          peaks.push({ start, end });
-                          maxPeak = Math.max(maxPeak, end);
-                          prevEnd = end;
-                        }
-                        
-                        return { peaks, maxPeak };
-                      };
-
-                      const teconData = getProjections(liveTecon.inv, "allocTecon", "outflowTecon");
-                      const teconPeaks = teconData.peaks;
-                      const teconPeakOcc = teconData.maxPeak;
-                      const teconPeakOccPct = (teconPeakOcc / liveTecon.cap) * 100;
-
-                      const interData = getProjections(liveInter.inv, "allocInter", "outflowInter");
-                      const interPeaks = interData.peaks;
-                      const interPeakOcc = interData.maxPeak;
-                      const interPeakOccPct = (interPeakOcc / liveInter.cap) * 100;
-
-                      const tpcData = getProjections(liveTpc.inv, "allocTpc", "outflowTpc");
-                      const tpcPeaks = tpcData.peaks;
-                      const tpcPeakOcc = tpcData.maxPeak;
-                      const tpcPeakOccPct = (tpcPeakOcc / liveTpc.cap) * 100;
-
-                      const getAlertStatus = (pct: number) => {
-                        if (pct > 95) return { color: 'text-red-600 bg-red-100 border-red-500', text: 'CRITICAL RISK - Storage Overflow / Reallocate Cargo' };
-                        if (pct > 80) return { color: 'text-amber-600 bg-amber-100 border-amber-500', text: 'CAUTION - High Yard Density / Monitor Outflow' };
-                        return { color: 'text-emerald-600 bg-emerald-100 border-emerald-500', text: 'SAFE - Operational Capacity Available' };
-                      };
-
-                      return (
-                        <div className="flex flex-col gap-4">
-                          
-                          {/* Executive Summary Widget */}
-                          <div className={`p-4 rounded-xl border-l-4 border-slate-800 ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200'} shadow-sm`}>
-                            <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider mb-2">Executive Yard Overview</h4>
-                            <div className="flex gap-6 items-center flex-wrap">
-                              <div>
-                                <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Planning Volume</span>
-                                <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{totalExpectedVolume} <span className="text-sm font-bold text-slate-500">CNTRs</span></span>
-                              </div>
-                              <div className="h-10 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
-                              <div className="flex-1 flex flex-wrap gap-3">
-                                {[
-                                  { name: 'TECON', pct: teconPeakOccPct },
-                                  { name: 'INTER', pct: interPeakOccPct },
-                                  { name: 'TPC', pct: tpcPeakOccPct },
-                                ].map(t => (
-                                  <div key={t.name} className={`px-3 py-1.5 rounded-lg border flex flex-col min-w-[100px] ${t.pct > 95 ? 'bg-red-50 border-red-200' : t.pct > 80 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'} dark:bg-opacity-10`}>
-                                    <span className="text-[9px] font-black uppercase text-slate-600 dark:text-slate-400">{t.name} Peak</span>
-                                    <span className={`text-sm font-bold ${t.pct > 95 ? 'text-red-600' : t.pct > 80 ? 'text-amber-600' : 'text-emerald-600'}`}>{t.pct.toFixed(1)}%</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* SECTION A: Cost Strategy & Facility Selection */}
-                          <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100'} shadow-sm`}>
-                            <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider mb-3 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
-                              <DollarSign className="w-4 h-4 text-emerald-500" /> 
-                              A. Cost Strategy & Facility Selection
-                            </h4>
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-left text-[11px] mb-3">
-                                <thead>
-                                  <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
-                                    <th className="py-2 px-3 font-bold border-b border-slate-200 dark:border-slate-700">Bonded Period</th>
-                                    <th className="py-2 px-3 font-bold border-b border-slate-200 dark:border-slate-700 text-center">TECON</th>
-                                    <th className="py-2 px-3 font-bold border-b border-slate-200 dark:border-slate-700 text-center">INTER</th>
-                                    <th className="py-2 px-3 font-bold border-b border-slate-200 dark:border-slate-700 text-center">TPC</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {['48hs', '7d', '10d', '15d', '20d', '25d'].map((milestone) => (
-                                    <tr key={milestone} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-                                      <td className="py-1.5 px-3 font-extrabold text-slate-700 dark:text-slate-300">{milestone}</td>
-                                      {['tecon', 'inter', 'tpc'].map((fac) => {
-                                        const isSelected = plannerCostStrategy[milestone] === fac;
-                                        return (
-                                          <td key={fac} className={`py-1 px-3 text-center transition-colors ${isSelected ? 'bg-emerald-50/50 dark:bg-emerald-900/10' : ''}`}>
-                                            <label className="flex items-center justify-center gap-1.5 cursor-pointer w-full h-full">
-                                              <input 
-                                                type="radio" 
-                                                name={`strat_${milestone}`} 
-                                                checked={isSelected}
-                                                onChange={() => setPlannerCostStrategy(prev => ({...prev, [milestone]: fac}))}
-                                                className="w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                                              />
-                                              {isSelected && <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter">Best Rate</span>}
-                                            </label>
-                                          </td>
-                                        );
-                                      })}
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Strategic Allocation Justification</label>
-                              <textarea
-                                value={plannerJustification}
-                                onChange={(e) => setPlannerJustification(e.target.value)}
-                                className="w-full p-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500/50 outline-none resize-none font-medium leading-relaxed min-h-[60px]"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            {/* SECTION B & C: Inbound Arrivals & Percentage Allocation */}
-                            <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100'} shadow-sm`}>
-                              <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100 dark:border-slate-800">
-                                <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                                  <Ship className="w-4 h-4 text-blue-500" /> 
-                                  B & C. Inbound Arrivals & Outflow Parameters
-                                </h4>
-                                <button
-                                  onClick={() => {
-                                    const nextId = plannerPeriods.length > 0 ? Math.max(...plannerPeriods.map(p => p.id)) + 1 : 1;
-                                    setPlannerPeriods([...plannerPeriods, {
-                                      id: nextId,
-                                      isHistoric: false,
-                                      dateRange: "New Period",
-                                      totalVolume: 0,
-                                      allocTecon: 0,
-                                      allocInter: 0,
-                                      allocTpc: 0,
-                                      outflowTecon: 0,
-                                      outflowInter: 0,
-                                      outflowTpc: 0,
-                                    }]);
-                                  }}
-                                  className="px-2.5 py-1 text-[10px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 rounded transition-colors"
-                                >
-                                  + ADD PERIOD
-                                </button>
-                              </div>
-                              
-                              <div className="space-y-4">
-                                {plannerPeriods.map((period, idx) => {
-                                  const updatePeriod = (field: string, val: number | string | boolean) => {
-                                    const next = [...plannerPeriods];
-                                    (next[idx] as any)[field] = val;
-                                    setPlannerPeriods(next);
-                                  };
-
-                                  const isHistoric = period.isHistoric;
-
-                                  return (
-                                    <div key={period.id} className={`border ${isHistoric ? 'border-dashed border-gray-300 dark:border-gray-600 opacity-60' : 'border-slate-200 dark:border-slate-700'} rounded-lg overflow-hidden transition-opacity`}>
-                                      {/* Header */}
-                                      <div className={`${isHistoric ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-slate-100 dark:bg-slate-800'} p-2 flex flex-wrap justify-between items-center border-b border-slate-200 dark:border-slate-700 gap-2`}>
-                                        <div className="flex items-center gap-2">
-                                          <button 
-                                            onClick={() => updatePeriod('isHistoric', !isHistoric)}
-                                            className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border cursor-pointer transition-colors ${isHistoric ? 'bg-gray-200 text-gray-500 border-gray-300 dark:bg-gray-700 dark:border-gray-600' : 'bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}
-                                            title="Toggle active/historic status"
-                                          >
-                                            {isHistoric ? 'HISTORIC' : `PERIOD ${period.id}`}
-                                          </button>
-                                          <input 
-                                            type="text" 
-                                            value={period.dateRange} 
-                                            onChange={e => updatePeriod('dateRange', e.target.value)}
-                                            disabled={isHistoric}
-                                            className={`text-[11px] font-bold px-2 py-0.5 rounded border w-28 text-center ${isHistoric ? 'bg-transparent border-transparent text-gray-500' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
-                                          />
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Total Arr. Vol (CNTRs):</span>
-                                          <input 
-                                            type="number" 
-                                            value={period.totalVolume} 
-                                            onChange={e => updatePeriod('totalVolume', Number(e.target.value))}
-                                            disabled={isHistoric}
-                                            className={`font-black text-[11px] px-2 py-0.5 rounded border w-20 text-right outline-none ${isHistoric ? 'bg-transparent border-transparent text-gray-500' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 focus:ring-1 focus:ring-indigo-500'}`}
-                                          />
-                                          <button
-                                            onClick={() => setPlannerPeriods(plannerPeriods.filter(p => p.id !== period.id))}
-                                            className="text-red-400 hover:text-red-600 transition-colors ml-1"
-                                            title="Remove Period"
-                                          >
-                                            <span className="text-lg leading-none">&times;</span>
-                                          </button>
-                                        </div>
-                                      </div>
-                                      
-                                      {/* Table */}
-                                      <div className="overflow-x-auto">
-                                        <table className={`w-full text-left text-[11px] ${isHistoric ? 'grayscale' : ''}`}>
-                                          <thead>
-                                            <tr className="bg-slate-50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                                              <th className="py-1.5 px-2 font-bold border-b border-slate-200 dark:border-slate-700">Facility</th>
-                                              <th className="py-1.5 px-2 font-bold border-b border-slate-200 dark:border-slate-700 text-center">Alloc %</th>
-                                              <th className="py-1.5 px-2 font-bold border-b border-slate-200 dark:border-slate-700 text-right">Alloc Vol</th>
-                                              <th className="py-1.5 px-2 font-bold border-b border-slate-200 dark:border-slate-700 text-right">Est Outflow</th>
-                                            </tr>
-                                          </thead>
-                                          <tbody>
-                                            {[
-                                              { name: 'TECON', allocField: 'allocTecon', outField: 'outflowTecon', vol: Math.round(period.totalVolume * (period.allocTecon / 100)) },
-                                              { name: 'INTER', allocField: 'allocInter', outField: 'outflowInter', vol: Math.round(period.totalVolume * (period.allocInter / 100)) },
-                                              { name: 'TPC', allocField: 'allocTpc', outField: 'outflowTpc', vol: Math.round(period.totalVolume * (period.allocTpc / 100)) },
-                                            ].map(row => (
-                                              <tr key={row.name} className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 whitespace-nowrap">
-                                                <td className="py-1.5 px-2 font-black text-slate-700 dark:text-slate-300">{row.name}</td>
-                                                <td className="py-1.5 px-2 text-center">
-                                                  <input 
-                                                    type="number" 
-                                                    value={(period as any)[row.allocField] || 0}
-                                                    onChange={e => updatePeriod(row.allocField, Number(e.target.value))}
-                                                    disabled={isHistoric}
-                                                    className={`w-14 text-center text-[11px] font-bold py-0.5 rounded border outline-none ${isHistoric ? 'bg-transparent border-transparent' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-1 focus:ring-indigo-500'}`}
-                                                  />
-                                                </td>
-                                                <td className="py-1.5 px-2 text-right font-bold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/30">
-                                                  {row.vol}
-                                                </td>
-                                                <td className="py-1.5 px-2 text-right">
-                                                  <input 
-                                                    type="number" 
-                                                    value={(period as any)[row.outField] || 0}
-                                                    onChange={e => updatePeriod(row.outField, Number(e.target.value))}
-                                                    disabled={isHistoric}
-                                                    className={`w-16 text-right text-[11px] font-bold py-0.5 px-1 rounded border outline-none ${isHistoric ? 'bg-transparent border-transparent text-emerald-700 dark:text-emerald-500' : 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 focus:ring-1 focus:ring-emerald-500'}`}
-                                                  />
-                                                </td>
-                                              </tr>
-                                            ))}
-                                          </tbody>
-                                          <tfoot className="bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 whitespace-nowrap">
-                                            <tr>
-                                              <td className="py-1.5 px-2 font-black text-[10px] uppercase text-slate-600 dark:text-slate-400">Total</td>
-                                              <td className={`py-1.5 px-2 text-center font-black ${period.allocTecon + period.allocInter + period.allocTpc === 100 ? 'text-emerald-600' : 'text-red-500'}`}>
-                                                {period.allocTecon + period.allocInter + period.allocTpc}%
-                                              </td>
-                                              <td className="py-1.5 px-2 text-right font-black text-slate-700 dark:text-slate-300">
-                                                {Math.round(period.totalVolume * (period.allocTecon / 100)) + Math.round(period.totalVolume * (period.allocInter / 100)) + Math.round(period.totalVolume * (period.allocTpc / 100))}
-                                              </td>
-                                              <td className="py-1.5 px-2 text-right font-black text-slate-700 dark:text-slate-300">
-                                                {period.outflowTecon + period.outflowInter + period.outflowTpc}
-                                              </td>
-                                            </tr>
-                                          </tfoot>
-                                        </table>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            {/* SECTION D: Inventory Projections & Capacity Stress-Testing */}
-                            <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100'} shadow-sm`}>
-                              <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider mb-3 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
-                                <Database className="w-4 h-4 text-rose-500" /> 
-                                D. Inventory Projections & Stress-Testing
-                              </h4>
-                              
-                              <div className="flex flex-col gap-3">
-                                {[
-                                  { name: 'TECON', live: liveTecon.inv, cap: liveTecon.cap, peaks: teconPeaks, peakOcc: teconPeakOcc, peakOccPct: teconPeakOccPct },
-                                  { name: 'INTER', live: liveInter.inv, cap: liveInter.cap, peaks: interPeaks, peakOcc: interPeakOcc, peakOccPct: interPeakOccPct },
-                                  { name: 'TPC', live: liveTpc.inv, cap: liveTpc.cap, peaks: tpcPeaks, peakOcc: tpcPeakOcc, peakOccPct: tpcPeakOccPct },
-                                ].map((fac) => {
-                                  const alert = getAlertStatus(fac.peakOccPct);
-                                  return (
-                                    <div key={fac.name} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-slate-50 dark:bg-slate-900/50">
-                                      <div className="flex justify-between items-center mb-2">
-                                        <h5 className="font-black text-sm text-slate-800 dark:text-slate-100">{fac.name}</h5>
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-[10px] font-bold text-slate-500 uppercase">Live Inventory:</span>
-                                          <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">{fac.live} <span className="font-bold opacity-60">/ {fac.cap}</span></span>
-                                        </div>
-                                      </div>
-                                      
-                                      <div className="flex gap-2 overflow-x-auto mb-3 pb-2 scrollbar-thin">
-                                        {activePeriods.map((p, idx) => (
-                                          <React.Fragment key={p.id}>
-                                            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center shadow-sm min-w-[60px]">
-                                              <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-tighter mb-0.5">P{p.id} Start Inv.</span>
-                                              <span className="block text-xs font-black text-slate-700 dark:text-slate-300">{fac.peaks[idx]?.start || 0}</span>
-                                            </div>
-                                            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center shadow-sm min-w-[60px]">
-                                              <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-tighter mb-0.5">P{p.id} End Inv.</span>
-                                              <span className="block text-xs font-black text-slate-700 dark:text-slate-300">{fac.peaks[idx]?.end || 0}</span>
-                                            </div>
-                                          </React.Fragment>
-                                        ))}
-                                        {activePeriods.length === 0 && (
-                                          <div className="text-[10px] text-gray-500 italic py-2">No active planning periods to project.</div>
-                                        )}
-                                      </div>
-
-                                      <div className={`p-2 rounded flex items-center justify-between border ${alert.color}`}>
-                                        <div className="flex flex-col">
-                                          <span className="text-[9px] font-black uppercase tracking-wider opacity-80">Capacity Alert</span>
-                                          <span className="text-[10px] font-bold">{alert.text}</span>
-                                        </div>
-                                        <div className="text-right">
-                                          <span className="block text-[10px] font-bold uppercase opacity-80">Max Peak Occ.</span>
-                                          <span className="block text-sm font-black">{fac.peakOccPct.toFixed(1)}%</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                          
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              ) : currentSlide === 7 ? (
-                /* SLIDE 7: MÃ“DULO DE GESTÃƒO LOGÃSTICA CRUDS */
-                <div id="slide-logistics-cruds" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
-                  
-                  {/* TOP CONTROL HUB FOR LOGISTICS */}
-                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3`}>
-                    <div className="flex items-center gap-3">
-                      <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
-                        <Package className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
-                          {language === 'bilingual' ? 'LOGISTICS MANAGEMENT MODULE / æ¯”äºšè¿ªå¤–è´¸è¿›å‡ºå£å•è¯åŠé›†æˆç‰©æµæ§åˆ¶' : language === 'zh' ? 'æ¯”äºšè¿ªå¤–è´¸è¿›å‡ºå£å•è¯åŠé›†æˆç‰©æµæ§åˆ¶' : 'LOGISTICS MANAGEMENT'}
-                        </h3>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                          {language === 'zh' ? 'åœ¨æ­¤å¤§ç›˜ç®¡ç†æ‚¨çš„å…¨éƒ¨ç‰©æµé›†è£…ç®±æ•°æ®ã€è¿›è¡Œå¢åˆ æ”¹æŸ¥æ“ä½œï¼Œå¹¶è¿æ¥åœ¨çº¿è¡¨æ ¼è¿›è¡Œå®æ—¶åˆ·æ–°' : 'MÃ³dulo CRUD central de equipamentos, BLs, ordem de compra SAP e importador automÃ¡tico.'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => setSheetsModalOpen(true)} 
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 uppercase tracking-wider"
-                      >
-                        <FileSpreadsheet className="w-3.5 h-3.5" /> {language === 'zh' ? 'Google Sheets åŒæ­¥' : 'Google Sheets Sync'}
-                      </button>
-                      <button 
-                        onClick={handleClearAllLogisticsData} 
-                        className="px-4 py-1.5 bg-gradient-to-r from-red-50 to-rose-100 hover:from-rose-100 hover:to-rose-200 text-rose-700 border border-rose-300 dark:from-red-950/40 dark:to-rose-900/20 dark:border-rose-900/60 dark:text-rose-350 font-extrabold text-[10px] rounded-lg shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 uppercase tracking-wider hover:shadow-md hover:shadow-rose-100/30 dark:hover:shadow-none"
-              xœì}k{ÕÕö÷÷Wl\ZË­åSìÜÄ\Š­$zPlc+á¡yó6cilM3Òˆ™Qb×õu%”@8„ğ”%M¡´„>%¤-…pøàB#ÙùÔş„wæ°g´O#ÉC=\ÄÒhf×^{íu¸ äšø?€s,ØšSESsœi­¢ê9ŸŞ30Êèß08VM­ºT×–tpèĞ!Ğûór/xô6ï\ÚøènãÒÍ¿¼Ù|óvóÊ­^0z¢Ûš
-õ’Õ»Æ©ôààBİu­*»QKÆ9ÖOŞŒ_Vægó¹xzfîÉùÙÌdËM²Úp–C÷wÉ6J ı“.Z¦“æÒ8õu,iµô(X4õeø£uN·Më|ºl”JzTÜôp»+Ì›¨±ùìª­ã Ÿ›~<™Ë›91Ÿ“3Ó…Ln:;7ÏéAKVÏÀ6Ãæ¦šV…mEíµ­zµ¤—ÒË&X°ì’nƒÇWİ²^ñ¦±¤ÙgñD.,¥O}oX9°gá´÷dÚ15WOï®¾ì¦Ï—WÇÓÆ_¢§¬•à¨8•Ş5<Td¼`›ÀÏêk,®¤t÷¼G,Á•´Vw­3k<ê<¸hÙ`UçëÃ=´ZÖª%SŸ×ÎéÏ”&­ª«UİÎ[K,¿è¬Ñs
-Ç¡¨Ã
-öp¦†EÑV£Iñ»¹ já·%[[A}hÇ#ƒ±hHP)§Z8¤']Ô«.œ'\µ°XÊáºa–ŒêRléÂ…;JfÍ†“?6„fÆ6ªgÓCh1‹Ë,F‡8²µË,‘2OÔ–O“ÏAwÉ P÷†á½z­¦ÛEÍÑ, x¶4íKeWÒ/Àa7÷ş§qëÚı{o4î¾ñà·/lşáÒÆ­¿‚Ôıo~·qóµÁ¿û=ùÔ‡©ô¤Q-ÖMÈ‡*%Ì®ßp>[òÆ`°<*œ={
-sÂM†á
-‚L.§pÄ)-Qãê/asIF„£JFÖ]©Á‘G{$ÏZÕIÓ(=´šê‡à y GwŸ)ÍËz©nêÇ­’ê-ú£ßÛ÷céûdqS{ŞYÒS==Ò—×ÄS
-"Œ²—®GË)c*_0!‰R$ë|¥„¨·êpªiÍ4!•öd%2„ŠÃ¡¾<¦Œ–ïŞ1šû<vÙQ)®ü*æVc‘UŠoÂ[eÄ‹é•»Ï®å—‘¡!Y­kgÄÑŞÊo¾úR°à›¯ıjãæ+xÏZÔò–.j‘Ä<µ#Ñ‚™dõ6¿SËv~w½p/îzi¾ùiãÊ›àpÄ¼“ƒ"†aË·AùŠ‘l…|yİû½Fo“t1H¢i0u‰>é*”5“ĞbE/õŠpŸdŒ—pà`Ş¿÷,ï½Ğ¸~÷__^.d¡xşÏsÓ…ìÜñÌ\®;Ùøø¥}ùRóò[÷ï\Ø¼ü"¦Ü¿óñƒ/5_ù¨ñùßîßyùş—ïm\{>de—ßò¦éœ•Ôá|Øüæ·›7^½÷ƒû÷~C&îŸ“´Nì¼nêE¸ĞtP¯ ´Ñ¬ÿ‹<Vİ€…­JÍÔ]5ÛÖ—àš UË5,Á¿š­¢m@y©^Ñ@Í¶à@W´õ×ÿ`¸¡PŠŞÌÁÁšh¦c"‘/œ@	Oì²#7xd
-%9BÆ¸Ó.8o¸eøY³‹eHÙµºË=1…M‘ì¦¶ ›tsLr9š@™ÌOLµ1U¸'Eª¯JO€“+JŒËÏ?ì¥	@öÙºQƒ½®Bj	DføXŸ´âqaÅqRo©ş¤>÷Â“( Itaµ!#†‰^*ÔJÎh^!%Û:äûÆ9]:Å½JÙ* -8–Y‡»—©/ºdXµp­øLPzšƒ¨?Ò™#*\&Ï pN3ëP€DŠû@ÆM&G`A‹%PÒ±(DªŒ”>àjö’îà*úäeÖàúÓËğdªÛ‡˜;aJ¼”qşûİ__Í×¯o|ú~°(W?G¼ù¥/š¹‘jüé9`Z.éÀTK½„Èv4¯¾‰›ÿRZŠ™2–äRÙ]•¥ƒ”¾<ÎnŠ÷
-l
-÷Y…áŒPãbÊl53½îé= 	ôiuŒuXõ”L]ÈÈKC²/r´õ· o·ª–Ç_¥KÑ@<«îšp”   w¿E«XwÆm$Ó_<=ˆŒ¸eÊ‰8ƒ.	óF4)[²Ù×T"y\/Qçæ\iMşzË‚ä¿/ËV:JB6˜»ñ©©ä(ÊáR¤¦m¤†ÓjÕĞQÈ›µ‰tš#½o~ò9Ù1~Ô•ñ,úÔÒéƒƒ¤ly#VJt	Ó-ªK0Aê±(×ïƒ;[·«ğ¨W×å'Tà?^ÑÜb9è)1Uì±Òå%®õT´šz`÷¬hv	‘'8„?:§Šèo®tú‰*ºÿ‹_ ÿ–J¯H©†ã/ü,ØôuÒY(:º3àX=eê¨¥¦>P„w²í*<½ Ù/%…c(c#äò©î¬¾rhU±æ³üEN1äò^…ğæò8s*?ŒÃC=¹µvú¢QDzã»RğgÇÕÜº³ÖVé‚tşí…÷Á©àÎé^R€Z·”) %2’U{p°Yq…x—ß2ö~Øì„«j¡]vşØypôiaç‡óIùxÆ†Ã:°h[•TU?Ï0nŠbíO,,˜}>§?lY¦®Uûú‚;æIÄ}¶ÿNù,b¼‘‚ ¬¤ú\+o‡‚<L§”˜!jÔ³ˆÅØ®ó´á–S½Hæ…â6dá-÷uøCŸR_ı–Â—
-º]í}vÀÖñq#5øÿRğö/Py}ÿ×ùÑ`?äZ}^TšppjÂğæÌ&27?ø˜wå¦<Öû…«£jÀ¨ÍzIwR^{û”¢Âj½¦zmÀmâVş,uÅ^¥Ğ".Éïr|èSé¹'4$"~Bx×„ÜÊ…Á¥¢]í0õê’[V_şæéÀ*Ä«\TkÀ¤úÜÓC1ŸMl­,‚Û#ä›²4â½¥‹`BÖÈäôÑò‡3ğ3Ë¨¦zúAÂ6‡›¸Cå
-¡>Sz*EZ®£È½hÙà©ºQ<2u×JÃ	7m©Ô–-õTª\eJW¾Á)j¨, £zÏ„¿Õj@IåXM&—®ÚÒ“A¹­MíØasÇIkXÍÚøğ”8ZÕñ•ãÃBß"©…¢-³uG9#|dÛÉpZ;gX uRwà2ßÄHšÒ.A’·w‰2¸:%J9ó~Dğa¤âƒ ©	vİãö´Í‡ÑË»T\"+öìŠHç¦WvE>­ÙzÙª;ú£µÒLÕ\‘¾\2mÁÔK^«Ÿá$´·?!íæp6©bİv,~v‘—<Ö•>ÏEó”nçt{øJbşnÈË¾_°¿8şıî—À”æj`r
-Ìš<c‚î„EâÏl›Ş.÷¦ËèÌÆÜó¼ÒÇ§§¦ä}`.AÂue¬MO|õ¡{¸k«L;æû¦”ª‘,Üm0ª
-ÙöÍbÛ,@–¸=©.„„šı•©¦­>qÀ¯ïÊ%Á•Xm?›ÊN²P<ğ>©k€bEeÀdæxnúØLÏDğ±ıÂ¦r™)TşÛv1°CsÙ£'`÷üOm5™™Ìæq£‚ª…©)¹şsÏJä(]³lW+Y¶2·ÙÊmwR³m£}¯.ïõ]Î\»zàyí@R&ö3ö6\
-¤oü›²æ,ñì×ƒ«i{#”òDõÛnfŸÊÎOfæfz&üO u¢jZZ©¯ímşéÌ,”øà¿ 5^«µ_ÒäL~6
-LÏ€Écë¿D[eìHÍB]²ÎWÛ¯e*{r&bıETÜTœÌü$7ƒÆ£õ.HÍûœ^©¹+Ê5vi»~8ÇØ+ o5“ÍLæ!)o/™©¢ògÑyqfÑ¯³mÂ,m—·lo	ƒïG )ÑßÚ^ªT!û"Eîk»ÈÃ'ÉÎá¡‰àc7Ú7i_WŠ9Üv‘G³s™|Ïş³ÃÒßIˆùÜÁø"šf8ç¯ <‚%´HK†×k¥m€¼EH $‚n€w,GÇŸIxbğó¾0–Ñ{(Šõ@³]:ğ‰rÖğâ¡ZEÁŒ;ëéc¾·fÜ€pŞ@\§Á `Ë©¸P”å–pFvö(1ÖÉÆ[›·> !y/>k¼şjóã?F‘tYÒ«»	£äÄA•à……ùÒXÏå‹`ŠÉåA$3=
-™Ãù,¢ˆ*ÒCƒŠìç€ŠğAüı%Dao$Šh!o…s†cyTJãø³mÇT´‡Mg~•P¢å•â5ùa_À[˜m9–…xD ÕpÃÁ„`r¥=æ	8G;iºP°a‰4JË,\[ÏqFëÕãÅcqıàp¾l^ş¢ñú•¸X{×!S²AF ÏaWô˜°c[+NÅ£­(^$U$š
-	V|VÉ¥ñÎ¦`#DŞ‘‹×qº#®Â“VE_nŸø¨BZ¨Oqâ·L€Â%Ğ2	·¼˜n9…)ö&G ¼ °ñògÍ‰¯:1‡àûã `•,§wMEkQ"ÏEÇÓ|îdv.;…TÉ‘mÙ?ù´KÙ$>aÖ{ÙX1ñ§uIsÈû® ó%L½XÖ‹g¬e!c‡TÓKÔ"Cn³PŠB™äè*\fT1á2ój/´ÈRóVFxÚßµGú
- ô*:ÒÂÎ5²‘¼ÃY$÷ï]jşæëî6¯ÿ™ 5à5’©éUÍ¨Óˆ<ğÁ¥ÈP¨ˆNDÌ9ÎšáiC­ùvHF)§OíÙ…ú_òq‘û	cÄ„Ä“ÈÁßãwPş2µš#¢íƒnY×JÂ)qmu&LiTÑÖ^PdŞô)r‘)ÙİˆÜGûáŞ·ËÜT(–tËÉ‚<ÕªÂuf ‡Ô1ìİ^IÄÛ¤°hÔv)y]èÚ,ƒÌáº=ØM…œ´JÈ_¥İv¶0k	Ü°ºÑ6z£l{şˆñ¬“æØeK’=â"+şn‹8•dyt¬Ò
-İÈ…àRH¯ ïC`¢w?\³„-àî‹¬Uro_q5}+G?ğEW	Bg±“JH‰íqğó8v‰&Å$~Ãñx±Hb^dUqŠ§’.Xø‚ùD·‹DÔe7Â[”J¢5Ó‘†ÊTâ‘	¤Nà1´ÇCá¸õF÷Â–ÃŸXï$kY¤fJ@¢ë#’†ï­Ñ›¬å`Ì51¶Î€cE=6ØA÷‚ıı zŞ’‡‚ÑRBj¥é.cqQ(7|*†ß0p¤~=óJt˜”80èK±_ 
-İå¤ =¨	¥‡Åû4œä ã$î	öšiÂ#éGd½BÑJ=Üv„g{¿à…NKCv› ´È2m¿`<ğ¤;á[£>×Ç#F°Ï~gu{gµØŒùG‰°Aè‚TòëÖ!Wà´F¼Gqômº·ãŒiµˆŠ$ÊÂSÃ#Hï®ášºOóXD	Å'Ø÷q³¦34,"Å(°r|@Š¢C.£Õ±‚1m#Ç6‘7ªşÜëÍz1?Œ©	|Ìj½¢Ûš‰N€1­‹ÿÃˆğoÂõöÈ2F¢2~ğÓ’W|Ôk­² k©ŒÜª"_éŠÈF5Ş¤’5>vôbš_ı¡„ !;š†ÏuLè­ËºHÜnQm(ìÒlLeäÆ¹ğŠã¸ª½å~xU#‘©u»üŞƒw>Øxé£æ?.nŞºİøêMLqÙe(6vc€'^5l¿ÆŠ³ÄªO±"x¦ùÜÍ··®mşéâı{¯#†¹¢eëàşI£CÁÇ™ÛØ¸ö<İ±ÆëoÿëËwÏ(·bœ™Òıg
-‘1Ñ‘V‡Ÿ*hcF¥Dg@(¬ŒRğ—œFÁ‡‚¾<qFu\³õgë°hx
-_4l¸ƒV5…§¿ÍI?Ğœ•j¨¢ûìE‚§ĞÎk†JPüpõ)«˜*¡ÿúAo »¡cto? …«ŞŞ¾¾«öJ‘ ˆƒüRºm[¶*°¹*M0YT)§ÌÀí[a¥¦@®Ÿ-dûÁ™HËÄÂµ3Š°¸ÍŠO®)–¹¦àßƒ®ã
-”Æ¾ú’B&rc ºú‚
-e"ˆî>Øò^ƒ’@Õõß
-£7°€È4ß¢›à’½Â¼ïiP¹<éEÀæhÖ¦´U©mŠò&J»¢
-F8yR¾c‰U*èê<[””Ô!Œ¡"QIª÷¶TËœ‡²À¡ÕkQ*İ £šÒ˜ò4ïSE$ÙŠ9 Ö×k¾ıÉ+óÏÏm~òùÆs_4^¼×¸ú÷ûw^n¾õ8jYKp[/ëºë â’Ñ¼üÁPn^ÿKãúíæ[/Ş¿÷Yó•·š¯|…‘”!õMëÕr½5^ûG°6v„Qñüñ¼]{C)¥=ˆ¾Šôk|KVË·ç5ÏğpWÄ&5UŸl
-‹{LDLc±Ñ?>›RNœÂ@Ymå=ßd%İ‚å§PŞªZ£ğ|BÂrBJpÄB³šI\„ş¬ úñ¿”ÁnÖ_7Ã2£8-¿Æı1R5t÷¸æ–à~Kƒá~0,æP4»ğNÃ²|&~Æ­šV4\42wÊ¿4fßkËşíÛÏƒzİ°ì¶ı´ZOÀxaÖ50Vñ¨uÃLñ8ú Ø¯†å6ÃöidâPkIçtT?‚´óİ#Y{ıïËFÅß¾u·mÒiË®Ëû…}ŸY§„ƒ€$ÅyÓğ ‰÷3‰*z>7•ûÇÁ,JC–ÙÿÎN(äNâè¢ŸÎÌ£hñ¶6
-±B£t¨ÇAõ¤K-)[7{"Z#±ãßã«H1ämø£)C± œ>e×b
-ÒÈ÷ÓûÇjË}§ã‚x—¯UdàŞ»o$8OÇÂ¸…vÆcÙÌTv ê¿R¹Õ3ÛumH”uöydo× =×ê»ÅSGuêúß;äĞK‡ºalPÊ;jÙ”ênùk’áõ»ö­ŠÕ¼éZİttÁ9Aè*.t9XŞ#Ë©æT¾Ï$ıœ¸ÏI2«ÅÄìÃ4Ğw£§\}Ÿ™ÎfærÓGÁ|!SÈÍLÃM®óÆkÏ5^¸Ô¸rgóÓÿyáâæ7¯o~ıñk\}¹që÷Í·?»÷ƒæõw›¯}Ø¸ü¢Z¦\ßfYa½f	½¬Ë{óÁÊ:Ã ,axˆtfhpgHo\øõı;ÃÎ7àñäú»èÃç#îDË·á Ñ‰b6_~}şõå«+W/D8K7›ÿ¸¸qó8XÍ7/oÜº±ñúğ™ï\¹ÿÕkÍ{¿G/~úÅƒ?¼öàğÕ%tÑ—õbİ5ÎiH öìRºàD†Óá=ÛÏ¢ƒE[wuxÛ*; y=Ã?H'G¥Œù'd‰bx?uÅå)i:ÅQ²[P:˜xlD¸†Y¶•C@7{%Ÿ™.dÀTn~6S˜<Æ'¾”ØnòÔÇgàâšÌÌMÍw:uí&á×½Âİ`õ§ƒ«Y‹|?Àr˜„mÈ°ú‘ÖÂ²É¶î„1a“†b‰//â‚ëUw¼¾İ“×úå-,1a³}¯ÀhËÉYØoxàAÊö>£ÍØ£,æ$h<íàõ4ÚŠù¿õ%én€vAõŞÓ  V¶¢ÆV__jÇ_öQnwè;İ_|ƒ6›E,Çmu7lk².bº%²Àhçó`ÌØb&äÛ©7GÇÚì!ij¢îî&aIìl=F°”ÁµÅ¬Ê0½Š,­‘÷ÛÎĞO&Iwüª¿“Zµ¨›-sŠãâüŞAr¾†}§û‰o´tßmw:Ã¶Êºxš`>kvIä\ƒ¹7w"Y"`~Òî“­j ßO‚¸@z¨²<òDşUO€*òÔÏmAô|µ‡q¾Š>ÁˆPËñ*ja›Aö /}á	•òÜG¹0P0ù¬Áo%ÆˆTÔ¨@±{² Ú¡İË…ÁM™@-E«SC™„ë»Hø½¯bÙ7Ö3Aº…WŠ\?¯>†Næ§x U“ºHútğ0–·°¸ :ï#ö3ğ[¼³Oyí”¨lùâ&[ñ)¡2“x@¡0³ó(3d!;‚ÃËü:Ot
-¼Ôî,q–Î:O|ôş1<(A¶säKnsõÌ¬Ä-ì1Ì‹<Ø}]à5¯W0p`/ÂŞ'~%øÛQ¸Hkãç¢„¶nâ®°„÷êgeÏ¡9d¢Vá´[Íc.LøZ„õòJq—5%LÁjBaŠŸ“ y„Ò=XøßOÄ,ÌUòsMz1(÷Ğc¥ü‹xPsÀœ^„<ğ ™‘~È91ÊÿDß©`pNs+„òœ‰¢œ‘Oc½RÑì²™9SŞPA 8Â–Ö1Z‹ŸC!Òùè.X¢1uÈøú˜/¾°yD–iÁóÀ>¯ÕÚ«ÄôªUR«»SÖùj{õÄ!cë$´’E@/ín+€U7§riÌÌ°\ĞÙÚhL÷‰Ô¤cCÔ–Ş»rK±Ó\±—‚¢ÚV^ªZ=p¹:Ñpå0ô $r.ââ”!“8›VJ0ÊÜ©ƒèÆ>Âëê-‡Gs†¶+4[Õ¢mûlŞºÑ¸ü+OÅ†ƒ“SÍ·?{ğö§ÿúòQ1¢Ğ"
-9!áê?ÓJÚx/’I\Ûª.	„¾–¶fb'\P0Á¥)¸š(¥¤GW’´ôèJœš]PÒŸŒì-©š­ŸKâÌæ¥Ò±j+G­‚\Âš`“Rw}¬­„û*”tmŠÜUKÒ6ÕVÃÔÒ0©xAEıÇèóó—0eùŒubaÃ±ƒ­«˜È•WÊ¢jY/ÏMŒ–ZxI«}³ñåÏk²š’a“dºlûõÛW¯¾…_8nTŠñsÍVI~«â kñÁÉ²~®b´ÙËx*†–^9Qã¾àÛĞòf«ú¬©x|+Bºuc#ŠŒ¤Ô•×ßhˆ­8•q£Š$útBÔ£c±Ú
-­F×)@ ÇÁ*%Ë®_ ï"&º‡HŞ£%BtËiğ~\j[§f\Åw_yJtÄ–xbÈÃ3™‰Yf’D)£áÊ8.­Ñ)ë%^Zşv" Æ¼’¯|¬?ok5ÏĞ[s…ŞaŠ³v–r‹Ÿé8ôk'Çè;KèÍR ?œ8 _hè
-Ä4…¥òïwßø#G#–_ÏªÃñì]‹­¬.06ù¸ÕêvÍU½ŞWzô¼[-èİßª1üõóœ1Döñ+ïx–»^È¶eìx††cŒeçØ‚qûö//şëÎUŞAàõ¯üœÚ\V<‚~½-ƒÈ¶4´ZÆ–…­ÀwîñğÁ…İõ–o¨5`aÎâÑlÙå¶CV‘çb– ¥ÈyñV¡„È@QÂ'mÿ[åîÕ£Œı{Œ‡…2ÌÜ˜÷ÓnH* (Tÿ"›_=ÅAƒ ç¢”M2<A±tBÈŠ¡ÁL`Ãæ!ãé°Løó*ğPIf³£[(É‡mÕ{„Î}¡æ+ğïCfÒHÜ1ÎB”AzJÍ&Ùˆ‚,õ?š_¤<„åa•GòxO©-×.€¥îåã¥04l{Æ’á@ñ6"gcƒ
-·S×óxQ¨h¡è¥Iøn<crµäg.6Jxwa„j*áyª}/OW	q”gUjVEÇ!Ûİxê¤¾†êØŸ¼8'y›>,ünïdP˜FwY§¦E£ˆÔú¤ôP¢ôËD€4¢j%E–OšQâ°}å"Gª.Br(ÀÖ‹šBí¾
-mhÁö‘ ˆA×ˆ !"ô­œ+›\³ş	ÄJHÒÃdC¢Ï<Í 2(zÅˆÏèÑ¡x"¯‰F>!¨#psg‹ìÏb­^5kë)€Ï¡‹­M2}ª©èËC_õù m/Dı
-l±ŠĞş¢Fzğz2<ÿB¦ó(~+µ‰DÃ›T'WÒ{r‘Àûz’Ş÷Ã!ˆ4{Äº·–$6Ÿ\t„~²ø|rñ¢ôã1ú'f‘[K·bô½¶'z^Éˆ^Ñøµ¤Œİd Ñì3‘VVú–r¨víf2úJ¶slEAù$ã”ºE‰y„ã´ÅIz"u+%»ˆ¾ÑáN´Íûç—Å9ÚçñõÈì8¾OôîV“àéïöV³m[I'¹WÅv–‡UTp›9YEv’ŸUPl'¹Z#Ånû¾2Lk‡[5†cÉöÅ©ô¥˜¥õ*é‹ZİtOÒÛ×A¹Gœe¤õ²ª‡ÍºİéŞµısv÷›DO·½ßœOì÷_°ù m„‘€~,ºıx	èÇüÉÒÄËÓ2Ux¼-‹Æ¦jwûR#×6Ì›qQ=ÿ5ŸÿOáV^·wùS¢§;‘‡ğ…*©Š°´àOª¦ëŠp° Òº†â¬bj5ä¨£ãiBîµ˜”šM]jNÌ
-¶;ê1>š]øÌıC@!x—Ó[vÿ$¨L±’YøKÄøKÆá&Gëçr3àxvz>“Gª£©Ü|a.wøD(“€0!àO”¤òÑÁa’%­” RZ½ÌGœ˜yÕÏ‰$Õ<>3]8–Æ›—ÌÁÊóÇr³p~
- 7}dÆK·©¨¸z&H±	»İRc")I*N~øT|Rüˆ+bõ¨¥øäN”?YÇtr4°áÜƒó†[çı<p­¥%şÄ›V›£Mt*jhZÈ!vBo7$Ìsb±ª…Æ‰23âò˜aÜLÍÒ²£ßÅõÍ—{ÙMz+QÔšL\ãúÔŞ¿÷’ä·ùö¯½ ~ æËF¹–ƒ\uÑÂ‰´hı†mĞ^[NË³â-QÅËQø#"ø“¹ìÓ 0sôh>;'¤m\£D)ä@H ’Ä „ˆÔò)TaKÀÖ
-AáSÊI¸àÑ6•ê­@²-›+*ñ?ñ\¾?­,‡?Ğ*†)ñ¸Ê! ë!O¿JòÙ UT¬RAÒ¥€hTäY,¤åÈäõò!/ü«m8éë—7?|¡ñÛ¯Ih˜^u4SÕY1ºê¡Q¸ãqœŸˆãì:çq•è?ÚÉİU ²
-şıî¯ğÂoşçfãîŸáG6¼Í7A*²uõ‘¸ú|B¯hUÍœ2ğÖ××¥Õ£Œ%x +A‰«*´'õâ´F†ı¼Œ5
-„I8	>Ïª(<c:1çè¥§ák*Z›–¿Ê1âóTMñ<Ûjê(ª)mÅg|)†²%aÕI²z{KyŒgŸb  íP`±À®%ÈÕÉtÚ
-J¢„”…Ô§mP5UD¯º=dFSHÔ¶K+ô¥àí+®R7bzÃ"®‚åÂ£7ËW‚kæqô¦‚‚•¯|&VLœxŠ}DÈBÖ	UK	ÁÈ‚©9¯è‘l¹´4¡+!ÚNL¡¸Ïh[Òã¨g:Œa,¨@÷ Aœ²*d4ñ·y}‰úV@9£ƒoOÕµÈ7#òŞ2ımıÆ‚
-òƒ4$h$ödÌNb½{¼áAE¨Á¥šAÜ­0öƒ5¡î§ı ¤¸Ñxh5Do{3#™Î<ŞÊÒ¯zÈt%œşb ¦•æ‘F05Òz‡àÙL!Õ©®¤­(báDãç:ò«H‰‘ñú^¤/
-Û£ôQHbøQú"aŠvç–äŒÈI3DVoêq¤†Ø¨¨Z5éÓ´géA\ ©n[“¶‰•ë´9vÆV:<£‹Ùkuãuxl&šiÊÇFòÒñ£:n#q-A4İ},Wo-2jÄÂ“éøµf}pl(Æ}ğĞ½
-‡stÉèèRYåC¦²C¶YQm¾¸`êJ)Nöü‰UÌ‰¤ ­ôµÊ& %ˆNÈŞ¸_‚¦ïph‹ì <h,¦á’%îP7’·vpdŸR¶š«¤‚.N9²NÊ¦eö÷N•,2ÙŞrG¥äÒmá™¨9tî8I$òt6ûäàT&—': ©ìOfóğ‘ùÙÜ\vªeÇ¦š(ÁÅ¥QqG‰¹9™ÌMñëÉdÅ@ Z½òN}ohqxßˆvZ~B-Ü	eÇ5£
-²ËEİœŠ1eb©ÄpN}oaúïtìˆZøL*)§·ÎÇ^)&f0
-a
-Ëá¡µ¸ß]«”Å¦äˆèK9ôlE»AÔVèe
-LEÊàHC€ñÛÚ‚®ÄjTĞÔü‚M0á—±Å].ãã²[ˆIdLè*Â9aœºâVy…9İ§<§LD“e|vñÅ!Uf„"ÁITGLrÂÈ=ãW]ª,ßT|’I§	„„Àd!ï9,#Xød•),;â+F(9#"§ é›„’‘­à—\J[¸êÊê&uôLÎo­˜&÷!šì™˜
-‘1F÷ÕAwº:èÈ¥÷aT<9]˜Oyu?­ÙzÙª;úÃ¨<PĞ>ŒÊ	X6sÑª+7 -ÖiŠCİÛ‘‡ä¸C±¸Ã8êPr(†}-vÿŠÀ<É¥‹”:"õà È,ÙõÜ~tOeVC	z”çU;a
-½Ä×»)må\2Dì@•‡R8$Óë©:ø#µ]Îk¦Êğy‹<Q«	ÇßK±°|¡ i¡4‰!K$	™ğÓdD;Æ(TµOkb-w´ñ*^Izã¥Ğl×¡é 4àÔLÃMõ¦{ÄsxêdT~`Zš®#ÜÍ®àÔĞé¾~¹3|ºäşÜ9­NdÁ„,énn~{ ”ú"s‚î©OF¢JéCŠTçiÃ-§âÊzÅÎ¬õ©-z(eÖ‹z*¥‹^\Q3v¨ô‡GdŞÊç‡“ªO©fÁ°ÑÌ Q!7}4}8¯ˆMæuV_!¶Ôôµ_<¾º`ªØ8È…ÖÎcpÀNÁRN'Y ş;~ö Ü—~Ø¯~<„ış>0Nkİ&3¿ö¯–Zİ)“ùQTaQI#³ø×Z?Xe¥PX‡
-1§N£òó2‘¿¡ùßNãçÁÚD7÷}y|–©óI}±®™…ŸÁÅ> ËtRÑÍµo =˜R+oA¹±IjT“&/a¨'_ÿ4ÌP@E³	G¡yÛDøâøù}õFã¥+Íë—ïßûªù·Íë/×ökÏ{îoŞn^¹EõjJu°¸™‘Ä¿zÇQh%K”Î·e@bšê¾İéåE–Ø¬I=ß§ÄN?YS°BƒC–«Š¹FÂ=„X¨qyè{÷xÃ8òV9v—‰¯s¯}ŞßS§û|ñx	ÓÒ Ùò¼mjÖè°˜çæJËàmôDÀ¢¹jI_öëX ù­Èx,$ƒ5œ#†í¸ş†‰+CŒG‰q¾ğÕ§êZÕ5Ü•`büİÃ—œzeT±È7°q2lH­×ä€/´éÏzaœÑa(¼%êĞ"êN– ¹F[EÁÿŸä ­a-È­lTVªğ'<ÌTÔÒ–X«GÁQÖn@«zCuî.>m‘Ïè¤`™õJ5’c²=öÓ‡b…ÿt…'M¸oş)}é7HUt{	HQ7MxÖÑ9z…LDŸ’†Ÿ*Ù_;‰”ÂdhJIƒímë<Ù€¶İ„E©©Õ}IúbÂÁ¢Şë¥TÕ±Ø·8
-ÿ;M‡µ‘‘=c§eÖ8~HŸ‡&O!KÕtÅ(•3j„ˆc 2ŠİeÚõ(4Ñ %CB’qŠòX%SRµÔËtãÀöÃPÎóİ3Hn»Xª;‰ÁkDÙ
-½VN‡÷Û¤$›Ìé!òÓ$ôz$VJàMw·&‚™aä'ê‹OZtyt>ş+3‹ªÁ±.¶54‰±¬“"İ`YÂçp>á^Âêô¹y*Ú€	§ybBXõ¥Î¸%ø6š¤›:%6=´Á]`â€OxeúxçûºwŞ	Ôy£=;³c(Ã“Gy¾5¸Kt@È1Xó­Vln}ÈäÛÑºÇíß¶á
-3æÇÍB•í"}rŞòÑÌÜ åb](5€g4»”ôì³£hĞB¾1açğz
-»_¶&û}ÇC8L<‚`ÂAk©:Jó5İÊ•Ğ=ĞêvÁô°}÷ÆÒHòMìF¸eÃ!ª6J% }³¶U1} –œŠªÅ°:ëÜBUØÖäTèKí×9¸_àıÈxµï—à/1ÄŸä¯S¸ê‘xfÚİ:âÛÉ‚ıóÔLÖÁømßë4à†GØ-Ögğ0œ˜ÎÏd¦ÚŒä]èR­)fOÀÔÌÓÓ]ª€aa.[817²Çg‘³\[XÚ‰A¯ÛÜ#Şeÿ9Û#-Ûû_óùGqOÜ¾İ‹H»»o©<¿»oí”}«0;Ù3ÿé÷ŸËNÎGìşéR‘…ìÑãp[ÅºTdnº;™[¿RÈ¡²£ß»TI~æh-şÓ¥"ŸÈr°À	ÿS·Æx.3=?›ÿ®_„CM}ëR¬|şÓ¥âÏåòÇ28IIğq‡‹ó.‰AL°ª¨ı³Éê3‹AŸĞÎøtf.{læÄ|ŒŒíJ"é9†»²„×ş]YâQ•%hĞ3AëÛ§ŠÜ©`_·ö•GdçÀ0Š)ó?v¿íC‘¶oAÃ‘
-†»TÁÑì\îâøÏİlÕ]WW£ÖúRR¯#¥D
-id˜¼vŞã£H%Î¥€B›£- b)(;=f€ŸÌÌóª<=—™õ@²#oa|„ÌÜdLõ®_<z"àcó3Ó™|î'™©R.‘d“3s³3s™Bîd«¹wÕ)[çŸ†üÒ®@>ŠœŞêü¬fk%c©B¼²k5·—å÷XÒË¬c¼×µ*¢YÑÓ{ù0ê‚Íèïº€wÏ_+­Ÿƒ;,Lëüg¨8¿@yè{Fµ=ûÙæ©ÕóşàÃkàÛïÇ}Õ¸Áï&Aişä×÷ï^ÛüæÏ/}ÔüÇÅæõ»O^ ƒpì§´Èôd.“‡Ÿ™B>ënª·hUacª®ßgĞ#Ûk†ARQ/–8-Æ¿c›&7Íƒ<MæHNìT#lÉªádK†‹#ÃbsPsPH;pÂt©Ã—¿VÕÍxŸã® ÿˆU ç›Î”îœu­Šx|½>‹^{ı¼V[Æ(MGo\ˆiE-‰çˆğóO„9r¢şteòZ,}ƒŸ²l† üTÅÑ¡oYŒş:Ã#Z˜™Ç²™)¼}|İÔÒ{Bø§1ˆ¡–…ß’Á}ìkÕ–¶<|§€±iRƒ(Ì¦ñ ‡Ù,ïiqG„%Ûm–f¸ÈQînÏdæ¦ĞÚ+ÌÍäóÙ¹ƒƒå=Ìªj¼'Jhå¼ôLùAŞùÁ1c©œÎC>fLİ)Üÿú·»¿~ğÆ×Í×>l\ş¬qã×~÷~ówßà€–Yä
-a¢ü“$ˆ`aë£Ò¬Şµƒƒ5ÆP²ööÍØÌ31® Y«w!æ¥;@,×Tk¾1TÊXº	BQ	G2ƒ×à¨5¿¹Ğüô£¼Õš¦‚ÑaÖæŒm™ÃóxƒÌæ³­¼5Px‰ÄWXÀ\hÕœ:?0ÊGiÄL¡“^p«éÍ.1<ãÈâvt—Œ]A[HõârØ!¸ƒƒ`^w=d;ä7ò¤¾\¸o–u'´sšabØTŸ4AÕ‚¿˜¶®•P5¢9·ŒÇÕáÖ0ƒÂæÎRsˆÛcøQ-šu¸‡§"míããƒğÄ£ØaVÅ­›0ãäO=E ŞöğNÆ>½Äàœb>é-‰š?md=©Ã‡á èü/Áe˜½Ø`ËY>È@Áıã{p{[±¥+×ß{ï…Æõ»¨æèÏH„?Ï®ß€u·#Ÿáòö^j]Ôlè¥Åã¸V‘3ŸxñàrØ‹gËH×éÇp(Pú<ãùG”àÉp?J÷ÆÇ¿á|vèÙ:Ifæ}FO^ê*ÁŸÓxŠ’ïQòöŞbDÊüûíy„(`óòÍëïr)`Z;çs<òÎ¿÷JWç¿XFĞ	§Ÿ¼´cfßkÎ#4ùß~½yã&wòÚë7¡ğNæ?ø†X y±«$PÒk–	È7=R{×C)¨” ©±¾cD#„çœ7}§ïDbä.Ü¡çË:RØøÜĞ‘A³ıG`vìäÆ£D•W®nŞº…Ä*ÁÖG~ıï°ßqz)“~¹»,
-©¾–’²(üÒÎaQ¤91<¸teã«[\2˜Ä Y"ÉgHŞKjÓÏ;j#-LvıÚÔ˜Ê s7>sOæf¦‘ZåÔMC%¯ˆM”j6HÌÚr®}õÎûã`vıb!73Ïğ-àœ¸˜!àÜ±lE2˜5@¡ZèÉÙ|–WÃp4ê”m§E”2”Z¡b›ó£›r=)„º›\µ„lİA
--rØÎzş÷7¿>Gæh<Z©3rd=Î®"
-E•¤òñ’Úò3å€wjØäÑš¹%o1Ã§u,HÃêV½q4UC’;T(3ÛÁİ	1ÄÛÎF#ÂÒ—b	IT«“2•48İËÕBµyá^ãÖ^¼Ê%¡È-EôJS’0À¹  +.v?™1WS1”¢R@¨4è|`i(–~ÀB^Yyb ¨†^ÂĞ+}®•· ‡ÓÖ·–tÊÜAxu¤£'ü]h®İ%zL¿3ÅzM[ÿ!ÇÕmŸèïõFãÊ{¿¾¹ñÚ‹"Ò?×R\ò°z†A÷„¨#)0Î§+Úr`(¦ƒQBO%ú6­Z¸Š[‘œº¶FÄ¾t3Ê:ÜÔºÕTX;­8©ı¼{­8‡
-KØŠºk „Æ`fVó	p\sËxöS©5\?¢Zİ‰Ù­üÀEŠü$†ÄµzĞE¸Ú‰C`ÿH –ì>{bàë-D*_Jë´ "eø·èrü{Ñ²ü»¨<Qó‘7÷g(åK¶…İuò(®b·i…`‡«ïïnÉ[¶%áOÒ˜<xñÊÆ­¿ÂÍV$†ÆŠ²%Rh€«±glmîJ›iÏÚR´LİÕĞyıëKÍ«¯Kh;şP´”-!n»İ^ú®á~‘n=ŠdÎıIàä[|9k$®	“HRªÒøÊğ’-BéŠ§×bxjån Ãío‘êöÄR?ø(v¶njË:Ë‰\L*OòÄæ'Ÿ7®ß¼ç•æ[_<¸ğRó•_|F4¨×Ÿ¿çÏD‹ÕøÕ«“S×oÜúıƒw.5®>×|óö?/<'Ì>ŞVÖ¦¬yJY°ï5¢{ƒ‹	¹Ùº–´ÍX¶b¿4·°Û5şZwC»¯Q+ª’~ {¶k#@CÊre­Ğ1ÜêúŸŠîÈ{#h¹Ğ³›É#Z¼!#ˆÆ±8i`§-¢ØÜÊ‰c¶ÙwyŞ?¼ÌQëÚ™Ó…øw*yšV†“¢ˆ¿ 59¶ ·Ù©¬§ªlŸu¯°N´ä¦¶ ›r5ùØö¨É±×ÜŞ-_G§™Xbê6œg(_ÒÄ´¸ùÍo7o¼Ê³éø²¦à…*¹Jt<v<ëö?âŒ'ñİã…b°’ŞG}ùâï9q\F2ÔG÷§À©SšlSlØ?¦”Ä¨!e¿øÔ~ÀñPgÇ«q©Î—w¼MJà9å'O@ãy‰>8~¸CÁç4s“ö"ŸB(horÑg¡¶2P…“±Rğ“»RÓÁC²ª>.÷áGQ‰YÊøz"¿~q.7	Œ˜šQáHbÅÑA`ÿÙCøs*²N³ó8İÈ
-só3Å@"f?+AófÆ´ŠfcÑŒ$Õ¦-[A²íáVp,0ÎîQÊÁôµf'çdÁäÊ”¤áµf0ƒ¤¬x%YV]ùdÙ‘H&ğt†fœ¬ ]Ş1ƒˆA”cÿ°LßîØşşœMĞo7^×
-‚‘4·3ÏŸ„¾Peğ@‚ŸGó*x@ÑW		^xuÆÜÍeQ‘(µ˜fšø˜jq]è%¥H‹ıŒgQWÎ‚ÇàÆŸ¬•/ä¾dóá%‰1'À¸=Ùå¢Y7lÊàò{Şù€H(â©ã‚q‡Ìrœ‰àeÇî² Şá–>Py$ëØX(b/Qï!QO$Ë¸`kNy$*³ìë®ŒşeQQ/KsÄJÖ›2{æøFÈe)–Tjh F¡,Xà¿Tå@yåİ eFµV—â†NE’¥ôÈöä)ÌO}«ÈB‡´ÈÎ°-iòC”Ÿõƒ^¿Ç¡&Vû×V‰×€Ds®Ši¶»!Zû—díÉv².·![NÜØ¦ä[)@
-kûvqã–me£ÒwÉš{=|²5-ñ¾*6±ç‚îî0ÂÆÆá-#l\ú.as¯G°g-ÛE„İ¼óIãêva×pË¶Š°qé»„Í½>akˆbb’¹§FØLãò lÊ°»uôMU²KæÜëá“9í\Àôğ““º‡]‡wÌµ;ÌKA«¶ŠÆƒv	œ{uNàôX-3ô­=·
-İÛ–?gâ[ŠÌ]?„eÜ¿óróú»Ä#hG	0°‘†Uw~JìâHwŠhdN]	<XÏŒƒ¡-ÙèJv÷êd±ˆşø?²A30Œ!Ç|89“Ïgfçs‡óY09—ÃY$N¦C57åéÚ?7È	"Óâ8gR	¢KæšŠÉ…‘¶lÏ”04ÉË®¤s¢7˜ğ=Ä4/&&Ä0Ï=ˆëÊCpbÁØÊqÙTŒ\ªl1#¶a<8kÖ-!‚Õ&4,ˆCñlC³Á´uÎ¢Œ:ïÿ¾ñò{Í·nóP€|wÑÖçZËã&ú’8?Š3¸†»XÏÄjŒ
-QÓ¾½ü+Üœ‰VÅæÍ–ÚY¦¢ü«»¾P1ÜC«ymmÂO»Š<Ã_7ƒûZÅĞºéÛîG|2ñL>ÛD´EöŸı”·ŸŠÒ%êÆH/ØoÚª@bÅC•¯_Ùøğv×eÔ<©äRC8èeØhİ>Ô3=s<‹Z…Û#¯ödª~2™@Ár»š_Wuºò¯-Ÿ„$DA^6ÏÖÈ:wäñµ›k¡`ÔÂ°ñ×{ß¿¢¶ÔÒ(D©!æw@èõ]ê”ÔÇáÜg¦§²S=ä/šëKo¼pI¼œ°Ş319~ Bˆux¼÷FãîmL æÈùA°ñåşÖxõ®Z*°êj‡ˆv7À=ÛGb	O˜ô] ­ÜúbãÃOÖy>²+Â%9”l3ôûÑËñ‹ğ#ƒbÜ‡=LÔ’gÅ¨ê‘<õĞvÁ¨ÓD”ÚcNBjxMìRKLé¨9z—Æ¹×Ã§ñNå¼¨Å r…¹‰R9îCTßß¥rîÕì¼ìõèØël,á2Ã]è`™á÷w—÷zø›I‡ÓÎpêˆî%#I‰œòĞè„Ö©bvI{=|’ŸÄ"ÂÇİË#B÷û’}à¬ÒÍeì<÷ÚjQJX¼t1`WèJˆyEœ.¸¨¬‹«"~®ÌN|+ ¸Kb²îT)¬ŒGu]ÈW…`MHI^$J¨ÅÁvTQ+˜iåüÂHàß¾¡h–6¶›ZT5‚H!‰œµ¡ˆªQ…Âp{6"èç÷/¿'ÉÒ“) Bóã5Iâ­ØMtšÁ…qõòÀÄƒƒÈĞÍñÁaºÌ°y$;áf‹³N >_˜™|¤²ğïS'²`*[Èäe¦päÿ$'_¿8—Íô)À…{ùj’Á…«$K»é0@™$à•rp&ÿéx0}PÊĞĞ #¡ × 1H“_Æ~¦œµ­`Më77¿yçÁ‹¯şëËW›Ïİl\ıäş½?6~yŞÿöÂõ)(±›eØ	ä§^Ò!!Øºöí…ßİ¿óñı;šï}¾qëÆÆë/Ğè@×ğÛ6ÿp	Áûıæµ{/l¨ÓQ(_U‹Bn)Ejˆ?‹ë;FÑ5Ëë7`ãÀúKğùŠîT,€¨Ù:,¤'¾ÚZL¤ ¬Ù¬§¦™ı@[²l”>‰ÓÑkE’Ÿ¡¯D²pwòEùz£ v50ûÈEŠz„i l#œ”‡&…9˜ÍÌeÀğùıÃE•âjêuÒ™û¨ÀĞÒÜÀ1Çp¥¯Şm¼ËÈbÅ@”
-m)tË£X)ñ’ H1Säí|)5‡‘¨›×ûšRv|W°¤Œf»¤åKç³'³y”¡Ïær“óWÊƒ·ËNyrg±¤öq¤ğRx†“b-¦TP‚°©Ó*ë5CGUzgØ Œ0Š¨ü¨õç š‡‘ëÎOPÔP7U‡ï{‚€³9SêáiÃg
-.ŠşºvĞşAF¡>¬v¯d.ÜvBÔ-¦uËóãyğC¡{/İù‚{xh`»ı¶HãÂ“‡ÄÕ7‘Ã4¢q°{Ä[ zbì$+f%ƒ‘cóäPŒRna§¸–ÊÕƒ°ñi…–Tb¥á1*	J9‡2”ğg,ø™z­[=NÎT¢”œ0˜I;!Q	‡Y)†‡(ôµ€0B(©Vôâ^YáÑ”A-'í¨€}úîÔ…RR¬¶ÀÚ÷¿³”ƒõ— ú>¢âŸ„‡0b,$Ü»Ì?º!7›êDn>²àH._˜cfãÃµ
-ÎaÔF9ÈÜ+G¥j.qŒï|‡œa¢:1“pšÑÛ×5»XN|ˆ‰½¯zˆ¡m!"òï™Õgë†Ot!PôÀ Ê	Ù|ıúÆ§ïCšo\ıŞéá,ŒÆs¼R{¶ûÌÕın·8Ê¥ˆ*Q  øDÍ#GWsëÎ-É?W)%UzXGy¼mÆ-^°§Z†€¿FÃ2ù|Ï¡q±º¦`•HèK7üR ?“7Ğ$‹‹ˆµiòX67Ó3ÿPÏ	K9™ù	*ÿ¡JÅ¥È¢3Ú"äI8wK–½Ò9)GKÚ%f1Ã1Ú1”|4;—MÂ°zó<6$.evf® )ÿ¡\6“–273]˜ùéäL>[ÈÀÒğWÊ;.aqSÙ|îdvEl)Ÿ£N–Y9aüäÎ™ÜtväsódWÍó4ë*Z-bW–B>._|Äã¢¼©¶ŠH#–+a`–Z,Ğx-j¦£ó QQ,aÙy+%,hŸGÂÑS}FµhÖKºÃ|)úl_Û- öUÜ½^¸ş°å¹8ààßÂN3_j·â(ŒW]ô~eT}Q­z?Q]ç<²OİĞÅ0õ	BÛÛè€8‡ ¿¢¢-§ËpÃØ‹wŒXòs±“»‹!Æ9‚3†ÄğÚ¥HS«¡L`BÃA·¬k%i¼¦kÇd¶?PYƒCÑ^Ï	 ™”†ıì
-p­ZzH0’ññÆ(ŠÉ€óM„w Ö1‡ $+á“wc¦^C»£[n¯’¶Û5oü\ç·êåÏš.¢íöİÆ'wˆ5¿ÙIÓÈÜœI33ë®ÿCGíl¾qåşW×ùIƒŸıwÔZŸ±eÁÅ
-Kä »`•VèB®é<½¼˜Z¯ïf«ú^ÄA®ÕøFJrE‰%.l­M¬qh—‹àNpÑõ»½;	ÅuYíèv•Ø
-4¥rZ™zÀ|\c©ìB¢Ã=—zŸ
-Lª¨D~€Ñk]ß^xÀçt
-r¨ß7=˜éUo($V)3ÇÏ1FZuhÙ‰ÂÉXĞ™Áı#WO+ÑÇ‡W ûàÏ°RÍyx½÷B©]ƒ”ÿkTso©èèÃ‹hëƒ•RÁŞ!ÖFÉØóD:úğÂÚzP”Èø—Tá.Ş‘+&V~k5î	šĞ	F÷µş
-qÎâ—zª™ğŠá HÀ)œZ&`Ï1ËB"ü+Úçoé(ó	;ëIœÁ·•õ$¼Ôft–	…*Fš…~V…òäò ß­$¼Z÷g/	b`C"P0ª%ò†ÇàB±Ìy¸ş­î‰‡ÒKÄs|E½W˜P|›Ö«åz…²€¢VÒHœ%Ş~¯ñùß6Ş¹·yëvàPùÏÏñÅ<ÁâÚìÔ`vFÄÕÁ"À(Âg½ö'şf.{47_˜#>ï3Ó…õ—±2g:2‡yîI^é¬drsÇàÓ}8+[ÍåœÆº¤êÄ§áò¨²Ç°ø *v]Ç‡Ñv3Æ	P¥|8„Kœb‰{°ŠÑ3'^'Í·n‹,Üñ‡ø%*™¾Ë£Âßc ‡d¿Ì”J¯\c)pF"şM*9qe
-R³0b®›Ú‹H]n
-ù`3J‘¥SuxÉÖá¥{‡®0‚.˜³œ4¦”?G•‘ß-û—]‡Ÿ™:1<²gtlï>yá`í›yÉìc®);Â$^2ş#?wvlÇ¦RØ{Êr-h­Z¶E˜â*•Û6Ã‹±ªjNEj‘­,TNòµÕÍõ!¢{e-Rë
-/q%	:j„'ş£³=ä¯*¢!£ QXÀ±É	ò·Ã‚f
-¤ ™‚zA*°ˆä9•}r/Ï@™MôÕÛ´:‰ö¥ë—[¡(îB«®ì.ÔğêK·¼¶œ[¨Òº·Úv·]ŒëÆÆ†ğ‰/ÿïö,mß¦İÅí—õ]^ŞŞáì 1^mÅZoÓé‡[^›î?üò:tâÜ‘KUêŠ(0­Ã¨›—¿Ø¼üÙö°‹“Øb×fAJúNÊê[Ï#¦áÊƒÿ$Ym«ÄÚJìççÔ¬çtÕØŠ~[Ñ=Â8GbV'üIZ#7,l»˜¡d?SÅßAƒ‡NÅ˜¢ü›b,Z~Ç×½´¶ƒ.©û…Ğe%€Ğ‰¨÷<®a#ø™Y€Äz¡bÁğßåæ„ìOfó wí› 7]ÈÎÉLòB½bÙv†’2"ø6øVş%n> ómÛd9ÀÍˆ²ÀO³]›ÁÃÔçk¶®•œ²®»[h>˜…?fYÙå¢@İŸ|Ù¸ôÇÍ7›ï}Éwã=+¦+†‚îpÔX`Ä÷Ì÷Öùªii¥‚^©¡í,!?oMÁ
-ˆ0¼À+%Îí£[A®5Ë­ìÎ3Št“ÁôG FyˆîŒó
-twÜ*é&†»y£ù»oø|1øÙ{E…¶TZETõé#	‘Çèùó&wa9»<QÛÒÙÊUPÖnÍøƒ„3àùò_R›1e›–Q:Ô£#.óÓ:îôOñk?Å^ér¹’ˆ*‹¿ÊŸÕŠE½æêX6å~€şÈ_
-E|ÂKÈ(`¶(îhOL%Å™Ô~#GãÜöäšJ¥pı¦3'sÌ¸â8lŸ'ÛopŸ*\ŸïtØ"â` ¾=üøe™Ä“ o8ŠıÍUâĞ|˜¢Ğ^+İhÛèk~üÁƒKW6¾ºÕüÍ×Ü…w6®¿™}ãêßïı!.îßùa­½ÿüæ­Ë·›w>!{üõW[ÁïEc©në@ºSÔL ğ¶*R.8[M«i¶^Ô+ğpÑÓÀú{<Ípµ_í¡ãåÄ<;pëD‹âc2VáIA3{¶i–˜İ‰Êà¤y\ßRÏ‘z»&l¸#/¨§abgõyFIƒ‡…RòÀ%ße™‡¶06$=Tqg/ŒˆÅ9Å£~ññ$cC­ ØÉWê¡d²—oûª=AâV!Â´BjÎÖ”œS3dß!ªÅÆëW$(UıüÉÀ‘?	üÃ4ıâÃ¯“)P‡ã®ù¯øºîã)ğ•2Pr¥|®Qw¤BY*(¦ÈæâD“%¦R|³­öGCL,	YmÆ¥ô‘9Ê-Éªk;ÄŸïÁ‹WÕç¿×æ¬ãw9Àó»óÏº-8ºH çU”İŒŒö´‘šŞ'®Ğ'DQEAiÀ5XGÙê%.Ì ÔXûéá9cÎWÊøÚi…s•T‰=Ì£İ=¯CrŠ`m!=,ÀÙaÉ6‘)	e(Çt^Ì3}×êòh ÒqãòÛPˆ—ä»—h1Õ—-'
-3Ÿ·l—0çğÊ”PÉÉ‘ëDçÛÑ8ygÙèmÍ‹”=2NÇq.”··ÅD\[†û?V¿ËJ´:xzûPØá±k¸&§Ø$xĞ hÈ+šk=hí¢UHl‚O•4r!Cãİ»÷ï¾FËÍ·ÿØ¼şîæ‹n¼|³ùÚ¯w¹»ŠàØ2Ï?gM=¾Ñ*öÎŠß+Ø·ohïi U
-"ÜZİ„]é˜8é'^}‰4Ÿ4œ4™›‡‚•qÌ!jÒ¿9ˆï¡ÕBuŸk«}E.uC0f/”İ7r&aí—Ãc’S³(Ÿé´dÀâˆ‡_©ÉtøÓÀüÍ<ı²«¡¹‹ZT5	C…gÎà Êç~ †¿±D%l~¥Ø< b…BšËÃ–‹J:˜2l`¢¦NÔ‘¥…•ƒ$Ò#–zìj,bÕ)‹ŞNBİzëµ^õLEÂ0Õ(¾eü‡Ñ)H 80.—¸¥$nì÷ßcÑÇQ rE!¿#ù¬6>¼'zY¢mŸ,ëçl«z¢e²£ÉJ1Jüm&ƒ$Íÿ,BXĞŒeSÂ+]¡´¸;¡¦òœ³$»\4ë†­ÆGTR¯µAA%ôN‘P¤CbÒ‡ÔƒÔ»J	ş(úúÆÆå÷¼óAdÀŠrï7hÛ.·•·Î­_<’›T2ÎËšín…mNÊ¸E€î²°å¹ìte
-‡3“Oæg*‚Sî \Fn¨ØúÈ“qcŸ÷¾¢ş]l÷#eEÇ‹ÜS°üu×î÷àÂµÍo^Ü¼ıËæ›ŸB.Û|ë‹kÏo|øIãµW6ş~¯ùæm”¢éææ+ïn¼ôQóWşÚ¼~·yù­Æ7ÿûàÂ»ÍÏ.“€ÿ­±ûÍ•:‚W³Êj¦µ´ş1‚Ó`Õä:uÊ^¿Q3JÈ…	íZŞ, _uäˆ8YdÊZñ,,hx[ÙA¦À€6[èJšµ=3ÅlDË ±ü=Ä)ë1°înÒ½=¶[kµš¹rÜë¿n¬Ã¤ë©á=}kübè]{…¸Bù¹béÅŸP³%ı¥Bc9DEöû‘®ÆÓ‰Õ9Á†Xm"öô­“lj¾ÒühÏĞ÷ùQÑg‚·ñö]œõ¡}	g½Ö#Š2ËU¥ ½òÿ  ÿÿì}{wG–çÿû)ÂUÚÖ[ˆ‡Ä)¤´#$V¸İ,kRU	ÊuUeuf•ÖêÜ6ÚÆ¸Çø1¡ÇnÓİc°ÛnÌÃ>gõMzT%ñWÏGØ¸‘™‘™‘‘¥’6ylT••qï{oÜû»‘ªÉTÀöS$òÄ¨aŠÊZêäâÕúW¿E]Jz_ÃİßÕ<E4	ó;[½¸úú$9ššAã¹Ã3CøÜ±ìDv¿MJe(UÙ".r›E†'–~ğA]¥ÒPÛm`ŠÂ@ğ=¡×r!<ã˜eX„.€X5z…°ëDS°NŠuáÀcÚ‰{÷jı··éz¿vïê‰¦•0Q¦şñ÷·n÷uHº¬~¥á ×,e¼ìkkæ^‹ÏBéJÚ@û4»ätHt‰œ *W/¨û<ÆhĞaÛÁÁê-[2KšFçH:¼ ¶I+G84»+9©qÔ<k`œ‘Nƒ# É£iÜ<[Í”Í…Mó NÄ¾dÇš7Š®‚§¢å”­Uí.«œwLXÑ îÜ‹ˆî}»òE`z—Œj~@\ºÉ¹LÏÿ~1ó¿
-?ëx¾GÑ€¢&—w(Ë{VS÷6S€»Æ5ÇÊUzï©¾ÓP–®OşÄöË½.fÎ¼øü2knåŒ¢2ê[ÑˆÅQ@@'Ô¯I›1\¤>iVTÂD…¤Èhø‡¾¾¾½ı{N…KIµm*“+û×÷Y.Dsıö66$WîH	\0k˜•J"9¤¿ú	W¡‡È%‰Ê™¢Yß/Åş‹7{½Iøf‰g7HÄ¥±¦½AÂc£#*‡.ÔTöâ±¢ÚK(‰{ñù8U®¬ÆU(¢çÅ%IÓ3ô¹:š…›*ÕV™²+›	ò©½@›²]V&E(<–)·Ñ8ı³v¢Ó´”şY¸X
-ğí¦¹Àk C£‹™ŞN$	k{<#xôô¼§X÷ ªÑ?a¢gİišæ=¯Å3’ß!$¯ş1ÉI¥‡ ªD¡‘ˆlûÙ.ş™=’åHÖf»>”ËOG&
-Õl"˜+) SbÒ8YçÂ9§U;z2€4hÖS%ø¤&:˜œËÔ.[¯BÌdÁD¯@jËëŠ¦ŒğÜTöJ)€Iá”¦Ò}úŞuTÿëŸiş7+Š2õ«w®×s»ZøÁÆ÷¿¥r‡7D^NØG(C‡3W°ª«·æÍbÏ”]$:†šr°ÄGš5Ü­g„*piS^Al+CÉ÷q¦0\æÎü`«\V&M/ç=?
-­›,Ú‰¬Âbrı” úïŒ‰Ç’”\êz~ß»r&ø#¯˜èìíÔ†|éàã’ıç÷÷
-:Å*Â°ìvR Ä÷n$g¯ëì_ªG¾&t»¿À+ºyç:Q1p„"c’/WU†ğıx@t©òÂ+dhµãcBQ5ZÑÏ9ô4Z†¼ŠïáMºMƒk³5!4AZ®¨˜5#W<S\p-‹W,™ °	Ú†³3Ù„„îQf =ôz0“€°«ÁŒXRá¼)$5Ê^>cÑ_½:Q»×z{'Ú,´ZßîfuÿÁŞ°VI°Â)7oVû÷¦XWË§‡?i‚îH"g6â#tolKèœ5şŒÌù£dxIÂr/„*±{ùScGÎ¡ÜÄÌTîHv­¾65–Eh’¦Ÿmæ†Ì#’£%ÛÊÏ/å§`¿ñáçõ‹÷ë¿{¢ÆRëŸ•ŞV~¿|+ß7#”+Wó¶&G-Ø$³Òß¨§-´'\²{ù¬OÉfşD1Ân>Ö¦-¬¾“TL²ï8	<tf¯?Ò<Û—Şô¾4áWÒìN›”üdÛÓìç`:ş°g»ÔÌ]&h$©”Œ/IÍ-vÂÜÚÄæÙ¶©í¾­ŞÌîïëé|¶MÑî˜Q bÂ¿¾EeÆªØzLBÁ¥Õ\§~X‘6EıĞ@:êÿéj‚iAÏ¶Ãd£,ÊL“ú‘z ä‘f±f¡ÌQ¬¡4×Èkde& œV3É çÏv";‘Z*V°ï˜ã4«ØÙ'´7w~z“tõö&ıñ
-píM†G<ï›…i7'£{“4òlsr6'­rÁ:gGÀUÙÉ Å–Û,€¹°³·'©gâG°?ÉLîg”‰Íì˜½‰ÖğşW/^"«ÉI£h;CºĞòÛµ»CK»µbo‡p_hs‡´ılk‡?~ä;˜*³~È·ëÓ0uOª«‰Ö==ÒÑ3´ÚrŞY$Ì3W:rN@‘¹ŸªŞYÜÌ?´‰Û±Ÿ¢®ñvV.Ûû±iásFsÇWß››ÑÂÏ)˜{áçà¾OÎL£ñ±éôâØÌQ4’=›y	LNÌLMï¼ç·ß<]›Ü•n735y'ï6×¯\İ¸s§~óÍú—Õï|‡Õµµ{ï<>ıñkïÑÚÜòmf ^
-FÁ$‰feõlØ8~Üvx"Yò¸ë^~iõ¾²sO3u&œ$n‘GA™D¹–öäs`ÙËw—iîs­jãi$íˆÜ©/t<ªKhõâq$1„+Øºùs'íb­d¢ø]è¿#¼²øP¯|Ë:èÀ€©áÇóFûa}İM—JŞôãŒ¾A˜Çp{‚‚"ZjT-ÚL{Rİ ,IğòW•şà˜ÕšSÖô¿ĞqND‡MájÒs2µÚ±’Ş;8iB¸±ºKGÁÆj¹F´Du²¼ù€Ú“G†pUÇ.Ÿ‹µq÷Í…<CAÃşHøœÃAÚÖ×ôÃï³|&æ:jò@Ù¾‹¬ß'¿R=¿ìsÿÊ™•áe}WşQs²¶¯î½çCcU%¬›ß°åêÛWºÑ±Õ[‹¶qã|ı³/è²©_¹zË%«| Mº'ÄÌXŒ¯IM{BTP ÁA×%üt¼"ù© }ÒTP:H´Q€Á­êîî¦köi½»á¾SxI?‡ĞI½\³:J˜¦´ú,ùâôµ>ÒìšsŠwsÕ>x«™OâMtÏaü¤ÜEO^tÍ—`ñÚµ¾ÔĞ*‹‡>0="Û
-iyó<çVjÍ%`DÑS`jLVÌ256Š¶kh¥8·SXsùO 0ŞB y^i€X­sÆÇí<¯7T€ÇFLë^ãV¾™ÄàqûÄˆ€½?,q"è~qAÌDº}"}d–	kŸ KŠ°*9«%Ò'{2Œj©Ù¬DµÄ¸,™2ÀºèÏ×ß½‹ÅÆäñÜ¥ÀKeÕn'ø³â[.|óøÃ/ñ-#ã“Ó¹QrÓa3ÛÙIèğpèmzmÛO4-…km.ãèØñÉ'rSèXvfjì(7:639õÌ–äSÖ½ú07.}·vïõ‰yùëŸşáñGÿ!O·Àz¬c½
->°»T1ª ŒwW&ë” §Øti@MôwÿçÖ{ÃğâûhaVuè>k–9ÆÄ’çÆm†<MmíŞ—øöúÇß6ŞùüñùË·şP÷êk\ÿ5éwèx¯_£şî¥µG7°àZÿæÁß^j¼s©ñÉëÿyş5|~ışïñ‡õß¿Öøòwxù?ÏÿšaPMˆ(3ô32\ä˜ø-HÉ–¢……¤AÑYñ×<ş%xü r„í¢
-VMóVÅ°\dxSÑ-™‚Êó8àû{[áw¤ÊS¼ÈxœïX'ÌÏ“}^AsÛI./Y ]Ÿ(€.aï¨ß!~§(€?'î¸ÑÑ@C×ñp,²¿:^¿åSíÇ¦GÚ;A¶˜û
-|9–E#GÁÇ£ØH=×5^´—
-ğur"G.˜œ™„9Lgçë§)ù0ÚÖÒî)yåkƒ×“ÄN'CA„Üâ)XNì>ÅÚ=Nƒöl­:gc9ˆ•ô$5[Ã1Ë,!Vö¨•&vıùè[¿¢,~,RFk·€è Ê»ßU]ÇŸ¿É¯¥3ÇM0A:æJÓîŞÎ£ÄöĞ€Ì5ÊKzÆX`QbÊ@‰ÔíBØĞ„»:µoà(vHû¥Ù“H¹€Î—W:ôïñÈ7†Ú7ëM,hÂšn2-Ë	\Ğû|Ù+ö;‘¦tåà<d\À5PÓ¬E!	ú'^´Gği0oÁÀ¾ë!X¸Ò¿¨ÀFîİ^Ù{¡v~#0TÇïıÊ÷)T~G\W'Ô/zZ»g:ö»éñi³møo7. >÷\šx% ÜÚ'o#òeSÍ`ÖuŒ|M–‹KmÃÿõé{Ÿ ï\ªX"Íp M·l‚Ø’YøZOPş¼õN…´qD#“‡Çœ˜ÊR Z\$Åb‰„’4Fæ¸Ò£uB%¹/Š¼É™Õ/«µ¢Ì:>5f{kãİ7Ö/ÿËÆİ/7/>şİG(s|¦CéUWï¿q	Å²K˜æBğÏD®Ÿ‘‘j
-½‹ßkYİUûÄNV¯¦¹>eğÍŠ«kHi8R´gâ¨Ï´óïƒíÕİ:;¯>ıæ÷¦„+¹fGòÍ1R-Â*‘¢™_6>¸èñÍ/n7ßüòè–ò&§üòhóœòË£Ï8¥œB|ğãc£9ôâØ(Ä¢ÒT”!'§då–¥†*U9—µ,¦jëøu“qÍ!5æx¤‹x$€è: üÆ[O~h<¼¶şÙıúGõû¿OØDV{ÕÃ¡L½ 	ì'Ùyı°«±P„=^´
-Õ¹•Ê¢†[ø“†°q@BH¥†•Fz…±ˆ¯Ø3(¿‚—Xô…Z+¯Äa/Ér‹ô¥)©EîlÌšó„MD8‹&p˜Î<myæˆä¼y`8ŸúJUY‚»dIİøÄpP‡qdû#çæíâæD«d–]R˜²dX°S@·p;pÂE&~øêx‰Eæ¼YŒyÛ©ÒúñEc	KÌnĞWï|¿şèNãão1ãBqNÂÊk>_ûá“»¯ÁæÈÛ÷ëŸ~ºvïJıêo×¯}ÚøÍGõ«7ñ¿_ü³²2g‚hÉz<;‘&_%ò 
-–Wpíû/7¯Òdx˜’­³~‰õhuï{¢¤Å}ÜÀİßÒv`o‚°İ£Æ¬¿’®¼Éº3#	)|Â²ÍŸò!ÜhESS"ÉVo¢Õ[I`3L7¢âÍ®¡_ÕÌYÛµ<‡?˜}x…-ÛñÅî<æºõæß¾ıø£?7¾üå2|QÕ@¿ûy_»ÓxûV“"ÕùT° ÌşÓ3øÏ‰™Éc«¯ÍŒà³“DæV¯ŠÜ.ä1rÔRP¹[EüÂ:¼dkÜ=İƒ<Ş¾Ç4âĞîSDtˆúíCTe¨¶T†Üãa«ÃwšóH³jweIåg(q, ÿXÿÍmüïãó¿®ß¿–XîysLa—)“j€cƒlD* o ¢1lê—VoA)kÊPaFÁ·Tñ;tû/±şğkß3=¯1o^¨ßùëõ;o¯ÿ}¿Æ¯oCpÄ×Wëß½¿şÇëWÿ-±>·N)!öœŠúüœ™eÖ^T`RKÌÂexëÃVUî«‰ê,½)Î¬9…Ë—›ÃPH%ŸIÄYª\¼!aÆZ ÿŠ¥2×ˆ,bV&•›Œ7#¶.=3hz$;ûÉëd¿´í(d°5a®Ş/²Ì„)(§¤T¿Øî¥Dÿ«Tèyıì6~oP#S­7ÈqÓÔîÚ!=GJöË\z ‘7Óy£h²À•D~_xµe€¯:Ú6L&ü©5Êao÷®ÁS¼»_z[5+ĞF¯4½…·ÕÉ É†¡`¹ ³—,»„J¦ß|ó
-¦3N5L…	Jb˜&=u´/¦ÂªÊ¤[Ù®½€…$“pŞ*×Î¶g:­Ò(o—í£n£Ö*`˜¤Ìtµš®;ixùiF2ºÈ²mñkÃ)¬ã‰&êï« ›JF¹f‰ÆL”Ye½vï7îxıˆfòøüåÇ·¾k|òyãò[pş«×ïK^ÂåyC¨-ë`mÚÓÊÖA²ÃŒÅ—Q•{Şt@Ï ‰÷´ 1`ÖB?o}€;€¾»×Ö¾z"ÛòL¯vïœí±ë,¡‚íÀhLÙ£²úH¾¹õo\o|õmıÊW›7î¾¹-›˜»°’è¼2ƒ/~r»/òİHë@½Ã³}­Ø!Ô²EãÓ'FŒÚ†Œ¡¤™MF$™~ª˜IŞê;fSäõ›7>úL<+õşM4w|cÇ³|Ú*.fOSïğI½ÀßÜ>ÚcƒJ{¬±[lPf‹©XLët4GÄ`¤e§§Ç&²3'¦²hlâpnjlr
-F³Í#[¼èaı°À<ñ›µm0¥Âñõ»<¾­j¸½Ô|`\eY·S%0bìª„¨ÕËsuÍ’E5<tè¥QD”ct¨fx=šwVæ—GÑ4^ŸÁRèsjr¼©¸ü+’¼'%@RìéXÂÎu`
-d‘š£ŒUEüèJ­FìĞÈDÏ¡)0^Ëf¾Ãø½yœîö÷@?Áe<©IŸÌÎŒMAÇ&G³ãè0¦H G8sèÄaL£hz|2LË@Œ˜§‹v5/[~¬EÌÇVK˜®^ô*ÌAïéd(jbĞùWzñŒÿ»&.¦âŠ§qƒtÙóÀ4¢QÃØ"÷f¡±è­{—·Ÿ$ĞíÇWçÌKKrigvÓ©è3û÷ÌF1‚Ñ<ûˆ*±t‘ğò<Øñ‘¯0ƒG±-ƒß!îÛiC—KmPÓÒl \TJpß2K,R6°‹Ô«áS ùx™jqÈ^4# [ á*p•ûää>¹]q˜Ÿp$äLÄÂ¦SæÏÑ½õ‡ïÕßü3ø„o¾¹öèJı“w±¥B‹5ˆKù¸í²ílÛª=k:Ò´µ¹]’W¤Š!|ä¥ˆŒ±1µ¹C±.Ò-}F0ŞmÃËçÀÛbWisã`¢e8QÖíØˆ?‘·‹Ê¬’Â':­¯: ¸sğBhÙ\ĞıL‹=¡ó(:‚şÌPtf~ıDİÇ0"êWˆæıDø{ˆ†ğo7ŞŒŸ8‹\l‘ÅJ{	#)ùÔö¢¥ÓÆ¼	ã¶"ò8ìPhìÙ$
-¶èŠ#ô¹«·ÄTešäêÿÒ®Ğ+¯ aF±|yüñ›ÿvaıÎ×õ«| ÿõÇ(JÀÄê}¬~Û~õğ£P´(¼&*›+©^“²DR¨4Rnqa¥óÄ¾}}½xY7Ç¼/a1ÁŞyÂ&‰‹Á)rşòìê%¯‘¿Ñ²Ÿš†¸)#¹Ñ
-r)Û‹–Ğ-b)tdÚ¦rÈ¶H(Iòtp‚>r>…P®W’ÿ$Ù#šFÁ"/ó¨Ğê‚Î9Ø;:f0ï‘4qlŒıØ9{ãÛ/Ö/ÿBM7.}°ñè÷ø°8¨ÖäãO¨|ÚğÉŞ¹>j+sV³ÊÊÔçrxmxë-âq¯ù(‡ï4&ŠÛÖ±+­Ü¨Ç³R$âÿYÃZ³UdUyä»à%Ìûò©¶(1u"ÿTî$š>AÎL›F¾×kÎœy©†õXR6‰Ş3˜‘äûè±.Îü5ò‹›‚Q†S‡Š€ğqÈ¨bİj	Ç|íÂiLp®k¹Àwµ¢IN³A<e]×,Í-|¦í—ˆøRIB#‰ó¤yT…V˜ZqÕâú6	Ìï+c{ôXxÛS¯vIˆ wÇeñ ·›Í|¦A›á*'a®$?VÈäõ:ÊÄM_ªK=yj”&ñ>´ÚÔ®¦SöÂš¦hU/ iëUSk%b`ˆá‹š_„Ÿè2,…Àùê~ıî½r£FW_£d”çÄË­rÁM‰¬€.L^üÚvõ¶££#Ò¨æAxBÚõo‡­€Ñ¢{[¢¿**'‡µÙLÓ¿I©Ù‘›û{Ï´Ã¿êUYÜ)7*Ÿ^&¥à›˜I©d£€Rôã¶ğ&•§ šÍMJñ¿6ÁœäÏØ³…ìI¦JVäçñÅ+ëw¾F™‘9Ó²ÜÚ”||2ûKùSÖÿpŸ<å¤ñª÷r}ÒS4˜^rZ¨w,Û˜äH}È%4c•éş‰k¡]}OİÚÃê.­ßÿËoÉ4Ò/ ¸-¨âÍ È ‰É©cÙñ-BŞS‰¡VŠ¡©±™±‘ìxÛ°÷)¥„9:vähÛ0ü›òFJ'mÃôoÊ›Ç'_lÆÿ<ÓN¸CbB\ø¼~ÿ½Æ‡yüá·XN"–f‰úğà¼Q0š’Ä'éT’Oà¦ëïíßİÕ»ÿ‡ú†úvHí]0‚zŸKd	Q8ë6#‡ü<å‚h«$O!UB½àÅcÓè˜Y5H.ß(ş`Å¼åĞVnÁ(Ÿ%sÏŸÄÇ9«=‹ÿ7éÆM\Ÿ2óæ,$hUí12R\RTHä¹‚áÎù¸v>¦š3m0ˆêéŒE>
-J,÷E¦İRª¸J©t’"È$ASjÌgN_VW,î€jÖ¿y°şàÓúİ‡Xö­ıp«ñÚ]"ëÆÊ$·nõ’xeŞ$¦
-³„2ø©à“‡ ˆoĞªPÃãˆF¹E.Eßª
-‰ó€„jÅıŒTosèº‚¢I‚Ğ?.üc4;q8§Œ+DR%ÛŒr¨àİ½,–;‚*©î¬±gÁ¢ÑÀ…[ujå<>ßÆJPÇ§D‘›%C5j]Bºª¶NÖò²@@>%„$1•.×ø÷[4DaÜfAyÿï>„%ï: Ì;“ö<‚ãˆPH{tÓ»ãÉR[´ŸnêûäóÆıw¡àyZs†,;MÑİÓ@mtÚÒP»ãÉR[Lí{Ê	ïÏ×şT]mçŞì©#=âRUlF·›Â’òùÍ-¡cµbÕêÊ[€UªsSà]»XÔŒ5„
-1šÖI¥æTŠñJì4Ë$aßx”eÿ¤ÔLÑwÏ6)ÒÀa}ëÚì$$ƒ´ÎÌ7–bµ›7rüÈËÇ¯Ô¯ŞT¯kß?şÓGõû¿W°E0ÆL.ê’UO¦¿d|ú¡½jÆöQ§b‹Ê¿úÄ"·aÅÏÔÁ¨u¥»h–ÏUçğ+õµ.ã8MÓ¼åÖŒ"*Zn5uìï$Ô¨!x[¼èÄ_—TŞ rK®M³ -—ù²fæ,—¼$²v¡É1,	Máeùzz`B•Dá¨oªŠ==bµ=”{ Ã	fbÃë%V5?‡ßPÙ«fMòd,¸¡á©
-ÆÎŸÆ4w*¡0!ßö©Ø ŸÆK*\à@œL4?!áLwCÑ†ä{øèbI\óAÙ/İUÇ*e:"qÈXÌ´'>—‹x”ÇY&µÂBFa*I-p[J	ÛYI-Yîd¥j•ŒâqLËµÊzî9¾ÉÈÏ‰oæí·«¶ù“áıÔrÿxR+Œ˜³U(:²€Fñ2åcÓ“ÓUğãon¥hU3í3í§zO+Û[ù¹¸ì•wb<¡b&(é©æ½/~ÂËjV„	±ßÙx2@
-6àZi†	‚Û›g 1@Ğ`“äÏ½Õ&ˆ?h%%é?¢@5q{Û?Ú$ê/
-XÖU·)ëíğ)¯É™aS-š¸%ŒJM¨´#Ğ6†–&Ñ2•Ãå¬‡]½cÄO k–{DZü  %t†OÒ•í¾E’¢yõaëÜGÎÇ²~Ã‡ªÊL:o¥*“¼˜	VµDÙ'Å¬ƒ9ëL£72œİ›"¸*@ù¦)l_ƒÚˆ~†õ{Òg¤ƒÃËğŠQ),.j»ş‡ûõ¯iéÇ“Æ9(d«áIï3á=:÷Œ•°êë§vëtHèOôd“]4ÍT¥×¤Q›DÙ<HØPf‡4İìòÄ‘Y.¨pu­!fü£>•‹.)£¡©l•ÜjÃÂ:‹2|ëŞ8ì?€ú:˜­¦º?t/¨ly3³N:q[ªFmóçD1Igz;öe—vkBu=†ÕÊSª›Ñû´´¾Öè|›×ø6§ïµFÛk®·iMoózÙgåïöH’î¤Ûü­A˜IÒ½tƒ¿7FI$¨_;>~ü6†^‹)4]-=W¨å2†VÜ¨Ğs…É\±ÔªxôŠ²îˆ§‡¼ú4 šÈÀ‡ç]ºùø_>«?z¯~ùŠ§’L™%è1Jò¼Ä¤-Áf¹K¹.ê¬ŠÚkâÖ®ˆJ_ €Ÿ–*_àæ¼ti=ti½sOÂ3·y¯Üæ<r­ñÆµÎ·i/Üæ=plqÆ7ªïô'q¤ú^oqÇJ&@|qRï²'¶Ø:¤J…ôTÑ²Œ1 $‚A´ƒ$6·GÒÓ5Ø6‹6ÅŠg¢kê°\:æÒâ!=vÑcŒÔ,°ğjşUjî\Æ#v…:5÷Dö'6ò|Õ¼a¦a–=ãññ#â4¦‰†aÒ”Y¢ƒ[«e’pñ&‰îïÁ¸qÂyL›³ORfşõY"Ñ%Ø6Aãíèg(#Rà¥NºŸ¡><)ıDùÌ¬<T»I0lTfMi$3ö¹sE0\æ!4æ"Æzˆòvì”:MGY¥†Ïäc‰ œ¿êesˆ¥Á’| já5€*œŸ{¥Ë¦# ¾È‡¨V(Î ·‘Õj4¤˜`ŒbY§@E"%/ zÎ«WÎ9ü~šxØANT2‰³Ÿ”ÑB¡ŠÑG(óçª¥âaÛ	O©´j`dÛLrMSMğ6]Á£H«~ÈíÂ’	…EÈÈZeÈLK	Uî|µvï~ãÆùÆGï5®¾[¿úÁÚ£+ëî Ìß®ß¢xP]“µ*Mp?fçlŠyJdµA¢W6•4­_›¤$ß‘¾ç—ŸAÂ÷£+k÷ß©öAıão—>¨_y‹å¿?|»ñáÍÇ7Î¯=x°öèıõ/à+ï]Y{t£~å›úÕ»ëøâw>¯_¼_¿ÿŞ§.¦ÔÉûñÈt««·PÁtíY·êÔV¿,ØPdXÃ€Ôk†‰"+Ï[6fç&·JrG³dÓ¬ªîÔ¡„MHôC
-T/Å.T¥
-"\—ÚXí@KvŸ5‰ÛŠ¢/%º– |ƒ&š•_rA¸íg_ÕÄI¥~m†&4’4 „˜±¹DÁ0 ªQÑ‰zúƒhG“g«Éø¿CÎ6éVcªv/Äó §vîò	Áó]€²Cşí8ø‰§½I™Ÿ-'2H$‹ê)á%KGš7Î­Pc_ü(°şšÿœ&4P±[=Y&¸pX¢oIYÛ›‡ĞD…AæµgâyX‚p©à}b€$ãÖrëÚŸÔ¿üˆb!ÅùD^ÿ"Z ö÷@
-ï°°ä†ôD0eû{J˜ıÛIxÃT.‹ÆÇ¦g¦¹2P=1;6‘›šFÙ‰Qt27=Ÿæœeš‘b^2œÂ?™K –ğG÷Tä‡ÓDnD7J¨[…¿ÜÿóÈMpÕ$oŞ°ñMXœ½ÄÉğ·sö¬ÿ¡§¶ &„~yÒÍ<ã,»Âsñ“‚«»éï™|t÷"òİĞÃ±zCäe¼(j8ü<z§÷€i,şòsl£#â#‚+Ÿ+ÕüÜHøúLCK¦§:ä\‘>œ8(è‘whÏc»ÏbŞsşÃYáõšï7‚—Ós¶³$~Hı~LøùƒØy¬Âq§W:8¦€¬‹åŸş4oºx’°àØ%¨uÁM3VÉñË%$¡ZÙúUÍ<Én>€ ÊÜR74^E4mVùµR@hp„èÈ§›qº¡C»
-b2ö!DMu„ y¬õàêàš~\ÉIM{ƒj%»{#ÕJÀêJªuR‰ËÇJ˜8XÏ!5ùÚ%\Ñ’P‰“ÁEúi®ëÔŞÁù¹Ó‘ü+XDÎ‚Á5g
-fÙsSDÖˆä(1a­¬‰²·7\%v÷I9fŒ¢v©”å3\U¥Y”N+ˆÖŒTb:õ½gûöô§i¡˜H iPª)$*,ò*«G²n –¹õ”P©@Õ¼YHvKS®É+ªĞÆYµÚ^©i¿_çQ.f­¢ß‹Š Şƒè Åç˜qÔÕ×ÓÂSÅ–n°şW öæÍ7ë7î¯?x³şöâ‹ÎH6”êa’€^•u<7 <¯Yo¥TU¤!KÇVò¶˜ŠO’Ä8ØÓ7±êá˜å¼e"Ûå<	˜LT6æ-|¶‚¿ı¸¨l#(g•1'ö Æ§Ÿ¯ßx«şİ_ÖïÜZ÷Íõ—Öÿt·şæ…õëo5%şùíKßm\ú‹¬7C-éD+ÔvI_Â%nêO‡×5­2-•h]_ß#AÅcË#Aé1ãL¯Ë~N.ànÇ®Ò¢i´ePÌ…<¾v•Ø‡ìÂÌ¨/P¹{±v°T¾RxH’ïÒ*yLlñ™Íx}ëëÛÛ¿ç´o&/
-kÀÅvúÃK6ˆ.œ’^±UßS,üe=©Hé”6Ø€°D“\o¶=Ú$Ó;ß=¾x•yi¼óªhv¶
-·"E6Òän*ğåQÿjXşæIgªKİU{Ü†’ÛŞÎúŠNµQ`Ê€ Ul™˜™rÙKÉŞM&1~jôAŒSZaÓÇ•›ë×n¯¿CK?)ID¯œœÊ¯}¿å3¡U”´ OEe	/š~]9yòSÈ>€öîS)%í|p©çQÛ+ğÖFİnê¦¡X?vª2hO(Pô…~å{CÏÄúCO'eUQŞ+¾ê?Å;Á?Ç;{’÷Ã€,I
-´àeşİWş±	Äe•º¶áÌr&,F ‘ı,d¡vÏ ed!RBR¨”ô)]µ¸Ÿšà ğ×.ÔY'xØtQ!ç6³ ø<ïÛ?d­»»É©`¯n9NÚ‰œÄ-&éi‚€•MPôr–Â÷jËiÂW›E@~g £.h€j¿ş·>ô£§Œãt“zÄ.bƒ4ï/ £‘Ğ¯­%o¥
-Kïì®@!/%tSu÷ÿş_Ô+ZA¶¢’¬²È®È:¦¡YuSïv\ê2jF€°HÌ¹!òÙ±ˆ*·aã¼k®K´/	7ÏVÑ´U0‡ç”6Ê”-@°h¼·Ì“Šû²Ğuj ŸB³Æ`}DÕ@¥ÅÈ¼¾è	ûQ",QCåõ©û{¢¾ØÁ^¯(µÉu¹Š´-¡Ç‘t?\ëXä]<Õ×C™K«{Pcq•Ê‘ÎMÏY•ğ“P0E”Ë$WÉ™	êNb›(²Õ/|³ñÚ5æ°" £Ñ‹Ô	İòÊÊâË#¤ë•ª…Acşÿ>*"b¼ç¨BBÛ:uj¾CU6u…à<Í¯Äl´ŠşV,GñoDuWØ'b©J$éŞB]lƒøe‰ ~ÙÍÁ&Ê÷pv9Á‚7"”?À b¦j8¢d7ÕÖ\3ßÁÂ{ñŒ—«‘]½Èl
-Å@Ü¦Tl}ëMÛIFÕ#È%/JT´¾*W-0Ìò\­DİĞÈğ$*“ —Õ[x-íÆ"dãîçP¤ıÓO¾Õ¸q™—(^ĞFCÒdÑ­A°”¬{°îë$¥¸I3ÏV?õê§¡[&¬q÷}ÖÀ£`¸øM4aÏƒ[oı_lÜùªñÁWşsó×µvVrÇ”ç°š{¿7²Bß=kZÁ(HZãeŸdiX·Ìº™-ÚùWhåÛaaÁt\Rb]~L:¦È Gr18”E•éÁê®”Í´Ç
-	(±|€‰Ğİ™p1EU×hÉ˜_ĞÚí}ı»wïQ½Y\Ûç•–ÊJÄY	æ]¡ÇHÃî½@>È7ğj´°Y•OÊ‹ÁJ’à‹oò«VÅ‚¨f ­d!VTrR:5‘iWîL& x(Äª"Òd¢‡Òıf	XAšBÚ‹‘¹Š·º¢õEÛÑ‘ãPaş&ÿ6‘®¾©´‰ÉÚÄdB¥SÖ€¢¢˜w…zñxbœÁÊ.ãÕ„`Âo%c'm’5HæÀ:/2ÊK?aBÉ¤):gU@Éßs¾ä¾©U¦o¯2,×7óú×ê—ş´…ìä…şn¡¼V~Ò,u$7%'É`©ó××¯İnŠ¥ONÍ`–" ¢íŞİúÕk®¥©É‰™É—G&Çs3YÜ"ùŠèW~£©ÆGsãc'sS¹Ñ¶aÿ#4ú×?¯İÿlíÁG?ò5xa',¼ùİïê÷™[ey–:¦6Ç±´Ÿ¦~8ÑƒYÿƒ2Ìç…YìÃ›z<°<Ï9°çÕîëğÓ©»Û*¬x“:Ow‡½z=;.ÉÓ¶tU•Ç£Ò#”&¿,NI‰ÙãŠ‹ê	å®y'Eùk×,²-À%²n3n:rH6[%ï¥òô~2-OzÁ»t(´FØY&º4	Xè¥Ë‰~Qùos‹y,ÇJÛ©ö@‰` ¡SxæÇİš]LuÔéŠcwÎ4«-wåáÎâe”ÆgÒ‰ÇJíµÿ¨ùîÆ­Û›1‘6.½Ë*¨F¯ÕqéŠÒÍ`˜íğ2 jQ±Ï•6£DC2¬EÙ¨dÌ"€x=»ï˜ç°’\+às,“òI!ï;¶K«÷‹U«RŒæèmîê7hŞ|vxÖî½µñèQãæÅúÅ7·o5>ù¡qéƒµ{¿Y{x“ôÚƒÏ×îoüû­Æù/ßÜ®¿ùvı³ëk÷şè‹	Ø’¾ÊĞv½Š4kº"›kÉvµœê˜Ô7„Fí…rÑ6
-€?^.€òe’X‘‡&àG’î½gx-káĞ6±2ú‚À_ı­ß­[›Xı1oı’TŠ©í%R_´{Äì_¦¿&STÿ:Q!ïFÅHX!ÅÌ“&¦ÆM‡jCĞS»·VŠ–÷¶»U6<­ŸzªRàY=î‰ 0É N7›‹Æ×ĞšØµ5È˜Bõø+ôr¼âËä•ÙBÕå³˜DTWù¼Y©hë^,º‹ş¨.L?*|è«’Ğ«óÒF-°¦v~T F
-ÓÈ—¿Ec	Û‚è\ÓX„¤:DÍ•Ô¡$MGÖ ¬¥ƒ†(å‰`Õh¡òg(n¤Š›Àğ_àLPsUÒü8+R±X+$^ìÒ‡õ{¯×¿>¿ñÅo¿Nè=vø[)
-eÁa¡Ø–èX‚“5e\Ä$)vÂú¢áÜEşä^oÓˆ#uµÂúÛ†Ç0ûàw°ò9Òl,—O6¡%)¢Ln1´aMÉ„?l®ÌwòØ.oK§nEv"ºŸHÿÂ¦à³	L İkéø{û\d—êÙ°‡İßwjéÈ“MŒNäot"²AÒİİı¤¦a†’llŸÜŸ°K&Øá RCB9¹ï›“òŠSGoªP§È®Í± ğJJ
-½€8¤¨cVbNIÒCÂ94ñãTÿ ÕRÎÉ3A¤i¬[B{Š2ÍTÍê–Â‰)=¨¸”¼£‡â#W]b÷t"÷Ø–EKnPˆ6 ¢ ZÚ»O|HŠÚÕÜ<lğ 2wÄ‚<âïŞXÿöw4ÔŸiÃ\"¾¶-k&ÍöW¥Hæ7)€/÷§é“Í•	GÎÊÚÄ–5‘¸¡#"ß¬YRâšĞ'(î½Z´‡©½]©ÄámÊìøx‚ÜŸf ı36Mj\>ß¸q™†`QpDş‚vıÅÖD	µ"B(ØÇl±…Qîš$·p#?5‚óUDBRGs$N‰Eå‡¯i‚ìšŒ¤iMM34©[U„Î$ÇÍ¨·ø›Ìª9T+¾â—c±íâl:­FèªöÔp† 2K ’úåÅÂQ‚§¯˜Ğ#*šĞÓŸF‘a¾àE[B¯¥U©+&ÀnãY<ú/ÓY}Ù(_®Úù~…8”jP¾–¤ª	.0çMg‰¦æyÙx\„Ûm•óÅZÁt3ùn« 
-5‰‰IU¹€(–Zˆ‚¯Æ^Ó+šEÍ€{b~(|½C'Ô{¼:Ø‰_ít‡² .â!ÕøÖ3|ÔeÕ‘YtM­·ôz‹ÛÇ/™Ø÷æ:.œo–«i ñç¸~” t ~Qéoz7=0¤h­Œ8Ûû;™¾ùÍe­x`ˆ/¡‡.ßÑˆÔÂ1ª(Ö ’0ıˆä ïŠ—Ä è*Ûe¹Y×€%°$äA£ª5ºxáöãó—Q& –Q‰—‘Ûƒ—K•3jÜ¦Øs7û8ùFò>”ğ'½uAY xO&+Ò‡‚
-ba°fâ'VÍ`p4·øäEi€á¹½äEXÛ—¢p’’ÚDø€:¨sÿŒƒu…~IåN²Ö^rn?ËA>Å2(RPë¼˜Yh©Áu:>7U`4a:uÜ	)ö ÉöZbXI~ŒAO_,Ì Îö‡ÀŞÂà‰ôœ`4jÂÊaøY-ˆB™2Ï:¦;7²ĞéĞPNc°z÷”Ø °õK!Y¥œĞ%›ÈlJó×r¯
-¢0£ <dsA™*ë^É: ñæÍ€ş”¡™UòÂqÏ¡À"àş„Ìlq"/à5&Ä5/›+ü†FAA@U'4œ*x˜G¸ØºÀŠ>©°õ•e	aå„@Éc•âL¦›æ|ˆCŠ†æAG(
-Ğ¢uñ ûz¡E¤…Ä<uòÆš¶=v†ÁETf=š1¾Ø‹?aŒ›6Äè¡eñïİR£Lı*[fš±WO¸Ba¦±ÙIÆ=Ô^Ou.µœa°VmÃ‡Æ›¼ŸáºÌ~­Ÿ&ÜE;ô¢á˜svÍ5›lf7m†mK7ÓÄ>ÚBn&»©û;¦‰ vp“/Â–Ü»TÁ–1&’Í+ÿİ\_Æí¦{ÁZ8îØ˜‹J4óa3”×6<j1‰l-Ø‘ÔÖ²åB}@X¼ÄMïò&Î—:ª„ª:r5V©í¯Î:?×¬zb-§k	±~"tØI_Ur9T]3KVt#uOÜı2 Äß-ú¼ÎßXJ\†ÕDoíĞA¿]’*È«ˆáâ|[¼<Xiñ€m¥G‚†Âõ¬ƒeQyr¼g0Œ.GN=Q®Â‘ Ò‘)lR)$­h)†p¤SáğÄã—´äÂÑ„²Gó
-2E®ëñïuZKJ¥©:•¬8Y…p±3¢eköQãªDÕ	¨>Á¡T¡àÀ‚ZaÁÒ#ág²·8®È€ñŸåò>Sƒ»ù¥ì`bJ6y^R:Gpè!›G4ò {¶Ìí
-üDşˆq=uæ¨ÎÓ{Ø2‹…HéÄ¹ØŞ‰R%õ{GÜ’Pü&(ì Sí×1{¾!ä¼):šH¦uà…FkÒ£—ä-H†ÂêøÅ'°+Ùµë÷(‘Ş	oipoC4ÃD°œ¸ÎÍ>Qğ!Ñ((Ú—†CÚK«†À·v¢¡Õœ` Ø¸[.èc2Ñ& Òï<I¦8–'gÿ×n¬_:VŞHİO·Èœz¹-&ó@pŒ3KÚQ7,´jè¡‡ç¦Ú;¨Áp
-«÷şM:¤G=ÿãƒ‡Àçáeî±) D¼#ÙİHº)â·×j1Ì€D˜	Ê |½¦E‘£Üxú JøÍ0êö/ˆhJÆmÔ°8ñíÑ´‚>ebõ)Ñ¸"úD4/ñüi³«³ü…s.FòÉöé`(o*Ÿ'ù~ÿŸ8?Åã@†a{˜Ê{Ü3Îj1gÅ¬j_-€WñO!†ÑÂ“ñ,øÛh?q¶Ì±=Œ<ğknå¢™Ø'ÂeŠê§Ía4n{¸‹>ìgmÉ¢uÄÆq‘¥›ı'Â‚£ñgÀ¢½m‹<êóµšùç ĞéÉW'Íûa¼PhÓOœ+l,òÆv­ƒÜŸñãVª™Ñ©}"¼ıû‰3[5<ÛÃoá‡>c¹­d9Á?®ó ’Ù-m›<8‚`>Wgp“ê5ğ‡Ÿ;˜áÈ>’^Ê½¦&fÚw³Àû§öD³M£‘­p*zä®F±Øº a’i2T1×@B'er¤]Â«"®Éíò ÇEÓŠ¤'’È$®9!cÈÜ.NcÆ=^Tú°éë_‰QQ è·7Eeò6©Aü½#¨µÀ×ãcb1T.“Y†ß,’èØ?6._¿ôUıíï_¸²~ı=¬}ïJ÷Ä„õ-‰ÂÔä#ÏHî!Ñú²ŒT’`¹y”@ñYæ]3Šè°mW…øĞ¢Ú!$t2f¤¼v„ –>uNk<’^Àâû£$"Œ•OND>3cWñq•¼‡pï›¨×ÎUf÷	2cº|ñú…¯7Û8_”âÀFluÿÏHõÅY.¹ uö´LënB¾áÄYº¢4x³²ˆ¡a-ˆXS™Ô~ØÌÏAùæñ‡_
-¦çòG¶ş‰Ø9–½9á/_+<ªìÁYË)ÀŸs°…Nt[îdóthŠ¡|X‹fYe<…$]³NÓrx¸{ö¢Yü·àØ˜‡xB“ª3T°z™¨ò@;ùŒy6sıø#ÓüKÆb×BW	j5ìötü°¶•C1z¿öƒ‘‹É§€æb÷ÒªH”ciøáØL^tÅÄÖş¹Ø’>î‘iï ‰)J¡‹Ë"ØÊeíHùíâ¹¶á¿]¿ù÷{W™dˆZwÕª#e\ö÷ÌDŞ3^†ÈGğRÓ"Õ‡àmw#»bä­êR×¾^DF›¢ìW³ê!Ä^3Ò·’éº˜{£½«D:§ÂO6Ë’6>¨’¸@á»%‡¡Å™I6a]’hõn GOĞ#i±FáOº“4­èƒVğíî·+,7¶ƒ>Šò$ÇrSäW?hüåÃn¤gc¢\*Èõh!LŸøGú=£$‡¶dj ¢B±H¸.
-ìÅ´#Iß…åú­;w>£CéÖË¤å/ô•[ÿ@ÍC)«#““GÆshúh.73^@ã“#ø‡Ü/Frãhì a¢é—&F85y™”}s‰İÌBÙÇ/”{{·e¡ìW¬”˜@¶g¥Ü³M+ej{F¦h›x5Ùï€^áÑ*í9£k´>Pšºä d2²¢†|•OwÎ±Ê¯tõ
-İ.î|u°%-,Øxÿ«Æ•;ûïşıáõúÛë÷@Glû\ÑDÓ„ğ±­ñNãÆ¿×o|EKDõŒLŸäëClák­rŞ±ËÖ«ä;Ö?Æís«_È!àî¨ °"6D˜3g¢kv¬Äo•Và=k¶K—ğ©r2T'á¿İx?SR°W0h— À8¦×`á6Y¡{‡Ù!Á4`¢@;2¥‰N e‰@I™'ÎÀ¦¤ğ“[¥.ì¶aa÷T$=7‚Jeì2Çk³˜"ğvHMRi;·i"ú™í‘P‰Â)
-ˆJ~=íİ¡wÍCõ·ÍU«w¨§§`çİîsä!$¿™ÏÿnO¡§»»»Ç\†;%eê¼;/|ÅŞH˜èo¡ma‰•@Ó
-2]Ã×Ø½:Õ›3ÖG€Òq"PoûôR9O)y‚ó€Q‘RÖEæŞR(Ğ#ğbI™å"7Oï>O–aì6å(ˆó³¯"eˆ¿‰¸\TIãâˆ–‹SĞY4% {ñò1ğº¡Ò¢'ş|©Cy‹a¼ •?SmÃvM* ¶öİä®XOÖB£q”HÅÊ ^.óF1X`iMÌqÛ(è¸l7)­}ïš¶¨Æİ!m1İÎ¯jÖ¼Íõ½ï¢;ôlHûST|ŠoÒbtZ~ã#b"Æ6Ë˜Á¨VQa¦pµ+ÅÊVâe’_zËA” yâc´a½/Øh‡ïîÁîS½Rd9 G05Ü:Åå‘]Xu–ğ$ôñ°ŒáA< y„¬§È‰Œb¯Ş‚`Rõ ò^v¾šˆğBŸ9ëVá‰øöÒ»Ó­«*PzëÂ,¾ñãÓ¿è†^d ¥N´L¦,«l8KíhE	â»ãRÅ ·¸0ÛM×«SŞ' O‚ß¡½àz½ªU­¢ÛMô‚—«öËÿÇµ±ì?IÙ-cÁ°ªˆ¯xzÜp\³0…›ÏÀ3”wK5oÅiâÃŸ¬{ˆŒêt`[2„îd7® ¼QÍÏaZp\Œ›5)|™í‹å]1Š¦SÍ´åğ¥È°ş†l_ª¹hqw›¼[ÂóÜNø³¸—5¬kxÏ«;gzÌù#Ú¾n¶«‹k%•N–xÇD8Ûñ÷pŞ¹÷ó¾Á¨şHŞE
-q¦´‚wã¡Ø-1Pá——Ã·,Vá…ÙË·>h¼õ¨qéƒõ_W¿ø€VçMcÔƒ<ã8ë8†[%%æòEëW5“ÖzwtwÂÈj©Ë‘ÕÕe0·!-‰3³yÓª¨äF'ùƒÿ…¶öÌ2¶
-ó´ĞíP pÜ‰w’`ğNš4¯¬B(Óìt•¢M{ôú‡ğ‡‰™£ã/¡‘ìxnb4;…F³/¡ÑÜLvl|:äÆc[£ÆÒfy¨£ü´»òv1½ç™/oçúò|Z“9ñ<¿|zŞ™ú¥¯6¾ı¢qïBıÊûwßxıêBÏ‹(}…	ä°Ä©à”«¶‹²çàÀìÉ4$»¯ÕÎ»ø3Ø®×ÇçÃ½/RÀw`Ö¹®Sb0ô ëŒ†±Ô.o/XR¦U­FUoS{‡8S;bû•Z¢5{}´sqI*~¯vQŒUP*Å®¶á±Ñ`¥’#·ŠP#Kî ªfRÃ×Šïà¸zXá‚´-œH|w ¯øîã7]¨Çá•ŠNw?½åÊU°òÓŞ‰³Ï€³À2Y;âÀ:)®.ú-ÿº	 \¶=(œ\.Úç,ØçpsK8L^ü•	b°Ü¢õª9ŠÎ0³Û*¸•’²Ñ,Z€ˆ?wt„¢´8±Ù!~Ñ@®¥N¬»ÌEA	İ,Œ”‰ÕŠ+øvÒÒtwÿëN:Ö9l¹¥fm½hW'jO‚ÛætĞÏ»¢MÎn£Aêê<Ş"Ğ7¡F!Í‚BVq'ã Uñ!ŸõâF>ÿª»B²6ãİ8È¥s²ó²¬ŞPr:Ù‡F¦Ã“…ŸCæ?óŠõ(c}êXáXì=)8 NC(²h>[\ºZIŒÇõÀoh¶™»¹L>SĞ'àÍ5õ_³
-hø!‚nA¿ÓÀÀ-û$Ü¢·K*>±eID„i’Òó~£½|‘8¢„?Ï&Ø%Ôˆ]Âš8Ñ‰G²SG&‘_*´4ŞæDÄï yêwn-ÃÌ/NZâÿÎîÑÀèw<)=)Qç)œ0:W¹‰™©Ü‘¹è$ùæ¢w‚DŒÑéğƒ¿íÏFê'ò÷xnb÷!—˜°¥3ÀË&ş¨Dú8Ñ“mO`IU>‚dQ¥±Hò„™	Ízl,÷PíìYÓ9fT‹V	k?…´î—~ê~a
-æ»}{#.Øª¹8}SlÎ*Ìr,ZœÌƒQ&zW×YkˆV9ÄÜGğ:5;rj/k©0D>Ãî¢Ø•	Ó©Âu1Â.lÖÆ,¶Bz±—³½gûö;¤J…h•«şèŠ¾_ä¨kºÂãşCö¢é*=`0zã]©±ô†$úb¢”‘Å5 »ÕˆŞgîİú…Ûõ¯¯¢şQÔø—û¯?Zÿø·w¾€¨(RŒîñùë_{à¯%» D0³ËVÛ8Ä©÷2êÆ†„İP¢†ıÜ(B·id6ÂÕS%¾_TªPâ‚cT4'Q”,ãÑ£÷ê—¯Ğ,–!òş«¯9¦²UkŞ’;±å Ğ,âÆÈƒÓ“–CVu“İ¥zö{D*ÅóşK‰û3R¶–¢· âe±Ÿ.Šƒ¡ ˜¦"C–gÉ[eñè²Z*XG4°È!d¸–”Fñ†—}—-ô‚,ÙO‘C&‹ ’åpÈñ ?« °=`£ˆÌ†¡Lc™œœBË˜Fjƒ	ı?Œ™nØã\Y”ıŠ…µ šHLÒVyÉF^y òk.:$¨¯'owq|Ì“.x8D$K³ŞùBòqÏ£rİR—‘mIÅ…ç5çm*¡x¹rsıÚíõw.Ñ2™¯U˜¤UQ7"KEdÍ—8LQœl&óĞ…r~	S‡Ÿ-³ —•V!oMc«ÑEå¥00øHDùÇ¸;G›òâ39×µ-tUoÏË‚•¶’
-|äTğøâ•õ;_Ó9ÓRÖş0Ps@&öp­XÜ„ØÁSEr®Öÿpß›«“Æ«x®PfzÁ¨t´`Ê‚,¢ÍÎY®T©.ı8'Í³“ÓNÛÇß6Şù¼qõİG¿'“7…Ç	M­ŞªX£sÇwk32·ñâ^Âª[°2{¸$/@XZŠ;7·4€'ó,6ã\ØØ#ßÉŞ_ÄâÓ[ƒeÆWªtÅgj¿ÚTL¨tù[_d;¼O/IÇ:l$@u®‘(	í“óÆ>£	4ïØCB“K™À.xß¤?‹b®âÛÛ”†éæ}ÑL{v|¼=Á!>5±¾Ë&%<øŠ`UIıÂÙXÇèBç$FuÍ‘ğ„ÁPô‡äzê¦£ C0t„’¸]{i;ñx­üûÀ‚'40c@kP€kf«i`ähnlrçRí’üM„§°
-Òw%œÌşr'Sí’¼­Ã§ƒ°†Ê©§›à“‡š8â¤1&ğ‡{™Œ±Û…	ßš)İ‚dp>±Iªn°˜C|ûÄ©š+ ¸°nÂÍ}rÖşcV™ŒEPÌ¯ß™"»µqí/ÿñ×ú¯êè;?\«ü¯*,–tIç‘#U@àHB](·Xñ™7‘›wl<@.˜ø›Xmó7,ˆöH‚;¹0›1nAàİ†zí£0Ğ<g*Ñ*agAU‘—¬2`±‹1Õ/ò•–V(ÖJXıî©È†ˆBTŠ]{Úå2D]/uŸuìRfQ £!¤p÷¡VwîåN”—:WI?hİé•0]î
-UX–»ˆÃsJH–lÄL£å<úê-’ì¸WV”ùi’Ì€')Ç$´pc/¯NÃl,w¢†MJ+O8ì 
-oÕ£Ûé²Öe¶wÀjÒe³íÂ]R?éfÜ¬’…1òüƒˆÅl90)9D¿“—Á¢eÄ.˜™İƒøWqŞ‰2š' 6gEÃö”îŞ³™EãÆ¬YT`oF§yÁä‰:¼€v|Î
-UÕí™©ç—ı±'qËÁ7Ù+H€ò‚ğdş0á–áûpo^ä$§³¹ErÈp«àUÎV3Ü›œ7f¹“Ìkï~î9hæ`·Ş7aë´@ô&|;½™ÆPì®Úãö‚éŒ®‰ß+`¬yãUÊzz—›¥Š˜£½8Ì 6'kUÂş{%¢ÄfÔ64À^úİ\STi†¦óÚR4„_Xñkb¤@¬Ê·^%\%´"#§)%µÁ›-	—"DÖÌ¹®ş½|înDŸ,Ôƒ|çoD¹d1ƒd_5œÓîk$Ñ ˜ÄÒ3‡é3n)±ÇÏ/ä–x1ØH }‚ªG¼—Çñ@Ö*w¢H0‰,ó£?‚86_ßÿ°«W i mìÔ0ÔÂÇ{‰ŠcÙU]b35636’o÷<òûÑ±#GõÚçKá×ƒs'wEíœ&_¼ãRÍÂ†/Ócñ¡GldoE·åì%Nöôy^}‹Ğı®0Bæ>Ÿ~T,İU:×ğoáôÿÊïEˆ‘Ç`om=Ëøİ*ã…/y’»A*ğ‹¦/wÈ.^!–SCB±Nõvï›€‰±.s¿…KÄ1I÷>şH„âv•VŞ¨ÚKtCúy"TØ¤xóåª
-ÎPú^²éáÇ£j¨œÜ°Ä”Ïç—ul<Û92o‡ÚW^æÕUü…Zj$ßÿÅÿ!™¶¼ŠÄ—Ó(B¬m™šÛ—„#ì€h©Óí
-éô<‘4W\¾¡Ù¨pˆ4ÄåÜ“-öD’rÇ2ïøüt5ˆÏãò=ƒ°ß«WJAÚ1_ƒáûz:?¡höŞ´Osµfå	'ïQpr¸*‡ˆq9fï×®Sï‘¢k½Ê¼€»zÿW;::®À¶]½ğ±³d„÷iÓ|?í!S ğ‡FM•%ëÔ¢ef˜{PÂÙ‹z56|¡¡S”F¿ ¢&œêUÜG´ö‰½fA·Äm–ŒP¯ICqjöŠ«‰JŞG‚ 7Li3¨µ‹«À±ì×›‘—qóĞ¹xJoí“f½dO"ö°m`ÒdF%î†ÒO¡òuÕŸà`b8çì™¥Š$ºVØ{í‹M£cfÕ(UâVÑE™q»
-Q-~EñÀŒA6©†| -Só4'lßÚ›7ŠVÁ(àV´)V<Âñ$!ŸÕäÒ%ÍÆ­#UI°‰ğİøWKÁz2æBSDÁ¤{„Çß‚mB¢\*×øäLn(­^¢Ëö…m•ÖTâÇ/•¼#ÏIu½¦âÍ©GŸ­˜U¿¹tZÁ·?Ğç2”nÄñ9f{‰àğT.‡fÆm%xï¸3hA[ök´§Õ–^7Én¯>W(éQOÍ:^¬És±á)3F|V±¢(šµ¼$–}<`E’»UÒäR%díÑ•õGw ´ÿ‡?=>ÿiıÒ›/Ğh ,¤n9$2_K9Ñ%P=:YÑÑêY‘¦ã_ğAšÀnXœĞÅ=†¯WE/5ìRlb½¤3=ÒT¦GâÊ­$¦)z(]Ø!tzº+\K.é LDÍ>—¸ÆÙ3mòØ‚Ç²ïñ'{nöá“SÇ‚Wö±øÂÚKøÑô¢TnÖ¬ãtÖÈã¦ÇrèÓğ±âK½U 2Ì:Á7¯ß0êK¡ıêZkä|¥æTŠ¦çádß˜_Ìá9cw€St×æµÑıãÆ„Äâ´©³*ÔiyÄ¶t\†³ã3'¦²Cü˜{ÅÇÒ¨ú×&‹`86éÓÔğnGà9BÉÂYƒ9'Mëôß®ßBÿóÄØÈ?uM˜iıp&7¦·2nª¦ŠvªBe?	€<ÌjÜÄ=í:Œmx9İ	)“éş‚óøÈhİ¬‰ücå³v$ÔjºrkÆ`dá~‰5·ÿúôŸo¡úÛ4¿qûVıáÕµ{oııáÛ_ß®_½»öàsšµ´~ã­ú¥¯—Ï7n\ök ®_£qù»Æ¿ßª_ı+x?Ìú?¿/h¼	.¾ñiãÃÏ3ÄRÃLmvüçù_×¯¼®4Ş¸Ú¸ù°şå»ø!ô	_½^¿xıáßÿvíû/6¾ÿ®qó*täÚİÆÛ¯Õ¯Şl\ûşñŸ>ªßÿıú[ëï¾	•JA¿$¯0a(ÔH+(?gZF'²ÑÄÿ»p ñÊDŠˆ(ã›‘Èˆõ’í’š¥.*XVıJ¤–©kÏ:&²¹âŒİh„âËš%ô«šQÄ0D gÍ‚U]½ÕUÖ>UfPı7Á9é		ì=MıÕEÛ…íR™¹ËÇí‚í¼B‚
-d5W8¦ğ›Ã,‡ëéAÓ'L;>9°-h4‡F²S£ğ÷øêk3c“(shl|lâÈ‰\Ç#;¬g¡Y¨29‚ÿ?îØ—ÄY½b.BS¦‘¯vÿ“¹ø_CäRøfCöYŞ°‡P™@>Á9Zpw¯³6f©2=5×†âÁĞI‚°:„\HN`Ó?Ñ;Ec¿ı_=6àïp°„0²¾·KlXò`¨Aú2äß	»@ğÊˆ]•ÇUğÀp'YÄ>IC~æm«@ùl­LòáüQË,“±éôÇ¤“D§÷úè "!ëôÕñŸNÿ­:ùwéŒt)¸‘u­…g‹‚{{á_S$‚Íë>€öîû9÷ûKf±h/„.A»aÑöOì'·ø÷äix-›z€‚Æu»wgoú;7O\ôä\ğÄŠcÎ[vÍõn'Wz'_&I§d†Í*6vñ0ŒáÛ ¿V$ç_?ÜÄsX‚Nw³41ÚÂ?C¨Ñ÷†:?¾6@EçŸÌÁìDõ~ë1nã|ÕÁv9ÊJ©ØÕÇÜŞ®èŞ^Ï/¶|&[£ (xºqeº ¨`E¢•$ğÌ`Æ_ıD¦Åj=Ê<¿z§(ŸÛ¸{míŞo°(¯ÿî_ë¿¹)¸(lAìŸ÷Ç\r¢Qb…ÉaYÈ–údb*ùş-s>Ô+v^MLyÌ.5:¼ò±ÿÿ   ÿÿÄ»nA°ç+,£È±Db‡		¢à¥Dˆ;>K±î.d¹B=P@
-~%	|3³ÏÙİÛ3NÁõÜîÌìÎcç1!î·wöŞ=÷Kƒ{ıÉ±ÿ©}„'ÌE<µÕpBZõLEî.Ú˜“#tŒ[çW–/_¿¹º\S¤òÀÙuálˆG8p/Ü¼tiy¥¨i£ê‚TËÂcœuüEUtâ)¨l¾ÁªB¯ÕSrf¬ÇRhz®|‚8ñUY²N.Lè¤GçšíÓ‹s¶øQµî$•u<êC«)‚§cC‹¯¤’AºÙ<–;ß¯ÖÙÆ°}%a%ù@ÓîtacÎäƒ™´‚1ŞF÷…ºÀâërÈ	IË•»T¦sÉ2CP´bqÃdJÈÍ¤C|å¥²ªó&#LútdJ<×‹×õ:¡ Èù&¯0jw’7‰w”„sˆ¡h€@ii¤gƒÍR«Ëğ‘üùÈ†+v?i{çh‘{Ol|]8!½ÛTÜ—:âä2.j…¡îc™…^k€²Ğ;xœ‡ÀZ¯ŞB¼œãåİêog7øo»ÿ±ŒÑPqWãÔWf(Ål;®[Â*Ì]šµ|œ`·yÀÎã¾(^º±ÀÖâæ¾a+tQ71Leh)§Ó5ò·
-SŞì&iíXÅ©7oÖ¦moã ¯ÖG1c(äí+l+ÇV„.éQD/¡ôZ¸[4_j"çR#·/ìPË»‘µ:[TscÙùB+MÉ¶=¤@–@0µœ"àŞÜpoÜËy·|{X.ÚÁ=b£Éæ9L´vë‹†İ{&j,¯+ç¾­,»G¨qãğ^•ùœ|Şç7 0—•£¢‰ºNø¡²ŸFSüs­èr¯ÂPØjoi¼‡‡º¼+¾Y´jíê€fˆ`Úª#t]ãVÛzw¥¡äEÛ´„I¼V Œb-®=y¼ûõ9púr–¶R*9¾¢¤‘Ägjl=#ïı?ğ÷íßß¾aÇ!ĞàóîZä‰b¨(ˆ é{2}ïPİ#·4½'¡x¨À²MtS`yÁ×å‰ğ1ïx½ÿpP|>OúºägÇb¬¸fÖ£Îá”º\Qâåjªe]™·ğ Ä«wŠâú‰Øüìƒd#]”¼u‚t;¦½ºÁïYş íÕ!Ê5L›„ƒêj+ß˜íuûÓÆé«ª¦nóvjùòh‰œ¨×¶z?ß¤ÀùYå"ÖZnu³˜®µéüø ²™y}£PmUÎgé¦)e¯Ã¼ñ1=—¤[å.v(«Aä)íÖÕÛŠCr½ü·Bç‰I1¡Ùšš«#‘SÄÔ˜j±º#§|¨¸İmk•&Fi\ı²éÈú¹ˆ~¹&…3¥±®µ6™şí¯²d»C'eZlêøŞW§¨ŸUãdó $Æí¬É«İ@Ó€ÉÉiEğÿÈ‹^ßBÛƒ(ÁB†šB&„ÛíUs°-hr]¸ÿ“Jä‡ÿK*ùÂ`u«=ÓíSuÑ“¬ †Œ :-¼3Û&ÙnuïÇl•b	ˆÈÄ e]Â~.øešW˜"AaâÔóƒÉ1a¡S¡ãÜÈàyu$EéóÛ½—ƒ4©H4ŠV!FÖG*>5öøaàp®³mÄ…>åo÷±%²A{ßíï<m€&”ä­b‰aBQCKQ¤iÃvAT¤ğõ@ #©ù=4„|z¿ûåÕî×¥+|¨Q„j‹5[ûú$•h´•tÆ?FøÍô   ÿÿ [ËPğ
+×æ…¯XPjWÉëw3ş¼rqı›«ì€førÌXÁ½ˆ¥€q‡1õYµ¶Ì·v,Ìg¼LÌ/¦îºº?
+$‚c¤ª1<,"RúV8g€Ì‡„!*cU¼‡íÊI‚ÏˆäàÃï¢€×v³9°¤Qz×—4¸ÇÁÚ‚°}µH2ŠáŠ{~’ìcøáö2±?‰73üt»¡á't7¢«~ºÅo5øŞÒ¢HÜ&<£BóÔÁ¿Qh›¥íŠ}&f+ÄOWÛ!~‚¶Äÿ  ÿÿì][oG~çWŒxr$°K ´´É2I)Ø(v‚ª>mì³ê^Ü]
+(RÅM©H€6*HiAH…Ñ"!´<äŸ´l.ÿ¢3;»ë™Ù™Ù±sº/ØËlvf|îsÎwˆÊ$@ŠG$É]Œ¹İşá[tanßÎ¹¦¾*“ôŒ+d”¸õSN— ê(QafS¶‡“Û¤ }]¥ ®ƒh‹
+Fu
+ög„_Ò!0}IPµÉwÉA¦ÒŒY¼í«Ñ†¥ã§£3ïíÈAÔHÂ‰ºt(ú–íÂ¦µ®«Ú,B:"©åÛµ£*şrÔØ+DôüæX·ÔC&ÊàËsù”…v¾Uó$µÁ2¾Ô¸£‹ØÂg”Ìa7´EÛÒƒ¨sx HÁlÅ§Üm;FÛç‡J±HjsèƒÅÖybÚ£éÜ!?Tg)´JïµGÉéMìí Kh‰qÖEŞJ˜˜QJGDi *äÇ,CiñåÕO™
+>*Å¢¸±¬ß“*ÎåÜµÕıé·7gÖænÄ…¸†YİŸ°ªº€æi5ØÄq4b¡C´eÔ<š! Ï‹—/ıAe?§à'ƒ Ï•ËBŸínrnQ÷Z¸s}¥RE	MøxÛM ¨Nº]ë<X Jå¢sKĞ¿?ÚƒZÉ¬ERS3.ó)ib« Ô NrMaM¯Nİóß¾öo¾Úx°ˆ£E…¦úôê8J&MĞ‰¢PxƒúÊ¥É®L”CôIÈŸ(”Šù!P,”¢Ö¥ap!?ÔûUi¸ÜK4Fw.åkÁ/Ó‡Š…	Á´Ã0ãrq³Îo=I‚‰SÁ.@‡3&vGx‰'@c´Åïªèáë*&r²h“²§;½¬Y‹‘yéÁühdğøò—ğ&‡~†ÌÏ“üÅwÿ¥ÿäÎ]9ğñİ¬¿<K§ã‚mœÊ‡ä]K»²ò»ÅQi| èÍ à
+„ÔÔ¯ş»e8u¨ªC<Ü™_ü›×¡ØBúû¯%ê¡ÿü6$«Ïu •¸–)ÆBıÁ -\p&ÀèÄØ$%Ûuº¥ñ7óV¬'©[\åÃQ.´ËıÚ…1»‰£ÿÎ‘neF5»f¨–§’Æà y—í*à†:µKšÑŞ8‚6\…ûD›¤lÉÇö¸ Ç–Çmòú4á»“Ú4Yš{ó¢ofíùËæÊ"°Re¬((SÄ¹e‰w‰ŠşB¥b5-½sÅü`ò©V­úqŠ\dyAq[ô@»uüÜ„Yîì¦à„e5‚Zı\ºŠì*ÓqÁ»­´+§Şµ?Şùnã“R£@ÿ–àß"¬+ÅùX4‘Uèş2C¨ä[íi¥Æ8¸
+„{eˆR?~x¸¶pÇŸ^<çYáÏ S	•$È›c\jÚ¥]òŒ+æõ±}.œA ä@&ˆgĞ²ë3‘ƒò®p¶½·ãvÂ÷÷³ş­?‘İ“ÁÃÅŸá=lô­ÌºFU“¾Y”=% ½ßCÜºñä¡¿4Á+Wz‡½\¡XòX”eh¤ĞëŠUÓp½hÎ.Hğ•%Ü=–)ïa·ˆÛ+ìŞœ2oã„01*îÆÁÕH¡7@ 1{$3°¡«£¼âÀm'n³Œ²Ñ3û†¬“{ "Æ=OBJ²GÂ$ï&	ˆ’%$<s Iˆs+=ŒÈ0Ôd8yV»eñb%—°Sƒ~=
+of‹Us‹NeÿõîıÕ×S¡aWuS9bœ¶á" 	¥m«“5¶‡÷ä0›ÆHßJ DP§Ï=6”…Åü·¯‰&$—¬Cì4lQ¸ˆ/œÀ}©Ô?ØÊ_õöVÊ •5€ò×Å­×õ¦wÎ©i&ôíı­ß¹ıÁÌoMwÉ”è|Ÿaêå†«kµ€÷tŒ¾ßqê¦Ê« ÿ·…µåëó«ßû÷¦WŸáœqÃ®ºm\ÑÜàšzhcõë­Şyæ?½¿q}Á¿û“ÿæúÇ7Ë Pks7¢YâÕlÌş‡â~Ş‡`¦zpŠnÂ¥áï(›ÂB­ª¡öJ¦ÓÔw)NOÉ®ƒ§gxs¿ÄÎ^	.çOİú¸ü“ÈbÓ~€ûÎÃ?d˜ãZ
+Ël]L=4ß±êvMµØx9²¤‚öãÍfÃû<—«9U/[–˜…"çµ¤Ÿ—«å²ÙlN¯¥W;aõË“–“MV‘tb'İA¬½QÆ"ÒÃÕ=¹Ÿ0kş“]müUŒ5‘€Ë&ÛÆİ“<@ë'	Q9xŠpÀs$p àXhLŒBÙ5‹7¡!ê
+ø…í Ë“·Ôƒ{røÌ±,(:4Çcßeúi¯	•YıLŞınÂ¸è€nıŒfÒĞÜ&zµÜ8ÍÊÖÀ}ôt.|(ÛÖLº³ Èæ1Q—kiM'~ÿˆf:qÄÓá«~€z	\\Ytë¦2Ùªw±+~qĞIµaèÀ¦a›œÇŞrIU´—È·úß!UÛnœV[¾lW1­ã]ïh—ë”Ñ;°doåİõ`‡ô1È+ã…KíÀëÎf^Üög^	ÌÛ|İq“ ­[ƒ&ğe¥bßÀĞ¹|€_xv ?XêÓc7¶êØc†kĞ?uäÄR7²†·§[«¶ßÛ ¤YŠ,R#ÇÇ„äH¶XO4UO…Í’x–§ó¦î6+®‰š8	¹àd‚xşÏ–æø“L6(ämbO)|Ñ„›’ä“Œ•ôÓ›îÆ \Ÿ‰<|&»‚»²ˆ¼:^áˆˆ‘É;IçrŠ‚¾tÓLh£)!+È‹Ìf1eéeÖ$5Ÿ†Ôƒs,JfæÇHT=Ñ99~22Š|"‘ŠmQX´Õj]¹T˜EÚmÇİíÔ¨ù@¼¿ojï[\­ŒJi+VóÑc¹î”½”ƒ«ííÚüÒúÒÓÕŸ¯ÏOGùâh”¶¸-ußèúâĞä¡ÿ   ÿÿ V2' 
