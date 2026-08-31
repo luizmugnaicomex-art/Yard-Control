@@ -106,6 +106,141 @@ export interface DailyDataPoint {
   status: 'critical' | 'warning' | 'optimal';
 }
 
+// Timezone-safe local date parsing
+export const parseEtaToDate = (rawEta: string | undefined): { date: Date; year: number; month: number; day: number; formattedIso: string } | null => {
+  if (!rawEta) return null;
+  const str = String(rawEta).trim();
+  if (!str) return null;
+
+  let day = 1;
+  let month = 8;
+  let year = 2026;
+
+  if (str.includes('/')) {
+    const parts = str.split('/');
+    if (parts.length >= 2) {
+      day = parseInt(parts[0], 10) || 1;
+      month = parseInt(parts[1], 10) || 8;
+      if (parts.length >= 3) {
+        let y = parseInt(parts[2], 10);
+        if (!isNaN(y)) {
+          if (y < 100) y += 2000;
+          year = y;
+        }
+      }
+    }
+  } else if (str.includes('-')) {
+    const parts = str.split('-');
+    if (parts.length >= 3) {
+      if (parts[0].length === 4) {
+        year = parseInt(parts[0], 10) || 2026;
+        month = parseInt(parts[1], 10) || 8;
+        day = parseInt(parts[2], 10) || 1;
+      } else {
+        day = parseInt(parts[0], 10) || 1;
+        month = parseInt(parts[1], 10) || 8;
+        let y = parseInt(parts[2], 10);
+        if (!isNaN(y)) {
+          if (y < 100) y += 2000;
+          year = y;
+        }
+      }
+    } else if (parts.length === 2) {
+      month = parseInt(parts[1], 10) || 8;
+      let y = parseInt(parts[0], 10);
+      if (!isNaN(y)) year = y < 100 ? y + 2000 : y;
+    }
+  } else {
+    return null;
+  }
+
+  if (isNaN(year) || isNaN(month) || isNaN(day) || month < 1 || month > 12 || day < 1 || day > 31) {
+    return null;
+  }
+
+  const localDate = new Date(year, month - 1, day, 12, 0, 0, 0);
+  const formattedIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+  return {
+    date: localDate,
+    year,
+    month,
+    day,
+    formattedIso
+  };
+};
+
+/**
+ * Exact ISO 8601 Calendar Week Calculation
+ */
+export const getISOWeekDetails = (d: Date): {
+  isoYear: number;
+  isoWeek: number;
+  weekLabel: string;
+  weekLabelShort: string;
+  weekFull: string;
+  dateRange: string;
+  start: Date;
+  end: Date;
+} => {
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0, 0);
+  const dayNr = (target.getDay() + 6) % 7;
+
+  const monday = new Date(target);
+  monday.setDate(target.getDate() - dayNr);
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  const thursday = new Date(monday);
+  thursday.setDate(monday.getDate() + 3);
+  const isoYear = thursday.getFullYear();
+
+  const jan4 = new Date(isoYear, 0, 4, 12, 0, 0, 0);
+  const jan4DayNr = (jan4.getDay() + 6) % 7;
+  const firstMondayOfYear = new Date(jan4);
+  firstMondayOfYear.setDate(jan4.getDate() - jan4DayNr);
+  firstMondayOfYear.setHours(0, 0, 0, 0);
+
+  const diffTime = monday.getTime() - firstMondayOfYear.getTime();
+  const diffDays = Math.round(diffTime / 86400000);
+  const isoWeek = 1 + Math.floor(diffDays / 7);
+
+  const startDay = String(monday.getDate()).padStart(2, '0');
+  const startMonth = String(monday.getMonth() + 1).padStart(2, '0');
+  const endDay = String(sunday.getDate()).padStart(2, '0');
+  const endMonth = String(sunday.getMonth() + 1).padStart(2, '0');
+
+  const startStr = `${startDay}/${startMonth}`;
+  const endStr = `${endDay}/${endMonth}`;
+
+  const padWeek = `W${String(isoWeek).padStart(2, '0')}`;
+  const weekLabel = isoYear === 2026 ? padWeek : `${padWeek}'${String(isoYear).slice(-2)}`;
+  const dateRange = `${startStr} a ${endStr}`;
+  const weekFull = `${weekLabel} (${dateRange}${isoYear !== 2026 ? `/${isoYear}` : ''})`;
+
+  return {
+    isoYear,
+    isoWeek,
+    weekLabel,
+    weekLabelShort: padWeek,
+    weekFull,
+    dateRange,
+    start: monday,
+    end: sunday
+  };
+};
+
+export const getCurrentIsoWeek = (): number => {
+  try {
+    return getISOWeekDetails(new Date()).isoWeek;
+  } catch {
+    return 36;
+  }
+};
+
 export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashboardProps> = ({
   theme,
   language,
@@ -128,12 +263,16 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
   const [metricUnit, setMetricUnit] = useState<'containers' | 'bls'>('containers');
   const [showInventoryOnly, setShowInventoryOnly] = useState<boolean>(false);
   const [showDataLabels, setShowDataLabels] = useState<boolean>(true);
+  const currentLiveIsoWeek = useMemo(() => getCurrentIsoWeek(), []);
   const [startWeekIso, setStartWeekIso] = useState<number>(() => {
     try {
       const saved = localStorage.getItem('byd_start_week_iso');
-      if (saved) return parseInt(saved, 10);
+      if (saved && saved !== 'auto') {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= 1 && parsed <= 53) return parsed;
+      }
     } catch {}
-    return 35; // Default: Start at Week 35 as requested ("started week 35, so we don't need to see week 34 anymore")
+    return getCurrentIsoWeek(); // Automatic: always default to real-time current week
   });
   const [includeSaturday, setIncludeSaturday] = useState<boolean>(() => {
     try {
@@ -169,145 +308,7 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
   // 1. DYNAMIC STATE MODELS & MAPPINGS (Zero Hardcoded Assumptions)
   // -------------------------------------------------------------
 
-  // Helper for timezone-safe local date parsing
-  const parseEtaToDate = (rawEta: string | undefined): { date: Date; year: number; month: number; day: number; formattedIso: string } | null => {
-    if (!rawEta) return null;
-    const str = String(rawEta).trim();
-    if (!str) return null;
-
-    let day = 1;
-    let month = 8;
-    let year = 2026;
-
-    if (str.includes('/')) {
-      const parts = str.split('/');
-      if (parts.length >= 2) {
-        day = parseInt(parts[0], 10) || 1;
-        month = parseInt(parts[1], 10) || 8;
-        if (parts.length >= 3) {
-          let y = parseInt(parts[2], 10);
-          if (!isNaN(y)) {
-            if (y < 100) y += 2000;
-            year = y;
-          }
-        }
-      }
-    } else if (str.includes('-')) {
-      const parts = str.split('-');
-      if (parts.length >= 3) {
-        if (parts[0].length === 4) {
-          year = parseInt(parts[0], 10) || 2026;
-          month = parseInt(parts[1], 10) || 8;
-          day = parseInt(parts[2], 10) || 1;
-        } else {
-          day = parseInt(parts[0], 10) || 1;
-          month = parseInt(parts[1], 10) || 8;
-          let y = parseInt(parts[2], 10);
-          if (!isNaN(y)) {
-            if (y < 100) y += 2000;
-            year = y;
-          }
-        }
-      } else if (parts.length === 2) {
-        month = parseInt(parts[1], 10) || 8;
-        let y = parseInt(parts[0], 10);
-        if (!isNaN(y)) year = y < 100 ? y + 2000 : y;
-      }
-    } else {
-      return null;
-    }
-
-    if (isNaN(year) || isNaN(month) || isNaN(day) || month < 1 || month > 12 || day < 1 || day > 31) {
-      return null;
-    }
-
-    // Set local noon time (12:00:00) so there's never an off-by-one or DST/UTC timezone border issue
-    const localDate = new Date(year, month - 1, day, 12, 0, 0, 0);
-    const formattedIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-
-    return {
-      date: localDate,
-      year,
-      month,
-      day,
-      formattedIso
-    };
-  };
-
-  /**
-   * Exact ISO 8601 Calendar Week Calculation
-   * - Week 1 starts with the week containing Jan 4th (first Thursday).
-   * - In 2026: Year goes up to Week 53 (Dec 28, 2026 – Jan 03, 2027).
-   * - In 2027: Jan 04, 2027 begins Week 01 (Jan 04, 2027 – Jan 10, 2027).
-   */
-  const getISOWeekDetails = (d: Date): {
-    isoYear: number;
-    isoWeek: number;
-    weekLabel: string;
-    weekLabelShort: string;
-    weekFull: string;
-    dateRange: string;
-    start: Date;
-    end: Date;
-  } => {
-    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0, 0);
-    
-    // ISO Day of week: 0 = Mon, 1 = Tue, ..., 6 = Sun
-    const dayNr = (target.getDay() + 6) % 7;
-
-    // Monday of the given date's week
-    const monday = new Date(target);
-    monday.setDate(target.getDate() - dayNr);
-    monday.setHours(0, 0, 0, 0);
-
-    // Sunday of the given date's week
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    // Thursday in current week determines the ISO year
-    const thursday = new Date(monday);
-    thursday.setDate(monday.getDate() + 3);
-    const isoYear = thursday.getFullYear();
-
-    // First Thursday of ISO year is always in Jan 1-7 (Jan 4 is always in week 1)
-    const jan4 = new Date(isoYear, 0, 4, 12, 0, 0, 0);
-    const jan4DayNr = (jan4.getDay() + 6) % 7;
-    const firstMondayOfYear = new Date(jan4);
-    firstMondayOfYear.setDate(jan4.getDate() - jan4DayNr);
-    firstMondayOfYear.setHours(0, 0, 0, 0);
-
-    // Exact difference in ISO weeks
-    const diffTime = monday.getTime() - firstMondayOfYear.getTime();
-    const diffDays = Math.round(diffTime / 86400000);
-    const isoWeek = 1 + Math.floor(diffDays / 7);
-
-    const startDay = String(monday.getDate()).padStart(2, '0');
-    const startMonth = String(monday.getMonth() + 1).padStart(2, '0');
-    const endDay = String(sunday.getDate()).padStart(2, '0');
-    const endMonth = String(sunday.getMonth() + 1).padStart(2, '0');
-
-    const startStr = `${startDay}/${startMonth}`;
-    const endStr = `${endDay}/${endMonth}`;
-    
-    const padWeek = `W${String(isoWeek).padStart(2, '0')}`;
-    // For 2026: W34, W35, ... W52, W53
-    // For 2027: W01'27, W02'27, etc.
-    const weekLabel = isoYear === 2026 ? padWeek : `${padWeek}'${String(isoYear).slice(-2)}`;
-    const dateRange = `${startStr} a ${endStr}`;
-    const weekFull = `${weekLabel} (${dateRange}${isoYear !== 2026 ? `/${isoYear}` : ''})`;
-
-    return {
-      isoYear,
-      isoWeek,
-      weekLabel,
-      weekLabelShort: padWeek,
-      weekFull,
-      dateRange,
-      start: monday,
-      end: sunday
-    };
-  };
+undefined
 
   const yardStockList: YardStockItem[] = useMemo(() => {
     return (Object.entries(yards || {}) as [string, Yard][]).map(([id, y]) => {
@@ -1217,7 +1218,7 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
             </div>
           </label>
 
-          {/* Start Week Selector / Filter (Dynamic windowing) */}
+          {/* Start Week Selector / Filter (Dynamic windowing & Automatic Current Week) */}
           <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-slate-700 text-xs">
             <Calendar className="w-3.5 h-3.5 text-indigo-500" />
             <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
@@ -1235,12 +1236,58 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
               }}
               className="font-bold text-xs bg-transparent text-indigo-600 dark:text-indigo-400 focus:outline-none cursor-pointer"
             >
-              <option value={35} className="dark:bg-slate-900 text-gray-900 dark:text-white">W35 ({dt('Semana Atual • 24/08', '当前周 • 8月24日', 'Current Week • Aug 24')})</option>
-              <option value={36} className="dark:bg-slate-900 text-gray-900 dark:text-white">W36 ({dt('31/08', '8月31日', 'Aug 31')})</option>
-              <option value={37} className="dark:bg-slate-900 text-gray-900 dark:text-white">W37 ({dt('07/09', '9月07日', 'Sep 07')})</option>
-              <option value={38} className="dark:bg-slate-900 text-gray-900 dark:text-white">W38 ({dt('14/09', '9月14日', 'Sep 14')})</option>
-              <option value={34} className="dark:bg-slate-900 text-gray-900 dark:text-white">W34 ({dt('Histórico • 17/08', '历史周 • 8月17日', 'Historical • Aug 17')})</option>
+              {[
+                currentLiveIsoWeek - 2,
+                currentLiveIsoWeek - 1,
+                currentLiveIsoWeek,
+                currentLiveIsoWeek + 1,
+                currentLiveIsoWeek + 2,
+                currentLiveIsoWeek + 3,
+                currentLiveIsoWeek + 4,
+                currentLiveIsoWeek + 5
+              ].filter(w => w >= 34 && w <= 53).map((w) => {
+                const weekOffset = w - 34;
+                const monday = new Date(2026, 7, 17 + weekOffset * 7, 12, 0, 0, 0);
+                const info = getISOWeekDetails(monday);
+                const isCurrent = w === currentLiveIsoWeek;
+                const isPrevious = w === currentLiveIsoWeek - 1;
+                const isPast = w < currentLiveIsoWeek - 1;
+                return (
+                  <option key={w} value={w} className="dark:bg-slate-900 text-gray-900 dark:text-white">
+                    {`W${w} (${
+                      isCurrent
+                        ? `${dt('Semana Atual • Auto', '当前周 • 自动', 'Current Week • Auto')} • ${info.dateRange}`
+                        : isPrevious
+                          ? `${dt('Semana Anterior', '上一周', 'Previous Week')} • ${info.dateRange}`
+                          : isPast
+                            ? `${dt('Histórico', '历史周', 'Historical')} • ${info.dateRange}`
+                            : `${dt('Projeção', '预测周', 'Projection')} • ${info.dateRange}`
+                    })`}
+                  </option>
+                );
+              })}
             </select>
+
+            {startWeekIso === currentLiveIsoWeek ? (
+              <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-extrabold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                {dt('AUTO', '自动', 'AUTO')}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setStartWeekIso(currentLiveIsoWeek);
+                  try {
+                    localStorage.setItem('byd_start_week_iso', String(currentLiveIsoWeek));
+                  } catch {}
+                }}
+                className="text-[9.5px] text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-800 px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer"
+                title={dt('Sincronizar com a semana atual', '自动对齐当前周', 'Sync with current week')}
+              >
+                ↺ {dt(`Atual (W${currentLiveIsoWeek})`, `当前周 (W${currentLiveIsoWeek})`, `Current (W${currentLiveIsoWeek})`)}
+              </button>
+            )}
           </div>
 
           {/* Granularity Toggle: Days vs Weeks */}
