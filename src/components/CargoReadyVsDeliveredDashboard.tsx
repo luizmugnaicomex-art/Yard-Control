@@ -43,6 +43,7 @@ import {
 import { Yard, Vessel, YardStockItem, VesselETAItem } from '../types';
 import { db } from '../firebase';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { BondedAreasChart } from './BondedAreasChart';
 
 interface CargoReadyVsDeliveredDashboardProps {
   theme: string;
@@ -51,8 +52,8 @@ interface CargoReadyVsDeliveredDashboardProps {
   setYards?: React.Dispatch<React.SetStateAction<Record<string, Yard>>>;
   vessels: Vessel[];
   setVessels?: React.Dispatch<React.SetStateAction<Vessel[]>>;
-  dailyDeliveryRate: number;
-  setDailyDeliveryRate: (rate: number) => void;
+  dailyDeliveryRate?: number;
+  setDailyDeliveryRate?: (rate: number) => void;
   bondedSum?: { totalCheio: number; totalCap: number; pct: number };
   warehouseSum?: { totalCheio: number; totalCap: number; pct: number };
   bufferSum?: { totalCheio: number; totalVazio?: number; totalOccupied?: number; totalCap: number; pct: number };
@@ -60,6 +61,9 @@ interface CargoReadyVsDeliveredDashboardProps {
   setAdditionalBacklog?: (val: number) => void;
   selectedScenario?: 'etapa1' | 'etapa2' | 'etapa3';
   setSelectedScenario?: (scen: 'etapa1' | 'etapa2' | 'etapa3') => void;
+  containers?: any[];
+  depots?: any;
+  dbStatus?: string;
 }
 
 export interface WeeklyDataPoint {
@@ -256,7 +260,10 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
   additionalBacklog = 0,
   setAdditionalBacklog,
   selectedScenario = 'etapa3',
-  setSelectedScenario
+  setSelectedScenario,
+  containers = [],
+  depots,
+  dbStatus
 }) => {
   // State for view controls
   const [granularity, setGranularity] = useState<'weeks' | 'days'>('weeks');
@@ -286,7 +293,7 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
   const [isAiScriptModalOpen, setIsAiScriptModalOpen] = useState<boolean>(false);
   const [isDataEditorOpen, setIsDataEditorOpen] = useState<boolean>(false);
   const [editorTab, setEditorTab] = useState<'yards' | 'vessels' | 'calendar'>('yards');
-  const [activeTabSubView, setActiveTabSubView] = useState<'chart' | 'steps' | 'curves' | 'risk'>('chart');
+  const [activeTabSubView, setActiveTabSubView] = useState<'chart' | 'bonded' | 'steps' | 'curves' | 'risk'>('chart');
   const [copiedScript, setCopiedScript] = useState<boolean>(false);
   const [activeActionCurve, setActiveActionCurve] = useState<'alert' | 'inflow' | 'drain'>('alert');
 
@@ -944,12 +951,18 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
       {/* 2. EXECUTIVE METRIC KPI BADGES (MATCHING UPLOADED SLIDE / PRESENTATION) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 my-4">
         {/* 1. Bonded */}
-        <div className={`p-3 rounded-xl border relative overflow-hidden transition-all hover:scale-[1.02] ${
-          theme === 'dark' ? 'bg-slate-900/60 border-slate-800' : 'bg-blue-50/40 border-blue-100'
-        }`}>
+        <div
+          onClick={() => setActiveTabSubView('bonded')}
+          title={dt('Clique para abrir o gráfico e detalhamento de cada área alfandegada', '点击查看各保税区集装箱图表与负荷分析', 'Click to view bonded areas chart and breakdown')}
+          className={`p-3 rounded-xl border relative overflow-hidden transition-all hover:scale-[1.02] cursor-pointer group ${
+            activeTabSubView === 'bonded'
+              ? 'ring-2 ring-blue-500 shadow-md bg-blue-100/50 dark:bg-blue-950/60 border-blue-400'
+              : theme === 'dark' ? 'bg-slate-900/60 border-slate-800' : 'bg-blue-50/40 border-blue-100'
+          }`}
+        >
           <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 text-[10px] uppercase font-extrabold">
-            <span>{dt('BONDED (ALFANDEGADOS)', '保税堆场 (BONDED)', 'BONDED YARDS')}</span>
-            <Building2 className="w-3.5 h-3.5 text-blue-500" />
+            <span className="group-hover:text-blue-600 transition-colors">{dt('BONDED (ALFANDEGADOS)', '保税堆场 (BONDED)', 'BONDED YARDS')}</span>
+            <Building2 className="w-3.5 h-3.5 text-blue-500 group-hover:scale-110 transition-transform" />
           </div>
           <div className="flex items-baseline gap-1.5 mt-1.5">
             <span className="text-2xl font-black font-mono text-blue-600 dark:text-blue-400">{activeBondedStock.toLocaleString()}</span>
@@ -1098,6 +1111,19 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
             }`}
           >
             {dt('Gráfico de Inflow & Drain', '到港与出清图表', 'Inflow & Drain Chart')}
+          </button>
+          <button
+            type="button"
+            id="subview-bonded-chart-btn"
+            onClick={() => setActiveTabSubView('bonded')}
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTabSubView === 'bonded'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>{dt('Áreas Alfandegadas (Bonded)', '各保税堆场图表', 'Bonded Areas Chart')}</span>
           </button>
           <button
             type="button"
@@ -1524,6 +1550,30 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
               </div>
             </div>
           </div>
+
+          {/* DEDICATED BONDED AREAS DISTRIBUTION CHART SECTION */}
+          <div className="mt-6 pt-5 border-t border-gray-200 dark:border-slate-800">
+            <BondedAreasChart
+              theme={theme}
+              language={language}
+              yards={yards}
+              containers={containers}
+              vessels={vessels}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* DEDICATED BONDED AREAS SUB-VIEW */}
+      {activeTabSubView === 'bonded' && (
+        <div className="space-y-4">
+          <BondedAreasChart
+            theme={theme}
+            language={language}
+            yards={yards}
+            containers={containers}
+            vessels={vessels}
+          />
         </div>
       )}
 

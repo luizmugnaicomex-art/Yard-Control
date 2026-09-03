@@ -56,6 +56,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
 import { CargoReadyVsDeliveredDashboard } from './components/CargoReadyVsDeliveredDashboard';
+import { BondedAreasChart } from './components/BondedAreasChart';
 
 // FIREBASE INTEGRATION
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -811,7 +812,6 @@ const ORIGINAL_YARDS: YardsState = {
   ag: { name: 'AG - INTER CDEX', type: 'WAREHOUSE', capacity: 2200, cheio: 844, vazio: 0, porto: 0, prontoColeta: 122, delivered: 144, previous_total: 850 },
   cts: { name: 'CTS - PONTUAL', type: 'WAREHOUSE', capacity: 1200, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   cts_jew: { name: 'CTS - JEW', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
-  cts_logic: { name: 'CTS - LOGIC', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   cts_uni: { name: 'CTS - UNI', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   cts_vbr: { name: 'CTS - VBR', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   logic: { name: 'LOGIC', type: 'WAREHOUSE', capacity: 1000, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
@@ -1268,6 +1268,7 @@ export default function App() {
     const saved = localStorage.getItem('byd_additional_backlog');
     return saved ? Number(saved) : 0;
   });
+  const [showBondedChartSlide2, setShowBondedChartSlide2] = useState<boolean>(true);
   const [selectedScenario, setSelectedScenario] = useState<'etapa1' | 'etapa2' | 'etapa3'>('etapa3');
   const [chartMode, setChartMode] = useState<'historical' | 'projection'>('projection');
 
@@ -1376,6 +1377,20 @@ export default function App() {
   const [globalFilterQuery, setGlobalFilterQuery] = useState("");
   const [selectedYardKey, setSelectedYardKey] = useState<string | null>(null);
   const [containers, setContainers] = useState<Container[]>(() => JSON.parse(JSON.stringify(INITIAL_CONTAINERS)));
+  
+  // Limpeza definitiva do armazÃ©m descontinuado CTS - LOGIC (banco e estado)
+  useEffect(() => {
+    deleteDoc(doc(db, 'yards', 'cts_logic')).catch(() => {});
+    setYards(prev => {
+      if (!prev['cts_logic']) return prev;
+      const next = { ...prev };
+      delete next['cts_logic'];
+      return next;
+    });
+    if (selectedYardKey === 'cts_logic') {
+      setSelectedYardKey(null);
+    }
+  }, [selectedYardKey]);
   
   // Estados para formulÃ¡rio de cadastro de novo contÃªiner
   const [newContainerId, setNewContainerId] = useState("");
@@ -2128,8 +2143,15 @@ export default function App() {
       } else {
         const newYards: YardsState = {};
         snapshot.forEach((docSnap) => {
+          if (docSnap.id === 'cts_logic') {
+            deleteDoc(doc(db, 'yards', 'cts_logic')).catch(() => {});
+            return;
+          }
           newYards[docSnap.id] = docSnap.data() as Yard;
         });
+
+        // Garantir que cts_logic nunca apareÃ§a
+        delete newYards['cts_logic'];
 
         // Garante integridade de todos os pÃ¡tios padrÃ£o
         Object.entries(ORIGINAL_YARDS).forEach(([key, originalYard]) => {
@@ -4132,7 +4154,6 @@ export default function App() {
       ["   - AG (Warehouse / ä»“åº“)"],
       ["   - CTS - PONTUAL (Warehouse / ä»“åº“)"],
       ["   - CTS - JEW (Warehouse / ä»“åº“)"],
-      ["   - CTS - LOGIC (Warehouse / ä»“åº“)"],
       ["   - CTS - UNI (Warehouse / ä»“åº“)"],
       ["   - CTS - VBR (Warehouse / ä»“åº“)"],
       ["   - LOGIC (Warehouse / ä»“åº“)"],
@@ -4199,16 +4220,16 @@ export default function App() {
           
           if (clean.includes('cts')) {
             if (clean.includes('jew')) return 'cts_jew';
-            if (clean.includes('logic')) return 'cts_logic';
             if (clean.includes('uni')) return 'cts_uni';
             if (clean.includes('vbr')) return 'cts_vbr';
+            if (clean.includes('logic')) return 'logic';
             return 'cts'; // default CTS fallback to PONTUAL
           }
           if (clean.includes('pontual')) return 'cts';
           if (clean.includes('jew')) return 'cts_jew';
           if (clean.includes('uni')) return 'cts_uni';
           if (clean.includes('vbr')) return 'cts_vbr';
-          if (clean.includes('logic')) return 'logic'; // Separate LOGIC warehouse from CTS - LOGIC
+          if (clean.includes('logic')) return 'logic'; // Separate LOGIC warehouse
 
           return null;
         };
@@ -4227,7 +4248,6 @@ export default function App() {
           ag: { total: 0, porto: 0, pronto: 0 },
           cts: { total: 0, porto: 0, pronto: 0 },
           cts_jew: { total: 0, porto: 0, pronto: 0 },
-          cts_logic: { total: 0, porto: 0, pronto: 0 },
           cts_uni: { total: 0, porto: 0, pronto: 0 },
           cts_vbr: { total: 0, porto: 0, pronto: 0 },
           logic: { total: 0, porto: 0, pronto: 0 },
@@ -6709,6 +6729,7 @@ export default function App() {
                               setAdditionalBacklog={setAdditionalBacklog}
                               selectedScenario={selectedScenario}
                               setSelectedScenario={setSelectedScenario}
+                              containers={containers}
                             />
                           </div>
 
@@ -7285,6 +7306,22 @@ export default function App() {
                         </button>
                       </div>
 
+                      {/* TOGGLE BONDED AREAS CHART */}
+                      <button
+                        type="button"
+                        id="btn-toggle-bonded-chart-slide2"
+                        onClick={() => setShowBondedChartSlide2(!showBondedChartSlide2)}
+                        className={`px-3 py-2 rounded-lg text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer border ${
+                          showBondedChartSlide2
+                            ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 shadow-xs'
+                            : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-slate-200 dark:border-slate-700 hover:text-blue-600'
+                        }`}
+                        title={tt("Exibir ou ocultar grÃ¡fico de Ã¡reas alfandegadas", "æ˜¾ç¤º/éšè—ä¿ç¨åŒºå›¾è¡¨", "Toggle Bonded Areas Chart")}
+                      >
+                        <Building2 className="w-3.5 h-3.5 text-blue-500" />
+                        <span>{tt("GrÃ¡fico Ãreas Alfandegadas", "å„ä¿ç¨åŒºå›¾è¡¨", "Bonded Areas Chart")}</span>
+                      </button>
+
                       {/* PRIMARY ADD VESSEL BUTTON - VERY PROMINENT */}
                       <button
                         id="btn-open-add-vessel"
@@ -7481,6 +7518,19 @@ export default function App() {
                       </div>
                     </div>
                   </div>
+
+                  {/* SECTION: GRÃFICO DAS ÃREAS ALFANDEGADAS (BONDED AREAS BREAKDOWN) */}
+                  {showBondedChartSlide2 && (
+                    <div className="w-full">
+                      <BondedAreasChart
+                        theme={theme}
+                        language={language}
+                        yards={yards}
+                        containers={containers}
+                        vessels={vessels}
+                      />
+                    </div>
+                  )}
 
                   {/* GRID PRINCIPAL: TABELA/LISTA DE NAVIOS + NOTAS OPERACIONAIS */}
                   <div className="grid grid-cols-12 gap-4">
@@ -9747,88 +9797,2062 @@ export default function App() {
                                       : `ContÃªineres Filtrados: ${rangeLabel} (${colLabel})`}
                                   </h4>
                                   <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold mt-0.5">
-                             xœì½ë{Õµüıı+6~)–[Ë·Ä!ø$æ•%%Ñ©mùHJ8œ<yš±4±ç iÔ™±cãúyJH äÒ…B(„[-JsáòÁÿ	µdûSÏŸğ®µ÷\öÜ÷ÈvH z –ffïÙ—µ×^kíµ~‹úY©KÍ¹iN&$½ÏÎ÷’ÿ‡}$'ÛçşF]iHFu^iÎeÕ¦!)MYÓêrsÎ˜_%ë·>i¿|{ëÜÅ7Ÿßzë…Í÷ÏmÜüÛ¿Î<×¾zcó»?mùß_¿ÜyîFûògëw?ÜxëËÎ¥;ğï?ÿşÌÕÍ›×ÚşĞ¹|eóËë×¿ÚzıK’šÑÔ9MjHk××ŞWû¾?óvû/ã£ß]Ùüö•ö¹¿¶/ß"©¬¤iŠ¬ám¬şµÏ;o¶?aóü'í—n´¯¼ÜùÔ|	Ü…×¶/^n¿ôqûòKğ’ö7Øüîï@3áîÖÙïÚç.®ß¹¾ñê;›_ë\}§s÷Ïğïæ—·¡'jŒœœRuC“š55z¸ªpií¼–’õ¾’™“›5™HD“E“j‘IM^Tët HK“åfu^ÆŠ%Š×šğWš•”%¸+ii(†2'i¤º ª¥á¿Æ‚¦ÁŒœ\èÁÁÖxìckÊ¢Àc³†¡6Şª6³u¥úÌÁ•T98NtÙ(Ëu¹jÈµœÕü®œj.Ôë}"ı¨Ö%]Ÿ–òÁÖRzd`”´–ÓÃdv.­ÉµôğĞ™WemÌ¼0j’öŒõû‰Ñ¡Á½æ%×ƒOÑ†¼dĞß[í+{áÊ)˜Ù4\Ğ¤Yµ^cOj- šº “\K7à2Ğˆ¦6ÓR½N¤ª¡,ÊczUªËĞ 2«j5Y3ÿxZé\Ãí‚	×tUK·T¥iÈZOìÅÏ^ ³x’ôvnÛúÓŸ¾µuæEòıÕ×zâ{ÉÕy »œlHõyY§×ã§éÀ £¸Æ˜ô÷<ÄÏ;NÛ©ºz:½”–•4¤¥ô|úø!:öİez·G€œi¶.óo8>ôhMï0VK¿×åS†5o°JëRK—^€¯˜—¥šÈ“ø¬Æ·èS¯K†LiÛ"eveÿI°ÇŸÀ&.´Z²V•t	°úğ¦ôi)>ÃŠŒºÈš]³	{¶Å¬şÍZ_€S/û(”•„E"Ô}s\‹7=BZõôñBØ<ôÀ 1ß}…=ãÈ”É ™Ty»u=-i5¨jfí¬äíVvLÖu¹ÕMK‹Û­ÍgU¦a<_Éìdu‡`/"¥±ÍásWšS`;+Éº!Áo}'k.’± Ã¸æœıt›õ7”fú4,û=”p#fop¶ {‡á6X)ÿ÷Î+çˆKö!)*À»›†Ú·«·W¬oıï¢m{ó-RÁ«¥j†TSAè°E0ñ†Á“šCæˆŒYµ¶Ìwöàkéeb~¡j˜ÛÙÍë—¤ƒÑkÊBCh4„ú$6¤V*Uí'
-•wV'Fİ€–,ëä ™“|+É¨j?¤jöRÕ¾ÿHT§¢a?¬-ÀVÏêv|¶Èc±ÈPÒ*j@´FhãÉSıA2*ZâÑšjsrV­«4Æé*3œ<èZ¶B—_4töèP¯`³PC°ÇÆl‚ªã¾=j¶ñÀß®VàÆ,øfàU`0IÚ/—²&Õ¹1°.pM°.ñ­°®ùbİÀ¶üGœĞf}@åYĞš$%Üx‘—®(«üš·…uKñÈğöZÇ6{p¶úÕ¦ˆ0È7¤$°˜ŒÕÿÙ‹Ÿpq’ÓóŠ!ƒ¶ƒª¶ g|¥: ÔVë	
-¡M o×¡{N;híuxÈo~CzÓ½»ğÊ3[_Óû\]¦—ö"ï\YÁI?^À¿…Ú‰'šP-¶Íº´³4´…fæ€ê¸ÿàş×CÅ¨Ëah©ì…EWÇİ?w œ4â´‰Î¨L;8!ü{èw©1Ø=	ìğ,qœ¡eºİiO¢UÛ¦{×x2o0[£·¤&×•“h	@;ÀĞ€­]óª¹‡„9MıÑ÷6²zr5YgœÁ>Š¶4Vã*©h/ÔA’ê;‰¶#û†¹ÆÕßAìp²võÁ+·;®=t©pEvº«†$éíî­ÇdZ@†2§jËÌB’ËOåKù\ï+Ú­†™İŠÒ«³ãoÂ{<û·{Ís»²Ç²Ämîƒ£.K§˜‹Á1$+üØÃó ¶oPÔõ‹ƒ{8éq_°ÒdËÛİÑÉOç
-Ó‡ïÅXïæÚ]ü9É†¾d¦òÓ•"9TÈOæÈÏ½Ó¿ş9-|Ø?¡£	Çû€Òl-	‡ÚXn™Ì3Ş\ëş´€HäyØ£dí`O~iŒŒŒ=íÈ¾¤U-J ¡ôÓ2íUI¥Û¿€ùÖıQ›Ùy´Ñ\IÉT«…_µº|´Uik¦‡¹^K¡”ÛOz¹wööyÀ@+2h›~üvY˜P&aûÍ¡-º°Våh°…ŠJÕ¿>:d]ÔĞ†:Ìÿ°îs2'‰âš_Òƒ5„ı¶[537,uÁ¨Ã`¦›jSN6áƒ‰¶Í.–j¥”™.ÏK•L®XÊìĞj}ÀVã–'»^††Û´v¯V¢ûµ÷ÁbdwCÜ«‘*•QËÑ~à'´EM¬ø´®
-ÒAø¡7•“©ÕOT8; Ş“u¨õ2ˆ0W†‡Vİ|d¿_;¶´nŠé¥Qÿ!nwZBÈêß¯u®¾Ø¾z£óéí/lüíîú­ßu^ü¶}ás¿=`–›óÎe ¾jškèúCä&ŞÓ`ı2O Y‡‹§”º¡©	8H§0!ºêĞ‚/â~@ObO·õHÄÂXíKA·BnYØõ±š„Ú†jMu&¾i”ëJQÕh ¶	›qy²Ë“}c yÍ+$[œ®”Š“ä1’™œ,f3•Bqöfÿ›ñ ]©ìÑñéš¤ÏÏª’Vƒ¥¡ÔÒ5¹¥zË°rª./ü»Éÿ.è†rj9=+§e¹I]Áóe½Šî+SjŞçÓÇ«R½šVú³ôşÑÖRw$?¯Ô€¨)İãa<»oµĞÌI­ôŞŞëKÀ%*‘gì9:AKæx¸F!ˆB=+'áíö²T·¶¬GWŒyP¢Ù
-GFÒkÚõÿ¿ÃòÈ{fOßşåØ{M;<Û]â>£ÏÃ’>Ö½«Ä=ÌÚı®©§}CU5ô´{¸Ï±Ÿ&ãÃAÜfÀò:QĞWú‹‡ò@oyî€Å£dÁ¶n9ÜpFëĞl÷À!¥.—[š,ÕôyY6ÜâÇ>2ŸŞ×¾ÕF2‘âÀü×`ØÀõ	Ã‘8›ía(sóFä®ãÙefGàwbÄâ$í‹—7oŞl¿ûBûÓ7Öo]êÜú¬}ùıÎ?Î¶¯ü¾ıÒÎ™³›Ÿÿö#$ÒÀ,Aùˆ†DlPç÷DL@Ëgˆäqì½Ü³½Û®,ì¬7ÉØZ;øg—;¯İ:¹}û‹öÛç7Şú}çÒõ9Û¹z¦ıÁuÖûöÍÛğ ÀÖ{oÃ-¡Í·×o]m_¹°şÍÕ—¾‚gÖï|Ğ¾üâÆÍkW^Øxçã­7şAGe'M­ƒÀ¬4×Şk(UİùêJ(I‡‹k×4EÕûIUjIU¥&ÁM]%L
-0T"Ã×FK2¤z}µJø²%Dø F¬•('-1®®ç›œM³½ÉRö¹¸ªWzãMÿ>ëšÇ*‚‚‰aë/olÜ¹¾ñâÇ@?Õùóó·¿£“X–›Šª‘IuN]ÕÉŒÔ”ë¡cm}‹…Xÿ¯Hoçø“S„‚†-¢6ÅµV²é=MÂ]ŒF(!†“!
-G
-‡¤'óÇò“¤0]É.e*ù™,.”+…l™ür¦ ‡+©T„³s60TCªgçĞçŠI@™U9•Òı¤Æ¼[Aÿ©H‹sÇÔúBCî'C!r&WkVj	ÕÚ–²”#Ëqõª-¹yXBnbWŒ
-ƒ¬¥jXcm@g^S”Ô‹ğpoŸ©ÆEÕZÕ th0‹\s˜¿«`ÁPêXï
-§Çf)nÔ`ór=ÒG~NöÇÂUL'ƒÚ€¢gê2ˆF¿ù{Û8y"Äûd5ºËq³f{ç”ë0‘6(Ê)ì6?ÙºªËµŞ>«?PIXYS4«¾aMót3lŒÂRNelNœßc¡ô¶ÊH1ğ^Œç‡wë@„PEd`äñhy4Pˆßã–;w]ŒµÅø%=L{	ë¯«ôÊúÙôpŒM"rç‹œ}3|‘‹^ÿ°}ë“ˆ:gî¶¯ü¹}å
-ˆ@tx'NåI®°v¶T(‚fVÉL’TæØá>ô5ˆ?xŠ>yæ60ŸE¯gŞBf¡h¨‹W¬a bš¬·PÊˆ;K
-îÔR?äzæR
-•0QÖ®´1^Òj6ØYñõÁœ"m{¤ã\ÿ®î{¹º7>¾³şÍŸÚ—?ÛxõÆúİWÖ¿¹Øyís¶´3‡3eseÓ/å™âôÚÅcùBy;kÛqyòšçÍşá=“P‡|$Fì#€q¶%O*‹úšÿ¨8B¬ˆÅÜòÉ=f„¾ô!‹ˆlîƒÆ"¶Î¼¹uö•ö×gÚW>ë|öêú·¿cŠp¡r4³v~í·E’Ë< ^{-¿-ÖÀú	ğói›)Ğß^À”!+ò#ãq2‚­®Š,pÏj$+¦^c†¶šƒ·}vÃÈF½ä*–~ú>ˆ¥8|åÃõ[ŸR’ÌÊ¢ª‹àCô 1 ¿¼Ñ¾ø·öå×·şte°s÷Úæ7ßlüåOÏİ¦ãRI¥X&ÙÒÚÅJ!ßIf2_ªd¶ÃŠo NâCÈó!fœ ”Š8İYqv@±f%$<ÛM\aÔ´~ëÃ­ó7î¼·ùâß Ú¾¢dtXÒæ¤úNrÄ7#’CŒŸÅJ¥8E*–~YÉdóôÛáR!ÌA+Æô2<ÂÎcÙ‰d9X9	¦qÓ“{}Æ:uÆêátáŒÓ;VĞ™ªœ^Æ8 ¨Ñ±¦&ÿßùìÑJáX”NMeJO“§
-¹ÃùJ9Òw.n‚ğè×ù¹‡™Ê[G{ÔíWö”ÔçÄ§İ&½³×¢O¼aìùèv6Ì~Äî9N°{hP¼g7Â­ÌÖÕê3±n@Édî-ƒ˜Zû¸¦H$Gü$RAµ ıFr’R_&%fDÍ,Êˆ•ãï³Öêbõ¡‚%Xà¨	Ï@uREô‹²^{ÀÉÂ9| ¯ÛG‡Y¤Ú|:Î¶ÍŠ¾²_Òr¯¸0›t'~¸°vraŒÂìn½÷üú×Ÿ­«<t¹!`®)’%ˆ@ĞÇ­®‘Ñ4Ğ 1Ÿ•kæB»—LÄ–“J¸ÒÈÏ¡gÛYo\£GCÚ5ˆ§¿t=\Ab³?¬ æĞ+hë½·Ûw>Z¿õˆ½¡‹h’º£˜(S…ñBÔˆ•4%-‘Ìœ&ÃR¢eïåJŠGXC³õm¯"«Aî%dµiç×OBCÓƒ]MK€ÔšÅ *	ÈqCáÑşÔ1G!M•zÇjºÛp/™‡ÿİË+Â1Ğ¬j~oœŸ¥qFGtánÄ>¡g17ÿ†wWï°İnó·ß´_zkıÖ%k+ìüãwëw?Ù¼vcã­7ÂåÇşƒıMÕšÔÕì˜ô¬¢êD&3š¼¨è†Æµ°óS3•§M_ÚR¾r´4M²P,põ1ºà3O£»m>›)W
-Ó‡I.S>2QÌ”r±«~~ïn™<„üÍÌZ‚™ô!&+ëTCÃÏz=†P¸yóÚÆÍ×Û_¿ÖyåRèÑç³kg'³G'‹$sÔøµ³h¿¢ó@ïÂ8OÌüôáÂt^Ğš%Ğçç‹«aN'Mùt¡F’“”¯şêÑ•,„¦z8äÉøx»z¬f:ÿ”Ikº­ÍÀš‡EjÔe#GË¥°*úÉ
-Qjc¬±ı(Æ¬—ö[f#Cı„ãşô·
-ËäÇæÂğÀ4L©M’&‡4¥—»wD]ĞğæĞş1 “4~şö’Õ!7Vƒ§$ØY–R-X†8©h>şè'ÇÍ¦ƒ~ôN•³½h×^0æUMyV®ACz§$`ƒÏø¯g§2${xÊãôq.=YW—kş›E -UÅ2P¢ïr”QÜé›[duµ/¶÷«q#nsÄÆÆzáQk|È6A§Ã>ÄGû&ìÆûÂ¢é}LäÛ,ŸÊaÛ£’Ã¡©"¼„â2>\3S_ğìˆ{`GÜƒ[`˜µâŸ·ßû3ÛdB¹Ó´º¨ Ôµ/ *;[©ÕÈ´|šPúåöñ(;,Øx !£E’HØÇ ¨GK(ˆÛ^„ ÍÂ`G¼|‘F¹=êŞ=Æ‰wvÇ“FP¨¦B^°ñÜíö•‹×? DØ*j^Z¤4Hğ]ÑF ¡.M0Ş²g›HŠJğ}¢æ=îñ^fÚCwbfuĞí»»ÚS¤QĞ'Pÿ@Œí‡©	²~¨œ.Èu•?³Sœ
-xozÅ™‡Ù†,Dßë…©Éš&WË4tZßùæ*†ŒÒ‰‰¶_[R*™Q¹YU˜iËİxœ	zÛÀÛ–Qk7{ÀÎŞB›MÑ?Aï(¢ìDa/i‹‹–(EPÎÚİFn½~«}ù}ê#ğ&!míUc”4æ± a¶Ÿ6˜
-÷bX®7?ıˆ……¶˜*K¬yU5Ìc³¹ø›°ƒgæ ³3í&§Óû{ÆEjŠ&…µö¯`P
-À¨›Øì,M…â}Òïı o,%R¤0Ba6rÙ	§ %a~€
-”æ‹Ü‘ŞRf´D_T¸„·!®0_3ÒÄóZÑje“ƒŒÚõ:MG›hEĞ®¾mbµÄ>P—"áÉªÍS
-Ã
-™sÃh†;« >‡¦PÈM÷u†ûzV]š•ë!Ñ™Ìí	¦†sÛçÎm~õE¸øT,Me&áé¬j D‚àkŸ.ÊŒOØwÿkoga#GÉô¹ø¡¥A,©¢J(Ü°)0aT€RmÄ~ZÕ›:êF[İãÚ§±‚èßüêJK0âWÏl¿ˆúÓÅËí×^p|G‚pÅJ†äÿ;›Ïr(]’›òœ
-{·Æxô±|‰ü×Q|Èº7ì5Ì†.2«D®ƒ&€Á3Œ|Úæ¨‡ú3Ù>7@Ø£!»ŞÄ1Ã½ñÊW[ï]€AaÂ·Iæÿü{çîµA˜Šöùp­õp¦t83Y´È	M@×¸s+5v
-Œ3“ùé|ö—ğ“\õƒü$×óKUb©I£û	8Hßæ08OnØ~Ø÷<8( æ¨³Ş¹0+b7_Üè<gãÒ‡›ßı>†æ3•ü4óNS{˜ÑÖ¾@Ñ•Ù*ğ SO“L«¥©Å”IBóñèÃlçà’`hS§iñ…ÕSÌ†ÑÏ šÆˆNOyÈoHsF¿Û¹¬×L{&ƒ0p‚ßŠ ğØ6QfÇ„ZKæ	‘
-ì¢ô½”ˆ ÷Õ~rœvÿÄë²È@óÆU»6!P!\ôuŒ4p$zá¸`ìYè-6ğ½bK%ÔxšjúÂÊ[CE««svÇÍ¹?!Úü8¥éHà”ù+m¢FŞF¢@BfP§ı"Q|)‘çâÛ°* ; pü€¡	5ŸÂ‘3™F©‰Trù`xù/x¹ì˜V“~oØ´Îu€ÅøDû] |â…Lì<6ğ†xoïªx‘€y)Æ”¶‰†Ç÷$Drò *ğwÌ©„Z¸Œg58¶Ã®¼Ecíní±ìÄÆ(‘·,$‡ëïÙFß-A:úPåĞÎ¥]/P&‹.šFÊC¢ô•İêğ¾˜L9"ågÜ1ÍÄ:)?;AÁ¼!egi˜«ù§KÅÑNC÷'àç;¸ñøó\è `—V#¡!ìVç"|»é5Yîz†İ'	÷­ğæò¨Ùi)ÎUù‰s#C÷áİ‡·L|wÁéAŞ®$;&Ü1ŠÜ{_S¤ÃOïOÚì.e‘?×ëÿşQ+ØI$b–ÏÇ&ÜcçÑÎø;0;—(‘«,µßŠ’V’l ÷0·±Dë1™#«óqÌ›@yJ&ª²l?ñîAuwi©dŸ±W²ÏHèXV˜ñÓ}Älæ³]±JNÒŞc»º"Çı~™±>˜ÎG|}¨h’>?â™)¼TÅri[O‹-V1ˆ÷xoŞ˜ÍL ú=ô½Û8z¿whÃ`	ã'¤ÅöñD0t5&ÒÅ¿úÁSÂ<}##\š§T¹@ƒçé¿np}^SšÏ¤£Ã\èîâ`ôïüáÙøâîÆİw¶ÎÜİüö÷ÿşúÍ»ß­ß}ãJ>¸³ññ­×ÿŞ¾óÑÖ_Şø÷×/oİ}ÁnİÙüô£Î…?l¾nó›oàúÆ÷àú¿¿¾Ğ¾ğñÆ«76.ßüêÜæwçŸıÙ¿¿~‘"lô¹áác%Äå(å3ddi_½±~÷îú7¯™pÉ·~×~ûüæõÚ—oÛ|ñïæ«>ı¨ıû—şuæ9zxH›=)Ó¬Éè¢5¥ªÆ\`ô1rÔPêÊ³fzåşŒ“aúHjR™•1B_?y|4í#™HKuLÂlÈMZ î?ÁŠ4äú<Ü2!HšLÔÕ_/È
-¡iª‹ªN©Nïˆ‹Êè]J…ÃG*´ÃÉ==™*d)Ìm)“eØG
-3Å§¦ó%’-NÍd*…‰Â$ëLe*¥Â‡B„£5ŒşôĞ~D1r‘¨ù\¬Â÷àEË¹±ğ)¥ÿBq+ —ßğ_¦4…Y«ò
-dÂ´SWè¿~Ô¾rÁfvü‰(À½Ö~Ç®‡ÀÅ¯ñf:N‘šÔÎ–n- ·Šc¯İŒ8(F¤E©j(‹±€«±ñA0ÿC÷ æŸí~ÏİnŸ¿Ë¦sıÖ§o>ÏïGíËŸ­ßıpã­/;—>lûÉÆ¥ÏÚÎw.¾û¤ôDRK:oÿ¶|ÿç«¸ETŸÁ‹[¯mß|“]¤xÿ0\¤Ø¬/“ÔÆ‹·7oŞ2j_y¹Ïµ«©) ^Ãx`ò]Õdòk r¸£,º)‘ÊİÏ²Œ@j,MI#ÖGRß_=G°•v» <»ñöË¬™|ã¸ñï¼ò¶İÖ¾Ø4Â|Ô’CPÛF\›÷º#s€t¨ZşÆç˜v&BgØ,i¼úpïÛ±²¬½R.TŠ¢å+ÇiD£ÃÈE-zâÍÈD;Ñ}x‚z_›™/h ¥ÏÇ<óç0Ë­úÇÃ/Àç³óxYÒŠ5`U*6}±¦ÀûÂw~4Ìw>€€»ógfÓÖA¯ğÎtÌNÜ±W®ã²ƒ5¹&y›ş8BÚµÏ²Ì<”'$”Òœ¾‰ªü;»ì¬u—ÀâÆ¦×ôücSË¢¨¿Ú“ÇÍŠOP³<^,f6zhpStØU	5ÿĞ}UÖ…Šb¨@U®×ËÆr»á	pòŠP	Ø;|Ú*8 Vƒ+PÛ›9Z9"Xİ9GMSºöÔ$¾2]Ê=â~wr·»y¹kPLøGÁ^×pL³¿,È9zs£âï¶16¶³·Ïi;ÈÑÛëìØí%Ó-¼ËqÂì^¢ãï¤‰ŸšøAµqwuÔ 
-•ÁØñ#+–$)ì6N)(Ç¢¥‰b)_j“€4m¨ss@BÆ<hgsó„SLÒã¶:_]TÚÅãc$å|øÃğ»g)G¯æãğëù~ïã	 ÌœD,efS<a­Pğgñ[¥‰lœó–%£%e»Òã)×»~A†ûÈÏ¬2¼’„=EIT±Nƒúã6İ±„Äh¾•6™«7ì•Õ¾¤¦X[ş˜3ğ	+I–ÇZ §Äõx’Ú] v6Bô¨[?ô\öjÓĞêÆXÆ¬Àš®jé–J O]®ôˆİ# f™Óº¶òèŠ½Õ¬LÒC1êØ‹G–ûÿY=Tò³LB²ƒ¦y…M˜I%ÁëÅ98H¶ÖF•$r’Sµ$‡àb¡N "GtÌİƒqBç1÷GÄ¬µ?üıÆØù×¿¿~óØD©}ù¥J¾8'_[wßØ¼ù3bJÑŞì¼ö9³4v^ıvóÚËÿşúåõ»çĞğxùõoÃc[ï=õ¹ì…(És6¿ß”eÇ8cßohNÖ1R’©õĞ²õÅW…™÷›	)¹ƒƒÁá!¿Ù™ò½˜lœ°Ëò–&¹¬#È–Ü¬Õ—wá8-ìx:îá¡Ø|Ü3“™iš%W(å³…âtf*?])’—›Ÿ™Î—úeèÆ®V)šCºD×D¯ï]LÔ½Ìlµœí–¥î&P‡Z¯ÏJ°.ç•İÊäı“KÚmŸæ?ÌŞí”ş‘gï(Nçò9òT¦”?R<ZÎ–ºÁ•ÆÛd K­ß}¥ıÜê“ñ%¦ã¦‰¸7¯?ß¾ğ3 ]¸¶/'7Ÿr›õöÇÎ…+«]ÿúöË„­µ}óÏ×¿jßy¥ıé°™v.Şl_y¹óé‡,9T+ÿ/=SSİi·$ÛıD5”†í9‚÷`SœT]iÛkò÷`ûÂ]–Èè|£¥ òú®åŞ½Ï&{˜ãƒµ[{IKƒÛn¾{C&**]22ó©LašrsØø˜«Ox¦‹ÁArH6ªó˜¬O&…æ"N¶Lr’!…aúy¯ÈğúC†ºÒ\#Ë°ê>ıä@u=x0ğ¨?¼…·'52R6Ô#Ói6==n6ÕöfĞiHÉ›ï-Îucÿ¶zQiUÅ‡¾Uíbài!®½Ã#‘l1S‰gdMQkˆ®`ŠPæËç·…dıHk@Ñ(°¼5¥ª^q™ óK-ĞÄåšzĞı27êx‹CoĞâ|¦ğÈ—ÍÉÆŒ¦ş¯LMØ‰£&fØO¨øKyyŒôĞ¯t…ô€À~RÊs~Âöô£³>²VÊüá”3/8%­' lŒÏĞ@”o"X°ÙÖpuoHK3²ôŒÈãlLZğ´¹T¶rtëYefÈã\èSªFRæ›ˆzÊ=³Ñ–~³Ì.¼œƒğrÍ:ù9IÕI:‘šË}Ç­é;û=BxE*÷.ûg‘Í
-…S3³‘†ÉØw0¹õ =™iÏ[ã[)S`õü‚J—¢ó=ĞZĞçSæœÓ¹ñ)wÈŠNüL™—héÈ²Ã“á†ïû¡7ÌãÖ©~»•¡Ì7ÉÑ­
-wNh¬›Y¤ìí6„Å~wè÷¬ú8–‡a;‘Ùo },Y¬V]eÍ‹—©"9¦\:"î&
-^ÌˆÑİ1|Ä(×ãGŒ±Á~[Œ1úkÄì7ŠŒ˜]’˜SVhÄøÒæˆ¹*t¤ñƒ]9‚ÂZU}ÑıÅµcÄÌq«jS{]±R&U™åÄhÊ.iQ”SÕ %åˆŒ…Ùd(›”Wí=)f³Ä3exÚDm³YõN ıÅ¥’rº;w(ŠWo?UÄ0ÉU©P)d3“¤T(#ÂY¤TªŠ¦ İ+É¦II&YI›S#q·œæí
-k;^6È~pM´N·ùFfš `G@“&OƒØGr2d,Cû¦@ßBÏ~s“‰l^pƒxƒ¤IŞãeájV9s(mâÑSm”lÄp6{àhå±-LÔ²©=G)Ö˜‹pI®. CÊP
-–ÉSJ¨62¡¨İ-]‡«>3|Æ¸Üˆ;SSl.&·Ëºm÷MtîÅÉ2-:ãIi×¢"Ÿóğ™gœŞ}n{úÓšÔŠõgˆ¶‡ÙOy­ú4©T˜ë™;ñm¸Û>K…&
-!ËD[Ñ SáOJ³¦Ì©›œy‘Ë{ïÖÆÂ26ÙTàñhÄ@ˆ„™™h'â|ö­)r¹!'"§Ó­%b;y}‹Ñ8mZŞµ13XW¯3Í@KAºŠ±;Ÿ•ã‡š+fš•ŞJ>[œFàÜÿ¼’Ûªˆ€]r²ªòŠ4ÉªªÌdí6¹v~j˜Ï£!ìdŒƒO•˜óêª×+`¥çììNŠ;Ï±‚ÒLŸÆÅIW'°ÓKL0i KòPëÉıCæ“¡fÇtcÆk‘¦ÊvC _Ñ`õ¨˜•àÌ*Îšt¯x>¨5¶8•‰Úƒcú]LÁ;Ò¼æ]· DÇÓ+‚Ğ#1Vé€¡R–äZj¸oõgâZöbNå±ÅG!Åö0‰£œÏR/3F²ª ô SÉsËä1rh¨2U™z² ;ÛNˆ!;,qo_â°³nWâØãŠ3œõN{Bt—"ú’ÃØ­¬Ì5İwá„qÎ×™2ˆ¡Ë¤²U’Œ@´||V şäçE,îF äˆ=™ ìhtH  HĞÖ´ŒÙ{p§r˜b0éÇ#=/P©³˜ŠÅÄìNSÜÎÁT>¹šCeœû§9 '‰6FEB(D‰õ,ÎÍú¬ïİ»±•z§¾ÄÃCìÏ(ı3Â~À/3Z¥¡ÔñÈ¶ÉğšÄ|Îí8"»°Ëç<)#†’†u•Kf'…4"ºˆı¡GLÌtèÃëaÓ€—s°0#§ëâtz¨Ø“@…vüB·5§¤jBxÓ¦©³mB®9‡x¸£XÊq»¹'¨  ï÷óM€;&^ä‘ñ*‹º+„Ğ‡;óè
-×§'=bø`Ph6u¹£"K˜—UD{)HT´#‘å¼ä†ğú››â<ı“ ÜÂlGBÄ7ëÃB/4©¦¨	 ß¬O“MÄò«G9Ò>™ ûÍúTçeŒc8ÈÍ_2tüp@rìdX6füT˜ Ô¡ô1$óÕx±? @3n„†C”~^âóD’Pü Y~¥<ö˜¨N)ˆ\ x›÷ Å ¯j	¦ÂÔÕ’ôAºè’ô6	«t8ÇˆÓ¹ùz]]DÓò/7‹ö1gÅë­"–1ô›AÃ¬ƒûQJÛpÏ¸¹Œ•*ÉØN¼ä?)—UØ/A9€ï•49Ì5Êù˜`—æézWü”ùĞ-®äªÉç_³_©bÎ¦–®ì<aÚˆŠ´œa-^Ğá9ÜÿÃ402]‹¶qAW5¿sî¤¢.Õä:æ"–{4ÒUŒÃàÙ¾UÆ«ÏiJà?(è ³ÔçÆœŸ#‡NnKÏèôÙ1RhÎâø“Œ¦)@:\5ó"á1$·¢m>†Õ§ì¨®í9"Æ†]³BukK¢­*Ï+­PK’…k'bFÂ¥³ :³|¡f$^mŒë·*Ñ§„#…»ŠôuO5¿‹"‹0åSB¢ŠƒîçP½¢~Œ-
-WŠqª@çÃb"‚ÃèÍêRÇ}oèVÚ”Ú˜ÙÑˆPÇñeÚº.‹DÜåîYc¤³“³¶öˆç\òÆÈh)Ç‰*i!êt“øM­j‚"¼OWòbIèøøZ=!()"²òö%@èEªælcs³ñ ÿÛvz…¡X¢¼ ô V ›O»W‰Dç/H&—#3ùR¡˜`ebq­B‡I	w=;¤@ä@9€o¥ZôG’Dºv*]
-½Î*ãòü±Ôr4ÅŸíü'Óß¬ª‚´ÖìŠI›9úÜİD Ha,SŸå¬Ë2óA¥ĞÔn™5Ö*¶¨Ò¨9&7‹'ã¦DßÄ9ÈU”È°æ[/«¹-k¶ÄÇµe½Ğ aoÎWz¼u½Ï”…9ÕÂ>]248`Ö.n¢C1ú(Ğ¹8©Ø3\üğøÆeÎ
-Ì²ÙıÍ,!Ø+trÆgè0FÅyGÄ€Qu5*D&±eŠ…CŠÉ¥vIQçñã‘ôx6”êu&¢·Ÿ<ÂE•$3 ù“p[šcÎw„vÜ½)	ÌUã±âÛ£ƒÈÇÆ!²£ü‚—˜ùøã!kÎ­tÙV\*µEt™&‚º°À.z*O‡EzÎ[#Á0-’˜8“Y7=£~¤P®K…,×I¶óÃÌ81Qß’B]Ğ2]è»JË‚ËZÅºgËò	òÙJö/E»ÒídcÁOMÑÑPIíşÖŒm{9»%Ôˆõ{:=²ßu¢°^ıb\—\«Ø½ıPÀt¶+ë1Áá€ [”ıøl{j>ŒHnL¶Üi3š6€®´$EİQûÆ’8¸™mêz'N+ˆ÷*æTê\Ç\µ°’§i;½vètE{læâ^Ò"8¹Ì;´¼m3¶½ÄÍ+¦RË;S»×¹y‘[èæïJ7/ïwÓ‡ƒé»Çºôó‰q~Õ*"`¸e%	²·ç¤èeÒ„'qÍ¾ÀÄ5ºxæö1%’Ü€ú-SÙ®I6ÁœT'ëœ„f	ÌP²ş]p¹ÄÒM¢#ÑÃ	½
-õ2ìZÏKìÖÈÕäup\9éáèeAÈ[(¶\W>(â|™.‘{D\"	•w˜½ª©
-EØt$ØÏjd;“–;¬¸7àî¶ÈíHÏíÈÏî¯Æi†‡µDƒû²uyİ°¦’·OÔƒ{>é"÷¼t>B1A®Şø z®qˆ™j{ã”^ŠJa]çO2àÎ¢Zs*øäMDU0¯:uZ
-b1C­¶B‘ü­.˜.şV[w’·šÁÄl¿Õ,ê)`¤[Õàq¦×»åVµÛÖ2§PNvÍu>¶“.”÷ÅZ%õÑE'·›îö7Š—Ü‘3ùpw\»“É\ÄZÒz6Wu—.øÙ†Öi}LíÓ$IûXÇË¡ı,Í}W/ˆRKİoÙ!½Ôúl_?µ>n‘ox¯?»‰ß¨²nOEMpØB"LS;®eZŸÄ©I6íR1«‘Ù­G!A‘tL6îjiS®;BòÁÜÅqù‘1)k#ŞMe½ãAaPûøeÉŸ\xÃ;Â¤B²¶x£y^Æç|	Êå²ßCÛ1–0Æç²Æ ùæİ×0©^#æqîª?©VsÀ8¥ªF µ!ğpÜR·¡mW<tÈ‰ŸæE²8|z`ÑÕü»Æb¦ÄQ¾•ö!(§Ùı‚øõ&÷5
-VI¼h}>4ŸğKæ²I¾ºmÚêÏ’¯›mu´¬!¬$¢m(î¿Øşœ°0§Ì&åŸğä˜#À\jå¾«HÅ»>N]˜Á™'9Bâ>~TÀ}/>ŠKß#ò>¬#7Æ¡3ó0´9àheC“u=]‘uİ+$‘?"DÄô€Ä±1aqšª'ˆÃÈ„’…›b)6> #¡3²;o÷p®*rŒx@V)–µ”´ßÂ+v@TÙ¥bµêÆÉ²/Ïì‚–ÓH×Ôn¤j7ÒÁ-åÉ#p¹¹Ø\Ü8ZP¢Î(2(NgM°P~mT/Ïøu‡ö•¥ÀÄGüOÊAbENƒ„\´»ô™Æ7…Á»œÄÌ$‘1™ƒ£	€)º‰‘KâÂ{`~Ô—õƒgÑ¸ÜÅÃÔÄn!0¥ÑØ%¹+¯2{Çéw§UèÆ‡,¤ÃAQö1DÀ)ÂOJÔıÈœBäğÎ¨9Şÿ=ãƒ„–ş²šø‘¨Ú©$St„x|E8ÉÃõ#m®¸“°è'p'†JI†ÊiÒæg1c?ĞË9¡zàOqttàm2DÂeñ6W´-GZ0,È;±úËú„ØZ÷'Œ„YB/Ö6˜ !ü>0ƒäl ®•¡qøI¦µ'ê4êÉ–€¿»i_B/`Zä!ÁD¦=¸oÉ³>Ü;b90èfR	ÀY<LÕùFÅwo1Umû í0ÅêJ÷\M¦U3ò……Ÿ£ß2“æÀ¾Ñb
-Ş@Âá£DhÑ~0b/½ØÔyÊìÔ›6‘Ù7RáÜ	1/×mI°$™ı^mCÕc·vNàs‹œ° Ù°áİÄKp›]€Ÿ¡óƒ;%-Q°aŠ\l1ª.\zß1•±KÄ`óµ»$šŞ¯FÍm<z+²dHÿVûR½
-©K<íãÑih#Sk¯äNÒD´‡óåÊÚo‹d²xxíb³‚léh®,}¶®Î)À4«ÀCµ…š¾«	gYüô.å“=T,aÿØıòO/»ì+©ì0H‘z˜L–K&ëP÷Tf:s8Y§ÉT˜@’Îg¯®ßysó»OÚüqóË[›ß½Õ>§}ùıöÅ×6?;Û¾üÒÖ[/t.\ÙxñãÎ?Îv.]o_ø
-)50k—u¶ğÌD{õFçÓÚ\ßxë›×6®¼ĞyîÆÆ›Ï·ÏİØúíÖi€Í÷ÏmÜüKCû¯3ga6¯½Ü~ïÏíïv^½İyçÃÎ+×¿¹úï¯_nßşjó»?c¢÷«76î|·yíFçİ¯ÍçYFÛÿìüñs:„Sk_Ôê*åß©L“ê4í¯”Kn«÷“‰Iø9Kƒæ°U-M"åÌ‘‰Òh©š<F#hj¬]î®îZÖÚm0p;i,Lƒ?–¯ŒÉ§uØ†¤z±%7S††aßYH]pBvªÎQËÄ{jqAŒÂ”39»cD mêuSa£!YÀkÃõ„ô7b•Eæï¶ñbéQağr9¬ªˆ¦À&€p	™İ7ÊËÍj(Æø‰Ä¼Ô¬Õål]–´L½>iI7x&*L{9j˜C b˜ª´¡¦5rJSV6¼€©Ã6°»îkÖS6¶ıõ¸ÏŞD/Ûö{`_Ükñ8³*Óƒ·KÙ×÷¹6 ZçèP22EÃÍ.“©96æ5÷okm$.×]JšœÌ+š¤Ï$§îÎ­sßa¬Ÿñz¶Ó›•4RY¨©]uY¿ygá1RÎÉÃæ_˜>ŒÂï9T*N‘§3¥Ü½ÅeŞîåT¯H¼óèšÛ?Ş;ÊoÂ[C}/œÈ…Iv[.)NïÃÓ¹%–‰Öï^Z¿ûJûÎ+ƒ“íïş²uæÎ¥?lÜøİúÖï¾A§?3Çz>H)ÍêB¾f¡¹kŸ(M¹šJfP	_.Ñ"±Â½ Ş‰ñómñG’À£&:€€…°Ç¢"ïı¢ÌÓµru^)PF­:Õ[…Q”p{#(ìcá‰ÎF`uµQóròGW–]­`Äà´ÄäAg)¶ˆwTlï7o®s†Áá"xˆÜwgOŒ|rjï¼ü¢-àÓÆÍ¨<1G’pRÁ½¤œÙúN2³õ?­€:F:—¯€vlËÄä6ˆ¤[­ë”ª5€*Ê³Å°Dá²´(?]ËZ+×–ˆ]ŞC>„ğFÍ…îßËLFÖ1_(—Œg!ÛÉ’;¹‹ùñÿ»kên£–­3/v~÷±›¹$Ü%‰H¶‰:Í¢ÙB3RM7ómpDRˆIsâËÀH«İO–=€WÂœc>.k¦x<iD†¹‰™Ô¦Ê†E´<æÀBmQ|6Ú==ãétÚ ÉPŒn[h ÿ¡½‘túÀ «:†íÇ\xª"¾;V£©ŸN•z
-˜ÔRsÚ1¥V–%­¦¯àßBíÄ“ÔíOõ­Kø½×"z’Æ’³uz±,7(í‹=5‡èCúƒlDìÛ‘§C0W?UfÆv>’š˜ì£$›a
-øÀ<Ğ-5Wöı ¼l"&’9”…MÔò.{äò.Nr1.\Åâ+£iÒò šÀRMù4)ËF*ˆ‡!Ÿè³PÚ&L”ï¾>ú p¤\n¶nó8ø*Àá°@Šç®fSìÆÑÂ62'ŸUÂP n¶æŸ³=NöCó±`Òİ¼p{óÂWdLK‹°!ñÒo$uLÖa£øW,÷b`±ÊÔxÊ$ÌåkRÔÜevzÚ,—„§µêRU‡éµƒ=ù¥12UÎ’ÌáL®PŠjéıÂÃÛw~ü"}fÒÒo¿ûBûêK{5T`ºU®˜ìîñxJÒ€*t9ù°‹nkĞx0<ëÎ>\	?’•À[³;¯Ø¹ú]xlH˜a»&‘T¾ihòœt/v„uZ9£`´ehjk‚/dYÜ/ÄíÈ»ÉÜõ	!ó¿ÛüîJûµ€U(é+"Qr÷\Ú•Çêl6g%MSd-9íš\²VÎ"Ub·böŸåÉqøGDwğ=:Y(’raª˜/CÜ¯.*«”2ÓeRÊÿO~:—ïwıì¢:ËŒL”2åtÑs¡‹*‹G+¥"t”ı¯ N“úé±õo®®ßz³sãZûëËÌcM­ÉuıĞŠğiíúÚûÛ“ÅY‡µ{Ñ&t¿ùÑâÙHO._ÎfJ‡3=ãÖ7’ÊÉz†E"9E“©¯‹5W~*3Ó3ÿ’TES«Ò
-2ï.ë›9Z!¹âSÓ=ã+†‘²Ò¶ª‹‘IN^Të”ûzú	÷Hçw/lÜüuÈ|cãã;»G›uUª‘ÇH‰Fæ÷õô­vÑ¾R¾r´4MòS3•§Í6ò—°vóÈ1éY…5ÒıÌÆ[_v.}ÈµÒ}›5ä-cY¬™9™ÏÏ÷Òsí—ï€Ì¿ùåõöÕÏ7»Í\»€B©Ë­)í“¦D0S„q¯¢b³¬ò*ÅSJÎİ«yÈåzÊ”òGŠGËy22Ú3Îÿêb­gsdf23]i%©,óÛî†¹M¦d,&ö%—'SE¨óp~Šw]İHPu#]T7qôĞ¡|‰dóÓ Û@æşM&Îı Œˆ¹z–¾[:õ4ì¸2Ü;@.×q.åN¸ç¸ ·¸å¹;^¹–CGw«,;/WŸ	ğ{Œôs•2¿{»ıéÌ*c9IœR´†¤Áönzî–‡ºÑtï˜;2Ff2‡Ó™J>G(.SnËsÁi•ÌÄdşQKj¶3Ñm»é²;©èF Ù:Q]Û÷Õ^q1`E‰×‹PÚ¼ùyû›×:gîn^¿ÀŒ;( Hä°lF•dôÓTLªskŸ¢S˜ªwé÷ì“ğÜ‡Òq¾¸1 ´)€#DÙqÌYp(Ş)²nŸÎ†XÌŞ¾ÆF’!PV3zŒ¢Â¶»ŞÙ\Ñ†N~^s÷s:.A”·rHb@ĞÚ†Yû¢©í@Y–´ê¼{­Ø1Ä#¨K³:(9À^0Ùİv«ÁÂ ¸éƒËx!fƒˆ5˜‹!¹sB¦ûÊÕ/ß³}°şuæìÄ$üC„˜ƒËªÄô4#ñú‰}7ÚGÄğmdÃ™ĞMD{Û…sZÏ*éÚYÅ`êéı¤¥9qp»O­"¡ËãàE„Õ0{–Q¯®'CêéVs¼´ïïYJ Td&'#<‹Xè;©fû˜Zƒ=şc‡Óº°kQc‘o7@ï!šYA˜UqPíó5Èhär4:mû^‡ÿEšåîãèS;NõYµ!/m“âi©=µo¼ôUçÌYæGGÑEI¶8•ÿoaJ÷Lñü4‘që[7–Lé0‚L‚.SÊçzÆ=º®2;™Ïpš?wÌq+ğÅ‰PĞü²”z1Qî‰8ó%ôì	Îç	ËÃ|è\u©… ¡á#›B0,+g Ì]Û=–O
-¿Ì­'%Î±Í=™ ‘É ùYœdä´…øTÁÕMLv[’Š“İvÜ·º­ÁíĞm-ÌŠnšĞ»­Äå~Óm%&İfS(î®°+¡=Ê¬]_û‡¬ã±	Áo«Ns¢_$!63(ËÊ7bA-ó‹g‘»®FPãg%• ÔfPÚL ’kä ñ	b¦°…–ôe€nV£ÎWÅt£CTOƒ <&SÆªiHFuŞTw’GtŒG‰)Hkë@şÕ‹0İJVÀc‘€Ëî6(Íj}¡&ë)½¯^%ú¦Y®úÙª}j`{fşÂNõ®Ë;ó¦*sßáFˆ]ˆ¨=Áä=5ÏS‚Gùb"Hb½8±æ º¥}úHXùí â¯¿)æe3tÊ­œÛAåâ^oâÊóDƒl‹õU ªUqeÜB;„ò,Œ‰®‘ YyĞzË•&íiHK©á~ö½*+õ”Å,„ÔAû-qdÀ^€z3Tº6_ 4eoôs­ªŞK× ÜÊn^Wªr*e¿-M†ûÈÏí¶ö;íp.ÆªrŠ¤ì—¹bûb¹ pJÁc4k‘Z/·¤æÁ•á¡U÷æ¶ßŸ]ÔÂà„íFzÛOæáÿ†e>bCtîòc¬‡Ü«\xb<Ìi°%ğÍç:¯¿Û~ùöÖ¹‹o>ob90Órs~¡Î¬èhQ¯[vt	3i Bô®F lE5‘‡<kè`bïîvûüİõ[/uşxûû3Wƒğ˜¾?óvçÂm?‚Ç¿Î<G{U èa2YT$â®H] §¤µëQ‰D%2*	:¹¸ö±¡Ëxp¶P_»¦)1¬4$ñ¾‹eŠÉ³–CC›ØÇ\?Îò£ö K‰(³òT3^®Ô¾îÚş]ËÈ>(¶l¨Gqè.kïºKÃğù†Õüb©÷TF8ÉƒĞÚ^	ê·È‹ĞHw<EÛÉ¡¶bË[—œ±óïH?(x¡PjFñö»e»{Õ•İ˜¬vº²³3aÉ¾NÃı¸Ö1XJI^B`Æ…¶FsàÔ §6!@}¯Æ2î”–n˜ÑNQ~ÙÀÄ¿¦î„	×¸?ññ;&5õ™BéP?Àåï¾—]C
-:· hï‰GE’v—bÅ'tWË>šï*OL×tx(,}3Ÿæy”Ÿkë*Â	¾s, İ’ÍL¦“5|¶¾ ;­¦¿ø&ÓîöÒKÛml®É%l©é†Ê´‘¦)Ì¥«¥n¦xKñ=¦Fw^Ä~òobWÜ¯b×ß%œfbÅ5r”“™‡4÷	/ën{vÿ‰wğN¶ğÖ’ûpè\–_‘Åú¨:ú›+dÆK;‰7'8Mşõì:–&ªIrÕv^xwëOğîjTÍ/UëŠf;¨õŠd™ŒzÑÉk7Û7ßÜüè,{£íŞ;H vfëû¬Uí+¯ÿûëwNBÛNæd]ş_	FCª£ş+Ã·ji ;– •Ø¨ !oxòd’>Iúr³J’Í³Yò´¤¤&×eCÎ©ÕTÿŸí'½u¹·ŸX$ñH¼‘•ÿˆç=®V¬ÊU±Ç\rØñÉ63àzÔl{{qväR¶øêU¼=~×Ñ¾gÖÇPŒºŒPn"),hDŠ…:âq8–Î“ñÜ1ŞnMvaYVìÚñ@+Ü "ãwœ'€éÊİf²‘0peN¯ßsËˆÁÚREm­!Ã¿ş•ô’_—A~÷’­kÿ`( k×SùŸ
-»ô|è6â7Çš¢ãL×8?&Ú±ÉpŒ“HÕåb™jáUş˜¢Eíü	¼˜˜_eœÏ³Õş±`cwˆúèäCs[[–ÄùS\\Ç¢¦6'ÑÇ¤²ˆ¸BÔRŞñ9¹oÆ¿„RänL@¼Ÿ”ğñôVû£Ó[íÇ šÂt~#Ö˜¶)“”élö4ÉeÊG&Š™R®/0ÅUVÒæÔ’,Õ–é¦…D®å`WœU%­ĞLsÅÔQÅE¯ñ §j³Ì×äàŠõ-è)1î ‡ô$ÅÎ<È 4ƒî/RC.<a~	l“ÜRlıëÂG8ÓõDôt=1F²™IĞ½ÖÎ–
-E×œÅg «™&¬tÕÄÎÊAF3…%Ï<¶LOı™ÇÂòX	Æä3¹|éÕzP²‰™ÇJ<÷µÒ…‡æëş|*$AÃıZ,}§ŒÙì•-æL‰‹w^ÿ°}é…Ğ¬aÁö†p†//Xçå;W/¬ßıfıÖ%†Æ²wuŞùpãêï:/é\uÒl¼ù|çËo·Îœeãñ/øba/µ/¼°uî"TÂ³«İùˆÕ1E‡¹Pe *¤
-Û¾Z_ûb=
-Zª]2Ş¢±ö‰ßuªµËsğ¥¥©ĞÉ†„[’&‰œZ»6«AÁ,óWt°ôjÀ4Î‡KSf,ƒŠh4¨­Kõ),>AQEOiñ†Ìb»µ`E›Šáş†s¹ØÉ»—	TüB¿Å»)òi–à‚RB}ùf¹ğ„Ú?ºRõ4Š±«a»ûb§“Y\½ l{óúí·¾5Ó~ïºÊõy¥…öÖ_)ÍSêı7Ûîæ=hsÎ¶©owşzÍÀ1äíLú6ÊQÜ–G*…É|¤’ò‘ÂMšıAÒu%Ÿ‡ÉÔñ$ì ÅË¯=Y\Å>X9Ş[–çzûIoEÖğÏ-Hì‚Êòı’şÍ©ŞÔ!®çG[F=áj«>iÍÜK¼NgæÚÁJÀ‚‹:.kAd“˜DáQæ=>’t…0İ1²g˜¬ö“Ô¯ú‰{TÃ\ŠkÒòôBƒ$
-Ú®¢,àöóeCƒçO>êoÒZ>"¬Ú¾–T+£—Ù¶y2şº™±§Vlæ¤å¨Àì¢å”ìÒ7@ULı)ä'Ööh;¿éºKÔ€7»›b:BÇWô²™ë0¿B¶æ‡Ë‹µ&Ò[È•	=æğƒ-:%q‡Vimıí·F2®2ó™F4‹œ Á`^Ñ;_\&øØc"gVNŸÿ2Nê¤Käà•F‡Gƒ¬˜0éû‡œıTÄccÌ$¼q2”¨‰ò{(`fk5]½t1ó4!4á%¯Bi˜NÖ:sØûî(ñ?±§AjF°‰Šm"ÎŞÃ2ÏIhîÌPŸ<kÉŠz‰¬ØÔƒ6"¾¾6ŸÂç'uŠãÉš%ÚœXö³ıù:•­Í®Ó3³,j¡›¡q’ãŠKT#÷x§ÎÖUëV@‹¶Ğ¬Aˆú$ÑÁ2Ó¼±‹ú	ÌTt*»ªàq~Âw¤ÌCÏxZ¬©14ÛÙ`5´îˆZ£Æ$Ğ4ÜŠJ$ZJ¢k¯İ ¬‘ˆq€ÚHE>mIaN_ÊËcD§ÓÅrf§vT ¤­çSô¬‰g€Rİ#Xè5¬V?nÖu"&²N0:Ó^X½.&™õ´ìÓ¨y¥V“›"»Z¼t‰Ÿ ŠkxR-M^¤*Û
-À_ıÄ³1ò^±ÃZğ÷øVí‰1bLS¼?ŒGèôÄ?0‰ÉÿÛX¡-hÛH‚®Ú²t7ÙfpWáwƒÄœ¬6éŠî2ïˆ0š¹wY¾Wïº¾½ºk?ş³Â1'ÊÏ:ë´ğ 	mÄôAÓg#§v‡>¸ˆÀ±ep$M¿ÒD¾®ğLô´¦L`§F'´(‰O$šõYy„Ÿ¨ëY5È	%Ş“hY¹f;Qh¦«Á‰c4m€ßˆ“ñ}a¿{_ˆÖ­“OĞŒDhWt3NPuÜQw`‰$lKP¾GÖš¨Ùøé.ÕÕ•œ4´ûÁNœ£]wkbr¬‹ğÔíuK˜Ú"cÀ8„#	—ì…c¾¬ODì—@TWoL¸hĞ~„‚¬Ï6ƒ¬OÒéM8¹^vNßAşA¼Éd•†ÿ0%˜“¶ŒÇá€FÓ!	ˆÅıÏòdo"‰‰«/]".põ©#dd4ù[ÍS‚‡Å„Á
-wÂ
-Ğ] ğ´0¡Kkø’»ß£®Ÿ’bN7/¡áqçT1—¶~8_ÊOg<è,’<Éç
-kç×~K½¨fÖÎV
-x£Ö^*LÃ³Î9¨“[Òj  4Ç±{nœ r;²ˆ)Üø8hÚÁ¥şÃ÷¨‡‚ĞœÈfÆwäÃ*ûÜU*úen¾X…r$5'øT±ºĞ’ª’šÂZh
-ñpÆ’ı£Ş²SrM¬èãC¶ÁÀHö´·Kî>ººålH[g÷9 3Ô&òˆôã]µx:^|¾Ï²Tœ’ê<Ú”ëY`€sª¶üŠªy×ıw¡×X jšÒHõ¹#Ù˜ıšŸq×ÓáÈk@Ò¼ÎÄÑ‚ÿõë°L<Zó„F&ÜmmfM¦4ÕE4«¤Ár£%©ÿkd`*áûhÿà¾Ó÷…Í¥Ã¢Ìû†¶`ßæğ½¬µ“©×¹ãÓàõ`aR™g!É4ßP•Y¤XöİBMwúsßç´Äg¤ói4Ê4Niê²‘"Ï¢6F£ØAjDûĞ,ü­ijƒØ5zğ—F¥•Şë|#Ğ¾´”~‰}›™udqş„G³äÖÇÃÄtÁ+ Wœİ%O”¼1/¹ú$S{
-ó÷kı{C ZÃÅ¶xk jùxĞ©å^¿§w÷êŞB×ó@Õ7†tKe³6Q=¬xÀ|ğò‚[õ¥—B±Ç|M 9™¢šĞZĞZuw#ÌKv3Ìßî†˜#šâU¨‚P1\J–ûÖÕÀ7„…jÏ tõ@¦YWÃ<ıCKNJË¸ï‡–<0± ÔkJsn$ä¿„&_†9ÄmËtÀYZf]îUÑQl|›Rp`T”³¾O+
-2ö6`‚À¡ùS€®Âôb:ˆdÖÁpÅ,¸Ç!Á¶jÙp„ámƒ¤±Ğw˜Bó“;úšİ†Ñ‰0²¬ê«?â¿øîÆ«76.§Û*-•Ù6œHÂ]^âXÂƒ™BZıîí«wÚ7oo¿¼ñõ7¿ııú­K,JÅLAüÇOßèÜ:×¾hâmÔoR£)^É²*¡7PM‚¯2î5µ.ãY7Ô_/Ğ¯xyí”æd=8È$0¼$p<‚Ï(Â|ÇÃİäLm2…Êy€–’ÑÒ
-+sdØÉctw‡	ZşCÊ0ğÆˆ4}Á™şÁûşêk¾‘rÆOGª›(æ&©r¶TœœÄL}±™%ÊO‰‚3º¯b"§½ÎÙ£§‰|v¼á14cTÈÓ™RÌdJ™©|%_
-òà8Yr‹c;E38´Ì’ã9 Rmˆ)Ò“$.(Tçç°0ô„îõÊ8l^Œ£GR›–ÔfÔy÷Vû»ß¶/?×yísÊŒŞäá>˜šc;y‹Õ¨f¦Ÿ(iXrºøó—XI”íÑºÜP"à
-¿¿úJK¦Üwóü'í—n°¬–,¯‹T_T‰Ü ¹ÑRII–ê!<4¸Ëa§º11#Do¸N_]g³û"H&üèÏŸİ™s¥ãÎu‚Ä: , p‡Áğ•3wM‘O9µé(t»H×ƒÈ"›¸2ÂO¬LÎ(W²ÔÍßì‹=„_µºLm)ôFÊc)í'½VˆÛ$•˜²6.$qO 3İîÒ¼ß±@ábæ/Í$°7œ(ÜÉá~¥[à[ç/ÑÎËŠj’-~‹¼º‡$‹ÍØQzÅ
-(bLö“#Õï X^ê˜ô¬EªôëOª‹ØŒ$UZáCRµæê#ÕÎ­ÏÚ—ß')š‹‘ê4Èøë'ÖMÍ…‡;I±´ÖbÃÔ˜ŸÅ¶¿=×yõ+Ê_g4xIµì;ÉªuÙ~xÒ¥­aÙy
-æ*HÈÖô=x„üÏ¿3@’¢şMŒYÚ½…P@{GÃ5nÇ	Ø®ù!õZ—À™*˜Òy£áÈÉärÔÕ	AKäP±4d2¤~ój³¼0ÛPŒƒ+lê25Çï`ug-Šáq½AæÄ]· ÒDYIÌ€fêÑ@zön Œ2ÿmüé.ÂgßşªóÏ»í—ŞíüñsçâÂçO?`öAÓ`S“tè°F¦ÕEÜõ¬£2-ë0Äq@fşKjvÃFÜÆ°ÑĞæŒğå’T!Çxp¡„ œRª&®½±;ì»ÆŒ[èü:]–5Ä¿#SåìÑá‘={G÷=ÃÀ›òiÎwH˜wë²1í*éAñ0Ô£8úÌ#ë2ë£7¿öFfØüŠ‚¬ğc‘.>¿ÓşìÖæõç;ï~M‰º"5¤æ¼JINiÈM=êl6Š¦Ùv.N~˜Á±[Ä²¢@r÷”è’ ‡Â>¹“»ïê%G²=ãìo\:wOá(tx¦gœıMXßX¬°7+IšÍovTúo…m¼ôUçÌY’Ú:qpãã;lë`^É÷fa…"&ã'viÑÒÅE$HÍåûyÅÁ5
-’möH¾Pì§è¢AaB?ˆ„+àXæ°*ú‡¤LÛï É7ZÆrL]?®ù_¾ùkûÂ»kJ©Ô{^éÎ“t=X¾úİ®«üƒ·&¶µçK™ÉqúVÂ™77^½‘t	ÌKXôI1›2h+W¿M\S	”Öâ¯²ÅÉ|%5ÒŸ„ı$)´ı]¾ë+iµ&Rs>×3n…êşù÷öù;í;¯n9»ùm\c»_­!^1r3Ì="”©:ÕÚÃdÜ ²\FOË%=a»MÛnWvš;ÎW+÷ˆÚÆiŒ03•Dxs!~šT5”EyLGpÇô£	I:B/B)ĞÆ™në‡”ŸejJµèèÃ(¼Ïd†´ÏDZzöŒqVÂô1Œ|+=ßHåH¡Ì¼Æî…«X`›PP4¼Şp°ùá{¤O5B„9•mÏI<0÷º "ÒıkÇlZîL:şI5DjNòº¹¾qiã.Ã¡Ï;®«}IÖ‰e{ª…g¸‘5êBL$•©x†™ ½{x›@$ÕrPŒV7éšB}é"1z'Nş’dè2äMH®+QdîP´P´¯j¶±‡Âá„l¿cfXX¨?“£©õœa……·`©=Àğ¦÷¾k#³ü½™³ÆL¿ñĞ¬ZŞ½ÊF—ëk8™m#»\Äöt²ó"ºğ±ôŒ$õhÔ\¯öÑLŒV½Ø‡c"ë£Ñ¬ALîZ ‰&'1eë²¤á‘’€\N?®}ÎŠúpmsô¢ÍvljóÄŠìõ`h²Dİ&9
-#zyr'*ğlÿñ¡ÀßñÄ EOŠ]İÒv¤àuëèĞÜYG^G'#IğjŞìå»LúPa’ºÛWŠÅÉ‰Lpb£d‡&QøMŞš4v4ŠÃä‘;^™Š+W7¾|ü4¤·ÛW.Â—‰É:7 °k¤ë'ÓÒ¢¢öv/lQšj»'ü=‰Æuİu¸U‡ùØ…D#œª¾Û."V’@Ì„î«`WóÛõ4d&'{ÂxÍad‚Ûçnlıö³W,Vk„,‚ì“;a˜¼×ÉDäéFÛèŠ@İU<$Q“D™QÖG¢hÚD…Î4Ó&'Ó Ãßn˜üvÆŞÇÜ­’ÖÕ…T`…\”BÃNÃ…¤;ôp‰…š{ö2»KìÅ`±…æ‹XD”Òë˜×¢y³j8L°1æe©ÆWˆøÉÏ,ƒ ÛJí”} ô„™!ÂS®Eåæ†¦{£fO§÷»ÑÁCÇˆtìÃ»ê¼\}fV]ŠÆò¥Oa~gNM4Æ˜½Æ" ÍgÍ7öÅ–"|2¯ˆ¦Bàq½Ô„Åbğ7Ñµ¯¹Ú}3ŸˆGäıÕèÛ•ˆ¦=HE‡Ä˜OB—aïä…{ÄÎ¼‰¹¨ğÎ);W7“É\Gò;UuÔ1çÍ¹/6Ï¾
+                             
+       {language === 'zh' 
+                                      ? `å…± ${matchingContainers.length} ä¸ªåŒ¹é…çš„é›†è£…ç®±ã€‚åœ¨è¿™é‡Œï¼Œæ‚¨å¯ä»¥ç›´æ¥æ›´æ–°â€œè®¡åˆ’æè´§æ—¶é—´ (ProgramaÃ§Ã£o)â€å’Œâ€œè¿è¾“å…¬å¸ (Carrier)â€ï¼Œæ•°æ®å°†è‡ªåŠ¨åŒæ­¥æ›´æ–°ï¼Œä»¥ååŠ©åŠæ—¶å½’è¿˜ç©ºç®±ï¼Œé¿å…äº§ç”Ÿè¶…æœŸæ»æœŸè´¹ã€‚`
+                                      : `Mostrando ${matchingContainers.length} contÃªiner(es). Agende a retirada e devoluÃ§Ã£o preenchendo as colunas abaixo para mitigar custos de demurrage.`}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => setSelectedDemurrageRange(null)}
+                                  className="px-2.5 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-950/40 dark:hover:bg-red-900/40 text-red-700 dark:text-red-400 font-extrabold text-[10px] rounded-md transition-all active:scale-95 border border-red-200 dark:border-red-900/30 cursor-pointer"
+                                >
+                                  {language === 'zh' ? 'æ¸…é™¤ç­›é€‰ âœ•' : 'Fechar Detalhes âœ•'}
+                                </button>
+                              </div>
 
-×æ…¯XPjWÉëw3ş¼rqı›«ì€førÌXÁ½ˆ¥€q‡1õYµ¶Ì·v,Ìg¼LÌ/¦îºº?
-$‚c¤ª1<,"RúV8g€Ì‡„!*cU¼‡íÊI‚ÏˆäàÃï¢€×v³9°¤Qz×—4¸ÇÁÚ‚°}µH2ŠáŠ{~’ìcøáö2±?‰73üt»¡á't7¢«~ºÅo5øŞÒ¢HÜ&<£BóÔÁ¿Qh›¥íŠ}&f+ÄOWÛ!~‚¶Äÿ  ÿÿì][oG~çWŒxr$°K ´´É2I)Ø(v‚ª>mì³ê^Ü]
-(RÅM©H€6*HiAH…Ñ"!´<äŸ´l.ÿ¢3;»ë™Ù™Ù±sº/ØËlvf|îsÎwˆÊ$@ŠG$É]Œ¹İşá[tanßÎ¹¦¾*“ôŒ+d”¸õSN— ê(QafS¶‡“Û¤ }]¥ ®ƒh‹
-Fu
-ög„_Ò!0}IPµÉwÉA¦ÒŒY¼í«Ñ†¥ã§£3ïíÈAÔHÂ‰ºt(ú–íÂ¦µ®«Ú,B:"©åÛµ£*şrÔØ+DôüæX·ÔC&ÊàËsù”…v¾Uó$µÁ2¾Ô¸£‹ØÂg”Ìa7´EÛÒƒ¨sx HÁlÅ§Üm;FÛç‡J±HjsèƒÅÖybÚ£éÜ!?Tg)´JïµGÉéMìí Kh‰qÖEŞJ˜˜QJGDi *äÇ,CiñåÕO™
->*Å¢¸±¬ß“*ÎåÜµÕıé·7gÖænÄ…¸†YİŸ°ªº€æi5ØÄq4b¡C´eÔ<š! Ï‹—/ıAe?§à'ƒ Ï•ËBŸínrnQ÷Z¸s}¥RE	MøxÛM ¨Nº]ë<X Jå¢sKĞ¿?ÚƒZÉ¬ERS3.ó)ib« Ô NrMaM¯Nİóß¾öo¾Úx°ˆ£E…¦úôê8J&MĞ‰¢PxƒúÊ¥É®L”CôIÈŸ(”Šù!P,”¢Ö¥ap!?ÔûUi¸ÜK4Fw.åkÁ/Ó‡Š…	Á´Ã0ãrq³Îo=I‚‰SÁ.@‡3&vGx‰'@c´Åïªèáë*&r²h“²§;½¬Y‹‘yéÁühdğøò—ğ&‡~†ÌÏ“üÅwÿ¥ÿäÎ]9ğñİ¬¿<K§ã‚mœÊ‡ä]K»²ò»ÅQi| èÍ à
-„ÔÔ¯ş»e8u¨ªC<Ü™_ü›×¡ØBúû¯%ê¡ÿü6$«Ïu •¸–)ÆBıÁ -\p&ÀèÄØ$%Ûuº¥ñ7óV¬'©[\åÃQ.´ËıÚ…1»‰£ÿÎ‘neF5»f¨–§’Æà y—í*à†:µKšÑŞ8‚6\…ûD›¤lÉÇö¸ Ç–Çmòú4á»“Ú4Yš{ó¢ofíùËæÊ"°Re¬((SÄ¹e‰w‰ŠşB¥b5-½sÅü`ò©V­úqŠ\dyAq[ô@»uüÜ„Yîì¦à„e5‚Zı\ºŠì*ÓqÁ»­´+§Şµ?Şùnã“R£@ÿ–àß"¬+ÅùX4‘Uèş2C¨ä[íi¥Æ8¸
-„{eˆR?~x¸¶pÇŸ^<çYáÏ S	•$È›c\jÚ¥]òŒ+æõ±}.œA ä@&ˆgĞ²ë3‘ƒò®p¶½·ãvÂ÷÷³ş­?‘İ“ÁÃÅŸá=lô­ÌºFU“¾Y”=% ½ßCÜºñä¡¿4Á+Wz‡½\¡XòX”eh¤ĞëŠUÓp½hÎ.Hğ•%Ü=–)ïa·ˆÛ+ìŞœ2oã„01*îÆÁÕH¡7@ 1{$3°¡«£¼âÀm'n³Œ²Ñ3û†¬“{ "Æ=OBJ²GÂ$ï&	ˆ’%$<s Iˆs+=ŒÈ0Ôd8yV»eñb%—°Sƒ~=
-of‹Us‹NeÿõîıÕ×S¡aWuS9bœ¶á" 	¥m«“5¶‡÷ä0›ÆHßJ DP§Ï=6”…Åü·¯‰&$—¬Cì4lQ¸ˆ/œÀ}©Ô?ØÊ_õöVÊ •5€ò×Å­×õ¦wÎ©i&ôíı­ß¹ıÁÌoMwÉ”è|Ÿaêå†«kµ€÷tŒ¾ßqê¦Ê« ÿ·…µåëó«ßû÷¦WŸáœqÃ®ºm\ÑÜàšzhcõë­Şyæ?½¿q}Á¿û“ÿæúÇ7Ë Pks7¢YâÕlÌş‡â~Ş‡`¦zpŠnÂ¥áï(›ÂB­ª¡öJ¦ÓÔw)NOÉ®ƒ§gxs¿ÄÎ^	.çOİú¸ü“ÈbÓ~€ûÎÃ?d˜ãZ
-Ël]L=4ß±êvMµØx9²¤‚öãÍfÃû<—«9U/[–˜…"çµ¤Ÿ—«å²ÙlN¯¥W;aõË“–“MV‘tb'İA¬½QÆ"ÒÃÕ=¹Ÿ0kş“]müUŒ5‘€Ë&ÛÆİ“<@ë'	Q9xŠpÀs$p àXhLŒBÙ5‹7¡!ê
-ø…í Ë“·Ôƒ{røÌ±,(:4Çcßeúi¯	•YıLŞınÂ¸è€nıŒfÒĞÜ&zµÜ8ÍÊÖÀ}ôt.|(ÛÖLº³ Èæ1Q—kiM'~ÿˆf:qÄÓá«~€z	\\Ytë¦2Ùªw±+~qĞIµaèÀ¦a›œÇŞrIU´—È·úß!UÛnœV[¾lW1­ã]ïh—ë”Ñ;°doåİõ`‡ô1È+ã…KíÀëÎf^Üög^	ÌÛ|İq“ ­[ƒ&ğe¥bßÀĞ¹|€_xv ?XêÓc7¶êØc†kĞ?uäÄR7²†·§[«¶ßÛ ¤YŠ,R#ÇÇ„äH¶XO4UO…Í’x–§ó¦î6+®‰š8	¹àd‚xşÏ–æø“L6(ämbO)|Ñ„›’ä“Œ•ôÓ›îÆ \Ÿ‰<|&»‚»²ˆ¼:^áˆˆ‘É;IçrŠ‚¾tÓLh£)!+È‹Ìf1eéeÖ$5Ÿ†Ôƒs,JfæÇHT=Ñ99~22Š|"‘ŠmQX´Õj]¹T˜EÚmÇİíÔ¨ù@¼¿ojï[\­ŒJi+VóÑc¹î”½”ƒ«ííÚüÒúÒÓÕŸ¯ÏOGùâh”¶¸-ußèúâĞä¡ÿ   ÿÿ V2' 
+                              <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                                <table className="w-full text-[11px] text-left border-collapse">
+                                  <thead>
+                                    <tr className="bg-slate-100 dark:bg-slate-800 text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-700">
+                                      <th className="p-2 pl-3">ID Container</th>
+                                      <th className="p-2">Batch / Lote</th>
+                                      <th className="p-2">Yard / PÃ¡tio</th>
+                                      <th className="p-2">Vessel / Navio</th>
+                                      <th className="p-2 text-center">ETA</th>
+                                      <th className="p-2 text-center">Free Time</th>
+                                      <th className="p-2 text-center">Dias Restantes</th>
+                                      <th className="p-2 text-center">Status / DevoluÃ§Ã£o</th>
+                                      <th className="p-2 min-w-[130px] font-black text-red-700 dark:text-red-400 bg-red-100/40 dark:bg-red-950/20">ğŸ“… ProgramaÃ§Ã£o (Agendamento)</th>
+                                      <th className="p-2 min-w-[130px] font-black text-slate-700 dark:text-slate-300">ğŸš› Transportadora (Carrier)</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-150/40 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-300">
+                                    {matchingContainers.map((c, i) => {
+                                      const days = getDaysRemainingForContainer(c);
+                                      const isOverdue = days !== null && days < 0;
+                                      const isUrgent = days !== null && days >= 0 && days <= 5;
+                                      
+                                      const daysBadgeColor = isOverdue ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-450'
+                                        : isUrgent ? 'bg-rose-105 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400'
+                                        : 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400';
+
+                                      return (
+                                        <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-all font-mono">
+                                          <td className="p-2 pl-3 font-bold text-slate-900 dark:text-white select-all">{c.id}</td>
+                                          <td className="p-2 font-sans font-bold">{c.lote || '-'}</td>
+                                          <td className="p-2 font-sans font-extrabold text-blue-600 dark:text-blue-400">{yards[c.yardId]?.name || c.yardId}</td>
+                                          <td className="p-2 font-sans truncate max-w-[120px]" title={c.vesselName}>{c.vesselName}</td>
+                                          <td className="p-2 text-center font-sans">{c.eta || '-'}</td>
+                                          <td className="p-2 text-center text-amber-600 dark:text-amber-450 font-bold">{c.freeTime || '-'}</td>
+                                          <td className="p-2 text-center">
+                                            {days !== null ? (
+                                              <span className={`px-2 py-0.5 border text-[10px] font-extrabold rounded-md ${daysBadgeColor}`}>
+                                                {days < 0 ? `${days} d (Atrasado)` : `${days} d`}
+                                              </span>
+                                            ) : (
+                                              <span className="text-gray-400">-</span>
+                                            )}
+                                          </td>
+                                          <td className="p-2 text-center font-sans">
+                                            {c.category === 'DELIVERED' ? (
+                                              <span className="px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 text-[9px] font-black rounded uppercase">
+                                                DELIVERED
+                                              </span>
+                                            ) : (
+                                              <span className="px-1.5 py-0.5 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200/50 text-[9px] font-black rounded uppercase">
+                                                PENDING
+                                              </span>
+                                            )}
+                                          </td>
+                                          {/* AGENDAMENTO FIELD */}
+                                          <td className="p-2 bg-red-100/10 dark:bg-red-950/5">
+                                            <input
+                                              type="text"
+                                              placeholder="Ex: 25/07/2026"
+                                              value={c.programacao || ''}
+                                              onChange={(e) => handleUpdateContainerField(c.id, 'programacao', e.target.value)}
+                                              className="w-full bg-white dark:bg-slate-800 p-1.5 border border-red-250 dark:border-red-900/50 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-md font-sans text-xs font-bold text-slate-800 dark:text-slate-100 text-center outline-none"
+                                            />
+                                          </td>
+                                          {/* TRANSPORTADORA FIELD */}
+                                          <td className="p-2">
+                                            <input
+                                              type="text"
+                                              placeholder="Ex: JSL"
+                                              value={c.transportadora || ''}
+                                              onChange={(e) => handleUpdateContainerField(c.id, 'transportadora', e.target.value)}
+                                              className="w-full bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-md font-sans text-xs font-bold text-slate-800 dark:text-slate-100 text-center outline-none"
+                                            />
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                    {matchingContainers.length === 0 && (
+                                      <tr>
+                                        <td colSpan={10} className="p-8 text-center text-gray-400 dark:text-gray-500 font-extrabold font-sans">
+                                          {language === 'zh' ? 'æ²¡æœ‰åœ¨æ­¤åˆ†ç±»ä¸‹æ‰¾åˆ°åŒ¹é…çš„é›†è£…ç®±' : 'Nenhum contÃªiner correspondente encontrado para este filtro.'}
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : currentSlide === 5 ? (
+                /* SLIDE 6: DEPOT CONTROL & ALLOCATION */
+                <div id="slide-dashboard-grid-depots" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
+                  
+                  {/* TOP CONTROL HUB FOR DEPOT ALLOCATION */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3`}>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
+                        <FileSpreadsheet className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
+                          {language === 'bilingual' ? 'DEPOT CONTROL & ALLOCATION / åè®®å †å­˜ä¸æ¸¯å£æµå‘åŠ¨æ€è°ƒé…' : language === 'zh' ? 'åè®®å †å­˜ä¸æ¸¯å£æµå‘åŠ¨æ€è°ƒé…' : 'DEPOT CONTROL & ALLOCATION'}
+                        </h3>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                          {language === 'zh' ? 'æ¯æ—¥æµé‡å¹³å‡ç›‘æ§ã€æœ€å¤§åŠ¨æ€å®¹é‡é…é¢ã€ä¸èˆ¹ä¸œåˆä½œçŠ¶æ€äº¤å‰ç®¡ç†çŸ©é˜µ' : 'Controle dinÃ¢mico de limites diÃ¡rios, capacidade sob contrato e compatibilidade de armadores.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] bg-red-600 text-white font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
+                        {language === 'zh' ? 'é«˜çº§ç‰©æµæ¶æ„æ¿' : 'Senior Logistics Panel'}
+                      </span>
+                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold px-2 py-0.5 rounded border border-slate-200 dark:border-slate-750">
+                        UTC-3 LIVE
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* HIGH-LEVEL INTEGRATED LOGISTICS KPIs */}
+                  {(() => {
+                    const totalAvg = depots.reduce((sum, d) => sum + d.avgVolume, 0);
+                    const totalCap = depots.reduce((sum, d) => sum + d.maxCapacity, 0);
+                    const openGates = depots.filter(d => d.status === 'Open').length;
+                    const criticalCount = depots.filter(d => {
+                      const util = d.maxCapacity > 0 ? (d.avgVolume / d.maxCapacity) * 100 : 0;
+                      return d.isAlert || util > 95;
+                    }).length;
+                    
+                    const totalRemainingSlots = depots.reduce((sum, d) => {
+                      if (d.status === 'Closed') return sum;
+                      const remaining = d.maxCapacity - d.avgVolume;
+                      return sum + (remaining > 0 ? remaining : 0);
+                    }, 0);
+
+                    return (
+                      <div className="grid grid-cols-4 gap-3">
+                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? 'æ—¥å¸¸å¹³å‡æ€»ååé‡' : 'VOLUME DIÃRIO TOTAL (AVG)'}</span>
+                            <span className="text-gray-400 font-mono text-xs font-bold">AVG baseline</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">{totalAvg}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">CNTRs/Dia</span>
+                          </div>
+                        </div>
+
+                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? 'ç©ºä½™å¯ç”¨ä»“ä½æ•°' : 'VAGAS DIÃRIAS DISPONÃVEIS'}</span>
+                            <span className="text-emerald-500 font-bold text-[10px] px-1 py-0.1 bg-emerald-50 dark:bg-emerald-950/20 rounded">Slots Livres</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">{totalRemainingSlots}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">CNTRs Slots</span>
+                          </div>
+                        </div>
+
+                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? 'é€šé“å¼€å¯æ¯”ä¾‹' : 'SITUAÃ‡ÃƒO DE PORTÃ•ES'}</span>
+                            <span className="text-blue-500 font-bold text-[10px] px-1 py-0.1 bg-blue-50 dark:bg-blue-950/20 rounded">Gates Status</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black font-mono tracking-tight text-slate-800 dark:text-slate-100">{openGates} <span className="text-xs text-gray-400 font-bold">/ {depots.length}</span></span>
+                            <span className="text-xs text-emerald-600 dark:text-emerald-450 font-extrabold">{language === 'zh' ? 'æ­£å¸¸è¿è¥ä¸­' : 'Ativos'}</span>
+                          </div>
+                        </div>
+
+                        <div className={`p-3.5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-xs'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">{language === 'zh' ? 'é«˜å±å—é™/æ»¡è½½ç«™ç‚¹' : 'PONTOS CRÃTICOS / ALERTA'}</span>
+                            <span className="text-red-500 font-bold text-[10px] px-1 py-0.1 bg-red-50 dark:bg-red-950/20 rounded">Alert Count</span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black font-mono tracking-tight text-red-600 dark:text-red-400">{criticalCount}</span>
+                            <span className="text-xs text-red-500 dark:text-red-400 font-bold uppercase">{language === 'zh' ? 'ä¸¥é‡çº¢è‰²é™åˆ¶' : 'Gargalos'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* BOTTOM WORKSPACE WORKGRID */}
+                  <div className="grid grid-cols-12 gap-4 flex-1">
+                    
+                    <div className={`col-span-7 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
+                      <div className="space-y-3 flex-1">
+                        {/* EXECUTIVE SUMMARY WIDGETS */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
+                          <div className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#1e293b]/50 border-slate-700/50' : 'bg-white border-slate-100'} shadow-sm flex flex-col justify-between`}>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold mb-1 block">
+                              {language === 'zh' ? 'æ—¥å¸¸å¹³å‡æ€»ååé‡' : language === 'pt' ? 'MÃ©dia DiÃ¡ria Total' : 'Total Daily Return Average'}
+                            </span>
+                            <span className="text-xl font-black text-slate-800 dark:text-white">{depots.reduce((sum, d) => sum + d.avgVolume, 0).toLocaleString()} <span className="text-xs font-bold text-slate-400">{language === 'zh' ? 'CNTRs/å¤©' : language === 'pt' ? 'CNTRs/Dia' : 'CNTRs/Day'}</span></span>
+                          </div>
+                          <div className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#1e293b]/50 border-slate-700/50' : 'bg-white border-slate-100'} shadow-sm flex flex-col justify-between`}>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold mb-1 block">
+                              {language === 'zh' ? '25å¤©é¢„ä¼°æ€»ååé‡' : language === 'pt' ? 'Estimativa Total (25 Dias)' : 'Total 25-Day Estimated Return'}
+                            </span>
+                            <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">{(depots.reduce((sum, d) => sum + d.avgVolume, 0) * 25).toLocaleString()} <span className="text-xs font-bold text-emerald-600/50 dark:text-emerald-400/50">CNTRs</span></span>
+                          </div>
+                          <div className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-[#1e293b]/50 border-slate-700/50' : 'bg-white border-slate-100'} shadow-sm flex flex-col justify-between`}>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold mb-1 block">
+                              {language === 'zh' ? '25å¤©åè®®æ€»é¢åº¦ä¸Šé™' : language === 'pt' ? 'Limite Total Acordado (25 Dias)' : 'Total 25-Day Max Agreed Limit'}
+                            </span>
+                            <span className="text-xl font-black text-blue-600 dark:text-blue-400">{(depots.reduce((sum, d) => sum + d.maxCapacity, 0) * 25).toLocaleString()} <span className="text-xs font-bold text-blue-600/50 dark:text-blue-400/50">CNTRs</span></span>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center border-b pb-2 border-gray-100 dark:border-slate-800">
+                          <div className="flex items-center gap-1.5">
+                            <Sliders className="w-4 h-4 text-slate-500" />
+                            <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                              {language === 'zh' ? 'ç©ºç®±å †åœºååèƒ½åŠ›ä¸25å¤©é¢„æµ‹ä»ªè¡¨ç›˜' : language === 'pt' ? 'Capacidade de Retorno de Vazios e PrevisÃ£o (25 Dias)' : 'EMPTY DEPOT RETURN CAPACITY & 25-DAY FORECASTING DASHBOARD'}
+                            </h4>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-gray-400 font-mono font-bold mr-2">{language === 'zh' ? '100% è‡ªåŠ¨è®¡ç®—å¼•æ“' : language === 'pt' ? '100% CÃLCULO AUTOMÃTICO' : '100% FORMULA ENGINE'}</span>
+                            <button
+                              onClick={() => {
+                                const newId = `depot_${Date.now()}`;
+                                const newName = `NEW DEPOT ${depots.length + 1}`;
+                                setDepots([...depots, { id: newId, name: newName, avgVolume: 0, maxCapacity: 0, operatingDays: 'Mon - Fri', operatingHours: '08:00 - 17:00' }]);
+                                setDepotMatrix(prev => ({...prev, [newName]: { 'MSC': 'Authorized', 'Maersk': 'Authorized', 'CMA CGM': 'Authorized', 'Hapag-Lloyd': 'Authorized', 'ONE': 'Authorized', 'COSCO': 'Authorized', 'Evergreen': 'Authorized' }}));
+                              }}
+                              className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded transition-colors flex items-center gap-1"
+                            >
+                              <Plus className="w-3 h-3" /> {language === 'zh' ? 'æ–°å¢å †åœº' : language === 'pt' ? 'Novo DepÃ³sito' : 'Add New Depot'}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-800/60 text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-800">
+                                <th className="p-2 pl-2.5">{language === 'zh' ? 'å †å­˜ç‚¹åç§°' : language === 'pt' ? 'Nome do DepÃ³sito' : 'Depot Name'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? 'æ—¥å¸¸å¹³å‡ååé‡ (CNTRs)' : language === 'pt' ? 'MÃ©dia DiÃ¡ria (CNTRs)' : 'Daily Avg Returns (CNTRs)'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? 'åè®®æœ€å¤§æ—¥é™é¢ (CNTRs)' : language === 'pt' ? 'Limite DiÃ¡rio Acordado (CNTRs)' : 'Max Daily Agreed Limit (CNTRs)'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '25å¤©é¢„ä¼°ååé‡' : language === 'pt' ? 'Estimativa Retorno (25d)' : '25-Day Return Estimate'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? '25å¤©æ½œåœ¨æœ€å¤§é‡' : language === 'pt' ? 'MÃ¡ximo Potencial (25d)' : '25-Day Max Potential Return'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? 'è¿è¥æ—¥' : language === 'pt' ? 'Dias de OperaÃ§Ã£o' : 'Operating Days'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? 'é—¸å£è¥ä¸šæ—¶é—´' : language === 'pt' ? 'HorÃ¡rio do Gate' : 'Gate Operating Hours'}</th>
+                                <th className="p-2 text-center">{language === 'zh' ? 'è¿è¥é¢„è­¦çŠ¶æ€' : language === 'pt' ? 'Alerta Operacional' : 'Operational Alert Status'}</th>
+                                <th className="p-2 text-center w-8"></th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800 font-bold text-slate-850 dark:text-slate-200">
+                              {depots.map((depot, idx) => {
+                                const utilPercent = depot.maxCapacity > 0 ? Math.round((depot.avgVolume / depot.maxCapacity) * 100) : 0;
+                                const remaining = depot.maxCapacity - depot.avgVolume;
+                                const estimate25 = depot.avgVolume * 25;
+                                const max25 = depot.maxCapacity * 25;
+                                
+                                let alertConfig = { bg: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-450 border-emerald-200 dark:border-emerald-900/30', label: language === 'zh' ? 'æ­£å¸¸ - é¢åº¦å……è¶³' : language === 'pt' ? 'NORMAL - Cota DisponÃ­vel' : 'NORMAL - Quota Available' };
+                                if (depot.avgVolume > depot.maxCapacity) {
+                                  alertConfig = { bg: 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-450 border-rose-300 dark:border-rose-900/50', label: language === 'zh' ? 'è¶…é¢ - éœ€é‡æ–°åå•†é™åˆ¶' : language === 'pt' ? 'COTA EXCEDIDA - Renegociar' : 'OVER QUOTA - Renegotiate Limit' };
+                                } else if (utilPercent > 95) {
+                                  alertConfig = { bg: 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-450 border-red-200 dark:border-red-900/30', label: language === 'zh' ? 'ç“¶é¢ˆ - æ—¥å¸¸é¢åº¦å·²æ»¡/è¶…å‡º' : language === 'pt' ? 'GARGALO - Cota MÃ¡xima Atingida' : 'BOTTLENECK - Daily Quota Maxed/Exceeded' };
+                                } else if (utilPercent >= 75) {
+                                  alertConfig = { bg: 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-450 border-amber-200 dark:border-amber-900/30', label: language === 'zh' ? 'æ³¨æ„ - æ¥è¿‘é™åˆ¶' : language === 'pt' ? 'ATENÃ‡ÃƒO - Limite PrÃ³ximo' : 'ATTENTION - Approaching Limit' };
+                                }
+
+                                const handleUpdate = (field: keyof Depot, value: string | number) => {
+                                  const oldName = depots[idx].name;
+                                  const newDepots = [...depots];
+                                  newDepots[idx] = { ...newDepots[idx], [field]: value };
+                                  setDepots(newDepots);
+                                  if (field === 'name' && typeof value === 'string') {
+                                    setDepotMatrix(prev => {
+                                      const newMatrix = { ...prev };
+                                      if (newMatrix[oldName]) {
+                                        newMatrix[value] = newMatrix[oldName];
+                                        delete newMatrix[oldName];
+                                      }
+                                      return newMatrix;
+                                    });
+                                  }
+                                };
+
+                                return (
+                                  <tr
+                                    key={depot.id}
+                                    className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all"
+                                  >
+                                    <td className="p-1 pl-2.5 font-sans">
+                                      <input 
+                                        type="text" 
+                                        value={depot.name || ''} 
+                                        onChange={(e) => handleUpdate('name', e.target.value)}
+                                        className="w-full bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1.5 py-1 text-[11px] font-extrabold outline-none"
+                                      />
+                                    </td>
+                                    <td className="p-1 text-center font-mono">
+                                      <input 
+                                        type="number" 
+                                        value={depot.avgVolume || 0} 
+                                        onChange={(e) => handleUpdate('avgVolume', parseInt(e.target.value) || 0)}
+                                        className="w-16 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1 py-1 text-center font-bold text-gray-500 dark:text-slate-400 outline-none"
+                                      />
+                                    </td>
+                                    <td className="p-1 text-center font-mono">
+                                      <input 
+                                        type="number" 
+                                        value={depot.maxCapacity || 0} 
+                                        onChange={(e) => handleUpdate('maxCapacity', parseInt(e.target.value) || 0)}
+                                        className="w-16 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1 py-1 text-center font-bold text-slate-800 dark:text-slate-100 outline-none"
+                                      />
+                                    </td>
+                                    <td className="p-2 text-center font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                      {estimate25}
+                                    </td>
+                                    <td className="p-2 text-center font-mono text-blue-600 dark:text-blue-400 font-bold">
+                                      {max25}
+                                    </td>
+                                    <td className="p-1 text-center">
+                                      <input 
+                                        type="text" 
+                                        value={depot.operatingDays || ''} 
+                                        onChange={(e) => handleUpdate('operatingDays', e.target.value)}
+                                        className="w-20 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1 py-1 text-[10px] text-center outline-none"
+                                      />
+                                    </td>
+                                    <td className="p-1 text-center">
+                                      <input 
+                                        type="text" 
+                                        value={depot.operatingHours || ''} 
+                                        onChange={(e) => handleUpdate('operatingHours', e.target.value)}
+                                        className="w-24 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1 py-1 text-[10px] text-center font-mono outline-none"
+                                      />
+                                    </td>
+                                    <td className="p-2 text-center">
+                                      <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-black border uppercase tracking-wider ${alertConfig.bg}`}>
+                                        {alertConfig.label}
+                                      </span>
+                                    </td>
+                                    <td className="p-1 text-center">
+                                      <button 
+                                        onClick={() => {
+                                          setDepots(depots.filter(d => d.id !== depot.id));
+                                          setDepotMatrix(prev => {
+                                            const newMatrix = { ...prev };
+                                            delete newMatrix[depot.name];
+                                            return newMatrix;
+                                          });
+                                        }}
+                                        className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                      <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 font-bold flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <span>{language === 'zh' ? 'ğŸ’¡ ç³»ç»Ÿé€»è¾‘ï¼šç»¿ä»“è¡¨ç¤ºç©ºé—²åº¦é«˜ï¼Œé»„ä»“ä¸ºè­¦æˆ’è£…è½½ï¼Œçº¢ä»“ï¼ˆåˆ©ç”¨ç‡è¶…è¿‡95%ï¼‰é™åˆ¶æµå…¥ï¼ŒVBR / AREA 23 åœ¨ä»»ä½•çŠ¶æ€ä¸‹å‡è§¦å‘é»„è‰²è­¦æˆ’è­¦å‘Šã€‚' : 'ğŸ’¡ Legenda do Motor de Regras: UtilizaÃ§Ã£o <75% Verde (Liberado), 75-95% Amarelo (AtenÃ§Ã£o), >95% Vermelho (Gargalo - Bloqueio de novos volumes).'}</span>
+                      </div>
+                    </div>
+
+                    {/* RIGHT WORKSPACE: DYNAMIC INTERACTIVE SHIPOWNER COMPATIBILITY MATRIX */}
+                    <div className={`col-span-5 p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-150 shadow-sm'} flex flex-col justify-between`}>
+                      <div className="space-y-3 flex-1">
+                        <div className="flex justify-between items-center border-b pb-2 border-gray-100 dark:border-slate-800">
+                          <div className="flex items-center gap-1.5">
+                            <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                            <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                              {language === 'bilingual' ? 'MATRIZ DE COMPATIBILIDADE DE ARMADORES / èˆ¹ä¸œåè®®ç¬¦åˆçŸ©é˜µ' : language === 'zh' ? 'èˆ¹ä¸œåè®®ç¬¦åˆçŸ©é˜µ' : 'MATRIZ DE ARMADORES'}
+                            </h4>
+                          </div>
+                          <span className="text-[9px] text-emerald-600 font-black animate-pulse bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.2 rounded">Interactive</span>
+                        </div>
+
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                          {language === 'zh' ? 'ğŸ’¡ ç‚¹å‡»çŸ©é˜µä¸­çš„ä»»ä½•çŠ¶æ€å¯ä»¥ç›´æ¥å¾ªç¯åˆ‡æ¢ï¼šAuthorized (æˆæƒ) âœ Blocked (é”å®š) âœ Contract Only (ç‰¹è®¸åˆåŒ)ã€‚' : 'ğŸ’¡ Clique diretamente sobre qualquer status na matriz para alternar: Liberado (âœ… Auth) âœ Bloqueado (âŒ Block) âœ Contrato (ğŸ“ Contract).'}
+                        </p>
+
+                        <div className="overflow-x-auto mt-2">
+                          <table className="w-full text-center border-collapse text-[10.5px]">
+                            <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-800/60 text-[8.5px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-black border-b border-gray-200 dark:border-slate-800">
+                                <th className="p-1.5 text-left pl-2 font-black">{language === 'zh' ? 'å †å­˜ç‚¹' : 'DEPÃ“SITO'}</th>
+                                {['MSC', 'Maersk', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'COSCO', 'Evergreen'].map(armador => (
+                                  <th key={armador} className="p-1.5 font-black text-center text-slate-750 dark:text-gray-300">{armador}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-850 font-bold text-slate-800 dark:text-slate-200">
+                              {depots.map((depot) => { const depotName = depot.name; return (
+                                <tr key={depotName} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
+                                  <td className="p-1.5 text-left pl-2 font-extrabold text-[10px] text-slate-750 dark:text-gray-300">{depotName}</td>
+                                  {['MSC', 'Maersk', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'COSCO', 'Evergreen'].map((armador) => {
+                                    const value = depotMatrix[depotName]?.[armador] || 'Authorized';
+                                    
+                                    // Visual color states
+                                    let cellStyle = 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/45 dark:text-emerald-400';
+                                    let cellText = 'AUTH';
+                                    if (value === 'Blocked') {
+                                      cellStyle = 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/45 dark:text-red-400';
+                                      cellText = 'LOCK';
+                                    } else if (value === 'Contract Only') {
+                                      cellStyle = 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/45 dark:text-amber-400';
+                                      cellText = 'CONT';
+                                    }
+
+                                    return (
+                                      <td key={armador} className="p-1 text-center">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            // Click interaction to toggle through Authorized -> Blocked -> Contract Only
+                                            const states: ('Authorized' | 'Blocked' | 'Contract Only')[] = ['Authorized', 'Blocked', 'Contract Only'];
+                                            const currentIndex = states.indexOf(value);
+                                            const nextState = states[(currentIndex + 1) % states.length];
+                                            setDepotMatrix(prev => ({
+                                              ...prev,
+                                              [depotName]: {
+                                                ...(prev[depotName] || {}),
+                                                [armador]: nextState
+                                              }
+                                            }));
+                                          }}
+                                          className={`px-1 py-0.5 text-[8.5px] font-extrabold rounded-md border tracking-tighter cursor-pointer select-none transition-all active:scale-95 ${cellStyle}`}
+                                          title={`${armador} @ ${depotName}: Clique para alterar status / ç‚¹å‡»åˆ‡æ¢çŠ¶æ€`}
+                                        >
+                                          {cellText}
+                                        </button>
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 font-bold flex items-center justify-between">
+                        <span>{language === 'zh' ? 'ğŸ’¡ å¥‘çº¦é™åˆ¶ï¼šVBRåŠTEON 23 é»˜è®¤é”å®šå¤§å¤šæ•°ç›´æ¥æ”¾è¡Œï¼Œä»…æ¥å—ç‰¹å®šé¢„çº¦ã€‚' : 'ğŸ’¡ AUTH: Liberado | LOCK: Bloqueado | CONT: Requer Contrato.'}</span>
+                        <span className="text-[8px] bg-emerald-500/10 text-emerald-600 px-1 rounded uppercase tracking-widest font-black">Excel Friendly</span>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              ) : currentSlide === 10 ? (
+                /* SLIDE 6: PLANO DE DIRECIONAMENTO (ALLOCATION PLANNER) */
+                <div id="slide-dashboard-allocation-planner" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-y-auto overflow-x-hidden scrollbar-thin' : 'min-h-[660px] gap-4'}`}>
+                  
+                  {/* TOP CONTROL HUB */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shrink-0`}>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
+                        <FileSpreadsheet className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
+                          {language === 'bilingual' ? 'BONDED WAREHOUSE SPACE & ALLOCATION PLANNER / ä»“å‚¨ç©ºé—´ä¸æµå‘è§„åˆ’' : 'BONDED WAREHOUSE SPACE & ALLOCATION PLANNER'}
+                        </h3>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                          {language === 'zh' ? 'åŠ¨æ€å®¹é‡è§„åˆ’ï¼Œæˆæœ¬ä¼˜åŒ–åŠå®æ—¶åº“å­˜æ•°æ®åŒæ­¥' : 'Planejamento dinÃ¢mico de capacidade, otimizaÃ§Ã£o de custos e sincronizaÃ§Ã£o de estoque em tempo real.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin pb-4">
+                    {(() => {
+                  {/* MAIN CONTENT AREA */}
+                      // Fetch Live Inventory Data
+                      const liveTecon = { 
+                        inv: yards.tecon?.cheio || 0, 
+                        cap: yards.tecon?.capacity || 2000 
+                      };
+                      const liveInter = { 
+                        inv: yards.intermaritima?.cheio || 0, 
+                        cap: yards.intermaritima?.capacity || 800 
+                      };
+                      const liveTpc = { 
+                        inv: yards.tpc?.cheio || 0, 
+                        cap: yards.tpc?.capacity || 1200 
+                      };
+
+                      const activePeriods = plannerPeriods.filter(p => !p.isHistoric);
+                      const totalExpectedVolume = activePeriods.reduce((sum, p) => sum + p.totalVolume, 0);
+
+                      const getProjections = (liveInv: number, allocKey: "allocTecon" | "allocInter" | "allocTpc", outflowKey: "outflowTecon" | "outflowInter" | "outflowTpc") => {
+                        let prevEnd = liveInv;
+                        let maxPeak = liveInv;
+                        const peaks: { start: number, end: number }[] = [];
+                        
+                        for (const p of activePeriods) {
+                          const pVol = Math.round(p.totalVolume * ((p as any)[allocKey] / 100));
+                          const currentOutflow = (p as any)[outflowKey];
+                          
+                          const start = prevEnd - currentOutflow;
+                          const end = start + pVol;
+                          
+                          peaks.push({ start, end });
+                          maxPeak = Math.max(maxPeak, end);
+                          prevEnd = end;
+                        }
+                        
+                        return { peaks, maxPeak };
+                      };
+
+                      const teconData = getProjections(liveTecon.inv, "allocTecon", "outflowTecon");
+                      const teconPeaks = teconData.peaks;
+                      const teconPeakOcc = teconData.maxPeak;
+                      const teconPeakOccPct = (teconPeakOcc / liveTecon.cap) * 100;
+
+                      const interData = getProjections(liveInter.inv, "allocInter", "outflowInter");
+                      const interPeaks = interData.peaks;
+                      const interPeakOcc = interData.maxPeak;
+                      const interPeakOccPct = (interPeakOcc / liveInter.cap) * 100;
+
+                      const tpcData = getProjections(liveTpc.inv, "allocTpc", "outflowTpc");
+                      const tpcPeaks = tpcData.peaks;
+                      const tpcPeakOcc = tpcData.maxPeak;
+                      const tpcPeakOccPct = (tpcPeakOcc / liveTpc.cap) * 100;
+
+                      const getAlertStatus = (pct: number) => {
+                        if (pct > 95) return { color: 'text-red-600 bg-red-100 border-red-500', text: 'CRITICAL RISK - Storage Overflow / Reallocate Cargo' };
+                        if (pct > 80) return { color: 'text-amber-600 bg-amber-100 border-amber-500', text: 'CAUTION - High Yard Density / Monitor Outflow' };
+                        return { color: 'text-emerald-600 bg-emerald-100 border-emerald-500', text: 'SAFE - Operational Capacity Available' };
+                      };
+
+                      return (
+                        <div className="flex flex-col gap-4">
+                          
+                          {/* Executive Summary Widget */}
+                          <div className={`p-4 rounded-xl border-l-4 border-slate-800 ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200'} shadow-sm`}>
+                            <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider mb-2">Executive Yard Overview</h4>
+                            <div className="flex gap-6 items-center flex-wrap">
+                              <div>
+                                <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Planning Volume</span>
+                                <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{totalExpectedVolume} <span className="text-sm font-bold text-slate-500">CNTRs</span></span>
+                              </div>
+                              <div className="h-10 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+                              <div className="flex-1 flex flex-wrap gap-3">
+                                {[
+                                  { name: 'TECON', pct: teconPeakOccPct },
+                                  { name: 'INTER', pct: interPeakOccPct },
+                                  { name: 'TPC', pct: tpcPeakOccPct },
+                                ].map(t => (
+                                  <div key={t.name} className={`px-3 py-1.5 rounded-lg border flex flex-col min-w-[100px] ${t.pct > 95 ? 'bg-red-50 border-red-200' : t.pct > 80 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'} dark:bg-opacity-10`}>
+                                    <span className="text-[9px] font-black uppercase text-slate-600 dark:text-slate-400">{t.name} Peak</span>
+                                    <span className={`text-sm font-bold ${t.pct > 95 ? 'text-red-600' : t.pct > 80 ? 'text-amber-600' : 'text-emerald-600'}`}>{t.pct.toFixed(1)}%</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* SECTION A: Cost Strategy & Facility Selection */}
+                          <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100'} shadow-sm`}>
+                            <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider mb-3 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-emerald-500" /> 
+                              A. Cost Strategy & Facility Selection
+                            </h4>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-[11px] mb-3">
+                                <thead>
+                                  <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
+                                    <th className="py-2 px-3 font-bold border-b border-slate-200 dark:border-slate-700">Bonded Period</th>
+                                    <th className="py-2 px-3 font-bold border-b border-slate-200 dark:border-slate-700 text-center">TECON</th>
+                                    <th className="py-2 px-3 font-bold border-b border-slate-200 dark:border-slate-700 text-center">INTER</th>
+                                    <th className="py-2 px-3 font-bold border-b border-slate-200 dark:border-slate-700 text-center">TPC</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {['48hs', '7d', '10d', '15d', '20d', '25d'].map((milestone) => (
+                                    <tr key={milestone} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
+                                      <td className="py-1.5 px-3 font-extrabold text-slate-700 dark:text-slate-300">{milestone}</td>
+                                      {['tecon', 'inter', 'tpc'].map((fac) => {
+                                        const isSelected = plannerCostStrategy[milestone] === fac;
+                                        return (
+                                          <td key={fac} className={`py-1 px-3 text-center transition-colors ${isSelected ? 'bg-emerald-50/50 dark:bg-emerald-900/10' : ''}`}>
+                                            <label className="flex items-center justify-center gap-1.5 cursor-pointer w-full h-full">
+                                              <input 
+                                                type="radio" 
+                                                name={`strat_${milestone}`} 
+                                                checked={isSelected}
+                                                onChange={() => setPlannerCostStrategy(prev => ({...prev, [milestone]: fac}))}
+                                                className="w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                              />
+                                              {isSelected && <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter">Best Rate</span>}
+                                            </label>
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Strategic Allocation Justification</label>
+                              <textarea
+                                value={plannerJustification}
+                                onChange={(e) => setPlannerJustification(e.target.value)}
+                                className="w-full p-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500/50 outline-none resize-none font-medium leading-relaxed min-h-[60px]"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {/* SECTION B & C: Inbound Arrivals & Percentage Allocation */}
+                            <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100'} shadow-sm`}>
+                              <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+                                <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                                  <Ship className="w-4 h-4 text-blue-500" /> 
+                                  B & C. Inbound Arrivals & Outflow Parameters
+                                </h4>
+                                <button
+                                  onClick={() => {
+                                    const nextId = plannerPeriods.length > 0 ? Math.max(...plannerPeriods.map(p => p.id)) + 1 : 1;
+                                    setPlannerPeriods([...plannerPeriods, {
+                                      id: nextId,
+                                      isHistoric: false,
+                                      dateRange: "New Period",
+                                      totalVolume: 0,
+                                      allocTecon: 0,
+                                      allocInter: 0,
+                                      allocTpc: 0,
+                                      outflowTecon: 0,
+                                      outflowInter: 0,
+                                      outflowTpc: 0,
+                                    }]);
+                                  }}
+                                  className="px-2.5 py-1 text-[10px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 rounded transition-colors"
+                                >
+                                  + ADD PERIOD
+                                </button>
+                              </div>
+                              
+                              <div className="space-y-4">
+                                {plannerPeriods.map((period, idx) => {
+                                  const updatePeriod = (field: string, val: number | string | boolean) => {
+                                    const next = [...plannerPeriods];
+                                    (next[idx] as any)[field] = val;
+                                    setPlannerPeriods(next);
+                                  };
+
+                                  const isHistoric = period.isHistoric;
+
+                                  return (
+                                    <div key={period.id} className={`border ${isHistoric ? 'border-dashed border-gray-300 dark:border-gray-600 opacity-60' : 'border-slate-200 dark:border-slate-700'} rounded-lg overflow-hidden transition-opacity`}>
+                                      {/* Header */}
+                                      <div className={`${isHistoric ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-slate-100 dark:bg-slate-800'} p-2 flex flex-wrap justify-between items-center border-b border-slate-200 dark:border-slate-700 gap-2`}>
+                                        <div className="flex items-center gap-2">
+                                          <button 
+                                            onClick={() => updatePeriod('isHistoric', !isHistoric)}
+                                            className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border cursor-pointer transition-colors ${isHistoric ? 'bg-gray-200 text-gray-500 border-gray-300 dark:bg-gray-700 dark:border-gray-600' : 'bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}
+                                            title="Toggle active/historic status"
+                                          >
+                                            {isHistoric ? 'HISTORIC' : `PERIOD ${period.id}`}
+                                          </button>
+                                          <input 
+                                            type="text" 
+                                            value={period.dateRange} 
+                                            onChange={e => updatePeriod('dateRange', e.target.value)}
+                                            disabled={isHistoric}
+                                            className={`text-[11px] font-bold px-2 py-0.5 rounded border w-28 text-center ${isHistoric ? 'bg-transparent border-transparent text-gray-500' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                                          />
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Total Arr. Vol (CNTRs):</span>
+                                          <input 
+                                            type="number" 
+                                            value={period.totalVolume} 
+                                            onChange={e => updatePeriod('totalVolume', Number(e.target.value))}
+                                            disabled={isHistoric}
+                                            className={`font-black text-[11px] px-2 py-0.5 rounded border w-20 text-right outline-none ${isHistoric ? 'bg-transparent border-transparent text-gray-500' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 focus:ring-1 focus:ring-indigo-500'}`}
+                                          />
+                                          <button
+                                            onClick={() => setPlannerPeriods(plannerPeriods.filter(p => p.id !== period.id))}
+                                            className="text-red-400 hover:text-red-600 transition-colors ml-1"
+                                            title="Remove Period"
+                                          >
+                                            <span className="text-lg leading-none">&times;</span>
+                                          </button>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Table */}
+                                      <div className="overflow-x-auto">
+                                        <table className={`w-full text-left text-[11px] ${isHistoric ? 'grayscale' : ''}`}>
+                                          <thead>
+                                            <tr className="bg-slate-50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                              <th className="py-1.5 px-2 font-bold border-b border-slate-200 dark:border-slate-700">Facility</th>
+                                              <th className="py-1.5 px-2 font-bold border-b border-slate-200 dark:border-slate-700 text-center">Alloc %</th>
+                                              <th className="py-1.5 px-2 font-bold border-b border-slate-200 dark:border-slate-700 text-right">Alloc Vol</th>
+                                              <th className="py-1.5 px-2 font-bold border-b border-slate-200 dark:border-slate-700 text-right">Est Outflow</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {[
+                                              { name: 'TECON', allocField: 'allocTecon', outField: 'outflowTecon', vol: Math.round(period.totalVolume * (period.allocTecon / 100)) },
+                                              { name: 'INTER', allocField: 'allocInter', outField: 'outflowInter', vol: Math.round(period.totalVolume * (period.allocInter / 100)) },
+                                              { name: 'TPC', allocField: 'allocTpc', outField: 'outflowTpc', vol: Math.round(period.totalVolume * (period.allocTpc / 100)) },
+                                            ].map(row => (
+                                              <tr key={row.name} className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 whitespace-nowrap">
+                                                <td className="py-1.5 px-2 font-black text-slate-700 dark:text-slate-300">{row.name}</td>
+                                                <td className="py-1.5 px-2 text-center">
+                                                  <input 
+                                                    type="number" 
+                                                    value={(period as any)[row.allocField] || 0}
+                                                    onChange={e => updatePeriod(row.allocField, Number(e.target.value))}
+                                                    disabled={isHistoric}
+                                                    className={`w-14 text-center text-[11px] font-bold py-0.5 rounded border outline-none ${isHistoric ? 'bg-transparent border-transparent' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-1 focus:ring-indigo-500'}`}
+                                                  />
+                                                </td>
+                                                <td className="py-1.5 px-2 text-right font-bold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/30">
+                                                  {row.vol}
+                                                </td>
+                                                <td className="py-1.5 px-2 text-right">
+                                                  <input 
+                                                    type="number" 
+                                                    value={(period as any)[row.outField] || 0}
+                                                    onChange={e => updatePeriod(row.outField, Number(e.target.value))}
+                                                    disabled={isHistoric}
+                                                    className={`w-16 text-right text-[11px] font-bold py-0.5 px-1 rounded border outline-none ${isHistoric ? 'bg-transparent border-transparent text-emerald-700 dark:text-emerald-500' : 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 focus:ring-1 focus:ring-emerald-500'}`}
+                                                  />
+                                                </td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                          <tfoot className="bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                                            <tr>
+                                              <td className="py-1.5 px-2 font-black text-[10px] uppercase text-slate-600 dark:text-slate-400">Total</td>
+                                              <td className={`py-1.5 px-2 text-center font-black ${period.allocTecon + period.allocInter + period.allocTpc === 100 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                                {period.allocTecon + period.allocInter + period.allocTpc}%
+                                              </td>
+                                              <td className="py-1.5 px-2 text-right font-black text-slate-700 dark:text-slate-300">
+                                                {Math.round(period.totalVolume * (period.allocTecon / 100)) + Math.round(period.totalVolume * (period.allocInter / 100)) + Math.round(period.totalVolume * (period.allocTpc / 100))}
+                                              </td>
+                                              <td className="py-1.5 px-2 text-right font-black text-slate-700 dark:text-slate-300">
+                                                {period.outflowTecon + period.outflowInter + period.outflowTpc}
+                                              </td>
+                                            </tr>
+                                          </tfoot>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* SECTION D: Inventory Projections & Capacity Stress-Testing */}
+                            <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100'} shadow-sm`}>
+                              <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider mb-3 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                                <Database className="w-4 h-4 text-rose-500" /> 
+                                D. Inventory Projections & Stress-Testing
+                              </h4>
+                              
+                              <div className="flex flex-col gap-3">
+                                {[
+                                  { name: 'TECON', live: liveTecon.inv, cap: liveTecon.cap, peaks: teconPeaks, peakOcc: teconPeakOcc, peakOccPct: teconPeakOccPct },
+                                  { name: 'INTER', live: liveInter.inv, cap: liveInter.cap, peaks: interPeaks, peakOcc: interPeakOcc, peakOccPct: interPeakOccPct },
+                                  { name: 'TPC', live: liveTpc.inv, cap: liveTpc.cap, peaks: tpcPeaks, peakOcc: tpcPeakOcc, peakOccPct: tpcPeakOccPct },
+                                ].map((fac) => {
+                                  const alert = getAlertStatus(fac.peakOccPct);
+                                  return (
+                                    <div key={fac.name} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-slate-50 dark:bg-slate-900/50">
+                                      <div className="flex justify-between items-center mb-2">
+                                        <h5 className="font-black text-sm text-slate-800 dark:text-slate-100">{fac.name}</h5>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[10px] font-bold text-slate-500 uppercase">Live Inventory:</span>
+                                          <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">{fac.live} <span className="font-bold opacity-60">/ {fac.cap}</span></span>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="flex gap-2 overflow-x-auto mb-3 pb-2 scrollbar-thin">
+                                        {activePeriods.map((p, idx) => (
+                                          <React.Fragment key={p.id}>
+                                            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center shadow-sm min-w-[60px]">
+                                              <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-tighter mb-0.5">P{p.id} Start Inv.</span>
+                                              <span className="block text-xs font-black text-slate-700 dark:text-slate-300">{fac.peaks[idx]?.start || 0}</span>
+                                            </div>
+                                            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center shadow-sm min-w-[60px]">
+                                              <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-tighter mb-0.5">P{p.id} End Inv.</span>
+                                              <span className="block text-xs font-black text-slate-700 dark:text-slate-300">{fac.peaks[idx]?.end || 0}</span>
+                                            </div>
+                                          </React.Fragment>
+                                        ))}
+                                        {activePeriods.length === 0 && (
+                                          <div className="text-[10px] text-gray-500 italic py-2">No active planning periods to project.</div>
+                                        )}
+                                      </div>
+
+                                      <div className={`p-2 rounded flex items-center justify-between border ${alert.color}`}>
+                                        <div className="flex flex-col">
+                                          <span className="text-[9px] font-black uppercase tracking-wider opacity-80">Capacity Alert</span>
+                                          <span className="text-[10px] font-bold">{alert.text}</span>
+                                        </div>
+                                        <div className="text-right">
+                                          <span className="block text-[10px] font-bold uppercase opacity-80">Max Peak Occ.</span>
+                                          <span className="block text-sm font-black">{fac.peakOccPct.toFixed(1)}%</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                          
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              ) : currentSlide === 7 ? (
+                /* SLIDE 7: MÃ“DULO DE GESTÃƒO LOGÃSTICA CRUDS */
+                <div id="slide-logistics-cruds" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
+                  
+                  {/* TOP CONTROL HUB FOR LOGISTICS */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3`}>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-red-100 dark:bg-red-950 p-2.5 rounded-xl text-red-600 dark:text-red-400">
+                        <Package className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-red-600 dark:text-red-400 tracking-tight">
+                          {language === 'bilingual' ? 'LOGISTICS MANAGEMENT MODULE / æ¯”äºšè¿ªå¤–è´¸è¿›å‡ºå£å•è¯åŠé›†æˆç‰©æµæ§åˆ¶' : language === 'zh' ? 'æ¯”äºšè¿ªå¤–è´¸è¿›å‡ºå£å•è¯åŠé›†æˆç‰©æµæ§åˆ¶' : 'LOGISTICS MANAGEMENT'}
+                        </h3>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                          {language === 'zh' ? 'åœ¨æ­¤å¤§ç›˜ç®¡ç†æ‚¨çš„å…¨éƒ¨ç‰©æµé›†è£…ç®±æ•°æ®ã€è¿›è¡Œå¢åˆ æ”¹æŸ¥æ“ä½œï¼Œå¹¶è¿æ¥åœ¨çº¿è¡¨æ ¼è¿›è¡Œå®æ—¶åˆ·æ–°' : 'MÃ³dulo CRUD central de equipamentos, BLs, ordem de compra SAP e importador automÃ¡tico.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setSheetsModalOpen(true)} 
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 uppercase tracking-wider"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5" /> {language === 'zh' ? 'Google Sheets åŒæ­¥' : 'Google Sheets Sync'}
+                      </button>
+                      <button 
+                        onClick={handleClearAllLogisticsData} 
+                        className="px-4 py-1.5 bg-gradient-to-r from-red-50 to-rose-100 hover:from-rose-100 hover:to-rose-200 text-rose-700 border border-rose-300 dark:from-red-950/40 dark:to-rose-900/20 dark:border-rose-900/60 dark:text-rose-350 font-extrabold text-[10px] rounded-lg shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 uppercase tracking-wider hover:shadow-md hover:shadow-rose-100/30 dark:hover:shadow-none"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> {language === 'zh' ? 'æ¸…ç©ºå…¨éƒ¨æ•°æ®' : 'Limpar Tudo'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* SECTION 1: SCHEDULING FORM FROM YARDS */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'}`}>
+                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-indigo-500" />
+                        <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                          {language === 'zh' ? 'ä»ä»“åº“/BLå¿«é€Ÿæ’ç¨‹äº¤ä»˜' : 'Agendar / Vincular ContÃªiner do PÃ¡tio'}
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
+                        <button
+                          type="button"
+                          onClick={() => setYdScheduleMode('container')}
+                          className={`px-2.5 py-1 text-[10px] font-extrabold rounded-md transition-all ${ydScheduleMode === 'container' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}
+                        >
+                          {language === 'zh' ? 'æŒ‰é›†è£…ç®±' : 'Por ContÃªiner'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setYdScheduleMode('bl')}
+                          className={`px-2.5 py-1 text-[10px] font-extrabold rounded-md transition-all ${ydScheduleMode === 'bl' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}
+                        >
+                          {language === 'zh' ? 'æŒ‰ BL æå•' : 'Por BL'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleSaveYdContainerLogistics} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                      {ydScheduleMode === 'container' ? (
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            {language === 'zh' ? 'é€‰æ‹©é›†è£…ç®±' : 'ContÃªiner do PÃ¡tio'}
+                          </label>
+                          <select
+                            value={selectedYdContainerId}
+                            onChange={(e) => handleYdContainerChange(e.target.value)}
+                            className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-mono font-bold"
+                          >
+                            <option value="">-- {language === 'zh' ? 'é€‰æ‹©é›†è£…ç®±' : 'Selecione um contÃªiner'} --</option>
+                            {containers.map(c => (
+                              <option key={c.id} value={c.id}>
+                                {c.id} ({yards[c.yardId]?.name || c.yardId || 'PÃ¡tio'} - {c.bl || 'Sem BL'})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            {language === 'zh' ? 'é€‰æ‹©æå• (BL)' : 'BL (Conhecimento)'}
+                          </label>
+                          <select
+                            value={selectedYdBl}
+                            onChange={(e) => handleYdBlChange(e.target.value)}
+                            className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-mono font-bold"
+                          >
+                            <option value="">-- {language === 'zh' ? 'é€‰æ‹©æå•' : 'Selecione um BL'} --</option>
+                            {Array.from(new Set(containers.map(c => c.bl).filter(Boolean))).map(bl => (
+                              <option key={bl} value={bl}>
+                                {bl} ({containers.filter(c => c.bl === bl).length} CNTRs)
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          {language === 'zh' ? 'èˆ¹èˆ¶ / Navio' : 'Navio (Vessel)'}
+                        </label>
+                        <input
+                          type="text"
+                          value={ydVessel}
+                          onChange={(e) => setYdVessel(e.target.value)}
+                          placeholder="Ex: MSC AGADIR"
+                          className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          {language === 'zh' ? 'ä»“åº“ / å †åœº' : 'Porto Seco / PÃ¡tio'}
+                        </label>
+                        <input
+                          type="text"
+                          value={ydWarehouse}
+                          onChange={(e) => setYdWarehouse(e.target.value)}
+                          placeholder="Ex: TECON / LOGIC"
+                          className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          {language === 'zh' ? 'æ’ç¨‹äº¤ä»˜æ—¥æœŸ' : 'Data Agendada (Entrega)'}
+                        </label>
+                        <input
+                          type="date"
+                          value={ydDeliveryDate}
+                          onChange={(e) => setYdDeliveryDate(e.target.value)}
+                          className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-mono"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          {language === 'zh' ? 'æ‰¿è¿å•† / Transportadora' : 'Transportadora'}
+                        </label>
+                        <select
+                          value={ydCarrier}
+                          onChange={(e) => setYdCarrier(e.target.value)}
+                          className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold"
+                        >
+                          <option value="JSL">JSL</option>
+                          <option value="JULIO SIMOES">JULIO SIMOES</option>
+                          <option value="TRANS REZENDE">TRANS REZENDE</option>
+                          <option value="LOGISTIC BRASIL">LOGISTIC BRASIL</option>
+                          <option value="OUTROS">OUTROS</option>
+                        </select>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          {language === 'zh' ? 'ä½œä¸šæ¨¡å¼' : 'Modelo de OperaÃ§Ã£o'}
+                        </label>
+                        <select
+                          value={ydDeliveryModel}
+                          onChange={(e) => setYdDeliveryModel(e.target.value)}
+                          className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold"
+                        >
+                          <option value="DESCARGA">DESCARGA (Descarga Direta)</option>
+                          <option value="SWAP">SWAP (Troca de Carreta)</option>
+                          <option value="PUT DOWN">{tt("PUT DOWN (Desova e DevoluÃ§Ã£o)", "PUT DOWN (æ‹†ç®±å¹¶è¿˜ç©º)", "PUT DOWN (Unload & Return)")}</option>
+                          <option value="RETURN EMPTY">{tt("RETURN EMPTY (DevoluÃ§Ã£o Vazio)", "RETURN EMPTY (ç›´æ¥è¿˜ç©º)", "RETURN EMPTY (Return Empty)")}</option>
+                        </select>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          {language === 'zh' ? 'å‚åŒºäº¤è´§åœ°ç‚¹' : 'Local de Entrega na Planta'}
+                        </label>
+                        <select
+                          value={ydOnSitePlaceOfDelivery}
+                          onChange={(e) => setYdOnSitePlaceOfDelivery(e.target.value)}
+                          className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold"
+                        >
+                          <option value="WAREHOUSE 25">WAREHOUSE 25</option>
+                          <option value="CD PLANTA">CD PLANTA (Central)</option>
+                          <option value="LINHA 1">LINHA DE MONTAGEM 1</option>
+                          <option value="LINHA 2">LINHA DE MONTAGEM 2</option>
+                          <option value="BUFFER CENTRAL">BUFFER CENTRAL BYD</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-end">
+                        <button
+                          type="submit"
+                          className="w-full p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-lg shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 uppercase tracking-wider text-xs"
+                        >
+                          <Check className="w-4 h-4" />
+                          {language === 'zh' ? 'ä¿å­˜æ’ç¨‹' : 'Confirmar e Agendar'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* SECTION 2: PAGINATED INTERACTIVE LOGISTICS TABLE */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col gap-3`}>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <List className="w-4 h-4 text-red-500" />
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100">
+                          {language === 'zh' ? 'ç‰©æµè®°å½•æ€»è§ˆ' : 'Tabela Geral de Registros LogÃ­sticos'}
+                        </h4>
+                        <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">
+                          {logisticsEntries.length} {language === 'zh' ? 'æ¡è®°å½•' : 'itens'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+                        <div className="relative flex-1 md:w-60">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            placeholder={language === 'zh' ? 'æœç´¢é›†è£…ç®±ã€BLã€Navio...' : 'Buscar CNTR, BL, Navio...'}
+                            value={logisticsSearch}
+                            onChange={(e) => setLogisticsPageSearch(e.target.value)}
+                            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                          />
+                        </div>
+
+                        <select
+                          value={logisticsFilterWarehouse}
+                          onChange={(e) => setLogisticsFilterWarehouse(e.target.value)}
+                          className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                        >
+                          <option value="ALL">-- {language === 'zh' ? 'å…¨éƒ¨ä»“åº“' : 'Todos os PÃ¡tios'} --</option>
+                          {Array.from(new Set(logisticsEntries.map(e => e.bondedWarehouse).filter(Boolean))).map(w => (
+                            <option key={w} value={w}>{w}</option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={logisticsFilterComex}
+                          onChange={(e) => setLogisticsFilterComex(e.target.value)}
+                          className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                        >
+                          <option value="ALL">-- {language === 'zh' ? 'å…¨éƒ¨çŠ¶æ€' : 'Status COMEX'} --</option>
+                          <option value="PENDENTE">PENDENTE</option>
+                          <option value="CARGO DELIVERED">CARGO DELIVERED</option>
+                          <option value="CARGO CLEARED">CARGO CLEARED</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* TABLE */}
+                    <div className="overflow-x-auto border border-slate-200 dark:border-slate-700/80 rounded-lg">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-700">
+                            <th className="p-2.5">Container / Equipamento</th>
+                            <th className="p-2.5">BL</th>
+                            <th className="p-2.5">Navio</th>
+                            <th className="p-2.5">Porto Seco</th>
+                            <th className="p-2.5">Transportadora</th>
+                            <th className="p-2.5">Local Entrega</th>
+                            <th className="p-2.5">Data Agendada</th>
+                            <th className="p-2.5">Status Entrega</th>
+                            <th className="p-2.5">COMEX</th>
+                            <th className="p-2.5 text-right">{tt("AÃ§Ãµes", "æ“ä½œ", "Actions")}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                          {(() => {
+                            const filtered = logisticsEntries.filter(entry => {
+                              const s = logisticsSearch.toLowerCase();
+                              const matchSearch = !s || 
+                                (entry.cntrsOriginal && entry.cntrsOriginal.toLowerCase().includes(s)) ||
+                                (entry.bl && entry.bl.toLowerCase().includes(s)) ||
+                                (entry.arrivalVessel && entry.arrivalVessel.toLowerCase().includes(s)) ||
+                                (entry.carrier && entry.carrier.toLowerCase().includes(s));
+                              const matchWh = logisticsFilterWarehouse === 'ALL' || entry.bondedWarehouse === logisticsFilterWarehouse;
+                              const matchComex = logisticsFilterComex === 'ALL' || entry.statusComex === logisticsFilterComex;
+                              return matchSearch && matchWh && matchComex;
+                            });
+
+                            const pageSize = 12;
+                            const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+                            const currPage = Math.min(logisticsPage, totalPages);
+                            const paginated = filtered.slice((currPage - 1) * pageSize, currPage * pageSize);
+
+                            if (paginated.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={10} className="p-8 text-center text-gray-400">
+                                    <Package className="w-8 h-8 mx-auto mb-2 opacity-40 text-slate-400" />
+                                    <p className="font-bold">{language === 'zh' ? 'æš‚æ— åŒ¹é…çš„ç‰©æµæ•°æ®' : 'Nenhum registro de logÃ­stica encontrado.'}</p>
+                                    <p className="text-[11px] mt-1">{language === 'zh' ? 'ç‚¹å‡»ä¸Šæ–¹â€œGoogle Sheets åŒæ­¥â€æˆ–ä»ä»“åº“å¿«é€Ÿæ’ç¨‹äº¤ä»˜ã€‚' : 'Importe via Google Sheets ou faÃ§a o agendamento atravÃ©s do formulÃ¡rio acima.'}</p>
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            return paginated.map(entry => (
+                              <tr key={entry.id || entry.cntrsOriginal} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                                <td className="p-2.5 font-mono font-black text-indigo-600 dark:text-indigo-400">
+                                  {entry.cntrsOriginal}
+                                </td>
+                                <td className="p-2.5 font-mono font-bold text-slate-700 dark:text-slate-300">
+                                  {entry.bl || '-'}
+                                </td>
+                                <td className="p-2.5 font-medium text-slate-600 dark:text-slate-400">
+                                  {entry.arrivalVessel || '-'}
+                                </td>
+                                <td className="p-2.5 font-bold text-slate-700 dark:text-slate-300">
+                                  {entry.bondedWarehouse || '-'}
+                                </td>
+                                <td className="p-2.5 text-slate-600 dark:text-slate-400">
+                                  {entry.carrier || '-'}
+                                </td>
+                                <td className="p-2.5 text-slate-600 dark:text-slate-400">
+                                  <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px] font-bold">
+                                    {entry.onSitePlaceOfDelivery || 'PLANTA'}
+                                  </span>
+                                </td>
+                                <td className="p-2.5 font-mono text-slate-700 dark:text-slate-300">
+                                  {String(entry.estimatedDeliveryDate || '-').slice(0, 10)}
+                                </td>
+                                <td className="p-2.5">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                    entry.status === 'ENTREGUE'
+                                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                                      : entry.status === 'A CAMINHO'
+                                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                                      : entry.status === 'ADIADO'
+                                      ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+                                      : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                                  }`}>
+                                    {entry.status || 'PENDENTE'}
+                                  </span>
+                                </td>
+                                <td className="p-2.5">
+                                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                                    {entry.statusComex || 'PENDENTE'}
+                                  </span>
+                                </td>
+                                <td className="p-2.5 text-right">
+                                  <button
+                                    onClick={() => {
+                                      if (entry.id) {
+                                        requestConfirmation(
+                                          language === 'zh' ? 'åˆ é™¤ç‰©æµè®°å½•' : 'Excluir Registro',
+                                          language === 'zh' ? `ç¡®å®šè¦åˆ é™¤é›†è£…ç®± ${entry.cntrsOriginal} çš„ç‰©æµè®°å½•å—ï¼Ÿ` : `Deseja realmente remover o registro do container ${entry.cntrsOriginal}?`,
+                                          async () => {
+                                            await deleteDoc(doc(db, 'logisticsData', entry.id!));
+                                          }
+                                        );
+                                      }
+                                    }}
+                                    className="p-1 hover:bg-rose-50 dark:hover:bg-rose-950 text-rose-500 rounded transition-colors cursor-pointer"
+                                    title="Excluir Registro"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ));
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* PAGINATION CONTROLS */}
+                    <div className="flex items-center justify-between pt-2">
+                      <span className="text-[10px] text-gray-400">
+                        {language === 'zh' ? 'ç¬¬ ' + logisticsPage + ' é¡µ' : 'PÃ¡gina ' + logisticsPage}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          disabled={logisticsPage <= 1}
+                          onClick={() => setLogisticsPage(p => Math.max(1, p - 1))}
+                          className="px-3 py-1 bg-slate-100 dark:bg-slate-800 disabled:opacity-40 text-slate-700 dark:text-slate-300 rounded font-bold text-xs cursor-pointer"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setLogisticsPage(p => p + 1)}
+                          className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded font-bold text-xs cursor-pointer"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : currentSlide === 8 ? (
+                /* SLIDE 8: PAINEL DE ENTREGAS (DELIVERY DASHBOARD) */
+                <CargoReadyVsDeliveredDashboard
+                  theme={theme}
+                  language={language}
+                  dbStatus={dbStatus}
+                  containers={containers}
+                  yards={yards}
+                  vessels={vessels}
+                  depots={depots}
+                />
+              ) : currentSlide === 9 ? (
+                /* SLIDE 9: CALENDÃRIO DE ENTREGAS */
+                <div id="slide-delivery-calendar" className={`flex flex-col gap-4 ${widescreenMode ? 'h-[calc(100%-85px)] overflow-y-auto' : 'min-h-[660px]'}`}>
+                  {/* TOP HEADER */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col md:flex-row justify-between items-start md:items-center gap-3`}>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-indigo-100 dark:bg-indigo-950 p-2.5 rounded-xl text-indigo-600 dark:text-indigo-400">
+                        <Calendar className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-sm flex items-center gap-2 text-indigo-600 dark:text-indigo-400 tracking-tight">
+                          {language === 'bilingual' ? 'DELIVERY CALENDAR / äº¤ä»˜æ’ç¨‹æ—¥å†' : language === 'zh' ? 'äº¤ä»˜æ’ç¨‹æ—¥å†' : 'CALENDÃRIO DE ENTREGAS'}
+                        </h3>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                          {language === 'zh' ? 'æŒ‰æœˆä»½ä¸æ—¥æœŸå®æ—¶æŸ¥çœ‹æ‰€æœ‰é›†è£…ç®±çš„æ´¾é€æ’ç¨‹ã€æ‰¿è¿å•†åˆ†é…ä¸äº¤ä»˜è¿›åº¦' : 'VisualizaÃ§Ã£o cronolÃ³gica por data e mÃªs das entregas programadas para a fÃ¡brica.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="month"
+                        value={operationalMonth}
+                        onChange={(e) => setOperationalMonth(e.target.value)}
+                        className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-mono font-bold"
+                      />
+                      <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
+                        <button
+                          onClick={() => setCalendarViewMode('monthly')}
+                          className={`px-2.5 py-1 text-[10px] font-extrabold rounded-md transition-all cursor-pointer ${calendarViewMode === 'monthly' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-500'}`}
+                        >
+                          {language === 'zh' ? 'æœˆå†è§†å›¾' : 'MÃªs'}
+                        </button>
+                        <button
+                          onClick={() => setCalendarViewMode('shipment_info')}
+                          className={`px-2.5 py-1 text-[10px] font-extrabold rounded-md transition-all cursor-pointer ${calendarViewMode === 'shipment_info' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-500'}`}
+                        >
+                          {language === 'zh' ? 'æ´¾é€æ‰¹æ¬¡' : 'Lotes'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CALENDAR TILES / SHIPMENT CARDS */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'}`}>
+                    {calendarViewMode === 'monthly' ? (
+                      <div className="grid grid-cols-7 gap-2">
+                        {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b', 'Dom'].map(d => (
+                          <div key={d} className="text-center font-black text-[10px] uppercase tracking-wider text-slate-400 py-1">
+                            {d}
+                          </div>
+                        ))}
+                        {Array.from({ length: 31 }, (_, i) => {
+                          const dayNum = i + 1;
+                          const dayStr = `${operationalMonth}-${String(dayNum).padStart(2, '0')}`;
+                          const scheduledOnDay = logisticsEntries.filter(e => String(e.estimatedDeliveryDate).startsWith(dayStr));
+                          const count = scheduledOnDay.length;
+                          const isSelected = selectedDayCalendar === dayStr;
+
+                          return (
+                            <div
+                              key={dayNum}
+                              onClick={() => setSelectedDayCalendar(dayStr)}
+                              className={`min-h-[85px] p-2 rounded-lg border transition-all cursor-pointer flex flex-col justify-between ${
+                                isSelected
+                                  ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-400'
+                                  : count > 0
+                                  ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 hover:border-indigo-300'
+                                  : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 opacity-60'
+                              }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="font-mono text-xs font-black text-slate-700 dark:text-slate-300">{dayNum}</span>
+                                {count > 0 && (
+                                  <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                                )}
+                              </div>
+                              {count > 0 ? (
+                                <div className="mt-1">
+                                  <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-950 px-1.5 py-0.5 rounded block text-center truncate">
+                                    {count} CNTRs
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-[9px] text-gray-400 text-center">-</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        {Array.from(new Set(logisticsEntries.map(e => String(e.estimatedDeliveryDate || '').slice(0, 10)).filter(Boolean)))
+                          .sort()
+                          .map((dateKey: string) => {
+                            const dateEntries = logisticsEntries.filter(e => String(e.estimatedDeliveryDate).startsWith(dateKey));
+                            const isCollapsed = !!collapsedDates[dateKey];
+
+                            return (
+                              <div key={dateKey} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                                <div
+                                  onClick={() => setCollapsedDates(prev => ({ ...prev, [dateKey]: !prev[dateKey] }))}
+                                  className="p-3 bg-slate-100 dark:bg-slate-800/80 flex items-center justify-between cursor-pointer hover:bg-slate-200/60 transition-colors"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-indigo-500" />
+                                    <span className="font-mono font-black text-xs">{dateKey}</span>
+                                    <span className="text-[10px] font-extrabold bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 px-2 py-0.5 rounded-full">
+                                      {dateEntries.length} entregas
+                                    </span>
+                                  </div>
+                                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                                </div>
+
+                                {!isCollapsed && (
+                                  <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                    {dateEntries.map(entry => (
+                                      <div key={entry.id || entry.cntrsOriginal} className="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-col justify-between gap-2">
+                                        <div className="flex justify-between items-start">
+                                          <div>
+                                            <span className="font-mono font-black text-xs text-indigo-600 dark:text-indigo-400 block">
+                                              {entry.cntrsOriginal}
+                                            </span>
+                                            <span className="text-[10px] text-gray-500 block">
+                                              BL: {entry.bl || '-'}
+                                            </span>
+                                          </div>
+                                          <span className={`px-2 py-0.5 text-[9px] font-black rounded-full uppercase ${
+                                            entry.status === 'ENTREGUE' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                          }`}>
+                                            {entry.status || 'PENDENTE'}
+                                          </span>
+                                        </div>
+                                        <div className="text-[10px] text-gray-500 dark:text-gray-400 flex justify-between border-t border-slate-100 dark:border-slate-800 pt-1.5">
+                                          <span>{entry.carrier || 'JSL'}</span>
+                                          <span className="font-bold">{entry.onSitePlaceOfDelivery || 'WH 25'}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    {/* MODAL: GERENCIAMENTO E EDIÃ‡ÃƒO DE PÃTIO E CONTÃŠINERES */}
+    {selectedYardKey && yards[selectedYardKey] && (() => {
+      const yard = yards[selectedYardKey];
+      const yardContainers = containers.filter(c => c.yardId === selectedYardKey);
+      const isHighOcc = (getYardOcupacao(yard) || 0) >= 85;
+      const isMedOcc = (getYardOcupacao(yard) || 0) >= 70;
+
+      const filteredYardContainers = yardContainers.filter(c => {
+        if (containerStatusFilter !== 'ALL' && c.status !== containerStatusFilter) return false;
+        if (containerCategoryFilter !== 'ALL' && c.category !== containerCategoryFilter) return false;
+        if (containerSearch.trim()) {
+          const q = containerSearch.trim().toLowerCase();
+          const matchId = (c.id || '').toLowerCase().includes(q);
+          const matchVessel = (c.vesselName || '').toLowerCase().includes(q);
+          const matchBl = (c.bl || '').toLowerCase().includes(q);
+          const matchModel = (c.modelo || '').toLowerCase().includes(q);
+          if (!matchId && !matchVessel && !matchBl && !matchModel) return false;
+        }
+        return true;
+      });
+
+      const isAllSelected = filteredYardContainers.length > 0 && filteredYardContainers.every(c => selectedContainerIds.includes(c.id));
+
+      return (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden ${
+            theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            {/* MODAL HEADER */}
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-900/40">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl ${
+                  yard.type === 'BONDED'
+                    ? 'bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400'
+                    : yard.type === 'BUFFER'
+                    ? 'bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400'
+                    : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400'
+                }`}>
+                  {yard.type === 'BONDED' ? <Anchor className="w-6 h-6" /> : yard.type === 'BUFFER' ? <Layers className="w-6 h-6" /> : <Building2 className="w-6 h-6" />}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-black text-base tracking-tight">
+                      {yard.name}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                      {yard.type}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-black ${
+                      isHighOcc ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' :
+                      isMedOcc ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' :
+                      'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                    }`}>
+                      {getYardOcupacao(yard)}% {language === 'zh' ? 'å ç”¨ç‡' : 'OcupaÃ§Ã£o'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    {language === 'zh' ? 'å †åœºå®¹é‡ç¼–è¾‘ä¸å®æ—¶é›†è£…ç®±åº“å­˜æ¸…å•' : 'EdiÃ§Ã£o direta de capacidade e controle de estoque de contÃªineres.'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSelectedYardKey(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+              >
+                âœ•
+              </button>
+            </div>
+
+            {/* MODAL BODY (SCROLLABLE) */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+              {/* SECTION 1: EDIT YARD PARAMETERS */}
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                <div className="flex items-center justify-between mb-2.5">
+                  <h4 className="font-extrabold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    <Sliders className="w-3.5 h-3.5 text-amber-500" />
+                    <span>{language === 'zh' ? 'å †åœºæ ¸å¿ƒå‚æ•°ä¸å®¹é‡ç¼–è¾‘' : 'EdiÃ§Ã£o de Capacidade e Estoque do PÃ¡tio'}</span>
+                  </h4>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                    âœ“ {language === 'zh' ? 'å®æ—¶è‡ªåŠ¨ä¿å­˜' : 'Salvo em Tempo Real'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                  <div>
+                    <label className="block text-[9px] font-extrabold uppercase text-slate-500 mb-1">
+                      {language === 'zh' ? 'æ€»å®¹é‡ (Cap)' : 'Capacidade'}
+                    </label>
+                    <input
+                      type="number"
+                      value={yard.capacity}
+                      onChange={(e) => handleYardChange(selectedYardKey, 'capacity', e.target.value)}
+                      className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono font-bold text-indigo-600 dark:text-indigo-400 text-center text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-extrabold uppercase text-slate-500 mb-1">
+                      {language === 'zh' ? 'å®é‡ (Cheio)' : 'Cheios'}
+                    </label>
+                    <input
+                      type="number"
+                      value={yard.cheio}
+                      onChange={(e) => handleYardChange(selectedYardKey, 'cheio', e.target.value)}
+                      className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-100 text-center text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-extrabold uppercase text-slate-500 mb-1">
+                      {language === 'zh' ? 'ç©ºç®± (Vazio)' : 'Vazios'}
+                    </label>
+                    <input
+                      type="number"
+                      value={yard.vazio}
+                      onChange={(e) => handleYardChange(selectedYardKey, 'vazio', e.target.value)}
+                      className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-100 text-center text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-extrabold uppercase text-slate-500 mb-1">
+                      {language === 'zh' ? 'æ¸¯å£ (Porto)' : 'No Porto'}
+                    </label>
+                    <input
+                      type="number"
+                      value={yard.porto || 0}
+                      onChange={(e) => handleYardChange(selectedYardKey, 'porto', e.target.value)}
+                      className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono font-bold text-slate-700 dark:text-slate-300 text-center text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-extrabold uppercase text-slate-500 mb-1">
+                      {language === 'zh' ? 'å¾…æ”¶ç®± (Pronto)' : 'Pronto Coleta'}
+                    </label>
+                    <input
+                      type="number"
+                      value={yard.prontoColeta || 0}
+                      onChange={(e) => handleYardChange(selectedYardKey, 'prontoColeta', e.target.value)}
+                      className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono font-bold text-slate-700 dark:text-slate-300 text-center text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-extrabold uppercase text-slate-500 mb-1">
+                      {language === 'zh' ? 'å·²äº¤ä»˜ (Deliv)' : 'Entregues'}
+                    </label>
+                    <input
+                      type="number"
+                      value={yard.delivered || 0}
+                      onChange={(e) => handleYardChange(selectedYardKey, 'delivered', e.target.value)}
+                      className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono font-bold text-slate-700 dark:text-slate-300 text-center text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: ADD CONTAINER FORM */}
+              <form onSubmit={handleAddContainer} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                <h4 className="font-extrabold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                  <Plus className="w-3.5 h-3.5 text-blue-500" />
+                  <span>{language === 'zh' ? 'ç™»è®°å¹¶æ·»åŠ æ–°é›†è£…ç®±åˆ°æ­¤å †åœº' : 'Cadastrar Novo ContÃªiner Neste PÃ¡tio'}</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
+                  <div>
+                    <label className="block text-[9px] font-extrabold uppercase text-slate-500 mb-1">
+                      {language === 'zh' ? 'é›†è£…ç®±å· (ID)' : 'IdentificaÃ§Ã£o (ID)'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: MSCU1234567"
+                      value={newContainerId}
+                      onChange={(e) => setNewContainerId(e.target.value.toUpperCase())}
+                      className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 font-mono uppercase text-xs"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-extrabold uppercase text-slate-500 mb-1">
+                      {language === 'zh' ? 'å°ºå¯¸è§„æ ¼' : 'Tamanho / DimensÃ£o'}
+                    </label>
+                    <select
+                      value={newContainerSize}
+                      onChange={(e) => setNewContainerSize(e.target.value)}
+                      className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-xs cursor-pointer"
+                    >
+                      <option value="40' HC">40' HC</option>
+                      <option value="20' GP">20' GP</option>
+                      <option value="40' OT">40' OT</option>
+                      <option value="45' HC">45' HC</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-extrabold uppercase text-slate-500 mb-1">
+                      {language === 'zh' ? 'çŠ¶æ€ (é‡/ç©º)' : 'Status'}
+                    </label>
+                    <select
+                      value={newContainerStatus}
+                      onChange={(e) => setNewContainerStatus(e.target.value as any)}
+                      className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-xs cursor-pointer font-bold"
+                    >
+                      <option value="CHEIO">CHEIO (é‡ç®± / Full)</option>
+                      <option value="VAZIO">VAZIO (ç©ºç®± / Empty)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-extrabold uppercase text-slate-500 mb-1">
+                      {language === 'zh' ? 'æµè½¬åˆ†ç±»' : 'Categoria'}
+                    </label>
+                    <select
+                      value={newContainerCategory}
+                      onChange={(e) => setNewContainerCategory(e.target.value as any)}
+                      className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-xs cursor-pointer"
+                    >
+                      <option value="GERAL">GERAL (é€šç”¨)</option>
+                      <option value="PORTO">PORTO (æ¸¯å£å †æ”¾)</option>
+                      <option value="PRONTO_COLETA">PRONTO COLETA (å¾…æç®±)</option>
+                      <option value="DELIVERED">DELIVERED (å·²å‡ºåº“/é€è¾¾)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      type="submit"
+                      className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-lg shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>{language === 'zh' ? 'æ·»åŠ é›†è£…ç®±' : 'Adicionar'}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              {/* SECTION 3: CONTAINER INVENTORY IN THIS YARD */}
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-slate-500" />
+                    <h4 className="font-extrabold text-xs uppercase tracking-wider text-slate-800 dark:text-white">
+                      {language === 'zh' ? 'å †åœºé›†è£…ç®±åº“å­˜æ˜ç»†' : 'Estoque de ContÃªineres Cadastrados'}
+                      <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono">
+                        {yardContainers.length}
+                      </span>
+                    </h4>
+                  </div>
+
+                  {/* BULK ACTIONS */}
+                  <div className="flex items-center gap-2">
+                    {selectedContainerIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleBulkDeleteContainers}
+                        className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{language === 'zh' ? `æ‰¹é‡åˆ é™¤ (${selectedContainerIds.length})` : `Excluir (${selectedContainerIds.length})`}</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleClearYard}
+                      className="px-2.5 py-1.5 rounded-lg border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-colors"
+                      title="Excluir todos os contÃªineres deste pÃ¡tio"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>{language === 'zh' ? 'æ¸…ç©ºå †åœº' : 'Esvaziar PÃ¡tio'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* FILTERS TOOLBAR */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder={language === 'zh' ? 'æœç´¢ç®±å·ã€èˆ¹åã€BL...' : 'Buscar ID, Navio, BL...'}
+                      value={containerSearch}
+                      onChange={(e) => setContainerSearch(e.target.value)}
+                      className="w-full p-2 pl-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <select
+                      value={containerStatusFilter}
+                      onChange={(e) => setContainerStatusFilter(e.target.value)}
+                      className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs cursor-pointer"
+                    >
+                      <option value="ALL">{language === 'zh' ? 'æ‰€æœ‰çŠ¶æ€ (å…¨éƒ¨)' : 'Todos os Status'}</option>
+                      <option value="CHEIO">CHEIO (é‡ç®±)</option>
+                      <option value="VAZIO">VAZIO (ç©ºç®±)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <select
+                      value={containerCategoryFilter}
+                      onChange={(e) => setContainerCategoryFilter(e.target.value)}
+                      className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs cursor-pointer"
+                    >
+                      <option value="ALL">{language === 'zh' ? 'æ‰€æœ‰åˆ†ç±» (å…¨éƒ¨)' : 'Todas as Categorias'}</option>
+                      <option value="PORTO">PORTO (æ¸¯å£)</option>
+                      <option value="PRONTO_COLETA">PRONTO COLETA (å¾…æ)</option>
+                      <option value="DELIVERED">DELIVERED (äº¤ä»˜)</option>
+                      <option value="GERAL">GERAL (é€šç”¨)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* INVENTORY TABLE */}
+                <div className="overflow-x-auto max-h-[340px] border border-slate-200 dark:border-slate-800 rounded-lg">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-extrabold uppercase text-[10px]">
+                      <tr>
+                        <th className="p-2 w-8 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isAllSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedContainerIds(filteredYardContainers.map(c => c.id));
+                              } else {
+                                setSelectedContainerIds([]);
+                              }
+                            }}
+                            className="cursor-pointer"
+                          />
+                        </th>
+                        <th className="p-2">{language === 'zh' ? 'é›†è£…ç®±å·' : 'IdentificaÃ§Ã£o'}</th>
+                        <th className="p-2">{language === 'zh' ? 'å°ºå¯¸' : 'Tamanho'}</th>
+                        <th className="p-2">{language === 'zh' ? 'çŠ¶æ€' : 'Status'}</th>
+                        <th className="p-2">{language === 'zh' ? 'æµè½¬åˆ†ç±»' : 'Categoria'}</th>
+                        <th className="p-2">{language === 'zh' ? 'å…³è”èˆ¹èˆ¶' : 'Navio'}</th>
+                        <th className="p-2 text-center">{language === 'zh' ? 'æ“ä½œ' : 'AÃ§Ãµes'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {filteredYardContainers.map((c) => {
+                        const isSelected = selectedContainerIds.includes(c.id);
+                        return (
+                          <tr key={c.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/60 ${isSelected ? 'bg-blue-50/60 dark:bg-blue-950/30' : ''}`}>
+                            <td className="p-2 text-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedContainerIds([...selectedContainerIds, c.id]);
+                                  } else {
+                                    setSelectedContainerIds(selectedContainerIds.filter(id => id !== c.id));
+                                  }
+                                }}
+                                className="cursor-pointer"
+                              />
+                            </td>
+                            <td className="p-2 font-mono font-black text-slate-800 dark:text-white">
+                              {c.id}
+                            </td>
+                            <td className="p-2 font-mono text-slate-600 dark:text-slate-300">
+                              {c.size || "40' HC"}
+                            </td>
+                            <td className="p-2">
+                              <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-extrabold ${
+                                c.status === 'CHEIO'
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                              }`}>
+                                {c.status}
+                              </span>
+                            </td>
+                            <td className="p-2">
+                              <span className="px-2 py-0.5 rounded-md text-[9.5px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                {c.category || 'GERAL'}
+                              </span>
+                            </td>
+                            <td className="p-2 text-slate-600 dark:text-slate-300 truncate max-w-[120px]">
+                              {c.vesselName || 'N/A'}
+                            </td>
+                            <td className="p-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteContainer(c)}
+                                className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded transition-colors cursor-pointer"
+                                title="Excluir contÃªiner"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 mx-auto" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredYardContainers.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="p-8 text-center text-slate-400 dark:text-slate-500">
+                            {language === 'zh' ? 'æš‚æ— åŒ¹é…çš„é›†è£…ç®±ã€‚' : 'Nenhum contÃªiner encontrado neste pÃ¡tio com os filtros atuais.'}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* MODAL FOOTER */}
+            <div className="p-3 border-t border-slate-100 dark:border-slate-800 flex justify-end bg-slate-50/70 dark:bg-slate-900/40">
+              <button
+                type="button"
+                onClick={() => setSelectedYardKey(null)}
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs cursor-pointer shadow-sm"
+              >
+                {language === 'zh' ? 'å®Œæˆå¹¶å…³é—­' : 'Concluir e Fechar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
+
+    {/* MODAL: ADICIONAR NOVO PÃTIO OU WAREHOUSE */}
+    {showAddYardForm && (
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className={`w-full max-w-lg rounded-2xl border p-6 shadow-2xl ${
+          theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'
+        }`}>
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-black text-sm">
+                  {language === 'zh' ? 'æ–°å¢å †åœº / ä»“åº“' : 'Adicionar Novo PÃ¡tio / ArmazÃ©m'}
+                </h3>
+                <p className="text-[11px] text-gray-400">
+                  {language === 'zh' ? 'åˆ›å»ºæ–°çš„å †åœºå•å…ƒå¹¶é…ç½®åˆå§‹å®¹é‡' : 'Cadastre um novo terminal, armazÃ©m ou buffer no sistema.'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowAddYardForm(false)}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+            >
+              âœ•
+            </button>
+          </div>
+
+          <form onSubmit={async (e) => {
+            await addYard(e);
+            setShowAddYardForm(false);
+          }} className="space-y-3 text-xs">
+            <div>
+              <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                {language === 'zh' ? 'å †åœº/ä»“åº“åç§°' : 'Nome do PÃ¡tio / ArmazÃ©m'}
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: CTS - NOVO TERMINAL"
+                value={newYardName}
+                onChange={(e) => setNewYardName(e.target.value.toUpperCase())}
+                className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-bold"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                  {language === 'zh' ? 'å †åœºç±»å‹' : 'Tipo de OperaÃ§Ã£o'}
+                </label>
+                <select
+                  value={newYardType}
+                  onChange={(e) => setNewYardType(e.target.value)}
+                  className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-bold cursor-pointer"
+                >
+                  <option value="BONDED">{language === 'zh' ? 'ä¿ç¨åŒº (BONDED)' : 'BONDED (Terminal Alfandegado)'}</option>
+                  <option value="WAREHOUSE">{language === 'zh' ? 'ä»“åº“ (WAREHOUSE)' : 'WAREHOUSE (ArmazÃ©m / CD)'}</option>
+                  <option value="BUFFER">{language === 'zh' ? 'ç¼“å†²åœº (BUFFER)' : 'BUFFER (Buffer FÃ¡brica)'}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                  {language === 'zh' ? 'é¢å®šå®¹é‡ (TEUs/CNTRs)' : 'Capacidade Nominal'}
+                </label>
+                <input
+                  type="number"
+                  value={newYardCapacity}
+                  onChange={(e) => setNewYardCapacity(Number(e.target.value) || 0)}
+                  className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono font-bold text-indigo-600 dark:text-indigo-400"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                  {language === 'zh' ? 'åˆå§‹å®é‡ (Cheios)' : 'Cheios Iniciais'}
+                </label>
+                <input
+                  type="number"
+                  value={newYardCheio}
+                  onChange={(e) => setNewYardCheio(Number(e.target.value) || 0)}
+                  className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                  {language === 'zh' ? 'åˆå§‹ç©ºç®± (Vazios)' : 'Vazios Iniciais'}
+                </label>
+                <input
+                  type="number"
+                  value={newYardVazio}
+                  onChange={(e) => setNewYardVazio(Number(e.target.value) || 0)}
+                  className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowAddYardForm(false)}
+                className="flex-1 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold cursor-pointer"
+              >
+                {language === 'zh' ? 'å–æ¶ˆ' : 'Cancelar'}
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                {language === 'zh' ? 'åˆ›å»ºå¹¶ä¿å­˜' : 'Criar PÃ¡tio'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+
+    {/* MODAL: GOOGLE SHEETS LIVE SYNC */}
+    {sheetsModalOpen && (
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className={`w-full max-w-lg rounded-2xl border p-6 shadow-2xl ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                <FileSpreadsheet className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-black text-sm">
+                  {language === 'zh' ? 'Google Sheets åœ¨çº¿è¡¨æ ¼åŒæ­¥' : 'Sincronizar com Google Sheets'}
+                </h3>
+                <p className="text-[11px] text-gray-400">
+                  {language === 'zh' ? 'è¿æ¥å¤–éƒ¨å‘å¸ƒä¸º CSV çš„ Google è¡¨æ ¼é“¾æ¥' : 'ImportaÃ§Ã£o e atualizaÃ§Ã£o automÃ¡tica em lote.'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSheetsModalOpen(false)}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+            >
+              âœ•
+            </button>
+          </div>
+
+          <div className="space-y-3 text-xs">
+            <div>
+              <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                {language === 'zh' ? 'Google Sheets å‘å¸ƒ/åˆ†äº«é“¾æ¥ (URL)' : 'URL da Planilha Google Sheets'}
+              </label>
+              <input
+                type="text"
+                value={sheetsUrl}
+                onChange={(e) => setSheetsUrl(e.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-mono text-[11px]"
+              />
+            </div>
+
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 rounded-lg text-[11px] text-emerald-800 dark:text-emerald-300 space-y-1">
+              <p className="font-bold flex items-center gap-1.5">
+                <Info className="w-3.5 h-3.5" /> Como publicar sua planilha:
+              </p>
+              <p className="opacity-90">1. No Google Sheets, clique em <strong>Arquivo â†’ Compartilhar â†’ Publicar na Web</strong>.</p>
+              <p className="opacity-90">2. Selecione formato <strong>Valores separados por vÃ­rgula (.csv)</strong> e copie o link.</p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setSheetsModalOpen(false)}
+                className="flex-1 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold cursor-pointer"
+              >
+                {language === 'zh' ? 'å–æ¶ˆ' : 'Cancelar'}
+              </button>
+              <button
+                type="button"
+                onClick={handleSyncGoogleSheets}
+                className="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                {language === 'zh' ? 'ç«‹å³åŒæ­¥' : 'Sincronizar Agora'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* CONFIRMATION DIALOG MODAL */}
+    {confirmConfig && confirmConfig.isOpen && (
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 rounded-xl">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                {confirmConfig.title}
+              </h3>
+              <span className="text-[10px] text-rose-500 font-bold uppercase tracking-wider">AÃ§Ã£o CrÃ­tica</span>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-600 dark:text-slate-300 mb-5 leading-relaxed">
+            {confirmConfig.message}
+          </p>
+
+          <div className="flex items-center justify-end gap-2.5">
+            <button
+              onClick={() => setConfirmConfig(null)}
+              className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
+            >
+              {language === 'zh' ? 'å–æ¶ˆ' : 'Cancelar'}
+            </button>
+            <button
+              onClick={confirmConfig.onConfirm}
+              className="px-4 py-2 rounded-xl text-xs font-extrabold bg-rose-600 hover:bg-rose-700 text-white shadow-md shadow-rose-600/20 transition-all cursor-pointer active:scale-95"
+            >
+              {language === 'zh' ? 'ç¡®è®¤æ‰§è¡Œ' : 'Confirmar'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+  </div>
+  );
+}
