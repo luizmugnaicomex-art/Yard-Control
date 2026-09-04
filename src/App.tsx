@@ -56,7 +56,6 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
 import { CargoReadyVsDeliveredDashboard } from './components/CargoReadyVsDeliveredDashboard';
-import { BondedAreasChart } from './components/BondedAreasChart';
 
 // FIREBASE INTEGRATION
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -1269,7 +1268,6 @@ export default function App() {
     const saved = localStorage.getItem('byd_additional_backlog');
     return saved ? Number(saved) : 0;
   });
-  const [showBondedChartSlide2, setShowBondedChartSlide2] = useState<boolean>(true);
   const [selectedScenario, setSelectedScenario] = useState<'etapa1' | 'etapa2' | 'etapa3'>('etapa3');
   const [chartMode, setChartMode] = useState<'historical' | 'projection'>('projection');
 
@@ -6711,7 +6709,6 @@ export default function App() {
                               setAdditionalBacklog={setAdditionalBacklog}
                               selectedScenario={selectedScenario}
                               setSelectedScenario={setSelectedScenario}
-                              containers={containers}
                             />
                           </div>
 
@@ -7288,22 +7285,6 @@ export default function App() {
                         </button>
                       </div>
 
-                      {/* TOGGLE BONDED AREAS CHART */}
-                      <button
-                        type="button"
-                        id="btn-toggle-bonded-chart-slide2"
-                        onClick={() => setShowBondedChartSlide2(!showBondedChartSlide2)}
-                        className={`px-3 py-2 rounded-lg text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer border ${
-                          showBondedChartSlide2
-                            ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 shadow-xs'
-                            : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-slate-200 dark:border-slate-700 hover:text-blue-600'
-                        }`}
-                        title={tt("Exibir ou ocultar gráfico de áreas alfandegadas", "显示/隐藏保税区图表", "Toggle Bonded Areas Chart")}
-                      >
-                        <Building2 className="w-3.5 h-3.5 text-blue-500" />
-                        <span>{tt("Gráfico Áreas Alfandegadas", "各保税区图表", "Bonded Areas Chart")}</span>
-                      </button>
-
                       {/* PRIMARY ADD VESSEL BUTTON - VERY PROMINENT */}
                       <button
                         id="btn-open-add-vessel"
@@ -7500,19 +7481,6 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-
-                  {/* SECTION: GRÁFICO DAS ÁREAS ALFANDEGADAS (BONDED AREAS BREAKDOWN) */}
-                  {showBondedChartSlide2 && (
-                    <div className="w-full">
-                      <BondedAreasChart
-                        theme={theme}
-                        language={language}
-                        yards={yards}
-                        containers={containers}
-                        vessels={vessels}
-                      />
-                    </div>
-                  )}
 
                   {/* GRID PRINCIPAL: TABELA/LISTA DE NAVIOS + NOTAS OPERACIONAIS */}
                   <div className="grid grid-cols-12 gap-4">
