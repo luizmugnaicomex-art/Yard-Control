@@ -1,3 +1,0 @@
-# 8636 is <div className="space-y-3 flex-1">
-# 8734 is </div> right before <div className="mt-2.5 pt-2 border-t...
-sed -i '8636,8734c\'"$(cat replace_table.txt | sed 's/\\/\\\\/g' | sed 's/$/\\/g')" src/App.tsx

@@ -7211,858 +7211,206 @@ export default function App() {
 
                 </div>
               ) : currentSlide === 2 ? (
-                /* SLIDE 2: ESCALA DE NAVIOS (VESSELS MANAGEMENT & CONTROL TOWER) */
-                <div id="slide-dashboard-grid-vessels" className="flex flex-col gap-4">
+                /* SLIDE 3: NAVIOS (VESSELS ONLY) COM DUAS ÁREAS DE NOTAS */
+                <div id="slide-dashboard-grid-vessels" className={`grid grid-cols-12 gap-4 ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px]'}`}>
                   
-                  {/* TOP CONTROL & ACTIONS BAR FOR VESSELS */}
-                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200/80 shadow-sm'} flex flex-col md:flex-row md:items-center justify-between gap-4`}>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-200/60 dark:border-blue-800/60 shadow-xs">
-                        <Ship className="w-6 h-6 animate-bounce-slow" />
-                      </div>
+                  {/* LADO ESQUERDO: TABELA DE NAVIOS INTEGRAL EXPANDIDA POR MÊS */}
+                  <div className="col-span-12 lg:col-span-5 flex flex-col h-full justify-between">
+                    <div className={`p-4 rounded-xl flex-1 border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
                       <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-extrabold text-base text-slate-850 dark:text-white tracking-tight flex items-center gap-2">
-                            {tt("Gestão de Escala de Navios & Janelas (ETA)", "船舶靠泊计划与到港管理控制台 (ETA)", "Active Vessel Schedule & Berthing Control")}
-                          </h3>
-                          <span className="text-[10px] bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                            {vessels.length} {tt("Navios", "艘船舶", "Vessels")} • {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()} CNTRs
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-                          {tt("Cadastre novos navios, edite ETAs, organize a ordem de atracação e monitore o fluxo de entrada.", "在此添加新到港船舶、编辑预报ETA船期、调整靠泊顺序并实时监控集装箱流入。", "Register new vessels, edit ETAs, adjust berthing sequence and monitor container inflows in real-time.")}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Quick Action Buttons */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {/* Search / Filter input */}
-                      <div className="relative">
-                        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="text"
-                          value={vesselFilterSearch}
-                          onChange={(e) => setVesselFilterSearch(e.target.value)}
-                          placeholder={tt("Buscar navio, ETA, armador...", "按船名、ETA、船司搜索...", "Search vessel, ETA, carrier...")}
-                          className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 text-slate-800 dark:text-slate-200 placeholder:text-gray-400 w-44 sm:w-52 font-medium"
-                        />
-                        {vesselFilterSearch && (
-                          <button
-                            onClick={() => setVesselFilterSearch('')}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-
-                      {/* View Mode Toggle (Monthly vs List) */}
-                      <div className="bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center">
-                        <button
-                          onClick={() => setVesselViewMode('monthly')}
-                          className={`px-2.5 py-1 text-xs font-bold rounded-md flex items-center gap-1 transition-all cursor-pointer ${
-                            vesselViewMode === 'monthly'
-                              ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
-                              : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
-                          }`}
-                          title={tt("Visão Agrupada por Mês", "按月份分组展示", "Grouped by Month")}
-                        >
-                          <Calendar className="w-3 h-3" />
-                          <span>{tt("Mensal", "按月", "Monthly")}</span>
-                        </button>
-                        <button
-                          onClick={() => setVesselViewMode('list')}
-                          className={`px-2.5 py-1 text-xs font-bold rounded-md flex items-center gap-1 transition-all cursor-pointer ${
-                            vesselViewMode === 'list'
-                              ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
-                              : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
-                          }`}
-                          title={tt("Lista Contínua Cronológica", "平铺顺序列表", "Full List")}
-                        >
-                          <List className="w-3 h-3" />
-                          <span>{tt("Lista", "列表", "List")}</span>
-                        </button>
-                      </div>
-
-                      {/* PRIMARY ADD VESSEL BUTTON - VERY PROMINENT */}
-                      <button
-                        id="btn-open-add-vessel"
-                        onClick={() => setShowAddVesselForm(!showAddVesselForm)}
-                        className="px-4 py-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-lg text-xs font-black shadow-md flex items-center gap-2 transition-all transform hover:scale-[1.03] active:scale-[0.98] cursor-pointer ring-2 ring-blue-400/30"
-                        title={tt("Cadastrar novo navio no sistema", "在系统中登记新靠泊船舶", "Add new vessel to schedule")}
-                      >
-                        {showAddVesselForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                        <span className="tracking-wide">{showAddVesselForm ? tt("Fechar Formulário", "收起表单", "Close Form") : tt("+ Adicionar Navio", "+ 添加新船舶", "+ Add Vessel")}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* FORMULÁRIO DE CADASTRO DE NOVO NAVIO (EXPANSÍVEL) */}
-                  {showAddVesselForm && (
-                    <form
-                      id="form-add-vessel"
-                      onSubmit={addVessel}
-                      className={`p-5 rounded-xl border-2 border-blue-500/40 ${
-                        theme === 'dark' ? 'bg-slate-850/95 text-white' : 'bg-blue-50/70 text-slate-850'
-                      } shadow-lg animate-in fade-in slide-in-from-top-2 duration-200`}
-                    >
-                      <div className="flex items-center justify-between pb-3 mb-4 border-b border-blue-200 dark:border-slate-700">
-                        <div className="flex items-center gap-2.5">
-                          <div className="p-1.5 bg-blue-600 text-white rounded-lg">
-                            <Plus className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <h4 className="font-extrabold text-sm text-blue-700 dark:text-blue-400 uppercase tracking-tight">
-                              {tt("Cadastrar Novo Navio na Escala (Inbound Arrival)", "登记新增靠泊船舶 (Inbound Arrival)", "Register New Vessel (Inbound)")}
-                            </h4>
-                            <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                              {tt("Preencha os dados do navio e clique em 'Salvar Navio no Sistema'", "填写船名、ETA日期及集装箱箱量后点击保存", "Fill the vessel info and click 'Save Vessel to System'")}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowAddVesselForm(false)}
-                          className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
-                        {/* Nome do Navio */}
-                        <div className="col-span-1 sm:col-span-2">
-                          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                            {tt("Nome do Navio / 船名 *", "船名 (Vessel Name) *", "Vessel Name *")}
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="Ex: BYD EXPLORER NO.1, MSC SANTOS"
-                            value={newVesselName}
-                            onChange={(e) => setNewVesselName(e.target.value)}
-                            className="w-full p-2.5 text-xs font-bold uppercase bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
-                          />
-                        </div>
-
-                        {/* Data ETA */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                            {tt("Data ETA / 预报到港日 *", "预报到港日 (ETA Date) *", "ETA Date *")}
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="2026-08-28 ou 28/08/2026"
-                            value={newVesselEta}
-                            onChange={(e) => setNewVesselEta(e.target.value)}
-                            className="w-full p-2.5 text-xs font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
-                          />
-                        </div>
-
-                        {/* Volume CNTRs */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                            {tt("Volume (CNTRs) / 箱量 *", "集装箱箱量 (CNTRs) *", "Containers (CNTRs) *")}
-                          </label>
-                          <input
-                            type="number"
-                            required
-                            min="1"
-                            value={newVesselCntrs}
-                            onChange={(e) => setNewVesselCntrs(Number(e.target.value))}
-                            className="w-full p-2.5 text-xs font-mono font-black text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
-                          />
-                        </div>
-
-                        {/* Armador / Carrier */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                            {tt("Armador / 船公司", "船公司 (Carrier)", "Carrier / Line")}
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Ex: MSC, COSCO, ONE"
-                            value={newVesselCarrier}
-                            onChange={(e) => setNewVesselCarrier(e.target.value)}
-                            className="w-full p-2.5 text-xs font-bold uppercase bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
-                          />
-                        </div>
-
-                        {/* Status Operacional */}
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                            {tt("Status Operacional", "靠泊状态 (Status)", "Status")}
-                          </label>
-                          <select
-                            value={newVesselStatus}
-                            onChange={(e) => setNewVesselStatus(e.target.value)}
-                            className="w-full p-2.5 text-xs font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
-                          >
-                            <option value="SCHEDULED">{tt("AGENDADO (Scheduled)", "计划中 (Scheduled)", "SCHEDULED")}</option>
-                            <option value="BERTHED">{tt("ATRACADO (Berthed)", "已靠泊 (Berthed)", "BERTHED")}</option>
-                            <option value="DISCHARGED">{tt("DESCARREGADO (Discharged)", "已卸船 (Discharged)", "DISCHARGED")}</option>
-                            <option value="DELAYED">{tt("ATRASADO (Delayed)", "延误 (Delayed)", "DELAYED")}</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Botões de Ação do Formulário */}
-                      <div className="flex items-center justify-end gap-2.5 mt-4 pt-3.5 border-t border-blue-200 dark:border-slate-700">
-                        <button
-                          type="button"
-                          onClick={() => setShowAddVesselForm(false)}
-                          className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold cursor-pointer transition-colors"
-                        >
-                          {tt("Cancelar", "取消", "Cancel")}
-                        </button>
-                        <button
-                          type="submit"
-                          id="btn-submit-add-vessel"
-                          className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black shadow-md flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
-                        >
-                          <Check className="w-4 h-4" />
-                          <span>{tt("Salvar Navio no Sistema", "保存船舶到系统", "Save Vessel to System")}</span>
-                        </button>
-                      </div>
-                    </form>
-                  )}
-
-                  {/* CARDS DE KPI & RESUMO DOS NAVIOS */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200/70'} flex flex-col justify-between shadow-xs`}>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
-                        {tt("Total de Navios", "到港船舶总数", "Total Vessels")}
-                      </span>
-                      <div className="flex items-baseline gap-1.5 mt-1">
-                        <span className="text-xl font-black font-mono text-blue-600 dark:text-blue-400">
-                          {vessels.length}
-                        </span>
-                        <span className="text-[11px] text-gray-500 font-medium">{tt("navios programados", "艘计划中", "vessels scheduled")}</span>
-                      </div>
-                    </div>
-
-                    <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200/70'} flex flex-col justify-between shadow-xs`}>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
-                        {tt("Volume Total Previsto", "预计集装箱总量", "Total Expected Cargo")}
-                      </span>
-                      <div className="flex items-baseline gap-1.5 mt-1">
-                        <span className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                          {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()}
-                        </span>
-                        <span className="text-[11px] text-gray-500 font-medium">CNTRs</span>
-                      </div>
-                    </div>
-
-                    <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200/70'} flex flex-col justify-between shadow-xs`}>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
-                        {tt("Próxima Chegada (Next ETA)", "下一艘抵港船", "Next ETA")}
-                      </span>
-                      <div className="flex flex-col mt-1 truncate">
-                        <span className="text-xs font-black truncate text-slate-800 dark:text-white">
-                          {vessels[0]?.name || '-'}
-                        </span>
-                        <span className="text-[11px] font-mono font-bold text-blue-500">
-                          {vessels[0]?.eta ? `ETA: ${vessels[0].eta}` : '-'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200/70'} flex flex-col justify-between shadow-xs`}>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
-                        {tt("Média por Navio", "单船平均箱量", "Avg per Vessel")}
-                      </span>
-                      <div className="flex items-baseline gap-1.5 mt-1">
-                        <span className="text-xl font-black font-mono text-purple-600 dark:text-purple-400">
-                          {vessels.length > 0 ? Math.round(vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0) / vessels.length).toLocaleString() : 0}
-                        </span>
-                        <span className="text-[11px] text-gray-500 font-medium">CNTRs/navio</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* GRID PRINCIPAL: TABELA/LISTA DE NAVIOS + NOTAS OPERACIONAIS */}
-                  <div className="grid grid-cols-12 gap-4">
-                    
-                    {/* LADO ESQUERDO: TABELA & LISTA DE NAVIOS COM EDIÇÃO INLINE E BOTÃO ADICIONAR */}
-                    <div className="col-span-12 lg:col-span-6 flex flex-col gap-4">
-                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200/80 shadow-sm'} flex flex-col justify-between`}>
-                        
-                        {/* Subheader da Tabela */}
+                        {/* Header */}
                         <div className="flex items-center justify-between border-b pb-2 mb-3 border-gray-100 dark:border-slate-800">
-                          <div className="flex items-center gap-2">
-                            <Ship className="w-4 h-4 text-blue-500" />
-                            <h4 className="font-extrabold text-xs text-blue-800 dark:text-blue-300 uppercase tracking-tight">
-                              {vesselViewMode === 'monthly' ? tt("Cronograma Agrupado por Mês", "按月划分靠泊计划", "Monthly Berthing Schedule") : tt("Escala Completa Cronológica", "按到港先后平铺列表", "Chronological Vessel Queue")}
-                            </h4>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {/* Botão rápido adicionar navio no cabeçalho da tabela */}
-                            <button
-                              type="button"
-                              onClick={() => setShowAddVesselForm(true)}
-                              className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/80 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1 border border-emerald-200/60 dark:border-emerald-800/60 shadow-2xs"
-                              title={tt("Adicionar novo navio", "添加新船舶", "Add new vessel")}
-                            >
-                              <Plus className="w-3 h-3" />
-                              <span>{tt("Novo Navio", "新增船舶", "New Vessel")}</span>
-                            </button>
-
-                            {vesselViewMode === 'monthly' && (
-                              (() => {
-                                const monthlyGroups = groupVesselsByMonth(vessels, language);
-                                const anyOpen = monthlyGroups.some(g => expandedVesselMonths[g.monthKey]);
-                                return (
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleAllVesselMonths(monthlyGroups)}
-                                    className="text-[9.5px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/80 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1 border border-blue-200/60 dark:border-blue-800/60 shadow-2xs"
-                                    title={anyOpen ? 'Recolher todos os meses' : 'Abrir todos os navios'}
-                                  >
-                                    {anyOpen ? (
-                                      <>
-                                        <Minimize2 className="w-2.5 h-2.5" />
-                                        <span>{tt("Recolher Todos", "全部折叠", "Collapse All")}</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Maximize2 className="w-2.5 h-2.5" />
-                                        <span>{tt("Expandir Todos", "全部展开", "Expand All")}</span>
-                                      </>
-                                    )}
-                                  </button>
-                                );
-                              })()
-                            )}
-                          </div>
-                        </div>
-
-                        {/* LISTAGEM DOS NAVIOS */}
-                        {(() => {
-                          // Filtragem por busca
-                          const filteredVessels = vessels.filter(v => {
-                            if (!vesselFilterSearch.trim()) return true;
-                            const query = vesselFilterSearch.toLowerCase();
-                            return (
-                              v.name.toLowerCase().includes(query) ||
-                              v.eta.toLowerCase().includes(query) ||
-                              (v.carrier && v.carrier.toLowerCase().includes(query)) ||
-                              (v.status && v.status.toLowerCase().includes(query)) ||
-                              String(v.cntrs).includes(query)
-                            );
-                          });
-
-                          if (filteredVessels.length === 0) {
-                            return (
-                              <div className="text-center py-12 text-gray-400 flex flex-col items-center gap-3">
-                                <Ship className="w-10 h-10 opacity-40 text-gray-400" />
-                                <span className="text-xs font-semibold">
-                                  {vesselFilterSearch 
-                                    ? tt("Nenhum navio encontrado para a busca atual.", "未找到符合搜索条件的船舶记录。", "No vessels match your search query.")
-                                    : tt("Nenhum navio cadastrado.", "暂无船舶记录。", "No vessels registered.")}
-                                </span>
+                          <h3 className="font-extrabold text-sm flex items-center gap-2 text-[#2563eb] tracking-tight">
+                            <Ship className="w-5 h-5 text-blue-500" /> 
+                            {language === 'bilingual' ? '活跃船舶靠泊计划 (ETA) / 船舶计划' : t('vesselSchedule')}
+                          </h3>
+                          <div className="flex items-center gap-1.5">
+                            {(() => {
+                              const monthlyGroups = groupVesselsByMonth(vessels, language);
+                              const anyOpen = monthlyGroups.some(g => expandedVesselMonths[g.monthKey]);
+                              return (
                                 <button
                                   type="button"
-                                  onClick={() => setShowAddVesselForm(true)}
-                                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5"
+                                  onClick={() => toggleAllVesselMonths(monthlyGroups)}
+                                  className="text-[9.5px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/80 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1 border border-blue-200/60 dark:border-blue-800/60 shadow-2xs"
+                                  title={anyOpen ? 'Recolher todos os meses' : 'Abrir todos os navios'}
                                 >
-                                  <Plus className="w-3.5 h-3.5" />
-                                  <span>{tt("Adicionar Primeiro Navio", "添加第一艘船舶", "Add First Vessel")}</span>
+                                  {anyOpen ? (
+                                    <>
+                                      <Minimize2 className="w-2.5 h-2.5" />
+                                      <span>{language === 'bilingual' ? 'Recolher / 折叠' : language === 'zh' ? '全部折叠' : 'Recolher'}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Maximize2 className="w-2.5 h-2.5" />
+                                      <span>{language === 'bilingual' ? 'Abrir Todos / 展开' : language === 'zh' ? '全部展开' : 'Abrir Todos'}</span>
+                                    </>
+                                  )}
                                 </button>
-                              </div>
-                            );
-                          }
+                              );
+                            })()}
+                            <span className="text-[10px] bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 font-bold px-2 py-0.5 rounded-full">{t('projected')}</span>
+                          </div>
+                        </div>
 
-                          // VISÃO MENSAL AGRUPADA
-                          if (vesselViewMode === 'monthly') {
-                            const monthlyGroups = groupVesselsByMonth(filteredVessels, language);
+                        {/* Monthly Groups Accordion */}
+                        {(() => {
+                          const monthlyGroups = groupVesselsByMonth(vessels, language);
+
+                          if (monthlyGroups.length === 0) {
                             return (
-                              <div className="flex flex-col gap-3">
-                                {monthlyGroups.map((group) => {
-                                  const isExpanded = !!expandedVesselMonths[group.monthKey];
-                                  return (
-                                    <div
-                                      key={group.monthKey}
-                                      className={`rounded-xl border transition-all duration-200 overflow-hidden ${
-                                        theme === 'dark'
-                                          ? isExpanded ? 'bg-slate-800/80 border-blue-900/60' : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600'
-                                          : isExpanded ? 'bg-blue-50/40 border-blue-200/80' : 'bg-slate-50/80 border-slate-200/70 hover:border-blue-300'
-                                      }`}
-                                    >
-                                      {/* Month Header Bar */}
-                                      <button
-                                        type="button"
-                                        onClick={() => toggleVesselMonth(group.monthKey)}
-                                        className="w-full px-3.5 py-2.5 flex items-center justify-between text-left cursor-pointer transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                                      >
-                                        <div className="flex items-center gap-2.5">
-                                          <div className={`p-1 rounded-md transition-transform duration-200 ${isExpanded ? 'rotate-180 bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'text-gray-400'}`}>
-                                            <ChevronDown className="w-3.5 h-3.5" />
-                                          </div>
-                                          <span className="font-extrabold text-xs text-slate-800 dark:text-white tracking-tight">
-                                            {group.monthLabel}
-                                          </span>
-                                          <span className="text-[10px] bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full">
-                                            {group.vessels.length} {tt("navios", "艘", "vessels")}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                          <span className="font-mono font-black text-xs text-blue-600 dark:text-blue-400 bg-white/80 dark:bg-slate-900/80 px-2.5 py-1 rounded-md border border-blue-200/60 dark:border-blue-800/50 shadow-2xs">
-                                            {group.totalCntrs.toLocaleString()} <span className="text-[9.5px] font-normal text-gray-400">CNTRs</span>
-                                          </span>
-                                        </div>
-                                      </button>
-
-                                      {/* Collapsible Body Table */}
-                                      {isExpanded && (
-                                        <div className="border-t border-slate-200/70 dark:border-slate-700/60 p-2 bg-white dark:bg-slate-900/80 overflow-x-auto">
-                                          <table className="w-full text-left text-xs">
-                                            <thead>
-                                              <tr className="border-b border-gray-200 dark:border-slate-800 text-gray-400 font-extrabold uppercase text-[9px] tracking-wider">
-                                                <th className="py-2 px-2">{tt("Navio / 船名", "船名", "Vessel")}</th>
-                                                <th className="py-2 px-2 text-center">{tt("Data ETA", "预报到港日", "ETA Date")}</th>
-                                                <th className="py-2 px-2 text-center">{tt("Armador / Status", "船司/状态", "Carrier / Status")}</th>
-                                                <th className="py-2 px-2 text-right">{tt("Volume", "箱量", "Containers")}</th>
-                                                <th className="py-2 px-2 text-center w-28">{tt("Ações", "操作", "Actions")}</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800/40">
-                                              {group.vessels.map((vessel, idx) => {
-                                                const isEditing = editingVesselId === vessel.id;
-                                                return (
-                                                  <tr key={vessel.id || idx} className="hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition-colors">
-                                                    {/* Navio Name */}
-                                                    <td className="py-2 px-2">
-                                                      {isEditing ? (
-                                                        <input
-                                                          type="text"
-                                                          value={editVesselName}
-                                                          onChange={(e) => setEditVesselName(e.target.value)}
-                                                          className="w-full p-1 text-xs font-bold uppercase bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
-                                                        />
-                                                      ) : (
-                                                        <div className="flex flex-col">
-                                                          <span className="font-black text-gray-850 dark:text-gray-100 text-xs tracking-tight">
-                                                            {vessel.name}
-                                                          </span>
-                                                          <span className="text-[9.5px] text-gray-400 font-medium">
-                                                            {vessel.terminal || 'Porto de Santos'}
-                                                          </span>
-                                                        </div>
-                                                      )}
-                                                    </td>
-
-                                                    {/* ETA */}
-                                                    <td className="py-2 px-2 text-center">
-                                                      {isEditing ? (
-                                                        <input
-                                                          type="text"
-                                                          value={editVesselEta}
-                                                          onChange={(e) => setEditVesselEta(e.target.value)}
-                                                          className="w-24 p-1 text-xs font-mono font-bold text-center bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
-                                                        />
-                                                      ) : (
-                                                        <span className="inline-block px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold text-xs">
-                                                          {vessel.eta}
-                                                        </span>
-                                                      )}
-                                                    </td>
-
-                                                    {/* Carrier / Status */}
-                                                    <td className="py-2 px-2 text-center">
-                                                      {isEditing ? (
-                                                        <div className="flex flex-col gap-1">
-                                                          <input
-                                                            type="text"
-                                                            value={editVesselCarrier}
-                                                            placeholder="Carrier"
-                                                            onChange={(e) => setEditVesselCarrier(e.target.value)}
-                                                            className="w-full p-1 text-[10px] font-bold uppercase bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
-                                                          />
-                                                          <select
-                                                            value={editVesselStatus}
-                                                            onChange={(e) => setEditVesselStatus(e.target.value)}
-                                                            className="w-full p-1 text-[9.5px] font-bold bg-white dark:bg-slate-800 border border-blue-400 rounded"
-                                                          >
-                                                            <option value="SCHEDULED">SCHEDULED</option>
-                                                            <option value="BERTHED">BERTHED</option>
-                                                            <option value="DISCHARGED">DISCHARGED</option>
-                                                            <option value="DELAYED">DELAYED</option>
-                                                          </select>
-                                                        </div>
-                                                      ) : (
-                                                        <div className="flex flex-col items-center gap-0.5">
-                                                          <span className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">
-                                                            {vessel.carrier || 'BYD CHARTER'}
-                                                          </span>
-                                                          <span className={`text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-full uppercase ${
-                                                            vessel.status === 'BERTHED' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
-                                                            vessel.status === 'DISCHARGED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
-                                                            vessel.status === 'DELAYED' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' :
-                                                            'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                                                          }`}>
-                                                            {vessel.status || 'SCHEDULED'}
-                                                          </span>
-                                                        </div>
-                                                      )}
-                                                    </td>
-
-                                                    {/* Volume (CNTRs) */}
-                                                    <td className="py-2 px-2 text-right">
-                                                      {isEditing ? (
-                                                        <input
-                                                          type="number"
-                                                          value={editVesselCntrs}
-                                                          onChange={(e) => setEditVesselCntrs(Number(e.target.value))}
-                                                          className="w-20 p-1 text-xs font-mono font-black text-right text-blue-600 bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
-                                                        />
-                                                      ) : (
-                                                        <span className="font-black text-blue-600 dark:text-blue-400 text-xs font-mono">
-                                                          {vessel.cntrs.toLocaleString()} <span className="text-[9px] font-normal text-gray-400">CNTRs</span>
-                                                        </span>
-                                                      )}
-                                                    </td>
-
-                                                    {/* Actions */}
-                                                    <td className="py-2 px-2 text-center">
-                                                      {isEditing ? (
-                                                        <div className="flex items-center justify-center gap-1">
-                                                          <button
-                                                            type="button"
-                                                            onClick={() => saveEditVessel(vessel.id)}
-                                                            className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded cursor-pointer transition-colors shadow-2xs"
-                                                            title={tt("Salvar alterações", "保存修改", "Save changes")}
-                                                          >
-                                                            <Check className="w-3.5 h-3.5" />
-                                                          </button>
-                                                          <button
-                                                            type="button"
-                                                            onClick={() => setEditingVesselId(null)}
-                                                            className="p-1 bg-gray-300 hover:bg-gray-400 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded cursor-pointer transition-colors"
-                                                            title={tt("Cancelar", "取消", "Cancel")}
-                                                          >
-                                                            <X className="w-3.5 h-3.5" />
-                                                          </button>
-                                                        </div>
-                                                      ) : (
-                                                        <div className="flex items-center justify-center gap-1">
-                                                          <button
-                                                            type="button"
-                                                            onClick={() => startEditVessel(vessel)}
-                                                            className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/60 rounded cursor-pointer transition-colors"
-                                                            title={tt("Editar navio", "编辑船舶", "Edit vessel")}
-                                                          >
-                                                            <Edit3 className="w-3.5 h-3.5" />
-                                                          </button>
-                                                          <button
-                                                            type="button"
-                                                            onClick={() => shiftVessel(vessel.id, 'up')}
-                                                            className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer transition-colors"
-                                                            title={tt("Mover para cima", "上移优先级", "Move up")}
-                                                          >
-                                                            <ArrowUp className="w-3.5 h-3.5" />
-                                                          </button>
-                                                          <button
-                                                            type="button"
-                                                            onClick={() => shiftVessel(vessel.id, 'down')}
-                                                            className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer transition-colors"
-                                                            title={tt("Mover para baixo", "下移优先级", "Move down")}
-                                                          >
-                                                            <ArrowDown className="w-3.5 h-3.5" />
-                                                          </button>
-                                                          <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                              if (window.confirm(tt(`Remover o navio ${vessel.name} da escala?`, `确定要将船舶 ${vessel.name} 从靠泊计划中删除吗？`, `Remove vessel ${vessel.name} from schedule?`))) {
-                                                                deleteVessel(vessel.id);
-                                                              }
-                                                            }}
-                                                            className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950/60 rounded cursor-pointer transition-colors"
-                                                            title={tt("Excluir navio", "删除船舶", "Delete vessel")}
-                                                          >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                          </button>
-                                                        </div>
-                                                      )}
-                                                    </td>
-                                                  </tr>
-                                                );
-                                              })}
-                                            </tbody>
-                                          </table>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
+                              <div className="text-center py-10 text-gray-400 text-sm font-semibold">
+                                {t('noVessels')}
                               </div>
                             );
                           }
 
-                          // VISÃO EM LISTA CRONOLÓGICA CONTÍNUA
                           return (
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-left text-xs">
-                                <thead>
-                                  <tr className="border-b border-gray-200 dark:border-slate-800 text-gray-400 font-extrabold uppercase text-[9.5px] tracking-wider">
-                                    <th className="py-2 px-2.5">#</th>
-                                    <th className="py-2 px-2.5">{tt("Navio / 船名", "船名", "Vessel")}</th>
-                                    <th className="py-2 px-2.5 text-center">{tt("Data ETA", "预报到港日", "ETA Date")}</th>
-                                    <th className="py-2 px-2.5 text-center">{tt("Armador / Status", "船司/状态", "Carrier / Status")}</th>
-                                    <th className="py-2 px-2.5 text-right">{tt("Volume", "箱量", "Containers")}</th>
-                                    <th className="py-2 px-2.5 text-center w-28">{tt("Ações", "操作", "Actions")}</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 dark:divide-slate-800/40">
-                                  {filteredVessels.map((vessel, idx) => {
-                                    const isEditing = editingVesselId === vessel.id;
-                                    return (
-                                      <tr key={vessel.id || idx} className="hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition-colors">
-                                        <td className="py-2 px-2.5 text-gray-400 font-mono text-[10px] font-bold">
-                                          {idx + 1}
-                                        </td>
-                                        <td className="py-2 px-2.5">
-                                          {isEditing ? (
-                                            <input
-                                              type="text"
-                                              value={editVesselName}
-                                              onChange={(e) => setEditVesselName(e.target.value)}
-                                              className="w-full p-1 text-xs font-bold uppercase bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
-                                            />
-                                          ) : (
-                                            <div className="flex flex-col">
-                                              <span className="font-black text-gray-850 dark:text-gray-100 text-xs">
-                                                {vessel.name}
-                                              </span>
-                                              <span className="text-[9.5px] text-gray-400 font-medium">
-                                                {vessel.terminal || 'Porto de Santos'}
-                                              </span>
-                                            </div>
-                                          )}
-                                        </td>
-                                        <td className="py-2 px-2.5 text-center">
-                                          {isEditing ? (
-                                            <input
-                                              type="text"
-                                              value={editVesselEta}
-                                              onChange={(e) => setEditVesselEta(e.target.value)}
-                                              className="w-24 p-1 text-xs font-mono font-bold text-center bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
-                                            />
-                                          ) : (
-                                            <span className="inline-block px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold text-xs">
-                                              {vessel.eta}
-                                            </span>
-                                          )}
-                                        </td>
-                                        <td className="py-2 px-2.5 text-center">
-                                          {isEditing ? (
-                                            <div className="flex flex-col gap-1">
-                                              <input
-                                                type="text"
-                                                value={editVesselCarrier}
-                                                placeholder="Carrier"
-                                                onChange={(e) => setEditVesselCarrier(e.target.value)}
-                                                className="w-full p-1 text-[10px] font-bold uppercase bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
-                                              />
-                                              <select
-                                                value={editVesselStatus}
-                                                onChange={(e) => setEditVesselStatus(e.target.value)}
-                                                className="w-full p-1 text-[9.5px] font-bold bg-white dark:bg-slate-800 border border-blue-400 rounded"
-                                              >
-                                                <option value="SCHEDULED">SCHEDULED</option>
-                                                <option value="BERTHED">BERTHED</option>
-                                                <option value="DISCHARGED">DISCHARGED</option>
-                                                <option value="DELAYED">DELAYED</option>
-                                              </select>
-                                            </div>
-                                          ) : (
-                                            <div className="flex flex-col items-center gap-0.5">
-                                              <span className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">
-                                                {vessel.carrier || 'BYD CHARTER'}
-                                              </span>
-                                              <span className={`text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-full uppercase ${
-                                                vessel.status === 'BERTHED' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
-                                                vessel.status === 'DISCHARGED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
-                                                vessel.status === 'DELAYED' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' :
-                                                'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                                              }`}>
-                                                {vessel.status || 'SCHEDULED'}
-                                              </span>
-                                            </div>
-                                          )}
-                                        </td>
-                                        <td className="py-2 px-2.5 text-right">
-                                          {isEditing ? (
-                                            <input
-                                              type="number"
-                                              value={editVesselCntrs}
-                                              onChange={(e) => setEditVesselCntrs(Number(e.target.value))}
-                                              className="w-20 p-1 text-xs font-mono font-black text-right text-blue-600 bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none"
-                                            />
-                                          ) : (
-                                            <span className="font-black text-blue-600 dark:text-blue-400 text-xs font-mono">
-                                              {vessel.cntrs.toLocaleString()} <span className="text-[9px] font-normal text-gray-400">CNTRs</span>
-                                            </span>
-                                          )}
-                                        </td>
-                                        <td className="py-2 px-2.5 text-center">
-                                          {isEditing ? (
-                                            <div className="flex items-center justify-center gap-1">
-                                              <button
-                                                type="button"
-                                                onClick={() => saveEditVessel(vessel.id)}
-                                                className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded cursor-pointer transition-colors shadow-2xs"
-                                                title={tt("Salvar alterações", "保存修改", "Save changes")}
-                                              >
-                                                <Check className="w-3.5 h-3.5" />
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => setEditingVesselId(null)}
-                                                className="p-1 bg-gray-300 hover:bg-gray-400 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded cursor-pointer transition-colors"
-                                                title={tt("Cancelar", "取消", "Cancel")}
-                                              >
-                                                <X className="w-3.5 h-3.5" />
-                                              </button>
-                                            </div>
-                                          ) : (
-                                            <div className="flex items-center justify-center gap-1">
-                                              <button
-                                                type="button"
-                                                onClick={() => startEditVessel(vessel)}
-                                                className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/60 rounded cursor-pointer transition-colors"
-                                                title={tt("Editar navio", "编辑船舶", "Edit vessel")}
-                                              >
-                                                <Edit3 className="w-3.5 h-3.5" />
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => shiftVessel(vessel.id, 'up')}
-                                                className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer transition-colors"
-                                                title={tt("Mover para cima", "上移优先级", "Move up")}
-                                              >
-                                                <ArrowUp className="w-3.5 h-3.5" />
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => shiftVessel(vessel.id, 'down')}
-                                                className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer transition-colors"
-                                                title={tt("Mover para baixo", "下移优先级", "Move down")}
-                                              >
-                                                <ArrowDown className="w-3.5 h-3.5" />
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  if (window.confirm(tt(`Remover o navio ${vessel.name} da escala?`, `确定要将船舶 ${vessel.name} 从靠泊计划中删除吗？`, `Remove vessel ${vessel.name} from schedule?`))) {
-                                                    deleteVessel(vessel.id);
-                                                  }
-                                                }}
-                                                className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950/60 rounded cursor-pointer transition-colors"
-                                                title={tt("Excluir navio", "删除船舶", "Delete vessel")}
-                                              >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                              </button>
-                                            </div>
-                                          )}
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
+                            <div className="flex flex-col gap-2.5">
+                              {monthlyGroups.map((group) => {
+                                const isExpanded = !!expandedVesselMonths[group.monthKey];
+                                return (
+                                  <div
+                                    key={group.monthKey}
+                                    className={`rounded-lg border transition-all duration-200 overflow-hidden ${
+                                      theme === 'dark'
+                                        ? isExpanded ? 'bg-slate-800/80 border-blue-900/60' : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600'
+                                        : isExpanded ? 'bg-blue-50/40 border-blue-200/80' : 'bg-slate-50/80 border-slate-200/70 hover:border-blue-300'
+                                    }`}
+                                  >
+                                    {/* Month Header Bar */}
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleVesselMonth(group.monthKey)}
+                                      className="w-full px-3 py-2.5 flex items-center justify-between text-left cursor-pointer select-none transition-colors hover:bg-blue-500/5"
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <div className={`p-0.5 rounded transition-transform duration-200 ${isExpanded ? 'text-blue-600 rotate-0' : 'text-gray-400 -rotate-90'}`}>
+                                          <ChevronDown className="w-4 h-4" />
+                                        </div>
+                                        <Calendar className="w-4 h-4 text-blue-500 shrink-0" />
+                                        <span className="font-extrabold text-sm text-slate-800 dark:text-slate-200 tracking-tight truncate">
+                                          {group.monthLabel}
+                                        </span>
+                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                          {group.vessels.length} {language === 'zh' ? '艘' : 'navio(s)'}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                                        <span className="font-mono font-black text-xs text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                                          {group.totalCntrs.toLocaleString()} <span className="text-[9px] font-normal text-gray-400">CNTRs</span>
+                                        </span>
+                                      </div>
+                                    </button>
+
+                                    {/* Collapsible Body */}
+                                    {isExpanded && (
+                                      <div className="border-t border-slate-200/70 dark:border-slate-700/60 p-2.5 bg-white/70 dark:bg-slate-900/60 animate-in fade-in-50 duration-150">
+                                        <table className="w-full text-left text-xs">
+                                          <thead>
+                                            <tr className="border-b border-gray-200 dark:border-slate-800 text-gray-400 font-extrabold uppercase text-[9.5px] tracking-wider">
+                                              <th className="py-1.5">{getColHeader('vessel')}</th>
+                                              <th className="py-1.5 text-center">{getColHeader('eta')}</th>
+                                              <th className="py-1.5 text-right">{getColHeader('cntrs')}</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-gray-100 dark:divide-slate-800/40">
+                                            {group.vessels.map((vessel, idx) => (
+                                              <tr key={vessel.id || idx} className="hover:bg-blue-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                                                <td className="font-extrabold text-gray-800 dark:text-gray-200 text-xs tracking-tight py-2">{vessel.name}</td>
+                                                <td className="text-center text-gray-650 dark:text-gray-400 font-mono font-bold text-xs py-2">{vessel.eta}</td>
+                                                <td className="text-right font-black text-blue-600 dark:text-blue-400 text-xs py-2">{vessel.cntrs.toLocaleString()}</td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           );
                         })()}
-
-                        {/* Rodapé da tabela com soma de contêineres */}
-                        <div className="mt-3 pt-2.5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
-                          <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                            {tt("Soma Total de Contêineres / 箱量总计", "预计抵港集装箱总计", "Total Scheduled Containers")}:
-                          </span>
-                          <span className="font-mono font-black text-sm text-blue-600 dark:text-blue-400">
-                            {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()} <span className="text-xs font-normal text-gray-400">CNTRs</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* LADO DIREITO: 2 ÁREAS DE NOTAS OPERACIONAIS */}
-                    <div className="col-span-12 lg:col-span-6 flex flex-col gap-4">
-                      
-                      {/* NOTA 1: JANELAS OPERACIONAIS DE ATRACAÇÃO */}
-                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200/80 shadow-sm'} flex flex-col justify-between min-h-[220px]`}>
-                        <div className="flex items-center justify-between border-b pb-2 mb-2 border-gray-100 dark:border-slate-800">
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                            <h4 className="font-bold text-xs text-blue-850 dark:text-blue-200 uppercase tracking-wider block">
-                              {language === 'bilingual' ? '1. JANELAS OPERACIONAIS DE ATRACAÇÃO / 船期与靠泊说明' : language === 'zh' ? '1. 船期与靠泊说明' : '1. JANELAS OPERACIONAIS DE ATRACAÇÃO'}
-                            </h4>
-                          </div>
-                          <span className="text-[10px] bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold px-2 py-0.5 rounded">
-                            {isEditMode ? tt("Modo Edição Ativo", "编辑模式", "Edit Mode") : tt("Notas Ativas", "实时备注", "Active Notes")}
-                          </span>
-                        </div>
-                        <div className="flex-1 flex flex-col pt-1">
-                          {isEditMode ? (
-                            <textarea
-                              id="input-vessel-note1"
-                              value={vesselNote1}
-                              onChange={(e) => {
-                                setVesselNote1(e.target.value);
-                                updateGlobalDoc('vesselNote1', e.target.value);
-                              }}
-                              placeholder="Digite as observações de escala, janelas de atracação e detalhes dos navios... / 在此编写靠泊窗口与船期备忘要点..."
-                              className="w-full flex-1 min-h-[140px] p-2.5 text-xs font-semibold border border-gray-200 dark:border-gray-700 dark:bg-slate-800 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none resize-none text-slate-800 dark:text-slate-100 placeholder:text-gray-400 font-sans"
-                            />
-                          ) : (
-                            <div className="text-xs leading-relaxed font-bold text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans p-3 bg-slate-50/60 dark:bg-slate-900/60 rounded-lg border border-slate-100 dark:border-none flex-1">
-                              {vesselNote1 || "Escala regular de navios ativa - Monitoramento detalhado das janelas de atracação. / 常规活跃船舶靠泊计划 - 详细监控和管理泊位窗口。"}
-                            </div>
-                          )}
-                        </div>
                       </div>
 
-                      {/* NOTA 2: LOGÍSTICA DE LIBERAÇÃO E PRIORIDADE BYD */}
-                      <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200/80 shadow-sm'} flex flex-col justify-between min-h-[220px]`}>
-                        <div className="flex items-center justify-between border-b pb-2 mb-2 border-gray-100 dark:border-slate-800">
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-450" />
-                            <h4 className="font-bold text-xs text-emerald-800 dark:text-emerald-200 uppercase tracking-wider block">
-                              {language === 'bilingual' ? '2. LOGÍSTICA DE LIBERAÇÃO E PRIORIDADE BYD / 口岸提运与出箱优先级' : language === 'zh' ? '2. 口岸提运与出箱优先级' : '2. LOGÍSTICA DE LIBERAÇÃO E PRIORIDADE BYD'}
-                            </h4>
-                          </div>
-                          <span className="text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded">
-                            {isEditMode ? tt("Modo Edição Ativo", "编辑模式", "Edit Mode") : tt("Prioridades", "优先级", "Priorities")}
+                      {/* Resumo do Volume Total a Descarregar */}
+                      <div className="mt-4 pt-3 border-t border-dashed border-gray-200 dark:border-slate-800 text-xs text-gray-400 flex justify-between items-center bg-blue-50/20 dark:bg-blue-950/20 p-2.5 rounded-lg border border-blue-50 dark:border-none">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold uppercase tracking-tight text-[10px]">
+                            {language === 'bilingual' ? '集装箱到港总量 / Total Containers:' : t('totalContainers') + ':'}
                           </span>
+                          <span className="text-[10px] text-gray-400 font-medium">({vessels.length} {language === 'zh' ? '艘船' : 'navios'})</span>
                         </div>
-                        <div className="flex-1 flex flex-col pt-1">
-                          {isEditMode ? (
-                            <textarea
-                              id="input-vessel-note2"
-                              value={vesselNote2}
-                              onChange={(e) => {
-                                setVesselNote2(e.target.value);
-                                updateGlobalDoc('vesselNote2', e.target.value);
-                              }}
-                              placeholder="Digite os destaques de escoamento e priorizações... / 在此编写集装箱提运和口岸放行备忘要点..."
-                              className="w-full flex-1 min-h-[140px] p-2.5 text-xs font-semibold border border-gray-200 dark:border-gray-700 dark:bg-slate-800 rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none resize-none text-slate-800 dark:text-slate-100 placeholder:text-gray-400 font-sans"
-                            />
-                          ) : (
-                            <div className="text-xs leading-relaxed font-bold text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans p-3 bg-slate-50/60 dark:bg-slate-900/60 rounded-lg border border-slate-100 dark:border-none flex-1">
-                              {vesselNote2 || "Destaques operacionais dos navios (Ex: Prioridades de descarga BYD). / 船舶运营重点亮点 (例如: 比亚迪重箱卸船优先顺序)。"}
-                            </div>
-                          )}
-                        </div>
+                        <span className="font-black text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950 px-3 py-1 rounded font-mono">
+                          {vessels.reduce((acc, curr) => acc + (Number(curr.cntrs) || 0), 0).toLocaleString()} <span className="text-[10px] font-normal">CNTRs</span>
+                        </span>
                       </div>
-
                     </div>
                   </div>
 
+                  {/* LADO DIREITO: DUAS ÁREAS EM BRANCO PARA NOTAS OPERACIONAIS */}
+                  <div className="col-span-12 lg:col-span-7 flex flex-col gap-3 h-full justify-between">
+                    
+                    {/* Nota 1: Janelas e Atracações */}
+                    <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex-1 flex flex-col justify-between min-h-[160px]`}>
+                      <div className="flex items-center gap-2 border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
+                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <h4 className="font-bold text-xs text-blue-800 dark:text-blue-200 uppercase tracking-wider block">
+                          {language === 'bilingual' ? '1. JANELAS OPERACIONAIS DE ATRACAÇÃO / 船期与靠泊说明' : language === 'zh' ? '1. 船期与靠泊说明' : '1. JANELAS OPERACIONAIS DE ATRACAÇÃO'}
+                        </h4>
+                      </div>
+                      <div className="flex-1 flex flex-col pt-1">
+                        {isEditMode ? (
+                          <textarea
+                            id="input-vessel-note1"
+                            value={vesselNote1}
+                            onChange={(e) => {
+                              setVesselNote1(e.target.value);
+                              updateGlobalDoc('vesselNote1', e.target.value);
+                            }}
+                            placeholder="Digite as notas operacionais e janelas de atracação... / 在此编写靠泊与船期备忘记录..."
+                            className="w-full flex-1 p-2 text-xs font-semibold border border-gray-200 dark:border-gray-700 dark:bg-slate-800 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none resize-none text-slate-800 dark:text-slate-100 placeholder:text-gray-400 font-sans"
+                          />
+                        ) : (
+                          <div className="text-xs leading-relaxed font-bold text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans p-2 bg-slate-50/40 dark:bg-slate-900/40 rounded-lg border border-slate-50 dark:border-none">
+                            {vesselNote1 || "Sem observações operacionais para este período. / 本期无附加靠泊说明。"}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Nota 2: Escoamento de Contentores e Prioridade */}
+                    <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex-1 flex flex-col justify-between min-h-[160px]`}>
+                      <div className="flex items-center gap-2 border-b pb-1.5 mb-2 border-gray-100 dark:border-slate-800">
+                        <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-450" />
+                        <h4 className="font-bold text-xs text-emerald-800 dark:text-emerald-200 uppercase tracking-wider block">
+                          {language === 'bilingual' ? '2. LOGÍSTICA DE LIBERAÇÃO E PRIORIDADE BYD / 口岸提运与出箱优先级' : language === 'zh' ? '2. 口岸提运与出箱优先级' : '2. LOGÍSTICA DE LIBERAÇÃO E PRIORIDADE BYD'}
+                        </h4>
+                      </div>
+                      <div className="flex-1 flex flex-col pt-1">
+                        {isEditMode ? (
+                          <textarea
+                            id="input-vessel-note2"
+                            value={vesselNote2}
+                            onChange={(e) => {
+                              setVesselNote2(e.target.value);
+                              updateGlobalDoc('vesselNote2', e.target.value);
+                            }}
+                            placeholder="Digite os destaques de escoamento e priorizações... / 在此编写集装箱提运和口岸放行备忘要点..."
+                            className="w-full flex-1 p-2 text-xs font-semibold border border-gray-200 dark:border-gray-700 dark:bg-slate-800 rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none resize-none text-slate-800 dark:text-slate-100 placeholder:text-gray-400 font-sans"
+                          />
+                        ) : (
+                          <div className="text-xs leading-relaxed font-bold text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans p-2 bg-slate-50/40 dark:bg-slate-900/40 rounded-lg border border-slate-50 dark:border-none">
+                            {vesselNote2 || "Sem notas de priorização para este período. / 本期无提运放行指示。"}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
-              
               ) : currentSlide === 3 ? (
                 /* SLIDE 4: GRÁFICOS (CHARTS ONLY) COM CAIXAS DE COMENTÁRIOS */
                 <div id="slide-dashboard-grid-charts" className={`flex flex-col justify-between ${widescreenMode ? 'h-[calc(100%-85px)] overflow-hidden' : 'min-h-[660px] gap-4'}`}>
@@ -9747,8 +9095,7 @@ export default function App() {
                                       : `Contêineres Filtrados: ${rangeLabel} (${colLabel})`}
                                   </h4>
                                   <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold mt-0.5">
-                             
-       {language === 'zh' 
+                                    {language === 'zh' 
                                       ? `共 ${matchingContainers.length} 个匹配的集装箱。在这里，您可以直接更新“计划提货时间 (Programação)”和“运输公司 (Carrier)”，数据将自动同步更新，以协助及时归还空箱，避免产生超期滞期费。`
                                       : `Mostrando ${matchingContainers.length} contêiner(es). Agende a retirada e devolução preenchendo as colunas abaixo para mitigar custos de demurrage.`}
                                   </p>
