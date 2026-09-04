@@ -812,6 +812,7 @@ const ORIGINAL_YARDS: YardsState = {
   ag: { name: 'AG - INTER CDEX', type: 'WAREHOUSE', capacity: 2200, cheio: 844, vazio: 0, porto: 0, prontoColeta: 122, delivered: 144, previous_total: 850 },
   cts: { name: 'CTS - PONTUAL', type: 'WAREHOUSE', capacity: 1200, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   cts_jew: { name: 'CTS - JEW', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
+  cts_logic: { name: 'CTS - LOGIC', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   cts_uni: { name: 'CTS - UNI', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   cts_vbr: { name: 'CTS - VBR', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   logic: { name: 'LOGIC', type: 'WAREHOUSE', capacity: 1000, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
@@ -1377,20 +1378,6 @@ export default function App() {
   const [globalFilterQuery, setGlobalFilterQuery] = useState("");
   const [selectedYardKey, setSelectedYardKey] = useState<string | null>(null);
   const [containers, setContainers] = useState<Container[]>(() => JSON.parse(JSON.stringify(INITIAL_CONTAINERS)));
-  
-  // Limpeza definitiva do armazém descontinuado CTS - LOGIC (banco e estado)
-  useEffect(() => {
-    deleteDoc(doc(db, 'yards', 'cts_logic')).catch(() => {});
-    setYards(prev => {
-      if (!prev['cts_logic']) return prev;
-      const next = { ...prev };
-      delete next['cts_logic'];
-      return next;
-    });
-    if (selectedYardKey === 'cts_logic') {
-      setSelectedYardKey(null);
-    }
-  }, [selectedYardKey]);
   
   // Estados para formulário de cadastro de novo contêiner
   const [newContainerId, setNewContainerId] = useState("");
@@ -2143,15 +2130,8 @@ export default function App() {
       } else {
         const newYards: YardsState = {};
         snapshot.forEach((docSnap) => {
-          if (docSnap.id === 'cts_logic') {
-            deleteDoc(doc(db, 'yards', 'cts_logic')).catch(() => {});
-            return;
-          }
           newYards[docSnap.id] = docSnap.data() as Yard;
         });
-
-        // Garantir que cts_logic nunca apareça
-        delete newYards['cts_logic'];
 
         // Garante integridade de todos os pátios padrão
         Object.entries(ORIGINAL_YARDS).forEach(([key, originalYard]) => {
@@ -4154,6 +4134,7 @@ export default function App() {
       ["   - AG (Warehouse / 仓库)"],
       ["   - CTS - PONTUAL (Warehouse / 仓库)"],
       ["   - CTS - JEW (Warehouse / 仓库)"],
+      ["   - CTS - LOGIC (Warehouse / 仓库)"],
       ["   - CTS - UNI (Warehouse / 仓库)"],
       ["   - CTS - VBR (Warehouse / 仓库)"],
       ["   - LOGIC (Warehouse / 仓库)"],
@@ -4220,16 +4201,16 @@ export default function App() {
           
           if (clean.includes('cts')) {
             if (clean.includes('jew')) return 'cts_jew';
+            if (clean.includes('logic')) return 'cts_logic';
             if (clean.includes('uni')) return 'cts_uni';
             if (clean.includes('vbr')) return 'cts_vbr';
-            if (clean.includes('logic')) return 'logic';
             return 'cts'; // default CTS fallback to PONTUAL
           }
           if (clean.includes('pontual')) return 'cts';
           if (clean.includes('jew')) return 'cts_jew';
           if (clean.includes('uni')) return 'cts_uni';
           if (clean.includes('vbr')) return 'cts_vbr';
-          if (clean.includes('logic')) return 'logic'; // Separate LOGIC warehouse
+          if (clean.includes('logic')) return 'logic'; // Separate LOGIC warehouse from CTS - LOGIC
 
           return null;
         };
@@ -4248,6 +4229,7 @@ export default function App() {
           ag: { total: 0, porto: 0, pronto: 0 },
           cts: { total: 0, porto: 0, pronto: 0 },
           cts_jew: { total: 0, porto: 0, pronto: 0 },
+          cts_logic: { total: 0, porto: 0, pronto: 0 },
           cts_uni: { total: 0, porto: 0, pronto: 0 },
           cts_vbr: { total: 0, porto: 0, pronto: 0 },
           logic: { total: 0, porto: 0, pronto: 0 },

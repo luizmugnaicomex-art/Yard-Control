@@ -2,10 +2,6 @@ import React, { useState, useMemo } from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
-  AreaChart,
-  Area,
-  LineChart,
-  Line,
   BarChart,
   Bar,
   XAxis,
@@ -26,7 +22,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   TrendingUp,
-  TrendingDown,
   Info,
   ArrowUpRight,
   Maximize2,
@@ -34,16 +29,7 @@ import {
   BarChart3,
   Sliders,
   Sparkles,
-  Ship,
-  Zap,
-  Clock,
-  Calendar,
-  RotateCcw,
-  Activity,
-  Gauge,
-  Check,
-  Flame,
-  ArrowRight
+  Ship
 } from 'lucide-react';
 import { Yard, Vessel } from '../types';
 
@@ -58,7 +44,6 @@ export interface BondedAreasChartProps {
 
 export interface BondedYardData {
   id: string;
-  key: string;
   name: string;
   cheio: number;
   capacity: number;
@@ -70,24 +55,7 @@ export interface BondedYardData {
   statusColor: string;
   statusLabel: string;
   vesselsConnected: string[];
-  rampupAvg: number;
-  weeklyDrain: number;
-  daysToDrain: number;
-  weeksToDrain: number;
-  estimatedClearanceDate: string;
 }
-
-// Default Ramp-up Averages per Bonded Area as specified:
-// TECON: 100 AVG
-// TPC: 62 AVG
-// INTERMARITIMA: 59 AVG
-// CLIA: 10 AVG
-export const DEFAULT_BONDED_RAMPUP: Record<string, number> = {
-  tecon: 100,
-  tpc: 62,
-  intermaritima: 59,
-  clia: 10,
-};
 
 // Distinctive palette for bonded areas
 const BONDED_COLORS = [
@@ -100,38 +68,6 @@ const BONDED_COLORS = [
   '#F59E0B', // Amber
 ];
 
-// Helper to normalize yard identifier to canonical key
-export const getTerminalRampupKey = (id: string, name: string): string => {
-  const norm = `${id} ${name}`.toLowerCase();
-  if (norm.includes('tecon')) return 'tecon';
-  if (norm.includes('tpc')) return 'tpc';
-  if (norm.includes('intermar') || norm.includes('inter')) return 'intermaritima';
-  if (norm.includes('clia') || norm.includes('emporio')) return 'clia';
-  return id.toLowerCase();
-};
-
-// Add working days helper (skips Sundays, and Saturdays if 5-day week)
-const addWorkingDays = (startDate: Date, workingDays: number, includeSaturday: boolean): Date => {
-  const date = new Date(startDate.getTime());
-  let added = 0;
-  const targetDays = Math.ceil(workingDays);
-  while (added < targetDays) {
-    date.setDate(date.getDate() + 1);
-    const day = date.getDay(); // 0 = Sun, 6 = Sat
-    if (day === 0) continue; // always skip Sunday
-    if (!includeSaturday && day === 6) continue; // skip Saturday if 5 days
-    added++;
-  }
-  return date;
-};
-
-const formatDateBr = (d: Date): string => {
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
-};
-
 export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
   theme,
   language,
@@ -140,19 +76,10 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
   vessels = [],
   compact = false
 }) => {
-  // Mode switcher: now includes 'rampup' as a primary view
-  const [chartMode, setChartMode] = useState<'rampup' | 'bars' | 'composition' | 'donut'>('rampup');
+  const [chartMode, setChartMode] = useState<'bars' | 'composition' | 'donut'>('bars');
   const [sortMode, setSortMode] = useState<'volume' | 'occupancy' | 'default'>('default');
   const [showNumbers, setShowNumbers] = useState<boolean>(true);
   const [selectedTerminal, setSelectedTerminal] = useState<string | null>(null);
-
-  // Ramp-up specific settings
-  const [rampupRates, setRampupRates] = useState<Record<string, number>>(() => ({ ...DEFAULT_BONDED_RAMPUP }));
-  const [workingDaysPerWeek, setWorkingDaysPerWeek] = useState<5 | 6>(5);
-  const [rampupGranularity, setRampupGranularity] = useState<'weeks' | 'days'>('weeks');
-  const [rampupChartType, setRampupChartType] = useState<'area' | 'lines' | 'rates'>('area');
-  const [includeVesselInflow, setIncludeVesselInflow] = useState<boolean>(false);
-  const [showRateEditor, setShowRateEditor] = useState<boolean>(false);
 
   // Localization helper
   const dt = (pt: string, zh: string, en: string) => {
@@ -162,30 +89,13 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
     return pt;
   };
 
-  // Base simulation date: 24/08/2026 (W35 Monday)
-  const baseSimDate = useMemo(() => new Date(2026, 7, 24, 12, 0, 0), []);
-
-  // Update a single terminal rampup rate
-  const handleRateChange = (key: string, val: number) => {
-    setRampupRates(prev => ({
-      ...prev,
-      [key]: Math.max(0, val)
-    }));
-  };
-
-  // Reset to default averages (TECON: 100, TPC: 62, INTERMARITIMA: 59, CLIA: 10)
-  const handleResetRates = () => {
-    setRampupRates({ ...DEFAULT_BONDED_RAMPUP });
-  };
-
   // Extract and compute data for all Bonded yards
   const bondedData: BondedYardData[] = useMemo(() => {
     const entries = (Object.entries(yards || {}) as [string, Yard][]).filter(
       ([_, y]) => y && y.type === 'BONDED'
     );
 
-    const items: BondedYardData[] = entries.map(([id, y]) => {
-      const key = getTerminalRampupKey(id, y.name || id);
+    const items: BondedYardData[] = entries.map(([id, y], index) => {
       const capacity = y.capacity || 0;
       const cheio = y.cheio || 0;
       const occupancyPct = capacity > 0 ? Math.round((cheio / capacity) * 100) : 0;
@@ -222,17 +132,8 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
 
       const combinedVessels = Array.from(new Set([...directVessels, ...containerVessels]));
 
-      // Rampup calculations
-      const rampupAvg = rampupRates[key] ?? 0;
-      const weeklyDrain = rampupAvg * workingDaysPerWeek;
-      const daysToDrain = rampupAvg > 0 ? (cheio / rampupAvg) : 0;
-      const weeksToDrain = weeklyDrain > 0 ? (cheio / weeklyDrain) : 0;
-      const clearanceDateObj = addWorkingDays(baseSimDate, daysToDrain, workingDaysPerWeek === 6);
-      const estimatedClearanceDate = formatDateBr(clearanceDateObj);
-
       return {
         id,
-        key,
         name: y.name || id.toUpperCase(),
         cheio,
         capacity,
@@ -243,12 +144,7 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
         delivered: y.delivered || 0,
         statusColor,
         statusLabel,
-        vesselsConnected: combinedVessels,
-        rampupAvg,
-        weeklyDrain,
-        daysToDrain,
-        weeksToDrain,
-        estimatedClearanceDate
+        vesselsConnected: combinedVessels
       };
     });
 
@@ -260,7 +156,7 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
       return [...items].sort((a, b) => b.occupancyPct - a.occupancyPct);
     }
     return items;
-  }, [yards, vessels, containers, sortMode, language, rampupRates, workingDaysPerWeek, baseSimDate]);
+  }, [yards, vessels, containers, sortMode, language]);
 
   // Aggregate stats across all bonded areas
   const totalBondedCheio = useMemo(() => bondedData.reduce((acc, y) => acc + y.cheio, 0), [bondedData]);
@@ -269,116 +165,6 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
   const totalFreeSlots = Math.max(0, totalBondedCapacity - totalBondedCheio);
   const totalInPort = useMemo(() => bondedData.reduce((acc, y) => acc + y.porto, 0), [bondedData]);
   const totalProntoColeta = useMemo(() => bondedData.reduce((acc, y) => acc + y.prontoColeta, 0), [bondedData]);
-
-  // Total Ramp-up calculations
-  const totalBondedRampupAvg = useMemo(() => {
-    return bondedData.reduce((acc, y) => acc + y.rampupAvg, 0);
-  }, [bondedData]);
-
-  const totalBondedWeeklyDrain = totalBondedRampupAvg * workingDaysPerWeek;
-  const totalBondedDaysToDrain = totalBondedRampupAvg > 0 ? (totalBondedCheio / totalBondedRampupAvg) : 0;
-  const totalBondedWeeksToDrain = totalBondedWeeklyDrain > 0 ? (totalBondedCheio / totalBondedWeeklyDrain) : 0;
-  const totalClearanceDateObj = addWorkingDays(baseSimDate, totalBondedDaysToDrain, workingDaysPerWeek === 6);
-  const totalEstimatedClearanceDate = formatDateBr(totalClearanceDateObj);
-
-  // Helper map for terminal lookup
-  const yardByKey = useMemo(() => {
-    const map: Record<string, BondedYardData> = {};
-    bondedData.forEach(item => {
-      map[item.key] = item;
-    });
-    return map;
-  }, [bondedData]);
-
-  // Ramp-up Timeline Simulation Engine (Weekly and Daily)
-  const rampupTimeline = useMemo(() => {
-    // Initial stocks
-    const initialTecon = yardByKey['tecon']?.cheio || 0;
-    const initialTpc = yardByKey['tpc']?.cheio || 0;
-    const initialInter = yardByKey['intermaritima']?.cheio || 0;
-    const initialClia = yardByKey['clia']?.cheio || 0;
-
-    // Rates
-    const rateTecon = rampupRates['tecon'] || 100;
-    const rateTpc = rampupRates['tpc'] || 62;
-    const rateInter = rampupRates['intermaritima'] || 59;
-    const rateClia = rampupRates['clia'] || 10;
-
-    if (rampupGranularity === 'weeks') {
-      const weeklyTecon = rateTecon * workingDaysPerWeek;
-      const weeklyTpc = rateTpc * workingDaysPerWeek;
-      const weeklyInter = rateInter * workingDaysPerWeek;
-      const weeklyClia = rateClia * workingDaysPerWeek;
-
-      let balTecon = initialTecon;
-      let balTpc = initialTpc;
-      let balInter = initialInter;
-      let balClia = initialClia;
-
-      const points: any[] = [];
-      const baseWeekNumber = 35; // W35 2026
-
-      for (let w = 0; w <= 8; w++) {
-        const weekLabel = `W${baseWeekNumber + w}`;
-        const totalBal = balTecon + balTpc + balInter + balClia;
-
-        points.push({
-          period: weekLabel,
-          weekNum: baseWeekNumber + w,
-          TECON: Math.round(balTecon),
-          TPC: Math.round(balTpc),
-          INTERMARITIMA: Math.round(balInter),
-          CLIA: Math.round(balClia),
-          TOTAL: Math.round(totalBal),
-          drainedThisPeriod: w === 0 ? 0 : Math.min(totalBondedWeeklyDrain, points[w - 1]?.TOTAL || 0),
-          cumulativeDrained: Math.max(0, totalBondedCheio - totalBal)
-        });
-
-        // Drain for next week
-        balTecon = Math.max(0, balTecon - weeklyTecon);
-        balTpc = Math.max(0, balTpc - weeklyTpc);
-        balInter = Math.max(0, balInter - weeklyInter);
-        balClia = Math.max(0, balClia - weeklyClia);
-
-        if (totalBal === 0 && w >= 4) break;
-      }
-      return points;
-    } else {
-      // Daily simulation (up to 24 working days)
-      let balTecon = initialTecon;
-      let balTpc = initialTpc;
-      let balInter = initialInter;
-      let balClia = initialClia;
-
-      const points: any[] = [];
-      const maxDays = 22;
-
-      for (let d = 0; d <= maxDays; d++) {
-        const dayLabel = d === 0 ? dt('Hoje (D0)', '今天 (D0)', 'Today (D0)') : `D+${d}`;
-        const totalBal = balTecon + balTpc + balInter + balClia;
-
-        points.push({
-          period: dayLabel,
-          dayIndex: d,
-          TECON: Math.round(balTecon),
-          TPC: Math.round(balTpc),
-          INTERMARITIMA: Math.round(balInter),
-          CLIA: Math.round(balClia),
-          TOTAL: Math.round(totalBal),
-          cumulativeDrained: Math.max(0, totalBondedCheio - totalBal)
-        });
-
-        // Drain for next day
-        balTecon = Math.max(0, balTecon - rateTecon);
-        balTpc = Math.max(0, balTpc - rateTpc);
-        balInter = Math.max(0, balInter - rateInter);
-        balClia = Math.max(0, balClia - rateClia);
-
-        if (totalBal === 0 && d >= 16) break;
-      }
-      return points;
-    }
-  }, [yardByKey, rampupRates, workingDaysPerWeek, rampupGranularity, totalBondedWeeklyDrain, totalBondedCheio, dt]);
 
   // Data for Donut Chart
   const donutData = useMemo(() => {
@@ -395,7 +181,7 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
     if (!active || !payload || !payload.length) return null;
     const data: BondedYardData = payload[0].payload;
     return (
-      <div className={`p-3 rounded-xl shadow-xl border text-xs min-w-[240px] ${
+      <div className={`p-3 rounded-xl shadow-xl border text-xs min-w-[220px] ${
         theme === 'dark' ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
       }`}>
         <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-slate-800 mb-2">
@@ -442,26 +228,6 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
             </span>
           </div>
 
-          {/* Rampup highlight in tooltip */}
-          <div className="flex justify-between items-center pt-1.5 border-t border-gray-100 dark:border-slate-800 bg-amber-50/40 dark:bg-amber-950/20 p-1.5 rounded-md">
-            <span className="text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1 text-[11px]">
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
-              {dt('Ramp-up (Média Diária):', '爬坡速率 (日均):', 'Ramp-up (Daily Avg):')}
-            </span>
-            <span className="font-mono font-black text-amber-600 dark:text-amber-400 text-xs">
-              {data.rampupAvg} CNTRs/{dt('dia', '天', 'day')}
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center text-[10.5px]">
-            <span className="text-gray-400 font-medium">
-              {dt('Tempo Estimado p/ Esvaziar:', '预计清空周期:', 'Est. Drain Time:')}
-            </span>
-            <span className="font-mono font-bold text-indigo-500">
-              ~{data.daysToDrain.toFixed(1)} {dt('dias úteis', '工作日', 'days')}
-            </span>
-          </div>
-
           {data.porto > 0 && (
             <div className="flex justify-between items-center pt-1 border-t border-gray-100 dark:border-slate-800">
               <span className="text-gray-400 text-[10.5px]">
@@ -491,87 +257,6 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
               </span>
               <span className="text-blue-500 font-medium">
                 {data.vesselsConnected.join(' • ')}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Custom tooltip for Ramp-up Simulation chart
-  const CustomRampupTooltip = ({ active, payload, label }: any) => {
-    if (!active || !payload || !payload.length) return null;
-    const point = payload[0].payload;
-    return (
-      <div className={`p-3.5 rounded-xl shadow-xl border text-xs min-w-[270px] ${
-        theme === 'dark' ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-slate-800 mb-2">
-          <div className="flex items-center gap-1.5 font-black text-sm">
-            <TrendingDown className="w-4 h-4 text-emerald-500" />
-            <span>{dt('Projeção de Escoamento:', '出清走势预测:', 'Drain Projection:')} {label}</span>
-          </div>
-          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
-            {workingDaysPerWeek} {dt('dias/sem', '天/周', 'days/wk')}
-          </span>
-        </div>
-
-        <div className="space-y-1.5">
-          <div className="flex justify-between items-center pb-1 border-b border-gray-100 dark:border-slate-800 font-bold">
-            <span className="text-indigo-600 dark:text-indigo-400 uppercase text-[10.5px]">
-              {dt('Saldo Total Bonded:', '保税区总剩余箱量:', 'Total Bonded Balance:')}
-            </span>
-            <span className="font-mono font-black text-sm text-indigo-600 dark:text-indigo-400">
-              {point.TOTAL?.toLocaleString()} CNTRs
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center text-[11px]">
-            <span className="flex items-center gap-1.5 font-bold text-blue-500">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
-              TECON ({rampupRates['tecon'] || 100} AVG/dia):
-            </span>
-            <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
-              {point.TECON?.toLocaleString()} CNTRs
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center text-[11px]">
-            <span className="flex items-center gap-1.5 font-bold text-emerald-500">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              TPC ({rampupRates['tpc'] || 62} AVG/dia):
-            </span>
-            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-              {point.TPC?.toLocaleString()} CNTRs
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center text-[11px]">
-            <span className="flex items-center gap-1.5 font-bold text-orange-500">
-              <span className="w-2 h-2 rounded-full bg-orange-500" />
-              INTERMARITIMA ({rampupRates['intermaritima'] || 59} AVG/dia):
-            </span>
-            <span className="font-mono font-bold text-orange-600 dark:text-orange-400">
-              {point.INTERMARITIMA?.toLocaleString()} CNTRs
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center text-[11px]">
-            <span className="flex items-center gap-1.5 font-bold text-purple-500">
-              <span className="w-2 h-2 rounded-full bg-purple-500" />
-              CLIA ({rampupRates['clia'] || 10} AVG/dia):
-            </span>
-            <span className="font-mono font-bold text-purple-600 dark:text-purple-400">
-              {point.CLIA?.toLocaleString()} CNTRs
-            </span>
-          </div>
-
-          {point.cumulativeDrained !== undefined && (
-            <div className="pt-2 border-t border-gray-100 dark:border-slate-800 flex justify-between items-center text-[10px]">
-              <span className="text-gray-400">{dt('Volume Já Escoado:', '累计已出清箱量:', 'Cumulative Drained:')}</span>
-              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                +{point.cumulativeDrained.toLocaleString()} CNTRs
               </span>
             </div>
           )}
@@ -622,15 +307,12 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                 <Anchor className="w-3 h-3" /> {bondedData.length} {dt('Terminais', '个保税终端', 'Terminals')}
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                <Zap className="w-3 h-3 text-amber-500" /> {totalBondedRampupAvg} {dt('AVG/dia Total', '日均合计', 'AVG/day Total')}
-              </span>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               {dt(
-                'Volume em pátio alfandegado, limite de capacidade e curva de escoamento/ramp-up por terminal (TECON 100 • TPC 62 • INTERMARITIMA 59 • CLIA 10).',
-                '实时监控各大保税区（TECON 100, TPC 62, INTERMARÍTIMA 59, CLIA 10 箱/天）在场重箱数、额定容量及出清爬坡走势。',
-                'Real-time bonded yard stock, capacity limits, and terminal ramp-up drain projection (TECON 100 • TPC 62 • INTERMARITIMA 59 • CLIA 10).'
+                'Volume de contêineres armazenados em cada terminal alfandegado, limite de capacidade e folga operacional.',
+                '实时监控各大保税区（TECON, INTERMARÍTIMA, TPC, CLIA）在场重箱数、容量极限及可用富余量。',
+                'Real-time volume of stored containers across each bonded terminal, physical capacity limits, and operating buffer.'
               )}
             </p>
           </div>
@@ -640,21 +322,6 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
         <div className="flex flex-wrap items-center gap-2">
           {/* Chart mode switcher */}
           <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-200 dark:border-slate-700 text-xs">
-            {/* Primary Ramp-up Mode Button */}
-            <button
-              type="button"
-              onClick={() => setChartMode('rampup')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-black transition-all cursor-pointer ${
-                chartMode === 'rampup'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm ring-1 ring-white/20'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
-              }`}
-              title={dt('Ramp-up & Projeção de Escoamento por Terminal', '出清爬坡走势与日均出库预测', 'Ramp-up & Drain Projection by Terminal')}
-            >
-              <TrendingDown className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{dt('Ramp-up & Escoamento', '出清爬坡预测', 'Ramp-up & Drain')}</span>
-            </button>
-
             <button
               type="button"
               onClick={() => setChartMode('bars')}
@@ -698,63 +365,44 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
             </button>
           </div>
 
-          {/* Sort order toggle (for bars / composition mode) */}
-          {chartMode !== 'rampup' && (
-            <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-200 dark:border-slate-700 text-xs">
-              <button
-                type="button"
-                onClick={() => setSortMode(prev => (prev === 'volume' ? 'occupancy' : prev === 'occupancy' ? 'default' : 'volume'))}
-                className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors cursor-pointer"
-                title={dt('Alternar critério de ordenação', '切换排序方式', 'Toggle sort criteria')}
-              >
-                <Sliders className="w-3 h-3 text-blue-500" />
-                <span>
-                  {sortMode === 'volume'
-                    ? dt('Ordem: Maior Volume', '排序: 按数量', 'Sort: Volume')
-                    : sortMode === 'occupancy'
-                    ? dt('Ordem: Maior Ocupação %', '排序: 按占用率 %', 'Sort: Occupancy %')
-                    : dt('Ordem: Padrão', '排序: 默认', 'Sort: Default')}
-                </span>
-              </button>
-            </div>
-          )}
-
-          {/* Data labels toggle */}
-          {chartMode !== 'rampup' && (
+          {/* Sort order toggle */}
+          <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-200 dark:border-slate-700 text-xs">
             <button
               type="button"
-              onClick={() => setShowNumbers(!showNumbers)}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-                showNumbers
-                  ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'
-                  : 'bg-white dark:bg-slate-850 text-gray-400 border-gray-200 dark:border-slate-700'
-              }`}
-              title={dt('Exibir/Ocultar valores numéricos no gráfico', '显示/隐藏图表数值标签', 'Toggle numbers on chart')}
+              onClick={() => setSortMode(prev => (prev === 'volume' ? 'occupancy' : prev === 'occupancy' ? 'default' : 'volume'))}
+              className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors cursor-pointer"
+              title={dt('Alternar critério de ordenação', '切换排序方式', 'Toggle sort criteria')}
             >
-              <span className="text-[10px] font-black px-1 py-0.2 rounded bg-purple-200/60 dark:bg-purple-900/60">123</span>
-              <span>{showNumbers ? dt('Valores: ON', '数值: 开', 'Values: ON') : dt('Valores: OFF', '数值: 关', 'Values: OFF')}</span>
+              <Sliders className="w-3 h-3 text-blue-500" />
+              <span>
+                {sortMode === 'volume'
+                  ? dt('Ordem: Maior Volume', '排序: 按数量', 'Sort: Volume')
+                  : sortMode === 'occupancy'
+                  ? dt('Ordem: Maior Ocupação %', '排序: 按占用率 %', 'Sort: Occupancy %')
+                  : dt('Ordem: Padrão', '排序: 默认', 'Sort: Default')}
+              </span>
             </button>
-          )}
+          </div>
 
-          {/* Quick Rate Config Toggle */}
+          {/* Data labels toggle */}
           <button
             type="button"
-            onClick={() => setShowRateEditor(!showRateEditor)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-              showRateEditor
-                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700'
-                : 'bg-white dark:bg-slate-850 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:border-amber-400'
+            onClick={() => setShowNumbers(!showNumbers)}
+            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+              showNumbers
+                ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+                : 'bg-white dark:bg-slate-850 text-gray-400 border-gray-200 dark:border-slate-700'
             }`}
-            title={dt('Configurar / Visualizar Médias de Ramp-up', '设置/查看各保税区爬坡日均', 'Configure/View Ramp-up Averages')}
+            title={dt('Exibir/Ocultar valores numéricos no gráfico', '显示/隐藏图表数值标签', 'Toggle numbers on chart')}
           >
-            <Zap className="w-3.5 h-3.5 text-amber-500" />
-            <span>{dt('Médias Diárias (Avg)', '各区日均参数', 'Daily Averages')}</span>
+            <span className="text-[10px] font-black px-1 py-0.2 rounded bg-purple-200/60 dark:bg-purple-900/60">123</span>
+            <span>{showNumbers ? dt('Valores: ON', '数值: 开', 'Values: ON') : dt('Valores: OFF', '数值: 关', 'Values: OFF')}</span>
           </button>
         </div>
       </div>
 
-      {/* 2. SUMMARY KPI CHIPS (5-COLUMNS INCLUDING TOTAL BONDED RAMP-UP) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 my-3.5">
+      {/* 2. SUMMARY KPI CHIPS */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-3.5">
         <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
           theme === 'dark' ? 'bg-slate-800/60 border-slate-700/80' : 'bg-blue-50/50 border-blue-100'
         }`}>
@@ -830,526 +478,10 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
             {dt('Folga para novas chegadas', '可接纳新到港进箱空间', 'Buffer for incoming discharges')}
           </span>
         </div>
-
-        {/* 5th Highlighted Chip: RAMP-UP DIÁRIO TOTAL BONDED */}
-        <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-          theme === 'dark'
-            ? 'bg-gradient-to-br from-indigo-950/60 to-slate-900 border-indigo-700/60 text-white'
-            : 'bg-gradient-to-br from-indigo-50/90 to-blue-50/60 border-indigo-200 text-slate-900'
-        }`}>
-          <div className="flex items-center justify-between text-indigo-700 dark:text-indigo-300 text-[10px] uppercase font-black">
-            <span className="flex items-center gap-1">
-              <Zap className="w-3 h-3 text-amber-500" />
-              {dt('Ramp-up Total Bonded', '保税区合计爬坡日均', 'Total Bonded Ramp-up')}
-            </span>
-            <Gauge className="w-3.5 h-3.5 text-indigo-500" />
-          </div>
-          <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-xl font-black font-mono text-indigo-600 dark:text-indigo-400">
-              {totalBondedRampupAvg}
-            </span>
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold">CNTRs/{dt('dia', '天', 'day')}</span>
-          </div>
-          <span className="text-[9.5px] text-indigo-600/80 dark:text-indigo-400/80 font-medium truncate">
-            {dt('TECON 100 • TPC 62 • INTER 59 • CLIA 10', 'TECON 100 • TPC 62 • INTER 59 • CLIA 10', 'TECON 100 • TPC 62 • INTER 59 • CLIA 10')}
-          </span>
-        </div>
       </div>
 
-      {/* INLINE RAMP-UP RATES EDITOR & CONFIG PANEL (COLLAPSIBLE) */}
-      {showRateEditor && (
-        <div className={`mb-3.5 p-3.5 rounded-xl border transition-all ${
-          theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'
-        }`}>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-gray-200 dark:border-slate-700">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-500" />
-              <h4 className="font-black text-xs text-gray-900 dark:text-white uppercase">
-                {dt('Parâmetros de Ramp-up por Terminal Alfandegado (Avg/Dia)', '各保税区爬坡速率与日均出清配额配置', 'Ramp-up Parameters per Bonded Terminal (Avg/Day)')}
-              </h4>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <button
-                type="button"
-                onClick={handleResetRates}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 transition-colors cursor-pointer"
-                title={dt('Restaurar valores padrão (100, 62, 59, 10)', '重置为标准默认值 (100, 62, 59, 10)', 'Reset to default rates')}
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>{dt('Restaurar Padrão', '恢复默认', 'Reset Default')}</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-            {/* TECON Rate */}
-            <div className={`p-2.5 rounded-lg border ${
-              theme === 'dark' ? 'bg-slate-900/60 border-slate-700' : 'bg-white border-slate-200'
-            }`}>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-xs text-blue-600 dark:text-blue-400">TECON</span>
-                <span className="text-[10px] text-gray-400 font-bold">{dt('Padrão: 100', '默认: 100', 'Def: 100')}</span>
-              </div>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <input
-                  type="number"
-                  min="0"
-                  max="1000"
-                  step="5"
-                  value={rampupRates['tecon'] || 0}
-                  onChange={(e) => handleRateChange('tecon', Number(e.target.value))}
-                  className="w-full font-mono font-black text-sm px-2 py-1 rounded border border-gray-300 dark:border-slate-700 bg-transparent text-gray-900 dark:text-white text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <span className="text-[10px] text-gray-500 shrink-0 font-medium">CNTRs/{dt('d', '天', 'd')}</span>
-              </div>
-            </div>
-
-            {/* TPC Rate */}
-            <div className={`p-2.5 rounded-lg border ${
-              theme === 'dark' ? 'bg-slate-900/60 border-slate-700' : 'bg-white border-slate-200'
-            }`}>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400">TPC</span>
-                <span className="text-[10px] text-gray-400 font-bold">{dt('Padrão: 62', '默认: 62', 'Def: 62')}</span>
-              </div>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <input
-                  type="number"
-                  min="0"
-                  max="1000"
-                  step="5"
-                  value={rampupRates['tpc'] || 0}
-                  onChange={(e) => handleRateChange('tpc', Number(e.target.value))}
-                  className="w-full font-mono font-black text-sm px-2 py-1 rounded border border-gray-300 dark:border-slate-700 bg-transparent text-gray-900 dark:text-white text-center focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
-                <span className="text-[10px] text-gray-500 shrink-0 font-medium">CNTRs/{dt('d', '天', 'd')}</span>
-              </div>
-            </div>
-
-            {/* INTERMARITIMA Rate */}
-            <div className={`p-2.5 rounded-lg border ${
-              theme === 'dark' ? 'bg-slate-900/60 border-slate-700' : 'bg-white border-slate-200'
-            }`}>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-xs text-orange-600 dark:text-orange-400">INTERMARITIMA</span>
-                <span className="text-[10px] text-gray-400 font-bold">{dt('Padrão: 59', '默认: 59', 'Def: 59')}</span>
-              </div>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <input
-                  type="number"
-                  min="0"
-                  max="1000"
-                  step="5"
-                  value={rampupRates['intermaritima'] || 0}
-                  onChange={(e) => handleRateChange('intermaritima', Number(e.target.value))}
-                  className="w-full font-mono font-black text-sm px-2 py-1 rounded border border-gray-300 dark:border-slate-700 bg-transparent text-gray-900 dark:text-white text-center focus:outline-none focus:ring-1 focus:ring-orange-500"
-                />
-                <span className="text-[10px] text-gray-500 shrink-0 font-medium">CNTRs/{dt('d', '天', 'd')}</span>
-              </div>
-            </div>
-
-            {/* CLIA Rate */}
-            <div className={`p-2.5 rounded-lg border ${
-              theme === 'dark' ? 'bg-slate-900/60 border-slate-700' : 'bg-white border-slate-200'
-            }`}>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-xs text-purple-600 dark:text-purple-400">CLIA</span>
-                <span className="text-[10px] text-gray-400 font-bold">{dt('Padrão: 10', '默认: 10', 'Def: 10')}</span>
-              </div>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <input
-                  type="number"
-                  min="0"
-                  max="1000"
-                  step="2"
-                  value={rampupRates['clia'] || 0}
-                  onChange={(e) => handleRateChange('clia', Number(e.target.value))}
-                  className="w-full font-mono font-black text-sm px-2 py-1 rounded border border-gray-300 dark:border-slate-700 bg-transparent text-gray-900 dark:text-white text-center focus:outline-none focus:ring-1 focus:ring-purple-500"
-                />
-                <span className="text-[10px] text-gray-500 shrink-0 font-medium">CNTRs/{dt('d', '天', 'd')}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. PRIMARY CANVAS AREA */}
+      {/* 3. CHART CANVAS */}
       <div className="pt-2">
-        {/* ========================================================= */}
-        {/* MODE 1: RAMP-UP & DRAIN PROJECTION VIEW (REQUESTED FOCUS) */}
-        {/* ========================================================= */}
-        {chartMode === 'rampup' && (
-          <div className="space-y-4">
-            {/* Ramp-up Secondary Controls Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 text-xs">
-              <div className="flex items-center gap-2">
-                {/* Granularity: Weeks vs Days */}
-                <div className="flex items-center bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-3xs">
-                  <button
-                    type="button"
-                    onClick={() => setRampupGranularity('weeks')}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      rampupGranularity === 'weeks'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>{dt('Por Semana (W35-W42)', '按周度预测 (W35-W42)', 'Weekly (W35-W42)')}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRampupGranularity('days')}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      rampupGranularity === 'days'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{dt('Por Dia Útil (D0 a D+20)', '按工作日走势 (D0 至 D+20)', 'Daily (D0 to D+20)')}</span>
-                  </button>
-                </div>
-
-                {/* Working Days per week: 5 vs 6 */}
-                <div className="flex items-center bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-3xs">
-                  <button
-                    type="button"
-                    onClick={() => setWorkingDaysPerWeek(5)}
-                    className={`px-2 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      workingDaysPerWeek === 5
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                    title={dt('5 Dias Úteis (Seg-Sex, Sábado/Domingo folga)', '5个工作日 (周一至周五，周末休息)', '5 Working Days (Mon-Fri)')}
-                  >
-                    5 {dt('Dias (Seg-Sex)', '天 (周一至五)', 'Days (Mon-Fri)')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setWorkingDaysPerWeek(6)}
-                    className={`px-2 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      workingDaysPerWeek === 6
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                    title={dt('6 Dias Úteis (Seg-Sáb, Domingo folga)', '6个工作日 (周一至周六，仅周日休息)', '6 Working Days (Mon-Sat)')}
-                  >
-                    6 {dt('Dias (+Sábado)', '天 (+周六作业)', 'Days (+Sat)')}
-                  </button>
-                </div>
-              </div>
-
-              {/* Chart Visual Style: Area vs Lines */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-3xs">
-                  <button
-                    type="button"
-                    onClick={() => setRampupChartType('area')}
-                    className={`px-2 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      rampupChartType === 'area'
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {dt('Área Empilhada', '堆叠出清面积图', 'Stacked Area')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRampupChartType('lines')}
-                    className={`px-2 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      rampupChartType === 'lines'
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {dt('Linhas Individuais', '终端各独立曲线', 'Lines')}
-                  </button>
-                </div>
-
-                <span className="hidden sm:inline-flex text-[11px] font-mono text-gray-500 dark:text-gray-400 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-md border border-gray-200 dark:border-slate-700">
-                  {dt('Capacidade Semanal Total:', '每周出清总运力:', 'Weekly Drain:')} <strong className="text-emerald-600 dark:text-emerald-400 ml-1">{totalBondedWeeklyDrain.toLocaleString()} CNTRs/sem</strong>
-                </span>
-              </div>
-            </div>
-
-            {/* Ramp-up Burn-down Chart */}
-            <div className="h-[310px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                {rampupChartType === 'area' ? (
-                  <AreaChart
-                    data={rampupTimeline}
-                    margin={{ top: 20, right: 25, left: 10, bottom: 20 }}
-                  >
-                    <defs>
-                      <linearGradient id="colorTecon" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1} />
-                      </linearGradient>
-                      <linearGradient id="colorTpc" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.1} />
-                      </linearGradient>
-                      <linearGradient id="colorInter" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#F97316" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#F97316" stopOpacity={0.1} />
-                      </linearGradient>
-                      <linearGradient id="colorClia" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.1} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#E2E8F0'} vertical={false} />
-                    <XAxis
-                      dataKey="period"
-                      tick={{ fill: theme === 'dark' ? '#CBD5E1' : '#334155', fontSize: 11, fontWeight: 'bold' }}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fill: theme === 'dark' ? '#94A3B8' : '#64748B', fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(v) => v.toLocaleString()}
-                      label={{
-                        value: dt('Saldo Remanescente (CNTRs)', '剩余待出库集装箱数', 'Remaining Stock (CNTRs)'),
-                        angle: -90,
-                        position: 'insideLeft',
-                        fill: theme === 'dark' ? '#94A3B8' : '#64748B',
-                        fontSize: 10,
-                        fontWeight: 'bold',
-                        offset: 0
-                      }}
-                    />
-                    <Tooltip content={<CustomRampupTooltip />} />
-                    <Legend
-                      verticalAlign="top"
-                      height={32}
-                      iconType="circle"
-                      formatter={(val) => (
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 mr-2">{val}</span>
-                      )}
-                    />
-
-                    {/* Stacked areas per terminal */}
-                    <Area
-                      type="monotone"
-                      dataKey="TECON"
-                      name={`TECON (${rampupRates['tecon'] || 100} AVG/dia)`}
-                      stackId="1"
-                      stroke="#3B82F6"
-                      fill="url(#colorTecon)"
-                      strokeWidth={2}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="TPC"
-                      name={`TPC (${rampupRates['tpc'] || 62} AVG/dia)`}
-                      stackId="1"
-                      stroke="#10B981"
-                      fill="url(#colorTpc)"
-                      strokeWidth={2}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="INTERMARITIMA"
-                      name={`INTERMARITIMA (${rampupRates['intermaritima'] || 59} AVG/dia)`}
-                      stackId="1"
-                      stroke="#F97316"
-                      fill="url(#colorInter)"
-                      strokeWidth={2}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="CLIA"
-                      name={`CLIA (${rampupRates['clia'] || 10} AVG/dia)`}
-                      stackId="1"
-                      stroke="#8B5CF6"
-                      fill="url(#colorClia)"
-                      strokeWidth={2}
-                    />
-                    <ReferenceLine y={0} stroke="#10B981" strokeDasharray="3 3" />
-                  </AreaChart>
-                ) : (
-                  <LineChart
-                    data={rampupTimeline}
-                    margin={{ top: 20, right: 25, left: 10, bottom: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#E2E8F0'} vertical={false} />
-                    <XAxis
-                      dataKey="period"
-                      tick={{ fill: theme === 'dark' ? '#CBD5E1' : '#334155', fontSize: 11, fontWeight: 'bold' }}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fill: theme === 'dark' ? '#94A3B8' : '#64748B', fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(v) => v.toLocaleString()}
-                    />
-                    <Tooltip content={<CustomRampupTooltip />} />
-                    <Legend
-                      verticalAlign="top"
-                      height={32}
-                      iconType="circle"
-                      formatter={(val) => (
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 mr-2">{val}</span>
-                      )}
-                    />
-
-                    <Line
-                      type="monotone"
-                      dataKey="TOTAL"
-                      name={`TOTAL BONDED (${totalBondedRampupAvg} AVG/dia)`}
-                      stroke="#6366F1"
-                      strokeWidth={3}
-                      strokeDasharray="4 4"
-                      dot={{ r: 4 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="TECON"
-                      name={`TECON (${rampupRates['tecon'] || 100} AVG/dia)`}
-                      stroke="#3B82F6"
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="TPC"
-                      name={`TPC (${rampupRates['tpc'] || 62} AVG/dia)`}
-                      stroke="#10B981"
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="INTERMARITIMA"
-                      name={`INTERMARITIMA (${rampupRates['intermaritima'] || 59} AVG/dia)`}
-                      stroke="#F97316"
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="CLIA"
-                      name={`CLIA (${rampupRates['clia'] || 10} AVG/dia)`}
-                      stroke="#8B5CF6"
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                    />
-                    <ReferenceLine y={0} stroke="#10B981" strokeDasharray="3 3" />
-                  </LineChart>
-                )}
-              </ResponsiveContainer>
-            </div>
-
-            {/* RAMP-UP BREAKDOWN MATRIX TABLE */}
-            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-800">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className={`border-b border-gray-200 dark:border-slate-800 font-black text-[11px] uppercase tracking-wider ${
-                    theme === 'dark' ? 'bg-slate-800/80 text-gray-300' : 'bg-slate-100 text-gray-700'
-                  }`}>
-                    <th className="py-2.5 px-3">{dt('Terminal Alfandegado', '保税堆场终端', 'Bonded Terminal')}</th>
-                    <th className="py-2.5 px-3 text-right">{dt('Estoque Atual', '当前存箱', 'Current Stock')}</th>
-                    <th className="py-2.5 px-3 text-right">{dt('Capacidade', '额定容量', 'Capacity')}</th>
-                    <th className="py-2.5 px-3 text-right text-amber-600 dark:text-amber-400 bg-amber-500/10">
-                      {dt('⚡ Ramp-up (Média Diária)', '⚡ 爬坡日均出库', '⚡ Ramp-up (Daily Avg)')}
-                    </th>
-                    <th className="py-2.5 px-3 text-right">{dt('Vazão Semanal', '周出清能力', 'Weekly Drain')}</th>
-                    <th className="py-2.5 px-3 text-right text-indigo-600 dark:text-indigo-400">
-                      {dt('Dias Úteis p/ Esvaziar', '出清所需工作日', 'Days to Clear')}
-                    </th>
-                    <th className="py-2.5 px-3 text-right">{dt('Semanas Estimadas', '折合周数', 'Est. Weeks')}</th>
-                    <th className="py-2.5 px-3 text-center">{dt('Previsão Liberação Total', '预计全部出清日期', 'Target Date')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                  {bondedData.map((yard, idx) => (
-                    <tr
-                      key={yard.id}
-                      className={`transition-colors ${
-                        theme === 'dark' ? 'hover:bg-slate-800/50' : 'hover:bg-blue-50/40'
-                      }`}
-                    >
-                      <td className="py-2.5 px-3 font-bold flex items-center gap-2">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: BONDED_COLORS[idx % BONDED_COLORS.length] }}
-                        />
-                        <span className="text-gray-900 dark:text-white uppercase font-black">{yard.name}</span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-black text-blue-600 dark:text-blue-400">
-                        {yard.cheio.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">CNTRs</span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-300">
-                        {yard.capacity.toLocaleString()}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-black text-amber-600 dark:text-amber-400 bg-amber-500/5">
-                        <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/60">
-                          {yard.rampupAvg} CNTRs/{dt('dia', '天', 'day')}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-gray-700 dark:text-gray-200">
-                        {yard.weeklyDrain.toLocaleString()} CNTRs/{dt('sem', '周', 'wk')}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-black text-indigo-600 dark:text-indigo-400">
-                        ~{yard.daysToDrain.toFixed(1)} {dt('dias', '天', 'days')}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-gray-600 dark:text-gray-300">
-                        ~{yard.weeksToDrain.toFixed(1)} {dt('sem', '周', 'wks')}
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-[11px]">
-                          {yard.estimatedClearanceDate}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {/* TOTAL BONDED SUMMARY ROW */}
-                  <tr className={`font-black text-xs ${
-                    theme === 'dark' ? 'bg-indigo-950/40 text-white' : 'bg-indigo-50/80 text-indigo-950'
-                  }`}>
-                    <td className="py-3 px-3 uppercase tracking-wider font-black flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
-                      <Zap className="w-4 h-4 text-amber-500" />
-                      <span>{dt('TOTAL BONDED (TODAS ÁREAS)', '保税区全域合计', 'TOTAL BONDED (ALL AREAS)')}</span>
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono text-sm font-black text-blue-600 dark:text-blue-400">
-                      {totalBondedCheio.toLocaleString()} CNTRs
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono font-bold">
-                      {totalBondedCapacity.toLocaleString()}
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono font-black text-amber-600 dark:text-amber-400 text-sm bg-amber-500/10">
-                      <span className="px-2.5 py-1 rounded-md bg-amber-200/80 dark:bg-amber-900/80">
-                        {totalBondedRampupAvg} CNTRs/{dt('dia', '天', 'day')}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono font-black text-gray-900 dark:text-white">
-                      {totalBondedWeeklyDrain.toLocaleString()} CNTRs/{dt('sem', '周', 'wk')}
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono font-black text-indigo-600 dark:text-indigo-400 text-sm">
-                      ~{totalBondedDaysToDrain.toFixed(1)} {dt('dias úteis', '工作日', 'days')}
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono font-black text-gray-700 dark:text-gray-200">
-                      ~{totalBondedWeeksToDrain.toFixed(1)} {dt('semanas', '周', 'wks')}
-                    </td>
-                    <td className="py-3 px-3 text-center font-mono font-black text-emerald-600 dark:text-emerald-400">
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-200/80 dark:bg-emerald-900/80 text-xs">
-                        {totalEstimatedClearanceDate}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================= */}
-        {/* MODE 2: BARS (ESTOQUE VS CAPACIDADE)                      */}
-        {/* ========================================================= */}
         {chartMode === 'bars' && (
           <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -1437,9 +569,6 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
           </div>
         )}
 
-        {/* ========================================================= */}
-        {/* MODE 3: COMPOSITION (PÁTIO + PORTO + PRONTO COLETA)       */}
-        {/* ========================================================= */}
         {chartMode === 'composition' && (
           <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -1507,9 +636,6 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
           </div>
         )}
 
-        {/* ========================================================= */}
-        {/* MODE 4: DONUT (PERCENTUAL DE PARTICIPAÇÃO)                */}
-        {/* ========================================================= */}
         {chartMode === 'donut' && (
           <div className="h-[280px] w-full flex flex-col md:flex-row items-center justify-around gap-4">
             <div className="h-[240px] w-full md:w-1/2 relative flex items-center justify-center">
@@ -1584,13 +710,13 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
         )}
       </div>
 
-      {/* 4. INDIVIDUAL BONDED TERMINAL CARDS WITH RAMP-UP STATS */}
+      {/* 4. INDIVIDUAL BONDED TERMINAL CARDS (INTERACTIVE & DETAILED) */}
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-800">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5">
             <Building2 className="w-4 h-4 text-blue-500" />
             <h4 className="font-extrabold text-xs text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-              {dt('Detalhamento & Taxas de Ramp-up por Terminal Alfandegado', '各保税终端详细运行与出清爬坡指标', 'Breakdown & Ramp-up Rates by Bonded Terminal')}
+              {dt('Detalhamento por Terminal Alfandegado', '各保税终端详细运行指标', 'Breakdown by Bonded Terminal')}
             </h4>
           </div>
           <span className="text-[10px] text-gray-400 font-medium">
@@ -1658,31 +784,8 @@ export const BondedAreasChart: React.FC<BondedAreasChartProps> = ({
                   />
                 </div>
 
-                {/* RAMP-UP HIGHLIGHT PILL */}
-                <div className="mt-2.5 p-2 rounded-lg bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/20 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <div>
-                      <span className="block text-[9px] uppercase font-bold text-amber-700 dark:text-amber-400">
-                        {dt('Ramp-up (Avg/Dia)', '日均出清爬坡', 'Ramp-up (Avg/Day)')}
-                      </span>
-                      <span className="font-mono font-black text-xs text-amber-800 dark:text-amber-300">
-                        {yard.rampupAvg} CNTRs/{dt('dia', '天', 'day')}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="block text-[9px] uppercase font-bold text-gray-400">
-                      {dt('Desova em', '清空耗时', 'Clears in')}
-                    </span>
-                    <span className="font-mono font-bold text-xs text-indigo-600 dark:text-indigo-400">
-                      ~{yard.daysToDrain.toFixed(0)}d ({yard.weeksToDrain.toFixed(1)}s)
-                    </span>
-                  </div>
-                </div>
-
                 {/* Secondary breakdown stats */}
-                <div className="mt-2 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] grid grid-cols-2 gap-1 text-gray-500 dark:text-gray-400">
+                <div className="mt-2.5 pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 text-[10px] grid grid-cols-2 gap-1 text-gray-500 dark:text-gray-400">
                   <div>
                     <span className="block text-gray-400 text-[9px]">{dt('Vagas Livres:', '空余堆位:', 'Free Slots:')}</span>
                     <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
