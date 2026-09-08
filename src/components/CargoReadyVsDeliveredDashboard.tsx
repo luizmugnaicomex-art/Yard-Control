@@ -315,8 +315,6 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
   // 1. DYNAMIC STATE MODELS & MAPPINGS (Zero Hardcoded Assumptions)
   // -------------------------------------------------------------
 
-undefined
-
   const yardStockList: YardStockItem[] = useMemo(() => {
     return (Object.entries(yards || {}) as [string, Yard][]).map(([id, y]) => {
       let cat: 'BONDED' | 'WAREHOUSE' | 'BUFFER' = 'WAREHOUSE';
@@ -354,7 +352,7 @@ undefined
   // 2. REACTIVE CALCULATION ENGINE
   // -------------------------------------------------------------
 
-  // A. Dynamic Inventory Rollup (Recalculates whenever any yard item updates)
+  // A. Dynamic Inventory Rollup (Quantities We Have in Yard Stock: Bonded + Warehouse + Buffer)
   const activeBondedStock = useMemo(() => {
     return yardStockList.filter(y => y.category === 'BONDED').reduce((acc, y) => acc + y.currentFull, 0);
   }, [yardStockList]);
@@ -367,18 +365,38 @@ undefined
     return yardStockList.filter(y => y.category === 'BUFFER').reduce((acc, y) => acc + (y.currentFull || 0) + (y.currentEmpty || 0), 0);
   }, [yardStockList]);
 
+  // Total Quantity We Have = Bonded Containers + Warehouse Qty + Buffer Qty
   const totalInitialBacklog = activeBondedStock + activeWarehouseStock + activeBufferStock;
 
-  const dynamicYardMaxCapacity = useMemo(() => {
-    return yardStockList.reduce((acc, y) => acc + (y.capacity || 0), 0);
+  // B. Capacity Rollup by Functional Area
+  const bondedCapacity = useMemo(() => {
+    return yardStockList.filter(y => y.category === 'BONDED').reduce((acc, y) => acc + (y.capacity || 0), 0);
   }, [yardStockList]);
 
-  const dynamicSafeYardCapacity = useMemo(() => {
-    return Math.round(dynamicYardMaxCapacity * 0.75);
-  }, [dynamicYardMaxCapacity]);
+  const warehouseCapacity = useMemo(() => {
+    return yardStockList.filter(y => y.category === 'WAREHOUSE').reduce((acc, y) => acc + (y.capacity || 0), 0);
+  }, [yardStockList]);
 
-  const activeOccupancyRate = dynamicYardMaxCapacity > 0
-    ? Math.round((totalInitialBacklog / dynamicYardMaxCapacity) * 100)
+  const bufferCapacity = useMemo(() => {
+    return yardStockList.filter(y => y.category === 'BUFFER').reduce((acc, y) => acc + (y.capacity || 0), 0);
+  }, [yardStockList]);
+
+  // Total Ecosystem Capacity (Sum of Bonded + Warehouse + Buffer)
+  const totalEcosystemCapacity = bondedCapacity + warehouseCapacity + bufferCapacity;
+  const dynamicYardMaxCapacity = totalEcosystemCapacity;
+
+  // Safe Capacity = Sum of the capacities of active facilities:
+  // - Etapa 1 (Pátios + CDs): Bonded Capacity + Warehouse Capacity
+  // - Etapa 2 / 3 (+ Buffer / Navios): Bonded Capacity + Warehouse Capacity + Buffer Capacity
+  const dynamicSafeYardCapacity = useMemo(() => {
+    if (selectedScenario === 'etapa1') {
+      return bondedCapacity + warehouseCapacity;
+    }
+    return bondedCapacity + warehouseCapacity + bufferCapacity;
+  }, [selectedScenario, bondedCapacity, warehouseCapacity, bufferCapacity]);
+
+  const activeOccupancyRate = dynamicSafeYardCapacity > 0
+    ? Math.round((totalInitialBacklog / dynamicSafeYardCapacity) * 100)
     : 0;
 
   // B. Dynamic ETA Week Aggregation & Simulation until Yard Drain reaches Zero
@@ -982,7 +1000,13 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
             <span className="text-2xl font-black font-mono text-blue-600 dark:text-blue-400">{activeBondedStock.toLocaleString()}</span>
             <span className="text-[10px] font-bold text-gray-400">CNTRs</span>
           </div>
-          <span className="text-[9px] text-gray-400 block mt-1 truncate" title={yardStockList.filter(y => y.category === 'BONDED').map(y => y.name).join(' • ')}>
+          <div className="flex items-center justify-between mt-1 text-[9.5px]">
+            <span className="text-gray-500 dark:text-gray-400 font-semibold">{dt('Cap:', '容量:', 'Cap:')} <strong className="font-mono text-gray-700 dark:text-gray-300">{bondedCapacity.toLocaleString()}</strong></span>
+            <span className={`px-1.5 py-0.2 rounded font-black ${bondedCapacity > 0 && Math.round((activeBondedStock / bondedCapacity) * 100) >= 80 ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'}`}>
+              {bondedCapacity > 0 ? Math.round((activeBondedStock / bondedCapacity) * 100) : 0}%
+            </span>
+          </div>
+          <span className="text-[8.5px] text-gray-400 block mt-0.5 truncate" title={yardStockList.filter(y => y.category === 'BONDED').map(y => y.name).join(' • ')}>
             {yardStockList.filter(y => y.category === 'BONDED').map(y => y.name).join(' • ') || 'TECON • INTERMARÍTIMA • TPC • CLIA'}
           </span>
         </div>
@@ -999,7 +1023,13 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
             <span className="text-2xl font-black font-mono text-indigo-600 dark:text-indigo-400">{activeWarehouseStock.toLocaleString()}</span>
             <span className="text-[10px] font-bold text-gray-400">CNTRs</span>
           </div>
-          <span className="text-[9px] text-gray-400 block mt-1 truncate" title={yardStockList.filter(y => y.category === 'WAREHOUSE').map(y => y.name).join(' • ')}>
+          <div className="flex items-center justify-between mt-1 text-[9.5px]">
+            <span className="text-gray-500 dark:text-gray-400 font-semibold">{dt('Cap:', '容量:', 'Cap:')} <strong className="font-mono text-gray-700 dark:text-gray-300">{warehouseCapacity.toLocaleString()}</strong></span>
+            <span className={`px-1.5 py-0.2 rounded font-black ${warehouseCapacity > 0 && Math.round((activeWarehouseStock / warehouseCapacity) * 100) >= 80 ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300' : 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300'}`}>
+              {warehouseCapacity > 0 ? Math.round((activeWarehouseStock / warehouseCapacity) * 100) : 0}%
+            </span>
+          </div>
+          <span className="text-[8.5px] text-gray-400 block mt-0.5 truncate" title={yardStockList.filter(y => y.category === 'WAREHOUSE').map(y => y.name).join(' • ')}>
             {yardStockList.filter(y => y.category === 'WAREHOUSE').map(y => y.name).join(' • ') || 'AG INTER CDEX • CTS'}
           </span>
         </div>
@@ -1016,7 +1046,13 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
             <span className="text-2xl font-black font-mono text-teal-600 dark:text-teal-400">{activeBufferStock.toLocaleString()}</span>
             <span className="text-[10px] font-bold text-gray-400">CNTRs</span>
           </div>
-          <span className="text-[9px] text-gray-400 block mt-1 truncate" title={yardStockList.filter(y => y.category === 'BUFFER').map(y => y.name).join(' • ')}>
+          <div className="flex items-center justify-between mt-1 text-[9.5px]">
+            <span className="text-gray-500 dark:text-gray-400 font-semibold">{dt('Cap:', '容量:', 'Cap:')} <strong className="font-mono text-gray-700 dark:text-gray-300">{bufferCapacity.toLocaleString()}</strong></span>
+            <span className={`px-1.5 py-0.2 rounded font-black ${bufferCapacity > 0 && Math.round((activeBufferStock / bufferCapacity) * 100) >= 80 ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300' : 'bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300'}`}>
+              {bufferCapacity > 0 ? Math.round((activeBufferStock / bufferCapacity) * 100) : 0}%
+            </span>
+          </div>
+          <span className="text-[8.5px] text-gray-400 block mt-0.5 truncate" title={yardStockList.filter(y => y.category === 'BUFFER').map(y => y.name).join(' • ')}>
             {yardStockList.filter(y => y.category === 'BUFFER').map(y => y.name).join(' • ') || 'BYD BUFFER'}
           </span>
         </div>
@@ -1040,7 +1076,7 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
 
         {/* 5. Cumulative Peak Yard Risk */}
         <div className={`p-3 rounded-xl border relative overflow-hidden transition-all hover:scale-[1.02] col-span-2 sm:col-span-1 ${
-          peakPoint.inventoryBalance > 3000
+          peakPoint.inventoryBalance > dynamicSafeYardCapacity
             ? (theme === 'dark' ? 'bg-rose-950/20 border-rose-800/40' : 'bg-rose-50/60 border-rose-200')
             : (theme === 'dark' ? 'bg-emerald-950/20 border-emerald-800/40' : 'bg-emerald-50/60 border-emerald-200')
         }`}>
@@ -1054,9 +1090,58 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
             </span>
             <span className="text-[10px] font-bold text-rose-500">CNTRs ({peakPoint.week})</span>
           </div>
-          <span className="text-[9px] text-gray-500 dark:text-gray-400 block mt-1 font-bold">
-            {dt('Capacidade Segura:', '安全承载容量:', 'Safe Capacity:')} {dynamicSafeYardCapacity.toLocaleString()} CNTRs
-          </span>
+          <div className="text-[9px] text-gray-600 dark:text-gray-300 mt-1 font-bold flex flex-col gap-0.5">
+            <div className="flex items-center justify-between">
+              <span>{dt('Capacidade Segura (Soma):', '安全总容量 (求和):', 'Safe Capacity (Sum):')}</span>
+              <span className="font-mono text-emerald-600 dark:text-emerald-400">{dynamicSafeYardCapacity.toLocaleString()} CNTRs</span>
+            </div>
+            <span className="text-[8px] text-gray-400 dark:text-gray-500 font-normal truncate">
+              {dt('Bonded', '保税', 'Bonded')} ({bondedCapacity.toLocaleString()}) + {dt('CDs', '外仓', 'CDs')} ({warehouseCapacity.toLocaleString()}){selectedScenario !== 'etapa1' ? ` + Buffer (${bufferCapacity.toLocaleString()})` : ''}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2.1 CAPACITY & QUANTITY SUM RECONCILIATION SUMMARY BAR */}
+      <div className="p-3 rounded-xl border bg-gradient-to-r from-blue-50/80 via-indigo-50/80 to-teal-50/80 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-teal-950/30 border-blue-200/80 dark:border-blue-900/40 flex flex-wrap items-center justify-between gap-3 mb-4 shadow-2xs">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 bg-blue-600 text-white rounded-lg shadow-xs">
+            <Layers className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-black uppercase text-gray-900 dark:text-white">
+                {dt('Balanço Geral: Quantidade que Temos vs Capacidade Segura', '库存实存总量 vs 安全承载总容量核算', 'Total Stock on Hand vs Safe Capacity')}
+              </span>
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                {dt('Soma: Bonded + Armazém + Buffer', '求和公式: 保税仓 + 普通仓 + 缓冲区', 'Sum: Bonded + Warehouse + Buffer')}
+              </span>
+            </div>
+            <p className="text-[10.5px] text-gray-600 dark:text-gray-400 mt-0.5">
+              {dt(
+                `Estoque Atual: ${totalInitialBacklog.toLocaleString()} CNTRs (Alfandegado: ${activeBondedStock.toLocaleString()} + Armazéns: ${activeWarehouseStock.toLocaleString()} + Buffer: ${activeBufferStock.toLocaleString()}) • Capacidade Segura: ${dynamicSafeYardCapacity.toLocaleString()} CNTRs (Alfandegado: ${bondedCapacity.toLocaleString()} + Armazéns: ${warehouseCapacity.toLocaleString()}${selectedScenario !== 'etapa1' ? ` + Buffer: ${bufferCapacity.toLocaleString()}` : ''})`,
+                `当前在库总量: ${totalInitialBacklog.toLocaleString()} 箱 (保税: ${activeBondedStock.toLocaleString()} + 外仓: ${activeWarehouseStock.toLocaleString()} + 缓冲: ${activeBufferStock.toLocaleString()}) • 安全总容量: ${dynamicSafeYardCapacity.toLocaleString()} 箱 (保税: ${bondedCapacity.toLocaleString()} + 外仓: ${warehouseCapacity.toLocaleString()}${selectedScenario !== 'etapa1' ? ` + 缓冲: ${bufferCapacity.toLocaleString()}` : ''})`,
+                `Current Inventory: ${totalInitialBacklog.toLocaleString()} CNTRs (Bonded: ${activeBondedStock.toLocaleString()} + Warehouse: ${activeWarehouseStock.toLocaleString()} + Buffer: ${activeBufferStock.toLocaleString()}) • Safe Capacity: ${dynamicSafeYardCapacity.toLocaleString()} CNTRs (Bonded: ${bondedCapacity.toLocaleString()} + Warehouse: ${warehouseCapacity.toLocaleString()}${selectedScenario !== 'etapa1' ? ` + Buffer: ${bufferCapacity.toLocaleString()}` : ''})`
+              )}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col text-right">
+            <span className="text-[9px] uppercase font-bold text-gray-500 dark:text-gray-400">{dt('Ocupação Geral', '综合负荷率', 'Overall Occupancy')}</span>
+            <span className="font-mono text-sm font-black text-gray-900 dark:text-white">
+              {totalInitialBacklog.toLocaleString()} / {dynamicSafeYardCapacity.toLocaleString()} <span className="text-[10px] text-gray-400">CNTRs</span>
+            </span>
+          </div>
+          <div className={`px-2.5 py-1 rounded-lg text-xs font-black border ${
+            activeOccupancyRate >= 85 
+              ? 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800' 
+              : activeOccupancyRate >= 70 
+                ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800' 
+                : 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+          }`}>
+            {activeOccupancyRate}%
+          </div>
         </div>
       </div>
 
@@ -1432,18 +1517,18 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
                   )}
                 />
 
-                {/* Safe yard threshold reference line */}
+                {/* Safe yard threshold reference line (Exact Sum of Active Facilities) */}
                 <ReferenceLine
                   yAxisId="left"
                   y={dynamicSafeYardCapacity}
                   stroke="#F59E0B"
                   strokeDasharray="4 4"
-                  strokeWidth={1.5}
+                  strokeWidth={2}
                   label={{
-                    value: `${dt('Capacidade Segura', '安全容量', 'Safe Capacity')} (${dynamicSafeYardCapacity.toLocaleString()} CNTRs)`,
-                    fill: '#F59E0B',
+                    value: `${dt('Capacidade Segura (Soma)', '安全总容量 (求和)', 'Safe Capacity (Sum)')}: ${dynamicSafeYardCapacity.toLocaleString()} CNTRs`,
+                    fill: '#D97706',
                     fontSize: 10,
-                    fontWeight: 'bold',
+                    fontWeight: 800,
                     position: 'top'
                   }}
                 />

@@ -6380,6 +6380,57 @@ export default function App() {
                           </h3>
                         </div>
 
+                        {/* EXECUTIVE TOTAL CAPACITY & STOCK SUM RECONCILIATION */}
+                        {(() => {
+                          const totalStockWeHave = (bondedSum.totalCheio || 0) + (warehouseSum.totalCheio || 0) + (bufferSum.totalOccupied || 0);
+                          const totalSafeCap = (bondedSum.totalCap || 0) + (warehouseSum.totalCap || 0) + (bufferSum.totalCap || 0);
+                          const totalOccupancyPct = totalSafeCap > 0 ? Math.round((totalStockWeHave / totalSafeCap) * 100) : 0;
+                          return (
+                            <div className={`p-3 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
+                              theme === 'dark' ? 'bg-slate-900/60 border-slate-800' : 'bg-gradient-to-r from-blue-50/70 via-indigo-50/70 to-teal-50/70 border-blue-200/80'
+                            } shadow-xs`}>
+                              <div className="flex items-center gap-2.5">
+                                <div className="p-2 bg-blue-600 text-white rounded-lg shadow-xs">
+                                  <Layers className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs font-black uppercase tracking-tight text-gray-900 dark:text-white">
+                                      {language === 'bilingual' ? 'Capacidade Segura & Volume em Estoque (Soma Geral) / 安全总容量与实存量核算 (全量汇总)' : 'Capacidade Segura & Volume em Estoque (Soma Geral)'}
+                                    </span>
+                                    <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                      {language === 'bilingual' ? 'Bonded + Warehouse + Buffer / 保税 + 外仓 + 缓冲' : 'Bonded + Warehouse + Buffer'}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10.5px] text-gray-600 dark:text-gray-400 mt-0.5">
+                                    {language === 'bilingual'
+                                      ? `Estoque Atual: ${totalStockWeHave.toLocaleString()} CNTRs (Alfandegado: ${bondedSum.totalCheio.toLocaleString()} + Armazéns: ${warehouseSum.totalCheio.toLocaleString()} + Buffer: ${bufferSum.totalOccupied.toLocaleString()}) • Capacidade Segura: ${totalSafeCap.toLocaleString()} CNTRs (Alfandegado: ${bondedSum.totalCap.toLocaleString()} + Armazéns: ${warehouseSum.totalCap.toLocaleString()} + Buffer: ${bufferSum.totalCap.toLocaleString()})`
+                                      : `Estoque Atual: ${totalStockWeHave.toLocaleString()} CNTRs (Alfandegado: ${bondedSum.totalCheio.toLocaleString()} + Armazéns: ${warehouseSum.totalCheio.toLocaleString()} + Buffer: ${bufferSum.totalOccupied.toLocaleString()}) • Capacidade Segura: ${totalSafeCap.toLocaleString()} CNTRs (Alfandegado: ${bondedSum.totalCap.toLocaleString()} + Armazéns: ${warehouseSum.totalCap.toLocaleString()} + Buffer: ${bufferSum.totalCap.toLocaleString()})`
+                                    }
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <div className="flex flex-col text-right">
+                                  <span className="text-[9px] uppercase font-bold text-gray-400">{language === 'bilingual' ? 'Ocupação Geral / 综合负荷' : 'Ocupação Geral'}</span>
+                                  <span className="font-mono text-sm font-black text-gray-900 dark:text-white">
+                                    {totalStockWeHave.toLocaleString()} / {totalSafeCap.toLocaleString()} <span className="text-[10px] text-gray-400">CNTRs</span>
+                                  </span>
+                                </div>
+                                <div className={`px-2.5 py-1 rounded-lg text-xs font-black border ${
+                                  totalOccupancyPct >= 85
+                                    ? 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950/60 dark:text-red-300 dark:border-red-800'
+                                    : totalOccupancyPct >= 70
+                                      ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                                      : 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                                }`}>
+                                  {totalOccupancyPct}%
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
                         {/* SECTION 1: BONDED TERMINALS */}
                         <div className="flex flex-col gap-3">
                           <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-[#0f172a]/40 border-slate-800' : 'bg-slate-50/70 border-slate-200/80'} border-l-4 border-l-blue-500`}>
