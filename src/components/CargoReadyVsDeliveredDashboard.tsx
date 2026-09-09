@@ -651,19 +651,27 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
 
   const handleAddVessel = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!setVessels || !newVesselName.trim()) return;
+    if (!newVesselName.trim()) return;
     const newId = Date.now();
     const newVesselObj: Vessel = {
       id: newId,
       name: newVesselName.toUpperCase().trim(),
-      eta: newVesselEta,
+      eta: newVesselEta || '2026-08-25',
       cntrs: Number(newVesselCntrs) || 100
     };
-    setVessels(prev => {
-      const next = [...prev, newVesselObj];
-      try { localStorage.setItem('byd_vessels_data', JSON.stringify(next)); } catch {}
-      return next;
-    });
+    if (setVessels) {
+      setVessels(prev => {
+        const next = [...prev, newVesselObj];
+        try { localStorage.setItem('byd_vessels_data', JSON.stringify(next)); } catch {}
+        return next;
+      });
+    } else {
+      try {
+        const current = JSON.parse(localStorage.getItem('byd_vessels_data') || '[]');
+        const next = [...current, newVesselObj];
+        localStorage.setItem('byd_vessels_data', JSON.stringify(next));
+      } catch {}
+    }
     setDoc(doc(db, 'vessels', String(newId)), newVesselObj).catch(err => console.warn('Falha ao adicionar vessel no Firestore:', err));
     setNewVesselName('');
     setNewVesselCntrs(500);

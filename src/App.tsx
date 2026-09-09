@@ -50,7 +50,9 @@ import { Calculator, ArrowUp, ArrowDown, X,
   Activity,
   LayoutGrid,
   List,
-  Search, DollarSign
+  Search, DollarSign,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -1988,16 +1990,16 @@ export default function App() {
   const toggleVesselMonth = (monthKey: string) => {
     setExpandedVesselMonths(prev => ({
       ...prev,
-      [monthKey]: !prev[monthKey]
+      [monthKey]: prev[monthKey] !== undefined ? !prev[monthKey] : false
     }));
   };
 
   const toggleAllVesselMonths = (groups: { monthKey: string }[]) => {
-    const anyOpen = groups.some(g => expandedVesselMonths[g.monthKey]);
+    const anyOpen = groups.some(g => expandedVesselMonths[g.monthKey] !== false);
     const newMap: Record<string, boolean> = {};
-    if (!anyOpen) {
-      groups.forEach(g => { newMap[g.monthKey] = true; });
-    }
+    groups.forEach(g => {
+      newMap[g.monthKey] = !anyOpen;
+    });
     setExpandedVesselMonths(newMap);
   };
   const [user, setUser] = useState<User | null>(null);
@@ -2881,10 +2883,13 @@ export default function App() {
 
   // Estado para novo Navio
   const [newVesselName, setNewVesselName] = useState('');
-  const [newVesselEta, setNewVesselEta] = useState('');
+  const [newVesselEta, setNewVesselEta] = useState('2026-08-25');
   const [newVesselCntrs, setNewVesselCntrs] = useState(1000);
   // ESTADOS EXPANDIDOS PARA GESTÃO COMPLETA DE NAVIOS (VESSELS CONTROL TOWER)
   const [showAddVesselForm, setShowAddVesselForm] = useState(false);
+  const [showQuickAddVesselSlide0, setShowQuickAddVesselSlide0] = useState(false);
+  const [vesselFormError, setVesselFormError] = useState<string | null>(null);
+  const [vesselSuccessMessage, setVesselSuccessMessage] = useState<string | null>(null);
   const [vesselFilterSearch, setVesselFilterSearch] = useState('');
   const [vesselViewMode, setVesselViewMode] = useState<'monthly' | 'list'>('monthly');
   const [newVesselCarrier, setNewVesselCarrier] = useState('BYD CHARTER');
@@ -4889,22 +4894,24 @@ export default function App() {
     try {
       await deleteDoc(doc(db, 'vessels', String(id)));
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `vessels/${id}`);
+      console.warn("Falha ao excluir navio no Firestore:", error);
     }
   };
 
   // ADICIONAR NAVIO
   const addVessel = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!newVesselName.trim() || !newVesselEta.trim()) {
-      alert(language === 'zh' ? '请输入船名和预报到港日期（ETA）' : language === 'en' ? 'Please enter vessel name and ETA date' : 'Por favor, informe o nome do navio e a data de ETA.');
+    setVesselFormError(null);
+    if (!newVesselName.trim()) {
+      setVesselFormError(language === 'zh' ? '请输入船名' : language === 'en' ? 'Please enter vessel name' : 'Por favor, informe o nome do navio.');
       return;
     }
+    const finalEta = newVesselEta.trim() || '2026-08-25';
     const newId = Date.now();
     const newV: Vessel = {
       id: newId,
       name: newVesselName.toUpperCase().trim(),
-      eta: newVesselEta.trim(),
+      eta: finalEta,
       cntrs: Number(newVesselCntrs) || 0,
       order: vessels.length,
       carrier: newVesselCarrier.trim() || 'BYD CHARTER',
@@ -4915,13 +4922,36 @@ export default function App() {
     const updated = [...vessels, newV];
     setVessels(updated);
     try { localStorage.setItem('byd_vessels_data', JSON.stringify(updated)); } catch {}
+
+    // Auto-expand the month group of the newly added vessel
+    let year = 2026;
+    let month = 8;
+    if (finalEta.includes('-')) {
+      const p = finalEta.split('-');
+      if (p.length >= 2) {
+        year = parseInt(p[0], 10) || 2026;
+        month = parseInt(p[1], 10) || 8;
+      }
+    } else if (finalEta.includes('/')) {
+      const p = finalEta.split('/');
+      if (p.length >= 2) {
+        month = parseInt(p[1], 10) || 8;
+        if (p.length >= 3) year = parseInt(p[2], 10) || 2026;
+      }
+    }
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+    setExpandedVesselMonths(prev => ({ ...prev, [monthKey]: true }));
+
     setNewVesselName('');
-    setNewVesselEta('');
+    setNewVesselEta('2026-08-25');
     setNewVesselCntrs(1000);
     setNewVesselCarrier('BYD CHARTER');
     setNewVesselStatus('SCHEDULED');
     setNewVesselTerminal('Porto de Santos');
     setShowAddVesselForm(false);
+    setShowQuickAddVesselSlide0(false);
+    setVesselSuccessMessage(language === 'zh' ? `船舶 ${newV.name} 已成功添加！` : language === 'en' ? `Vessel ${newV.name} added successfully!` : `Navio ${newV.name} adicionado com sucesso!`);
+    setTimeout(() => setVesselSuccessMessage(null), 4500);
     
     try {
       await setDoc(doc(db, 'vessels', String(newId)), {
@@ -4935,7 +4965,7 @@ export default function App() {
         terminal: newV.terminal
       });
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, `vessels/${newId}`);
+      console.warn("Falha ao persistir navio no Firestore:", error);
     }
   };
 
@@ -6665,10 +6695,24 @@ export default function App() {
                                       </div>
                                       
                                       <div className="flex items-center gap-1.5">
+                                        {/* Botão Adicionar Navio diretamente no Card do Slide 0 */}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setShowQuickAddVesselSlide0(prev => !prev);
+                                            setVesselFormError(null);
+                                          }}
+                                          className="text-[9.5px] font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
+                                          title={language === 'bilingual' ? 'Adicionar Novo Navio / 新增船舶' : 'Adicionar Novo Navio'}
+                                        >
+                                          {showQuickAddVesselSlide0 ? <X className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
+                                          <span>{showQuickAddVesselSlide0 ? (language === 'bilingual' ? 'Fechar / 关闭' : 'Fechar') : (language === 'bilingual' ? '+ Navio / + 船舶' : '+ Navio')}</span>
+                                        </button>
+
                                         {/* Quick Toggle All Months */}
                                         {(() => {
                                           const monthlyGroups = groupVesselsByMonth(vessels, language);
-                                          const anyOpen = monthlyGroups.some(g => expandedVesselMonths[g.monthKey]);
+                                          const anyOpen = monthlyGroups.some(g => expandedVesselMonths[g.monthKey] !== false);
                                           return (
                                             <button
                                               type="button"
@@ -6696,6 +6740,110 @@ export default function App() {
                                       </div>
                                     </div>
 
+                                    {/* MENSAGEM DE SUCESSO OU ERRO */}
+                                    {vesselSuccessMessage && (
+                                      <div className="mb-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold flex items-center gap-1.5">
+                                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                                        <span>{vesselSuccessMessage}</span>
+                                      </div>
+                                    )}
+
+                                    {/* FORMULÁRIO RÁPIDO ADICIONAR NAVIO NO SLIDE 0 */}
+                                    {showQuickAddVesselSlide0 && (
+                                      <form onSubmit={addVessel} className="mb-3 p-3 rounded-xl border-2 border-blue-400/60 dark:border-blue-600/60 bg-blue-50/60 dark:bg-slate-800/90 shadow-md space-y-2.5 animate-in fade-in duration-150">
+                                        <div className="flex items-center justify-between pb-1 border-b border-blue-200 dark:border-slate-700">
+                                          <span className="text-[11px] font-extrabold text-blue-700 dark:text-blue-300 flex items-center gap-1">
+                                            <Ship className="w-3.5 h-3.5 text-blue-600" />
+                                            {language === 'bilingual' ? 'Cadastrar Navio na Escala / 登记靠泊船舶' : language === 'zh' ? '登记靠泊船舶 (ETA)' : 'Cadastrar Navio na Escala'}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => setShowQuickAddVesselSlide0(false)}
+                                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 cursor-pointer"
+                                          >
+                                            <X className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+
+                                        {vesselFormError && (
+                                          <div className="p-1.5 rounded bg-rose-50 dark:bg-rose-950/50 border border-rose-200 text-rose-700 dark:text-rose-300 text-[10.5px] font-medium flex items-center gap-1">
+                                            <AlertCircle className="w-3 h-3 shrink-0" />
+                                            <span>{vesselFormError}</span>
+                                          </div>
+                                        )}
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                          <div>
+                                            <label className="text-[9.5px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">
+                                              {language === 'bilingual' ? 'Nome do Navio / 船名 *' : language === 'zh' ? '船名 *' : 'Nome do Navio *'}
+                                            </label>
+                                            <input
+                                              type="text"
+                                              required
+                                              autoFocus
+                                              placeholder="Ex: BYD EXPLORER NO.1"
+                                              value={newVesselName}
+                                              onChange={(e) => setNewVesselName(e.target.value)}
+                                              className="w-full px-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                                            />
+                                          </div>
+
+                                          <div>
+                                            <label className="text-[9.5px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">
+                                              {language === 'bilingual' ? 'Data ETA / 预报到港 *' : language === 'zh' ? '预报到港日 *' : 'Data ETA *'}
+                                            </label>
+                                            <input
+                                              type="date"
+                                              required
+                                              value={newVesselEta}
+                                              onChange={(e) => setNewVesselEta(e.target.value)}
+                                              className="w-full px-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                                            />
+                                          </div>
+
+                                          <div>
+                                            <label className="text-[9.5px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">
+                                              {language === 'bilingual' ? 'Contêineres / 箱量 *' : language === 'zh' ? '箱量 (CNTRs) *' : 'Contêineres (CNTRs) *'}
+                                            </label>
+                                            <input
+                                              type="number"
+                                              required
+                                              min="1"
+                                              value={newVesselCntrs}
+                                              onChange={(e) => setNewVesselCntrs(Number(e.target.value))}
+                                              className="w-full px-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-xs font-mono font-black text-blue-600 dark:text-blue-400 outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-1">
+                                          <button
+                                            type="button"
+                                            onClick={() => setCurrentSlide(2)}
+                                            className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
+                                          >
+                                            {language === 'bilingual' ? 'Ir para Gestão de Navios (Slide 2) →' : 'Ir para Gestão de Navios (Slide 2) →'}
+                                          </button>
+                                          <div className="flex items-center gap-1.5">
+                                            <button
+                                              type="button"
+                                              onClick={() => setShowQuickAddVesselSlide0(false)}
+                                              className="px-2.5 py-1 bg-gray-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded text-xs font-semibold cursor-pointer hover:bg-gray-300"
+                                            >
+                                              {language === 'bilingual' ? 'Cancelar / 取消' : 'Cancelar'}
+                                            </button>
+                                            <button
+                                              type="submit"
+                                              className="px-3.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold cursor-pointer flex items-center gap-1 shadow-sm transition-all active:scale-95"
+                                            >
+                                              <Check className="w-3.5 h-3.5" />
+                                              <span>{language === 'bilingual' ? 'Salvar Navio / 保存' : 'Salvar Navio'}</span>
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </form>
+                                    )}
+
                                     {/* Monthly Groups Accordion */}
                                     {(() => {
                                       const monthlyGroups = groupVesselsByMonth(vessels, language);
@@ -6711,7 +6859,7 @@ export default function App() {
                                       return (
                                         <div className="flex flex-col gap-2">
                                           {monthlyGroups.map((group) => {
-                                            const isExpanded = !!expandedVesselMonths[group.monthKey];
+                                            const isExpanded = expandedVesselMonths[group.monthKey] !== false;
                                             return (
                                               <div
                                                 key={group.monthKey}
@@ -7482,6 +7630,14 @@ export default function App() {
                     </div>
                   </div>
 
+                  {/* MENSAGEM DE SUCESSO GLOBAL AO ADICIONAR NAVIO */}
+                  {vesselSuccessMessage && (
+                    <div className="p-3 mb-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in shadow-xs">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{vesselSuccessMessage}</span>
+                    </div>
+                  )}
+
                   {/* FORMULÁRIO DE CADASTRO DE NOVO NAVIO (EXPANSÍVEL) */}
                   {showAddVesselForm && (
                     <form
@@ -7514,6 +7670,13 @@ export default function App() {
                         </button>
                       </div>
 
+                      {vesselFormError && (
+                        <div className="p-2 mb-3 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                          <span>{vesselFormError}</span>
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
                         {/* Nome do Navio */}
                         <div className="col-span-1 sm:col-span-2">
@@ -7536,9 +7699,8 @@ export default function App() {
                             {tt("Data ETA / 预报到港日 *", "预报到港日 (ETA Date) *", "ETA Date *")}
                           </label>
                           <input
-                            type="text"
+                            type="date"
                             required
-                            placeholder="2026-08-28 ou 28/08/2026"
                             value={newVesselEta}
                             onChange={(e) => setNewVesselEta(e.target.value)}
                             className="w-full p-2.5 text-xs font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
@@ -7710,7 +7872,7 @@ export default function App() {
                             {vesselViewMode === 'monthly' && (
                               (() => {
                                 const monthlyGroups = groupVesselsByMonth(vessels, language);
-                                const anyOpen = monthlyGroups.some(g => expandedVesselMonths[g.monthKey]);
+                                const anyOpen = monthlyGroups.some(g => expandedVesselMonths[g.monthKey] !== false);
                                 return (
                                   <button
                                     type="button"
@@ -7778,7 +7940,7 @@ export default function App() {
                             return (
                               <div className="flex flex-col gap-3">
                                 {monthlyGroups.map((group) => {
-                                  const isExpanded = !!expandedVesselMonths[group.monthKey];
+                                  const isExpanded = expandedVesselMonths[group.monthKey] !== false;
                                   return (
                                     <div
                                       key={group.monthKey}
@@ -11193,8 +11355,19 @@ export default function App() {
                   dbStatus={dbStatus}
                   containers={containers}
                   yards={yards}
+                  setYards={setYards}
                   vessels={vessels}
+                  setVessels={setVessels}
                   depots={depots}
+                  dailyDeliveryRate={dailyDeliveryRate}
+                  setDailyDeliveryRate={handleSetDailyDeliveryRate}
+                  bondedSum={bondedSum}
+                  warehouseSum={warehouseSum}
+                  bufferSum={bufferSum}
+                  additionalBacklog={additionalBacklog}
+                  setAdditionalBacklog={handleSetAdditionalBacklog}
+                  selectedScenario={selectedScenario}
+                  setSelectedScenario={handleSetSelectedScenario}
                 />
               ) : currentSlide === 9 ? (
                 /* SLIDE 9: CALENDÁRIO DE ENTREGAS */
