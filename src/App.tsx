@@ -813,11 +813,11 @@ const ORIGINAL_YARDS: YardsState = {
   clia: { name: 'CLIA EMPORIO', type: 'BONDED', capacity: 300, cheio: 109, vazio: 0, porto: 48, prontoColeta: 55, delivered: 371, previous_total: 120 },
   ag: { name: 'AG - INTER CDEX', type: 'WAREHOUSE', capacity: 2200, cheio: 844, vazio: 0, porto: 0, prontoColeta: 122, delivered: 144, previous_total: 850 },
   cts: { name: 'CTS - PONTUAL', type: 'WAREHOUSE', capacity: 1200, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
-  cts_jew: { name: 'CTS - JEW', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
-  cts_uni: { name: 'CTS - UNI', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
-  cts_vbr: { name: 'CTS - VBR', type: 'WAREHOUSE', capacity: 500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   logic: { name: 'LOGIC', type: 'WAREHOUSE', capacity: 1000, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   multilog: { name: 'MULTILOG', type: 'WAREHOUSE', capacity: 1500, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
+  gabardo: { name: 'GABARDO', type: 'WAREHOUSE', capacity: 1000, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
+  tpc_p5: { name: 'TPC - P5', type: 'WAREHOUSE', capacity: 1200, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
+  recom: { name: 'RECOM', type: 'WAREHOUSE', capacity: 1000, cheio: 0, vazio: 0, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 0 },
   buffer: { name: 'BYD BUFFER', type: 'BUFFER', capacity: 800, cheio: 500, vazio: 483, porto: 0, prontoColeta: 0, delivered: 0, previous_total: 950 },
 };
 
@@ -1041,6 +1041,22 @@ function YardCard({
   const isHighOcc = ocupacao >= 85;
   const isMedOcc = ocupacao >= 70;
 
+  const [capVal, setCapVal] = useState(String(yard.capacity ?? 0));
+  const [cheioVal, setCheioVal] = useState(String(yard.cheio ?? 0));
+  const [vazioVal, setVazioVal] = useState(String(yard.vazio ?? 0));
+  const [portoVal, setPortoVal] = useState(String(yard.porto ?? 0));
+  const [prontoVal, setProntoVal] = useState(String(yard.prontoColeta ?? 0));
+  const [delivVal, setDelivVal] = useState(String(yard.delivered ?? 0));
+
+  useEffect(() => {
+    setCapVal(String(yard.capacity ?? 0));
+    setCheioVal(String(yard.cheio ?? 0));
+    setVazioVal(String(yard.vazio ?? 0));
+    setPortoVal(String(yard.porto ?? 0));
+    setProntoVal(String(yard.prontoColeta ?? 0));
+    setDelivVal(String(yard.delivered ?? 0));
+  }, [yard.capacity, yard.cheio, yard.vazio, yard.porto, yard.prontoColeta, yard.delivered]);
+
   return (
     <div
       onClick={isEdit ? undefined : onClick}
@@ -1124,8 +1140,11 @@ function YardCard({
                 </label>
                 <input
                   type="number"
-                  value={yard.capacity}
-                  onChange={(e) => onYardChange?.(yardKey, 'capacity', e.target.value)}
+                  value={capVal}
+                  onChange={(e) => {
+                    setCapVal(e.target.value);
+                    onYardChange?.(yardKey, 'capacity', e.target.value);
+                  }}
                   className="w-full p-1 text-xs font-mono font-bold rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 text-center"
                 />
               </div>
@@ -1135,8 +1154,11 @@ function YardCard({
                 </label>
                 <input
                   type="number"
-                  value={yard.cheio}
-                  onChange={(e) => onYardChange?.(yardKey, 'cheio', e.target.value)}
+                  value={cheioVal}
+                  onChange={(e) => {
+                    setCheioVal(e.target.value);
+                    onYardChange?.(yardKey, 'cheio', e.target.value);
+                  }}
                   className="w-full p-1 text-xs font-mono font-bold rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-center"
                 />
               </div>
@@ -1146,8 +1168,11 @@ function YardCard({
                 </label>
                 <input
                   type="number"
-                  value={yard.vazio}
-                  onChange={(e) => onYardChange?.(yardKey, 'vazio', e.target.value)}
+                  value={vazioVal}
+                  onChange={(e) => {
+                    setVazioVal(e.target.value);
+                    onYardChange?.(yardKey, 'vazio', e.target.value);
+                  }}
                   className="w-full p-1 text-xs font-mono font-bold rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-center"
                 />
               </div>
@@ -1161,8 +1186,11 @@ function YardCard({
                   </label>
                   <input
                     type="number"
-                    value={yard.porto || 0}
-                    onChange={(e) => onYardChange?.(yardKey, 'porto', e.target.value)}
+                    value={portoVal}
+                    onChange={(e) => {
+                      setPortoVal(e.target.value);
+                      onYardChange?.(yardKey, 'porto', e.target.value);
+                    }}
                     className="w-full p-1 text-[11px] font-mono font-bold rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-center"
                   />
                 </div>
@@ -1172,8 +1200,11 @@ function YardCard({
                   </label>
                   <input
                     type="number"
-                    value={yard.prontoColeta || 0}
-                    onChange={(e) => onYardChange?.(yardKey, 'prontoColeta', e.target.value)}
+                    value={prontoVal}
+                    onChange={(e) => {
+                      setProntoVal(e.target.value);
+                      onYardChange?.(yardKey, 'prontoColeta', e.target.value);
+                    }}
                     className="w-full p-1 text-[11px] font-mono font-bold rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-center"
                   />
                 </div>
@@ -1183,8 +1214,11 @@ function YardCard({
                   </label>
                   <input
                     type="number"
-                    value={yard.delivered || 0}
-                    onChange={(e) => onYardChange?.(yardKey, 'delivered', e.target.value)}
+                    value={delivVal}
+                    onChange={(e) => {
+                      setDelivVal(e.target.value);
+                      onYardChange?.(yardKey, 'delivered', e.target.value);
+                    }}
                     className="w-full p-1 text-[11px] font-mono font-bold rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-center"
                   />
                 </div>
@@ -1256,7 +1290,13 @@ export default function App() {
       const saved = localStorage.getItem('byd_yards_data');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && Object.keys(parsed).length > 0) return parsed;
+        if (parsed && Object.keys(parsed).length > 0) {
+          delete parsed['cts_jew'];
+          delete parsed['cts_uni'];
+          delete parsed['cts_vbr'];
+          delete parsed['cts_logic'];
+          return parsed;
+        }
       }
     } catch {}
     return JSON.parse(JSON.stringify(ORIGINAL_YARDS));
@@ -2212,22 +2252,22 @@ export default function App() {
         initializeYardsInDb();
       } else {
         const newYards: YardsState = {};
+        const discontinuedYards = ['cts_logic', 'cts_jew', 'cts_uni', 'cts_vbr'];
         snapshot.forEach((docSnap) => {
-          if (docSnap.id === 'cts_logic') {
-            deleteDoc(doc(db, 'yards', 'cts_logic')).catch(() => {});
+          if (discontinuedYards.includes(docSnap.id)) {
+            deleteDoc(doc(db, 'yards', docSnap.id)).catch(() => {});
             return;
           }
           newYards[docSnap.id] = docSnap.data() as Yard;
         });
 
-        // Garantir que cts_logic nunca apareça
-        delete newYards['cts_logic'];
+        // Garantir que pátios descontinuados nunca apareçam
+        discontinuedYards.forEach(id => delete newYards[id]);
 
-        // Garante integridade de todos os pátios padrão
+        // Garante integridade de todos os pátios padrão localmente
         Object.entries(ORIGINAL_YARDS).forEach(([key, originalYard]) => {
           if (!newYards[key]) {
             newYards[key] = { ...originalYard };
-            setDoc(doc(db, 'yards', key), originalYard).catch(e => console.warn('Falha ao adicionar novo yard:', e));
           }
         });
 
@@ -3665,10 +3705,12 @@ export default function App() {
 
   // RESETAR PARA DADOS DA IMAGEM ORIGINAL
   const resetToOriginal = () => {
-    const title = language === 'bilingual' ? 'Restaurar Dados / 还原数据' : 'Restaurar Dados';
-    const message = language === 'bilingual'
-      ? "Deseja restaurar todos os dados originais da imagem capturada? / 是否要还原并保存为默认原始数据？"
-      : "Deseja restaurar todos os dados originais da imagem capturada?";
+    const title = tt('Restaurar Dados', '还原数据', 'Restore Data');
+    const message = tt(
+      'Deseja restaurar todos os dados originais da imagem capturada?',
+      '是否要还原并保存为默认原始数据？所有当前改动将被覆盖。',
+      'Do you want to restore all original captured data? All current changes will be overwritten.'
+    );
 
     requestConfirmation(title, message, async () => {
       setYards(JSON.parse(JSON.stringify(ORIGINAL_YARDS)));
@@ -3798,10 +3840,12 @@ export default function App() {
   const handleBulkDeleteContainers = () => {
     if (selectedContainerIds.length === 0) return;
     
-    const title = language === 'bilingual' ? 'Confirmar Exclusão / 确认删除' : 'Confirmar Exclusão';
-    const message = language === 'bilingual' 
-      ? `Deseja realmente remover os ${selectedContainerIds.length} contêineres selecionados? / 确定要删除选中的 ${selectedContainerIds.length} 个集装箱吗？` 
-      : `Deseja realmente remover os ${selectedContainerIds.length} contêineres selecionados?`;
+    const title = tt('Confirmar Exclusão', '确认删除', 'Confirm Deletion');
+    const message = tt(
+      `Deseja realmente remover os ${selectedContainerIds.length} contêineres selecionados?`,
+      `确定要删除选中的 ${selectedContainerIds.length} 个集装箱吗？`,
+      `Are you sure you want to remove the ${selectedContainerIds.length} selected container(s)?`
+    );
 
     requestConfirmation(title, message, async () => {
       try {
@@ -3843,7 +3887,7 @@ export default function App() {
         setSelectedContainerIds([]);
       } catch (error) {
         console.error("Erro ao deletar contêineres em lote:", error);
-        alert("Erro ao realizar a exclusão em lote / 批量删除失败");
+        alert(tt("Erro ao realizar a exclusão em lote", "批量删除失败", "Error performing bulk deletion"));
       }
     });
   };
@@ -3852,16 +3896,20 @@ export default function App() {
     if (!selectedYardKey) return;
     const yardContainers = containers.filter(c => c.yardId === selectedYardKey);
     if (yardContainers.length === 0) {
-      alert(language === 'bilingual' 
-        ? 'Não há contêineres neste pátio para limpar. / 该堆场中没有可清除的集装箱。' 
-        : 'Não há contêineres neste pátio para limpar.');
+      alert(tt(
+        'Não há contêineres neste pátio para limpar.',
+        '该堆场中没有可清除的集装箱。',
+        'There are no containers in this yard to clear.'
+      ));
       return;
     }
 
-    const title = language === 'bilingual' ? 'Limpar Pátio / 清空堆场' : 'Limpar Pátio';
-    const message = language === 'bilingual'
-      ? `ATENÇÃO: Deseja realmente remover TODOS os ${yardContainers.length} contêineres do pátio ${yards[selectedYardKey]?.name}? Esta ação não pode ser desfeita. / 警告：确定要删除堆场 ${yards[selectedYardKey]?.name} 中的所有 ${yardContainers.length} 个集装箱吗？此操作无法撤销。`
-      : `ATENÇÃO: Deseja realmente remover TODOS os ${yardContainers.length} contêineres do pátio ${yards[selectedYardKey]?.name}? Esta ação não pode ser desfeita.`;
+    const title = tt('Limpar Pátio', '清空堆场', 'Clear Yard');
+    const message = tt(
+      `ATENÇÃO: Deseja realmente remover TODOS os ${yardContainers.length} contêineres do pátio ${yards[selectedYardKey]?.name}? Esta ação não pode ser desfeita.`,
+      `警告：确定要彻底清空堆场 ${yards[selectedYardKey]?.name} 中的全部 ${yardContainers.length} 个集装箱吗？此操作无法撤销。`,
+      `WARNING: Are you sure you want to remove ALL ${yardContainers.length} container(s) from yard ${yards[selectedYardKey]?.name}? This action cannot be undone.`
+    );
 
     requestConfirmation(title, message, async () => {
       try {
@@ -3883,16 +3931,18 @@ export default function App() {
         setSelectedContainerIds([]);
       } catch (error) {
         console.error("Erro ao esvaziar pátio:", error);
-        alert("Erro ao esvaziar o pátio / 清空堆场失败");
+        alert(tt("Erro ao esvaziar o pátio", "清空堆场操作失败", "Error clearing yard"));
       }
     });
   };
 
   const handleDeleteContainer = (container: Container) => {
-    const title = language === 'bilingual' ? 'Confirmar Exclusão / 确认删除' : 'Confirmar Exclusão';
-    const message = language === 'bilingual' 
-      ? `Deseja realmente remover o contêiner ${container.id}? / 确定要删除集装箱 ${container.id} 吗？` 
-      : `Deseja realmente remover o contêiner ${container.id}?`;
+    const title = tt('Confirmar Exclusão', '确认删除', 'Confirm Deletion');
+    const message = tt(
+      `Deseja realmente remover o contêiner ${container.id}?`,
+      `确定要删除集装箱 ${container.id} 吗？`,
+      `Are you sure you want to remove container ${container.id}?`
+    );
 
     requestConfirmation(title, message, async () => {
       try {
@@ -3933,7 +3983,7 @@ export default function App() {
     const cId = newContainerId.trim().toUpperCase();
     
     if (containers.some(c => c.id === cId)) {
-      alert(language === 'bilingual' ? 'Contêiner já cadastrado! / 该集装箱已存在！' : 'Contêiner já cadastrado!');
+      alert(tt('Contêiner já cadastrado!', '该集装箱已存在！', 'Container already registered!'));
       return;
     }
     
@@ -4025,9 +4075,11 @@ export default function App() {
         const data: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
         
         if (data.length <= 1) {
-          alert(language === 'bilingual' 
-            ? 'Planilha vazia ou sem dados! / 表格为空或无数据！' 
-            : 'Planilha vazia ou sem dados!');
+          alert(tt(
+            'Planilha vazia ou sem dados!',
+            '表格为空或无数据！',
+            'Spreadsheet is empty or has no data!'
+          ));
           return;
         }
         
@@ -4042,9 +4094,11 @@ export default function App() {
         const vesselIdx = headers.findIndex(h => h.includes('navio') || h.includes('vessel') || h.includes('ship') || h.includes('barco') || h.includes('船舶'));
         
         if (idIdx === -1) {
-          alert(language === 'bilingual'
-            ? 'Coluna "Identificacao" (ou similar) não encontrada! Verifique o modelo. / 未找到“箱号”列！请检查模板。'
-            : 'Coluna "Identificacao" (ou similar) não encontrada! Certifique-se de usar os cabeçalhos padrão.');
+          alert(tt(
+            'Coluna "Identificacao" (ou similar) não encontrada! Certifique-se de usar os cabeçalhos padrão.',
+            '未找到“箱号/Identificacao”列！请检查模板是否正确。',
+            'Column "Identificacao" (or similar) not found! Please check standard template.'
+          ));
           return;
         }
         
@@ -4160,13 +4214,17 @@ export default function App() {
           
           await batch.commit();
           
-          alert(language === 'bilingual'
-            ? `Sucesso! Importados: ${successCount}. Duplicados ignorados: ${dupCount}. / 导入成功！共 ${successCount} 个，忽略重复 ${dupCount} 个。`
-            : `Sucesso! Foram importados ${successCount} contêiner(es) com sucesso. ${dupCount} contêineres duplicados foram ignorados.`);
+          alert(tt(
+            `Sucesso! Foram importados ${successCount} contêiner(es) com sucesso. ${dupCount} contêineres duplicados foram ignorados.`,
+            `导入成功！共导入 ${successCount} 个集装箱，已自动忽略重复项 ${dupCount} 个。`,
+            `Success! Imported ${successCount} container(s). ${dupCount} duplicate(s) were ignored.`
+          ));
         } else {
-          alert(language === 'bilingual'
-            ? `Nenhum contêiner novo importado. Todos os ${dupCount} contêineres já existiam no sistema. / 未导入新集装箱。所有 ${dupCount} 个集装箱在系统中均已存在。`
-            : `Nenhum contêiner novo foi importado. Todos os ${dupCount} contêineres já existiam no sistema.`);
+          alert(tt(
+            `Nenhum contêiner novo foi importado. Todos os ${dupCount} contêineres já existiam no sistema.`,
+            `未导入新集装箱。所有 ${dupCount} 个集装箱在系统中均已存在。`,
+            `No new container imported. All ${dupCount} container(s) already existed in the system.`
+          ));
         }
         
         // Reset file input
@@ -4177,9 +4235,11 @@ export default function App() {
         
       } catch (err) {
         console.error("Erro ao processar planilha Excel:", err);
-        alert(language === 'bilingual'
-          ? "Erro ao ler o arquivo Excel. Verifique se o formato está correto. / 读取Excel文件失败。请检查格式是否正确。"
-          : "Erro ao processar o arquivo Excel. Certifique-se de que o arquivo não está corrompido e segue o padrão.");
+        alert(tt(
+          "Erro ao processar o arquivo Excel. Certifique-se de que o arquivo não está corrompido e segue o padrão.",
+          "读取Excel文件失败。请检查文件是否损坏且格式符合标准。",
+          "Error processing Excel file. Make sure the file is not corrupted and follows the template."
+        ));
       }
     };
     reader.readAsBinaryString(file);
@@ -4898,20 +4958,42 @@ export default function App() {
     }
   };
 
+  // FORMATADOR DE DISPLAY PARA ETA DO NAVIO (DD/MM/YYYY)
+  const formatVesselEtaDisplay = (etaStr: string): string => {
+    if (!etaStr) return '';
+    const s = String(etaStr).trim();
+    if (s.includes('-')) {
+      const p = s.split('-');
+      if (p.length === 3 && p[0].length === 4) {
+        return `${p[2].padStart(2, '0')}/${p[1].padStart(2, '0')}/${p[0]}`;
+      }
+    }
+    return s;
+  };
+
   // ADICIONAR NAVIO
   const addVessel = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setVesselFormError(null);
     if (!newVesselName.trim()) {
-      setVesselFormError(language === 'zh' ? '请输入船名' : language === 'en' ? 'Please enter vessel name' : 'Por favor, informe o nome do navio.');
+      setVesselFormError(language === 'zh' ? '请输入船舶名称' : language === 'en' ? 'Please enter vessel name' : 'Por favor, informe o nome do navio.');
       return;
     }
-    const finalEta = newVesselEta.trim() || '2026-08-25';
+    const rawEta = newVesselEta.trim() || '2026-08-25';
+    // Format to DD/MM/YYYY standard
+    let formattedEta = rawEta;
+    if (rawEta.includes('-')) {
+      const p = rawEta.split('-');
+      if (p.length === 3 && p[0].length === 4) {
+        formattedEta = `${p[2].padStart(2, '0')}/${p[1].padStart(2, '0')}/${p[0]}`;
+      }
+    }
+
     const newId = Date.now();
     const newV: Vessel = {
       id: newId,
       name: newVesselName.toUpperCase().trim(),
-      eta: finalEta,
+      eta: formattedEta,
       cntrs: Number(newVesselCntrs) || 0,
       order: vessels.length,
       carrier: newVesselCarrier.trim() || 'BYD CHARTER',
@@ -4926,14 +5008,8 @@ export default function App() {
     // Auto-expand the month group of the newly added vessel
     let year = 2026;
     let month = 8;
-    if (finalEta.includes('-')) {
-      const p = finalEta.split('-');
-      if (p.length >= 2) {
-        year = parseInt(p[0], 10) || 2026;
-        month = parseInt(p[1], 10) || 8;
-      }
-    } else if (finalEta.includes('/')) {
-      const p = finalEta.split('/');
+    if (formattedEta.includes('/')) {
+      const p = formattedEta.split('/');
       if (p.length >= 2) {
         month = parseInt(p[1], 10) || 8;
         if (p.length >= 3) year = parseInt(p[2], 10) || 2026;
@@ -4950,8 +5026,8 @@ export default function App() {
     setNewVesselTerminal('Porto de Santos');
     setShowAddVesselForm(false);
     setShowQuickAddVesselSlide0(false);
-    setVesselSuccessMessage(language === 'zh' ? `船舶 ${newV.name} 已成功添加！` : language === 'en' ? `Vessel ${newV.name} added successfully!` : `Navio ${newV.name} adicionado com sucesso!`);
-    setTimeout(() => setVesselSuccessMessage(null), 4500);
+    setVesselSuccessMessage(language === 'zh' ? `船舶 ${newV.name} (ETA: ${formattedEta}, ${newV.cntrs.toLocaleString()} 箱) 已成功录入排期系统！` : language === 'en' ? `Vessel ${newV.name} (ETA: ${formattedEta}, ${newV.cntrs.toLocaleString()} CNTRs) added successfully!` : `Navio ${newV.name} (ETA: ${formattedEta}, ${newV.cntrs.toLocaleString()} CNTRs) adicionado com sucesso!`);
+    setTimeout(() => setVesselSuccessMessage(null), 5000);
     
     try {
       await setDoc(doc(db, 'vessels', String(newId)), {
@@ -5072,12 +5148,23 @@ export default function App() {
     }
   };
 
-  // PARSER DE DATAS PARA ETA (DD/MM/YYYY ou DD/MM)
+  // PARSER DE DATAS PARA ETA (DD/MM/YYYY ou YYYY-MM-DD)
   const parseVesselEta = (etaStr: string): Date => {
-    const parts = etaStr.replace(/[^0-9/]/g, '').split('/');
-    const day = parseInt(parts[0]) || 1;
-    const month = parseInt(parts[1]) || 1;
-    let year = parseInt(parts[2]) || 2026;
+    if (!etaStr) return new Date(2026, 7, 25);
+    const str = String(etaStr).trim();
+    if (str.includes('-')) {
+      const parts = str.split('-');
+      if (parts.length >= 3 && parts[0].length === 4) {
+        const y = parseInt(parts[0], 10) || 2026;
+        const m = parseInt(parts[1], 10) || 8;
+        const d = parseInt(parts[2], 10) || 1;
+        return new Date(y, m - 1, d);
+      }
+    }
+    const parts = str.replace(/[^0-9/]/g, '').split('/');
+    const day = parseInt(parts[0], 10) || 1;
+    const month = parseInt(parts[1], 10) || 1;
+    let year = parseInt(parts[2], 10) || 2026;
     if (year < 100) year += 2000;
     return new Date(year, month - 1, day);
   };
@@ -5159,10 +5246,12 @@ export default function App() {
 
   // EXCLUIR PÁTIO / WAREHOUSE
   const deleteYard = (key: string) => {
-    const title = language === 'bilingual' ? 'Excluir Pátio / 删除堆场' : 'Excluir Pátio';
-    const message = language === 'bilingual'
-      ? "Deseja realmente excluir este pátio/warehouse? / 确定要删除该堆场吗？"
-      : "Deseja realmente excluir este pátio/warehouse?";
+    const title = tt('Excluir Pátio', '删除堆场', 'Delete Yard');
+    const message = tt(
+      'Deseja realmente excluir este pátio/warehouse?',
+      '确定要彻底删除该堆场/仓库吗？此操作无法撤销。',
+      'Are you sure you want to delete this yard/warehouse? This action cannot be undone.'
+    );
 
     requestConfirmation(title, message, async () => {
       setYards(prev => {
@@ -6316,10 +6405,18 @@ export default function App() {
                               </div>
                               <div>
                                 <h4 className="font-extrabold text-xs text-gray-900 dark:text-gray-100 uppercase tracking-tight">
-                                  {language === 'bilingual' ? 'Pesquisa Rápida Global (BL, Container, Lote) / 全局快速检索 (提单, 集装箱号, 批次)' : 'Pesquisa Rápida Global (BL, Container, Lote)'}
+                                  {tt(
+                                    'Pesquisa Rápida Global (BL, Container, Lote)',
+                                    '全局快速检索 (提单, 集装箱号, 批次)',
+                                    'Global Fast Search (BL, Container, Lot)'
+                                  )}
                                 </h4>
                                 <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                                  {language === 'bilingual' ? 'Digite para localizar instantaneamente em qual pátio/armazém o contêiner, BL ou lote está / 输入以实时定位集装箱、提单或批次所在的仓库/堆场' : 'Digite para localizar instantaneamente em qual pátio ou armazém o item está alocado.'}
+                                  {tt(
+                                    'Digite para localizar instantaneamente em qual pátio/armazém o contêiner, BL ou lote está',
+                                    '输入以实时定位集装箱、提单或批次所在的仓库/堆场',
+                                    'Type to locate which yard/warehouse holds the container, BL or lot'
+                                  )}
                                 </p>
                               </div>
                             </div>
@@ -6328,7 +6425,7 @@ export default function App() {
                                 onClick={() => setGlobalFilterQuery("")}
                                 className="text-[11px] font-bold text-red-600 hover:text-red-700 bg-red-50 dark:bg-red-950/40 px-2.5 py-1 rounded-lg cursor-pointer transition-all"
                               >
-                                {language === 'bilingual' ? 'Limpar Filtro / 清除筛选' : 'Limpar Filtro'}
+                                {tt('Limpar Filtro', '清除筛选', 'Clear Filter')}
                               </button>
                             )}
                           </div>
@@ -6339,7 +6436,11 @@ export default function App() {
                               type="text"
                               value={globalFilterQuery}
                               onChange={(e) => setGlobalFilterQuery(e.target.value)}
-                              placeholder={language === 'bilingual' ? '🔍 Digite BL, Container ou Lote (ex: lot 442) para ver o armazém...' : '🔍 Digite BL, Nº do Container ou Lote (ex: lot 442) para localizar o armazém...'}
+                              placeholder={tt(
+                                '🔍 Digite BL, Nº do Container ou Lote (ex: lot 442) para localizar o armazém...',
+                                '🔍 输入提单号(BL)、集装箱号或批次号(如: lot 442)以检索所属仓库...',
+                                '🔍 Search by BL, Container #, or Lot (e.g. lot 442) to find location...'
+                              )}
                               className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-red-500 transition-all font-mono"
                             />
                           </div>
@@ -6350,12 +6451,24 @@ export default function App() {
                             return (
                               <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                                 <div className="flex items-center justify-between text-[11px] font-bold text-gray-600 dark:text-gray-400">
-                                  <span>{language === 'bilingual' ? `Resultados encontrados: ${matchedContainers.length} contêiner(es) / 找到结果: ${matchedContainers.length} 个集装箱` : `Resultados encontrados: ${matchedContainers.length} contêiner(es)`}</span>
-                                  <span className="text-red-600 font-mono text-[10px]">{language === 'bilingual' ? 'Clique no pátio para abrir / 点击堆场打开' : 'Clique no botão para abrir o pátio'}</span>
+                                  <span>
+                                    {tt(
+                                      `Resultados encontrados: ${matchedContainers.length} contêiner(es)`,
+                                      `检索结果: 共找到 ${matchedContainers.length} 个集装箱`,
+                                      `Search results: ${matchedContainers.length} container(s) found`
+                                    )}
+                                  </span>
+                                  <span className="text-red-600 font-mono text-[10px]">
+                                    {tt('Clique no pátio para abrir', '点击对应堆场直接打开', 'Click yard to open')}
+                                  </span>
                                 </div>
                                 {matchedContainers.length === 0 ? (
                                   <div className="text-center py-4 text-xs text-gray-400 font-medium bg-slate-50 dark:bg-slate-800/40 rounded-lg">
-                                    {language === 'bilingual' ? 'Nenhum contêiner, BL ou lote encontrado com este termo. / 未找到匹配的集装箱、提单或批次。' : 'Nenhum contêiner, BL ou lote encontrado com este termo.'}
+                                    {tt(
+                                      'Nenhum contêiner, BL ou lote encontrado com este termo.',
+                                      '未找到匹配指定提单(BL)、集装箱号或批次的记录。',
+                                      'No container, BL, or lot found matching this term.'
+                                    )}
                                   </div>
                                 ) : (
                                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[280px] overflow-y-auto pr-1">
@@ -6375,11 +6488,11 @@ export default function App() {
                                           </div>
                                           <div className="text-[10.5px] font-sans flex flex-col gap-0.5 border-t border-slate-200/60 dark:border-slate-700/60 pt-1.5">
                                             <div className="flex justify-between">
-                                              <span className="text-gray-400">{language === 'bilingual' ? 'Lote / 批次:' : 'Lote:'}</span>
+                                              <span className="text-gray-400">{tt('Lote:', '批次 (Lot):', 'Lot:')}</span>
                                               <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">{mc.lote || '-'}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
-                                              <span className="text-gray-400">{language === 'bilingual' ? 'Armazém / 仓库:' : 'Warehouse / Pátio:'}</span>
+                                              <span className="text-gray-400">{tt('Armazém:', '所属仓库/堆场:', 'Warehouse/Yard:')}</span>
                                               <span className="font-extrabold text-blue-600 dark:text-blue-400 uppercase text-[10px] truncate max-w-[140px]" title={yardName}>{yardName}</span>
                                             </div>
                                           </div>
@@ -6390,7 +6503,7 @@ export default function App() {
                                             }}
                                             className="mt-1 w-full bg-red-600 hover:bg-red-700 text-white text-[10px] font-black py-1.5 rounded transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
                                           >
-                                            <span>{language === 'bilingual' ? `Ir para ${yardName} / 打开该堆场` : `Abrir Pátio (${yardName})`}</span>
+                                            <span>{tt(`Ir para ${yardName}`, `打开该堆场 (${yardName})`, `Go to ${yardName}`)}</span>
                                           </button>
                                         </div>
                                       );
@@ -6406,7 +6519,11 @@ export default function App() {
                         <div className="flex items-center gap-2 border-b pb-1.5 border-gray-200 dark:border-slate-800">
                           <Database className="w-4 h-4 text-red-500 animate-pulse" />
                           <h3 className="font-extrabold text-[12px] text-gray-800 dark:text-gray-100 uppercase tracking-widest">
-                            {language === 'bilingual' ? 'Painel Integrado de Capacidade & Monitoramento de Pátios / 供应链与堆场动态总览监控塔' : 'Grade Operacional de Monitoramento'}
+                            {tt(
+                              'Painel Integrado de Capacidade & Monitoramento de Pátios',
+                              '供应链与堆场动态总览监控塔',
+                              'Integrated Capacity & Yard Control Tower'
+                            )}
                           </h3>
                         </div>
 
@@ -6426,23 +6543,34 @@ export default function App() {
                                 <div>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-xs font-black uppercase tracking-tight text-gray-900 dark:text-white">
-                                      {language === 'bilingual' ? 'Capacidade Segura & Volume em Estoque (Soma Geral) / 安全总容量与实存量核算 (全量汇总)' : 'Capacidade Segura & Volume em Estoque (Soma Geral)'}
+                                      {tt(
+                                        'Capacidade Segura & Volume em Estoque (Soma Geral)',
+                                        '安全总容量与实存量核算 (全量汇总)',
+                                        'Safe Capacity & Stock Inventory (Total Sum)'
+                                      )}
                                     </span>
                                     <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                                      {language === 'bilingual' ? 'Bonded + Warehouse + Buffer / 保税 + 外仓 + 缓冲' : 'Bonded + Warehouse + Buffer'}
+                                      {tt(
+                                        'Soma: Bonded + Armazém + Buffer',
+                                        '求和: 保税堆场 + 普通外仓 + 缓冲区',
+                                        'Sum: Bonded + Warehouse + Buffer'
+                                      )}
                                     </span>
                                   </div>
                                   <p className="text-[10.5px] text-gray-600 dark:text-gray-400 mt-0.5">
-                                    {language === 'bilingual'
-                                      ? `Estoque Atual: ${totalStockWeHave.toLocaleString()} CNTRs (Alfandegado: ${bondedSum.totalCheio.toLocaleString()} + Armazéns: ${warehouseSum.totalCheio.toLocaleString()} + Buffer: ${bufferSum.totalOccupied.toLocaleString()}) • Capacidade Segura: ${totalSafeCap.toLocaleString()} CNTRs (Alfandegado: ${bondedSum.totalCap.toLocaleString()} + Armazéns: ${warehouseSum.totalCap.toLocaleString()} + Buffer: ${bufferSum.totalCap.toLocaleString()})`
-                                      : `Estoque Atual: ${totalStockWeHave.toLocaleString()} CNTRs (Alfandegado: ${bondedSum.totalCheio.toLocaleString()} + Armazéns: ${warehouseSum.totalCheio.toLocaleString()} + Buffer: ${bufferSum.totalOccupied.toLocaleString()}) • Capacidade Segura: ${totalSafeCap.toLocaleString()} CNTRs (Alfandegado: ${bondedSum.totalCap.toLocaleString()} + Armazéns: ${warehouseSum.totalCap.toLocaleString()} + Buffer: ${bufferSum.totalCap.toLocaleString()})`
-                                    }
+                                    {tt(
+                                      `Estoque Atual: ${totalStockWeHave.toLocaleString()} CNTRs (Alfandegado: ${bondedSum.totalCheio.toLocaleString()} + Armazéns: ${warehouseSum.totalCheio.toLocaleString()} + Buffer: ${bufferSum.totalOccupied.toLocaleString()}) • Capacidade Segura: ${totalSafeCap.toLocaleString()} CNTRs (Alfandegado: ${bondedSum.totalCap.toLocaleString()} + Armazéns: ${warehouseSum.totalCap.toLocaleString()} + Buffer: ${bufferSum.totalCap.toLocaleString()})`,
+                                      `当前在库总量: ${totalStockWeHave.toLocaleString()} 箱 (保税: ${bondedSum.totalCheio.toLocaleString()} + 外仓: ${warehouseSum.totalCheio.toLocaleString()} + 缓冲: ${bufferSum.totalOccupied.toLocaleString()}) • 安全总容量: ${totalSafeCap.toLocaleString()} 箱 (保税: ${bondedSum.totalCap.toLocaleString()} + 外仓: ${warehouseSum.totalCap.toLocaleString()} + 缓冲: ${bufferSum.totalCap.toLocaleString()})`,
+                                      `Current Stock: ${totalStockWeHave.toLocaleString()} CNTRs (Bonded: ${bondedSum.totalCheio.toLocaleString()} + Warehouse: ${warehouseSum.totalCheio.toLocaleString()} + Buffer: ${bufferSum.totalOccupied.toLocaleString()}) • Safe Capacity: ${totalSafeCap.toLocaleString()} CNTRs (Bonded: ${bondedSum.totalCap.toLocaleString()} + Warehouse: ${warehouseSum.totalCap.toLocaleString()} + Buffer: ${bufferSum.totalCap.toLocaleString()})`
+                                    )}
                                   </p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-3">
                                 <div className="flex flex-col text-right">
-                                  <span className="text-[9px] uppercase font-bold text-gray-400">{language === 'bilingual' ? 'Ocupação Geral / 综合负荷' : 'Ocupação Geral'}</span>
+                                  <span className="text-[9px] uppercase font-bold text-gray-400">
+                                    {tt('Ocupação Geral', '综合负荷率', 'Overall Occupancy')}
+                                  </span>
                                   <span className="font-mono text-sm font-black text-gray-900 dark:text-white">
                                     {totalStockWeHave.toLocaleString()} / {totalSafeCap.toLocaleString()} <span className="text-[10px] text-gray-400">CNTRs</span>
                                   </span>
@@ -6471,27 +6599,27 @@ export default function App() {
                                 </div>
                                 <div>
                                   <h4 className="font-extrabold text-[12px] text-gray-900 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
-                                    {language === 'bilingual' ? 'Terminais & Recintos Alfandegados / 保税堆场与港口终端' : 'Terminais & Recintos Alfandegados'}
+                                    {tt('Terminais & Recintos Alfandegados', '保税堆场与港口终端 (Bonded)', 'Bonded Terminals & Yards')}
                                   </h4>
                                   <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-normal">
-                                    {language === 'bilingual' ? 'Portos, CLIAs e recintos primários integrados à aduana nacional / 进境集装箱一二级保税堆场及通关放行单元（CLIA & Portos）' : 'Desembaraço aduaneiro e portuário.'}
+                                    {tt('Portos, CLIAs e recintos primários integrados à aduana nacional', '进境集装箱一二级保税堆场及通关放行单元（CLIA & Portos）', 'Ports, CLIAs and bonded custom facilities')}
                                   </p>
                                 </div>
                               </div>
                               
                               <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border dark:border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs">
                                 <div className="flex flex-col">
-                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Capacidade / 容量' : 'Capacidade'}</span>
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{tt('Capacidade', '容量', 'Capacity')}</span>
                                   <span className="font-mono text-gray-700 dark:text-slate-300">{(bondedSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">CNTRs</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col">
-                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Ocupado / 已用' : 'Ocupado'}</span>
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{tt('Ocupado', '已用', 'Used')}</span>
                                   <span className="font-mono text-gray-700 dark:text-slate-300">{(bondedSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">CNTRs</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col items-center">
-                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Geral / 占比' : 'Ocupação'}</span>
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{tt('Geral', '占比', 'Occupancy')}</span>
                                   <span className={`text-[10px] px-1 py-0.2 rounded font-black ${
                                     bondedSum.pct >= 89 
                                       ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300' 
@@ -6509,24 +6637,24 @@ export default function App() {
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                             {bondedYards.map(([key, yardItem]) => (
                               <YardCard 
-    key={key}
-    yardKey={key}
-    yard={yardItem} 
-    ocupacao={getYardOcupacao(yardItem)} 
-    isEdit={isEditMode} 
-    theme={theme} 
-    t={t} 
-    language={language} 
-    renderLabel={renderLabel} 
-    widescreenMode={widescreenMode} 
-    onClick={() => setSelectedYardKey(key)}
-    onYardChange={handleYardChange}
-    onDeleteYard={deleteYard}
-  />
+                                key={key}
+                                yardKey={key}
+                                yard={yardItem} 
+                                ocupacao={getYardOcupacao(yardItem)} 
+                                isEdit={isEditMode} 
+                                theme={theme} 
+                                t={t} 
+                                language={language} 
+                                renderLabel={renderLabel} 
+                                widescreenMode={widescreenMode} 
+                                onClick={() => setSelectedYardKey(key)}
+                                onYardChange={handleYardChange}
+                                onDeleteYard={deleteYard}
+                              />
                             ))}
                             {bondedYards.length === 0 && (
                               <div className="col-span-full text-center py-6 text-gray-450 dark:text-gray-500 text-xs font-semibold bg-gray-50 dark:bg-slate-800/40 rounded-lg border border-dashed border-gray-100 dark:border-slate-800">
-                                {language === 'bilingual' ? 'Nenhum terminal alfandegado cadastrado. / 未记录保税堆场。' : 'Nenhum terminal alfandegado cadastrado.'}
+                                {tt('Nenhum terminal alfandegado cadastrado.', '未记录保税堆场。', 'No bonded terminals registered.')}
                               </div>
                             )}
                           </div>
@@ -6542,27 +6670,27 @@ export default function App() {
                                 </div>
                                 <div>
                                   <h4 className="font-extrabold text-[12px] text-gray-900 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
-                                    {language === 'bilingual' ? 'Centros de Distribuição & Armazéns (Warehouses) / 仓库、总装中心与分拨站' : 'Centros de Distribuição & Armazéns'}
+                                    {tt('Centros de Distribuição & Armazéns (Warehouses)', '仓库、总装中心与分拨站 (CD/Warehouse)', 'Distribution Centers & Warehouses')}
                                   </h4>
                                   <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-normal">
-                                    {language === 'bilingual' ? 'Estocagem nacionalizada, processos de desova, kit de autopeças e expedição doméstica / 零部件接收存放在线、开箱拆包、国内生产件及成品配套与配送中心（CD/WAREHOUSE）' : 'Estocagem nacionalizada e expedição.'}
+                                    {tt('Estocagem nacionalizada, processos de desova, kit de autopeças e expedição doméstica', '零部件接收存放在线、开箱拆包、国内生产件及成品配套与配送中心（CD/WAREHOUSE）', 'Nationalized storage, unpacking, kit assembly, and distribution')}
                                   </p>
                                 </div>
                               </div>
                               
                               <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border dark:border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs">
                                 <div className="flex flex-col">
-                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Capacidade / 容量' : 'Capacidade'}</span>
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{tt('Capacidade', '容量', 'Capacity')}</span>
                                   <span className="font-mono text-gray-700 dark:text-slate-300">{(warehouseSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">CNTRs</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col">
-                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Ocupado / 已用' : 'Ocupado'}</span>
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{tt('Ocupado', '已用', 'Used')}</span>
                                   <span className="font-mono text-gray-700 dark:text-slate-300">{(warehouseSum.totalCheio).toLocaleString()} <span className="text-[9px] text-gray-400">CNTRs</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col items-center">
-                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Geral / 占比' : 'Ocupação'}</span>
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{tt('Geral', '占比', 'Occupancy')}</span>
                                   <span className={`text-[10px] px-1 py-0.2 rounded font-black ${
                                     warehouseSum.pct >= 89 
                                       ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300' 
@@ -6580,24 +6708,24 @@ export default function App() {
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                             {warehouseYards.map(([key, yardItem]) => (
                               <YardCard 
-    key={key}
-    yardKey={key}
-    yard={yardItem} 
-    ocupacao={getYardOcupacao(yardItem)} 
-    isEdit={isEditMode} 
-    theme={theme} 
-    t={t} 
-    language={language} 
-    renderLabel={renderLabel} 
-    widescreenMode={widescreenMode} 
-    onClick={() => setSelectedYardKey(key)}
-    onYardChange={handleYardChange}
-    onDeleteYard={deleteYard}
-  />
+                                key={key}
+                                yardKey={key}
+                                yard={yardItem} 
+                                ocupacao={getYardOcupacao(yardItem)} 
+                                isEdit={isEditMode} 
+                                theme={theme} 
+                                t={t} 
+                                language={language} 
+                                renderLabel={renderLabel} 
+                                widescreenMode={widescreenMode} 
+                                onClick={() => setSelectedYardKey(key)}
+                                onYardChange={handleYardChange}
+                                onDeleteYard={deleteYard}
+                              />
                             ))}
                             {warehouseYards.length === 0 && (
                               <div className="col-span-full text-center py-6 text-gray-450 dark:text-gray-500 text-xs font-semibold bg-gray-50 dark:bg-slate-800/40 rounded-lg border border-dashed border-gray-100 dark:border-slate-800">
-                                {language === 'bilingual' ? 'Nenhum centro de distribuição cadastrado. / 未记录分拨仓库。' : 'Nenhum centro de distribuição cadastrado.'}
+                                {tt('Nenhum centro de distribuição cadastrado.', '未记录分拨仓库。', 'No distribution centers registered.')}
                               </div>
                             )}
                           </div>
@@ -6613,22 +6741,22 @@ export default function App() {
                                 </div>
                                 <div>
                                   <h4 className="font-extrabold text-[12px] text-gray-900 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
-                                    {language === 'bilingual' ? 'Pátios de Apoio & Janela de Atracação / 辅助缓冲堆场与船只抵港监控' : 'Pátios de Apoio & Janela de Atracação'}
+                                    {tt('Pátios de Apoio & Janela de Atracação', '辅助缓冲堆场与船只抵港监控 (Buffer & ETA)', 'Buffer Yards & Berthing Windows')}
                                   </h4>
                                   <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-normal">
-                                    {language === 'bilingual' ? 'Estocagem pulmão reguladora de fluxo e roteirização marítima iminente / 调节短驳流量的缓冲堆护，以及最近干线船期及预期到货集装箱量' : 'Capacidade buffer e ETA de navios em tempo real.'}
+                                    {tt('Estocagem pulmão reguladora de fluxo e roteirização marítima iminente', '调节短驳流量的缓冲堆护，以及最近干线船期及预期到货集装箱量', 'Flow buffer storage and real-time vessel schedules')}
                                   </p>
                                 </div>
                               </div>
                               
                               <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border dark:border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs">
                                 <div className="flex flex-col">
-                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Capacidade Buffer / 缓冲容量' : 'Buffer'}</span>
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{tt('Capacidade Buffer', '缓冲容量', 'Buffer Cap')}</span>
                                   <span className="font-mono text-gray-700 dark:text-slate-300">{(bufferSum.totalCap).toLocaleString()} <span className="text-[9px] text-gray-400">CNTRs</span></span>
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col">
-                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider" title="Total no Buffer: Soma Cheio + Vazio (espaço ocupado)">{language === 'bilingual' ? 'Total Buffer (Cheio + Vazio) / 缓冲总库存(重+空)' : language === 'zh' ? '缓冲总库存 (重+空)' : 'Total Buffer (Cheio + Vazio)'}</span>
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider" title="Total no Buffer: Soma Cheio + Vazio (espaço ocupado)">{tt('Total Buffer (Cheio + Vazio)', '缓冲总库存 (重+空)', 'Total Buffer (Full+Empty)')}</span>
                                   <span className="font-mono text-amber-600 dark:text-amber-400 font-extrabold flex items-baseline gap-1">
                                     {(bufferSum.totalOccupied).toLocaleString()} <span className="text-[9px] text-gray-400 font-normal">CNTRs</span>
                                     <span className="text-[8px] text-gray-400 font-normal">({bufferSum.totalCheio}C + {bufferSum.totalVazio}V)</span>
@@ -6636,7 +6764,7 @@ export default function App() {
                                 </div>
                                 <div className="h-4 w-px bg-gray-200 dark:bg-slate-700"></div>
                                 <div className="flex flex-col items-center">
-                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{language === 'bilingual' ? 'Geral / 占比' : 'Ocupação'}</span>
+                                  <span className="text-[7.5px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{tt('Geral', '占比', 'Occupancy')}</span>
                                   <span className={`text-[10px] px-1 py-0.2 rounded font-black ${
                                     bufferSum.pct >= 89 
                                       ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300' 
@@ -6657,24 +6785,24 @@ export default function App() {
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {bufferYards.map(([key, yardItem]) => (
                                   <YardCard 
-    key={key}
-    yardKey={key}
-    yard={yardItem} 
-    ocupacao={getYardOcupacao(yardItem)} 
-    isEdit={isEditMode} 
-    theme={theme} 
-    t={t} 
-    language={language} 
-    renderLabel={renderLabel} 
-    widescreenMode={widescreenMode} 
-    onClick={() => setSelectedYardKey(key)}
-    onYardChange={handleYardChange}
-    onDeleteYard={deleteYard}
-  />
+                                    key={key}
+                                    yardKey={key}
+                                    yard={yardItem} 
+                                    ocupacao={getYardOcupacao(yardItem)} 
+                                    isEdit={isEditMode} 
+                                    theme={theme} 
+                                    t={t} 
+                                    language={language} 
+                                    renderLabel={renderLabel} 
+                                    widescreenMode={widescreenMode} 
+                                    onClick={() => setSelectedYardKey(key)}
+                                    onYardChange={handleYardChange}
+                                    onDeleteYard={deleteYard}
+                                  />
                                 ))}
                                 {bufferYards.length === 0 && (
                                   <div className="col-span-full text-center py-6 text-gray-450 dark:text-gray-500 text-xs font-semibold bg-gray-50 dark:bg-slate-800/40 rounded-lg border border-dashed border-gray-100 dark:border-slate-800">
-                                    {language === 'bilingual' ? 'Nenhum pátio de apoio regulador cadastrado. / 未记录缓冲/辅助堆场。' : 'Nenhum pátio de apoio cadastrado.'}
+                                    {tt('Nenhum pátio de apoio regulador cadastrado.', '未记录缓冲/辅助堆场。', 'No buffer yards registered.')}
                                   </div>
                                 )}
                               </div>
@@ -6690,7 +6818,7 @@ export default function App() {
                                       <div className="flex items-center gap-1.5">
                                         <Ship className="w-4 h-4 text-blue-500" />
                                         <h3 className="font-extrabold text-xs text-[#2563eb] tracking-tight">
-                                          {language === 'bilingual' ? '活跃船舶靠泊计划 (ETA)' : t('vesselSchedule')}
+                                          {tt('Escala de Navios Ativos (ETA)', '活跃船舶靠泊计划 (ETA)', 'Active Vessel Schedule (ETA)')}
                                         </h3>
                                       </div>
                                       
@@ -6703,10 +6831,10 @@ export default function App() {
                                             setVesselFormError(null);
                                           }}
                                           className="text-[9.5px] font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
-                                          title={language === 'bilingual' ? 'Adicionar Novo Navio / 新增船舶' : 'Adicionar Novo Navio'}
+                                          title={tt('Adicionar Novo Navio', '新增船舶靠泊计划', 'Add New Vessel')}
                                         >
                                           {showQuickAddVesselSlide0 ? <X className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
-                                          <span>{showQuickAddVesselSlide0 ? (language === 'bilingual' ? 'Fechar / 关闭' : 'Fechar') : (language === 'bilingual' ? '+ Navio / + 船舶' : '+ Navio')}</span>
+                                          <span>{showQuickAddVesselSlide0 ? tt('Fechar', '关闭', 'Close') : tt('+ Navio', '+ 船舶', '+ Vessel')}</span>
                                         </button>
 
                                         {/* Quick Toggle All Months */}
@@ -6718,17 +6846,17 @@ export default function App() {
                                               type="button"
                                               onClick={() => toggleAllVesselMonths(monthlyGroups)}
                                               className="text-[9px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/80 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1 border border-blue-200/60 dark:border-blue-800/60 shadow-2xs"
-                                              title={anyOpen ? 'Recolher todos os meses' : 'Abrir todos os navios'}
+                                              title={anyOpen ? (language === 'zh' ? '折叠全部月份' : 'Recolher todos os meses') : (language === 'zh' ? '展开全部月份' : 'Abrir todos os navios')}
                                             >
                                               {anyOpen ? (
                                                 <>
                                                   <Minimize2 className="w-2.5 h-2.5" />
-                                                  <span>{language === 'bilingual' ? 'Recolher / 折叠' : language === 'zh' ? '全部折叠' : 'Recolher'}</span>
+                                                  <span>{tt('Recolher', '全部折叠', 'Collapse')}</span>
                                                 </>
                                               ) : (
                                                 <>
                                                   <Maximize2 className="w-2.5 h-2.5" />
-                                                  <span>{language === 'bilingual' ? 'Abrir Todos / 展开' : language === 'zh' ? '全部展开' : 'Abrir Todos'}</span>
+                                                  <span>{tt('Abrir Todos', '全部展开', 'Expand All')}</span>
                                                 </>
                                               )}
                                             </button>
@@ -6754,7 +6882,7 @@ export default function App() {
                                         <div className="flex items-center justify-between pb-1 border-b border-blue-200 dark:border-slate-700">
                                           <span className="text-[11px] font-extrabold text-blue-700 dark:text-blue-300 flex items-center gap-1">
                                             <Ship className="w-3.5 h-3.5 text-blue-600" />
-                                            {language === 'bilingual' ? 'Cadastrar Navio na Escala / 登记靠泊船舶' : language === 'zh' ? '登记靠泊船舶 (ETA)' : 'Cadastrar Navio na Escala'}
+                                            {tt('Cadastrar Navio na Escala', '登记新增靠泊船舶 (Inbound ETA)', 'Register Vessel in Schedule')}
                                           </span>
                                           <button
                                             type="button"
@@ -6775,7 +6903,7 @@ export default function App() {
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                           <div>
                                             <label className="text-[9.5px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">
-                                              {language === 'bilingual' ? 'Nome do Navio / 船名 *' : language === 'zh' ? '船名 *' : 'Nome do Navio *'}
+                                              {tt('Nome do Navio *', '船舶名称 (Vessel Name) *', 'Vessel Name *')}
                                             </label>
                                             <input
                                               type="text"
@@ -6790,7 +6918,7 @@ export default function App() {
 
                                           <div>
                                             <label className="text-[9.5px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">
-                                              {language === 'bilingual' ? 'Data ETA / 预报到港 *' : language === 'zh' ? '预报到港日 *' : 'Data ETA *'}
+                                              {tt('Data ETA *', '预计抵达日期 (ETA Date) *', 'ETA Date *')}
                                             </label>
                                             <input
                                               type="date"
@@ -6803,7 +6931,7 @@ export default function App() {
 
                                           <div>
                                             <label className="text-[9.5px] font-bold text-slate-700 dark:text-slate-300 block mb-0.5">
-                                              {language === 'bilingual' ? 'Contêineres / 箱量 *' : language === 'zh' ? '箱量 (CNTRs) *' : 'Contêineres (CNTRs) *'}
+                                              {tt('Contêineres (CNTRs) *', '集装箱箱量 (CNTRs) *', 'Containers (CNTRs) *')}
                                             </label>
                                             <input
                                               type="number"
@@ -6822,7 +6950,7 @@ export default function App() {
                                             onClick={() => setCurrentSlide(2)}
                                             className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
                                           >
-                                            {language === 'bilingual' ? 'Ir para Gestão de Navios (Slide 2) →' : 'Ir para Gestão de Navios (Slide 2) →'}
+                                            {tt('Ir para Gestão de Navios (Slide 2) →', '前往船舶管理详情页 (Slide 2) →', 'Go to Vessel Management (Slide 2) →')}
                                           </button>
                                           <div className="flex items-center gap-1.5">
                                             <button
@@ -6830,14 +6958,14 @@ export default function App() {
                                               onClick={() => setShowQuickAddVesselSlide0(false)}
                                               className="px-2.5 py-1 bg-gray-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded text-xs font-semibold cursor-pointer hover:bg-gray-300"
                                             >
-                                              {language === 'bilingual' ? 'Cancelar / 取消' : 'Cancelar'}
+                                              {tt('Cancelar', '取消', 'Cancel')}
                                             </button>
                                             <button
                                               type="submit"
                                               className="px-3.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold cursor-pointer flex items-center gap-1 shadow-sm transition-all active:scale-95"
                                             >
                                               <Check className="w-3.5 h-3.5" />
-                                              <span>{language === 'bilingual' ? 'Salvar Navio / 保存' : 'Salvar Navio'}</span>
+                                              <span>{tt('Salvar Navio', '保存船舶', 'Save Vessel')}</span>
                                             </button>
                                           </div>
                                         </div>
@@ -6857,7 +6985,7 @@ export default function App() {
                                       }
 
                                       return (
-                                        <div className="flex flex-col gap-2">
+                                        <div className="flex flex-col gap-2 max-h-[380px] overflow-y-auto pr-1">
                                           {monthlyGroups.map((group) => {
                                             const isExpanded = expandedVesselMonths[group.monthKey] !== false;
                                             return (
@@ -6939,7 +7067,7 @@ export default function App() {
                                                                   className="w-20 p-1 text-xs text-center border rounded bg-white dark:bg-slate-800 font-mono"
                                                                 />
                                                               ) : (
-                                                                vessel.eta
+                                                                formatVesselEtaDisplay(vessel.eta)
                                                               )}
                                                             </td>
                                                             <td className={`text-right font-black text-blue-600 dark:text-blue-400 text-xs ${widescreenMode ? 'py-1' : 'py-1.5'}`}>
@@ -8439,27 +8567,35 @@ export default function App() {
                             <div>
                               <div className="flex items-center gap-3 mb-1">
                                 <h3 className="font-extrabold text-[12px] text-gray-800 dark:text-gray-100 uppercase tracking-tight flex items-center gap-1.5">
-                                  {language === 'bilingual' ? 'Simulação de Escoamento / 仿真模拟器' : 'Cargo Drain Simulation'}
+                                  {tt('Simulação de Escoamento', '出清流速仿真模拟器', 'Cargo Drain Simulation')}
                                 </h3>
                                 <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                                   <button
                                     onClick={() => setChartTab('drain')}
                                     className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${chartTab === 'drain' ? 'bg-white dark:bg-slate-700 text-amber-600 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
                                   >
-                                    {language === 'zh' ? '流速模拟' : 'Drain'}
+                                    {tt('Escoamento', '出清仿真', 'Drain')}
                                   </button>
                                   <button
                                     onClick={() => setChartTab('space')}
                                     className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${chartTab === 'space' ? 'bg-white dark:bg-slate-700 text-amber-600 shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
                                   >
-                                    {language === 'zh' ? '空间占用' : 'Space'}
+                                    {tt('Ocupação', '空间占用', 'Space')}
                                   </button>
                                 </div>
                               </div>
                               <p className="text-[10px] text-gray-500 dark:text-gray-400 font-sans">
                                 {chartTab === 'drain' 
-                                  ? (language === 'bilingual' ? 'Ajuste os cenários e capacidades para recalcular o gráfico de backlog / 调节不同发运场景与每日交付能力，实时重算积压出清曲线' : 'Adjust scenarios and rates to dynamically recalculate the backlog burn-down.')
-                                  : (language === 'bilingual' ? 'Análise visual de capacidade vs ocupação nos terminais / 各堆场/仓库容量及当前占用率的可视化分析' : 'Visual analysis of capacity vs occupancy across yards.')}
+                                  ? tt(
+                                      'Ajuste os cenários e capacidades para recalcular o gráfico de backlog',
+                                      '调节不同发运场景与每日交付能力，实时重算积压出清曲线',
+                                      'Adjust scenarios and rates to dynamically recalculate the backlog burn-down.'
+                                    )
+                                  : tt(
+                                      'Análise visual de capacidade vs ocupação nos terminais',
+                                      '各堆场/仓库容量及当前占用率的可视化分析',
+                                      'Visual analysis of capacity vs occupancy across yards.'
+                                    )}
                               </p>
                             </div>
                           </div>
@@ -8477,7 +8613,7 @@ export default function App() {
                                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
                                 }`}
                               >
-                                {language === 'bilingual' ? 'Etapa 1 (Pátios+CDs)' : 'Etapa 1'}
+                                {tt('Etapa 1 (Pátios+CDs)', '阶段 1 (保税+外库)', 'Stage 1 (Yards+CDs)')}
                               </button>
                               <button 
                                 onClick={() => handleSetSelectedScenario('etapa2')}
@@ -8487,7 +8623,7 @@ export default function App() {
                                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
                                 }`}
                               >
-                                {language === 'bilingual' ? 'Etapa 2 (+Buffer)' : 'Etapa 2'}
+                                {tt('Etapa 2 (+Buffer)', '阶段 2 (+中转区)', 'Stage 2 (+Buffer)')}
                               </button>
                               <button 
                                 onClick={() => handleSetSelectedScenario('etapa3')}
@@ -8497,14 +8633,14 @@ export default function App() {
                                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
                                 }`}
                               >
-                                {language === 'bilingual' ? 'Etapa 3 (+ETA)' : 'Etapa 3'}
+                                {tt('Etapa 3 (+ETA)', '阶段 3 (+在途船)', 'Stage 3 (+ETA)')}
                               </button>
                             </div>
 
                             {/* Daily Delivery Slider */}
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 font-sans">
-                                {language === 'bilingual' ? 'Capacidade / 能力:' : 'Capacity:'}
+                                {tt('Capacidade/dia:', '每日交付能力:', 'Daily capacity:')}
                               </span>
                               <input 
                                 type="range"
@@ -8516,13 +8652,15 @@ export default function App() {
                                 className="w-24 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-550 dark:bg-slate-700"
                               />
                               <span className="font-mono text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                                {dailyDeliveryRate}/dia
+                                {dailyDeliveryRate}{tt('/dia', '箱/日', '/day')}
                               </span>
                             </div>
 
                             {/* KPI Projection Result */}
                             <div className="flex items-center gap-1.5 border-l border-dashed border-gray-250 dark:border-slate-700 pl-3">
-                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-sans">{language === 'bilingual' ? 'Previsão / 预计完成' : 'Completion'}:</span>
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-sans">
+                                {tt('Previsão:', '预计出清时间:', 'Completion:')}
+                              </span>
                               <span className="text-[11px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md font-mono">
                                 {(() => {
                                   const activeVol = selectedScenario === 'etapa1'
@@ -8817,7 +8955,11 @@ export default function App() {
                             <div className={`p-5 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-100 shadow-sm'} flex flex-col flex-1 min-h-[400px]`}>
                               <h4 className="text-[12px] font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-100 dark:border-slate-700/50 pb-2">
                                 <Package className="w-5 h-5 text-indigo-500" />
-                                {language === 'bilingual' ? 'Distribuição de Ocupação nos Pátios e CDs / 各堆场/仓库容量及当前占用率' : 'Yard & Warehouse Occupancy Distribution'}
+                                {tt(
+                                  'Distribuição de Ocupação nos Pátios e CDs',
+                                  '各堆场与仓库容量及当前占用率分布',
+                                  'Yard & Warehouse Occupancy Distribution'
+                                )}
                               </h4>
                               <div className="flex-1 relative w-full h-full pt-4 pr-6 pb-6 pl-10 text-sans">
                                 {(() => {

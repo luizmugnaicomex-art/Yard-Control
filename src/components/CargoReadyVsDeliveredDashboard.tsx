@@ -385,15 +385,11 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
   const totalEcosystemCapacity = bondedCapacity + warehouseCapacity + bufferCapacity;
   const dynamicYardMaxCapacity = totalEcosystemCapacity;
 
-  // Safe Capacity = Sum of the capacities of active facilities:
-  // - Etapa 1 (Pátios + CDs): Bonded Capacity + Warehouse Capacity
-  // - Etapa 2 / 3 (+ Buffer / Navios): Bonded Capacity + Warehouse Capacity + Buffer Capacity
+  // Safe Capacity = Sum of the capacities of active facilities (Bonded + Warehouse + Buffer):
+  // Quantity we have and Safe Capacity both sum Bonded + Warehouse + Buffer
   const dynamicSafeYardCapacity = useMemo(() => {
-    if (selectedScenario === 'etapa1') {
-      return bondedCapacity + warehouseCapacity;
-    }
     return bondedCapacity + warehouseCapacity + bufferCapacity;
-  }, [selectedScenario, bondedCapacity, warehouseCapacity, bufferCapacity]);
+  }, [bondedCapacity, warehouseCapacity, bufferCapacity]);
 
   const activeOccupancyRate = dynamicSafeYardCapacity > 0
     ? Math.round((totalInitialBacklog / dynamicSafeYardCapacity) * 100)
@@ -430,12 +426,8 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
       }
     });
 
-    // 2. Initial Backlog at the starting week determined by active scenario
-    let rollingBacklog = selectedScenario === 'etapa1'
-      ? (activeBondedStock + activeWarehouseStock + additionalBacklog)
-      : selectedScenario === 'etapa2'
-        ? (activeBondedStock + activeWarehouseStock + activeBufferStock + additionalBacklog)
-        : (totalInitialBacklog + additionalBacklog);
+    // 2. Initial Backlog at starting week: Sum of Bonded + Warehouse + Buffer + Additional Backlog
+    let rollingBacklog = totalInitialBacklog + additionalBacklog;
 
     const generatedWeeks: WeeklyDataPoint[] = [];
     let zeroBalanceCount = 0;
@@ -657,7 +649,11 @@ export const CargoReadyVsDeliveredDashboard: React.FC<CargoReadyVsDeliveredDashb
       id: newId,
       name: newVesselName.toUpperCase().trim(),
       eta: newVesselEta || '2026-08-25',
-      cntrs: Number(newVesselCntrs) || 100
+      cntrs: Number(newVesselCntrs) || 100,
+      order: (vessels ? vessels.length : 0) + 1,
+      carrier: 'BYD CHARTER',
+      status: 'SCHEDULED',
+      terminal: 'Porto de Santos'
     };
     if (setVessels) {
       setVessels(prev => {
@@ -1104,7 +1100,7 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
               <span className="font-mono text-emerald-600 dark:text-emerald-400">{dynamicSafeYardCapacity.toLocaleString()} CNTRs</span>
             </div>
             <span className="text-[8px] text-gray-400 dark:text-gray-500 font-normal truncate">
-              {dt('Bonded', '保税', 'Bonded')} ({bondedCapacity.toLocaleString()}) + {dt('CDs', '外仓', 'CDs')} ({warehouseCapacity.toLocaleString()}){selectedScenario !== 'etapa1' ? ` + Buffer (${bufferCapacity.toLocaleString()})` : ''}
+              {dt('Bonded', '保税', 'Bonded')} ({bondedCapacity.toLocaleString()}) + {dt('CDs', '外仓', 'CDs')} ({warehouseCapacity.toLocaleString()}) + {dt('Buffer', '缓冲', 'Buffer')} ({bufferCapacity.toLocaleString()})
             </span>
           </div>
         </div>
@@ -1127,9 +1123,9 @@ If the current ${drainDays.toFixed(1)}-day clearance timeline is not compressed:
             </div>
             <p className="text-[10.5px] text-gray-600 dark:text-gray-400 mt-0.5">
               {dt(
-                `Estoque Atual: ${totalInitialBacklog.toLocaleString()} CNTRs (Alfandegado: ${activeBondedStock.toLocaleString()} + Armazéns: ${activeWarehouseStock.toLocaleString()} + Buffer: ${activeBufferStock.toLocaleString()}) • Capacidade Segura: ${dynamicSafeYardCapacity.toLocaleString()} CNTRs (Alfandegado: ${bondedCapacity.toLocaleString()} + Armazéns: ${warehouseCapacity.toLocaleString()}${selectedScenario !== 'etapa1' ? ` + Buffer: ${bufferCapacity.toLocaleString()}` : ''})`,
-                `当前在库总量: ${totalInitialBacklog.toLocaleString()} 箱 (保税: ${activeBondedStock.toLocaleString()} + 外仓: ${activeWarehouseStock.toLocaleString()} + 缓冲: ${activeBufferStock.toLocaleString()}) • 安全总容量: ${dynamicSafeYardCapacity.toLocaleString()} 箱 (保税: ${bondedCapacity.toLocaleString()} + 外仓: ${warehouseCapacity.toLocaleString()}${selectedScenario !== 'etapa1' ? ` + 缓冲: ${bufferCapacity.toLocaleString()}` : ''})`,
-                `Current Inventory: ${totalInitialBacklog.toLocaleString()} CNTRs (Bonded: ${activeBondedStock.toLocaleString()} + Warehouse: ${activeWarehouseStock.toLocaleString()} + Buffer: ${activeBufferStock.toLocaleString()}) • Safe Capacity: ${dynamicSafeYardCapacity.toLocaleString()} CNTRs (Bonded: ${bondedCapacity.toLocaleString()} + Warehouse: ${warehouseCapacity.toLocaleString()}${selectedScenario !== 'etapa1' ? ` + Buffer: ${bufferCapacity.toLocaleString()}` : ''})`
+                `Estoque Atual: ${totalInitialBacklog.toLocaleString()} CNTRs (Alfandegado: ${activeBondedStock.toLocaleString()} + Armazéns: ${activeWarehouseStock.toLocaleString()} + Buffer: ${activeBufferStock.toLocaleString()}) • Capacidade Segura: ${dynamicSafeYardCapacity.toLocaleString()} CNTRs (Alfandegado: ${bondedCapacity.toLocaleString()} + Armazéns: ${warehouseCapacity.toLocaleString()} + Buffer: ${bufferCapacity.toLocaleString()})`,
+                `当前在库总量: ${totalInitialBacklog.toLocaleString()} 箱 (保税: ${activeBondedStock.toLocaleString()} + 外仓: ${activeWarehouseStock.toLocaleString()} + 缓冲: ${activeBufferStock.toLocaleString()}) • 安全总容量: ${dynamicSafeYardCapacity.toLocaleString()} 箱 (保税: ${bondedCapacity.toLocaleString()} + 外仓: ${warehouseCapacity.toLocaleString()} + 缓冲: ${bufferCapacity.toLocaleString()})`,
+                `Current Inventory: ${totalInitialBacklog.toLocaleString()} CNTRs (Bonded: ${activeBondedStock.toLocaleString()} + Warehouse: ${activeWarehouseStock.toLocaleString()} + Buffer: ${activeBufferStock.toLocaleString()}) • Safe Capacity: ${dynamicSafeYardCapacity.toLocaleString()} CNTRs (Bonded: ${bondedCapacity.toLocaleString()} + Warehouse: ${warehouseCapacity.toLocaleString()} + Buffer: ${bufferCapacity.toLocaleString()})`
               )}
             </p>
           </div>
