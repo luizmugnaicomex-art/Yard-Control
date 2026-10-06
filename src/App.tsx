@@ -1301,6 +1301,14 @@ export default function App() {
     } catch {}
     return JSON.parse(JSON.stringify(ORIGINAL_YARDS));
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('byd_yards_data', JSON.stringify(yards));
+    } catch (e) {
+      console.warn("Falha ao salvar yards no localStorage:", e);
+    }
+  }, [yards]);
   const bondedYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type === 'BONDED');
   const warehouseYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type === 'WAREHOUSE');
   const bufferYards = (Object.entries(yards) as [string, Yard][]).filter(([_, y]) => y && y.type !== 'BONDED' && y.type !== 'WAREHOUSE');
@@ -1315,6 +1323,14 @@ export default function App() {
     } catch {}
     return JSON.parse(JSON.stringify(ORIGINAL_VESSELS));
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('byd_vessels_data', JSON.stringify(vessels));
+    } catch (e) {
+      console.warn("Falha ao salvar vessels no localStorage:", e);
+    }
+  }, [vessels]);
   const [chartLeft, setChartLeft] = useState<ChartLeftItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_LEFT)));
   const [chartRight, setChartRight] = useState<ChartRightItem[]>(() => JSON.parse(JSON.stringify(ORIGINAL_CHART_RIGHT)));
   const [scenarioValue, setScenarioValue] = useState(210);
@@ -2244,7 +2260,26 @@ export default function App() {
 
   // 3. SINCRONIZADOR EM TEMPO REAL ON-SNAPSHOT DO FIRESTORE (MULTI-USER REAL-TIME SYNCHRONIZATION)
   useEffect(() => {
+    if (localStorage.getItem('byd_offline_mode') === null) {
+      try { localStorage.setItem('byd_offline_mode', 'true'); } catch {}
+    }
+    if (localStorage.getItem('byd_offline_mode') === 'true') {
+      setDbStatus('offline');
+      return;
+    }
+
     setDbStatus('connecting');
+
+    const handleListenerError = (err: unknown, name: string) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('resource-exhausted') || msg.includes('Quota exceeded') || msg.includes('quota')) {
+        console.warn(`Firestore quota exceeded on ${name}. Switching to local offline mode.`);
+        setDbStatus('offline');
+        try { localStorage.setItem('byd_offline_mode', 'true'); } catch {}
+      } else {
+        console.warn(`Falha no listener de ${name}:`, err);
+      }
+    };
 
     // 1. Assinatura em Tempo Real de Yards (Pátios)
     const unsubYards = onSnapshot(collection(db, 'yards'), (snapshot) => {
@@ -2275,10 +2310,7 @@ export default function App() {
         try { localStorage.setItem('byd_yards_data', JSON.stringify(newYards)); } catch {}
         setDbStatus('online');
       }
-    }, (err) => {
-      console.warn("Falha no listener de yards:", err);
-      setDbStatus('offline');
-    });
+    }, (err) => handleListenerError(err, 'yards'));
 
     // 2. Assinatura em Tempo Real de Buffer Areas (BYD Buffer Interativo Multi-User)
     const unsubBuffers = onSnapshot(collection(db, 'bufferAreas'), (snapshot) => {
@@ -2305,9 +2337,7 @@ export default function App() {
         });
         setBufferAreas(list);
       }
-    }, (err) => {
-      console.warn("Falha no listener de bufferAreas:", err);
-    });
+    }, (err) => handleListenerError(err, 'bufferAreas'));
 
     // 3. Assinatura em Tempo Real de Navios (Vessels)
     const unsubVessels = onSnapshot(collection(db, 'vessels'), (snapshot) => {
@@ -2336,9 +2366,7 @@ export default function App() {
         setVessels(newVessels);
         try { localStorage.setItem('byd_vessels_data', JSON.stringify(newVessels)); } catch {}
       }
-    }, (err) => {
-      console.warn("Falha no listener de vessels:", err);
-    });
+    }, (err) => handleListenerError(err, 'vessels'));
 
     // 4. Assinatura em Tempo Real de ChartLeft (Projeções e Histórico)
     const unsubChartLeft = onSnapshot(collection(db, 'chartLeft'), (snapshot) => {
@@ -2360,9 +2388,7 @@ export default function App() {
         });
         setChartLeft(newChartLeft);
       }
-    }, (err) => {
-      console.warn("Falha no listener de chartLeft:", err);
-    });
+    }, (err) => handleListenerError(err, 'chartLeft'));
 
     // 5. Assinatura em Tempo Real de ChartRight
     const unsubChartRight = onSnapshot(collection(db, 'chartRight'), (snapshot) => {
@@ -2383,9 +2409,7 @@ export default function App() {
         newChartRight.sort((a, b) => a.index.localeCompare(b.index));
         setChartRight(newChartRight.map(x => x.item));
       }
-    }, (err) => {
-      console.warn("Falha no listener de chartRight:", err);
-    });
+    }, (err) => handleListenerError(err, 'chartRight'));
 
     // 6. Assinatura em Tempo Real de Contêineres (Containers)
     const unsubContainers = onSnapshot(collection(db, 'containers'), (snapshot) => {
@@ -2410,9 +2434,7 @@ export default function App() {
         });
       });
       setContainers(newContainers);
-    }, (err) => {
-      console.warn("Falha no listener de containers:", err);
-    });
+    }, (err) => handleListenerError(err, 'containers'));
 
     // 7. Assinatura em Tempo Real de Logística Geral
     const unsubLogistics = onSnapshot(collection(db, 'logisticsData'), (snapshot) => {
@@ -2421,9 +2443,7 @@ export default function App() {
         data.push({ id: docSnap.id, ...docSnap.data() } as LogisticsEntry);
       });
       setLogisticsEntries(data);
-    }, (err) => {
-      console.warn("Falha no listener de logisticsData:", err);
-    });
+    }, (err) => handleListenerError(err, 'logisticsData'));
 
     // 8. Assinatura em Tempo Real de Configurações Globais
     const unsubConfig = onSnapshot(doc(db, 'config', 'global'), (configDoc) => {
@@ -2458,9 +2478,7 @@ export default function App() {
       } else {
         initializeConfigInDb();
       }
-    }, (err) => {
-      console.warn("Falha no listener de config:", err);
-    });
+    }, (err) => handleListenerError(err, 'config'));
 
     // 9. Assinatura em Tempo Real de Depots
     const unsubDepots = onSnapshot(doc(db, 'config', 'depots'), (depotDoc) => {
@@ -2475,9 +2493,7 @@ export default function App() {
           try { localStorage.setItem('byd_depot_matrix', JSON.stringify(data.depotMatrix)); } catch {}
         }
       }
-    }, (err) => {
-      console.warn("Falha no listener de depots:", err);
-    });
+    }, (err) => handleListenerError(err, 'depots'));
 
     return () => {
       unsubYards();
