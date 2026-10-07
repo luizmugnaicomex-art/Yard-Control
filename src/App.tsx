@@ -1356,8 +1356,13 @@ export default function App() {
     const finalRate = Math.max(10, rate);
     setDailyDeliveryRate(finalRate);
     try { localStorage.setItem('byd_daily_delivery_rate', String(finalRate)); } catch {}
+    if (localStorage.getItem('byd_offline_mode') === 'true') return;
     setDoc(doc(db, 'config', 'global'), { dailyDeliveryRate: finalRate }, { merge: true }).catch(e => {
-      console.warn('Falha ao sincronizar dailyDeliveryRate com Firestore:', e);
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('resource-exhausted') || msg.includes('Quota exceeded') || msg.includes('quota')) {
+        try { localStorage.setItem('byd_offline_mode', 'true'); } catch {}
+        setDbStatus('offline');
+      }
     });
   };
 
@@ -1365,16 +1370,26 @@ export default function App() {
     const finalVal = Math.max(0, val);
     setAdditionalBacklog(finalVal);
     try { localStorage.setItem('byd_additional_backlog', String(finalVal)); } catch {}
+    if (localStorage.getItem('byd_offline_mode') === 'true') return;
     setDoc(doc(db, 'config', 'global'), { additionalBacklog: finalVal }, { merge: true }).catch(e => {
-      console.warn('Falha ao sincronizar additionalBacklog com Firestore:', e);
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('resource-exhausted') || msg.includes('Quota exceeded') || msg.includes('quota')) {
+        try { localStorage.setItem('byd_offline_mode', 'true'); } catch {}
+        setDbStatus('offline');
+      }
     });
   };
 
   const handleSetSelectedScenario = (scen: 'etapa1' | 'etapa2' | 'etapa3') => {
     setSelectedScenario(scen);
     try { localStorage.setItem('byd_selected_scenario', scen); } catch {}
+    if (localStorage.getItem('byd_offline_mode') === 'true') return;
     setDoc(doc(db, 'config', 'global'), { selectedScenario: scen }, { merge: true }).catch(e => {
-      console.warn('Falha ao sincronizar selectedScenario com Firestore:', e);
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('resource-exhausted') || msg.includes('Quota exceeded') || msg.includes('quota')) {
+        try { localStorage.setItem('byd_offline_mode', 'true'); } catch {}
+        setDbStatus('offline');
+      }
     });
   };
 
@@ -2564,12 +2579,19 @@ export default function App() {
 
   // FUNÇÃO AUXILIAR PARA ATUALIZAÇÃO DO CONFIG SINGLETON NO FIRESTORE
   const updateGlobalDoc = async (field: string, value: any) => {
+    if (localStorage.getItem('byd_offline_mode') === 'true') return;
     try {
       await setDoc(doc(db, 'config', 'global'), {
         [field]: value
       }, { merge: true });
     } catch (error) {
-      console.warn('Falha ao atualizar config/global no Firestore:', error);
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes('resource-exhausted') || msg.includes('Quota exceeded') || msg.includes('quota')) {
+        try { localStorage.setItem('byd_offline_mode', 'true'); } catch {}
+        setDbStatus('offline');
+      } else {
+        console.warn('Falha ao atualizar config/global no Firestore:', error);
+      }
     }
   };
 
@@ -6795,10 +6817,10 @@ export default function App() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+                          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
                             {/* Buffer cards grid layout */}
-                            <div className="col-span-1 lg:col-span-2 flex flex-col gap-3">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="col-span-12 lg:col-span-5 flex flex-col gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {bufferYards.map(([key, yardItem]) => (
                                   <YardCard 
                                     key={key}
@@ -6825,7 +6847,7 @@ export default function App() {
                             </div>
 
                             {/* Vessels Table Card - Minimizable by Month */}
-                            <div className="col-span-1">
+                            <div className="col-span-12 lg:col-span-7">
                               <div className="flex flex-col h-full min-h-[220px]">
                                 <div className={`p-3 rounded-xl flex-1 border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-100 shadow-sm'} flex flex-col justify-between`}>
                                   <div>
@@ -7001,7 +7023,7 @@ export default function App() {
                                       }
 
                                       return (
-                                        <div className="flex flex-col gap-2 max-h-[380px] overflow-y-auto pr-1">
+                                        <div className="flex flex-col gap-2 max-h-[520px] overflow-y-auto pr-1">
                                           {monthlyGroups.map((group) => {
                                             const isExpanded = expandedVesselMonths[group.monthKey] !== false;
                                             return (
@@ -7989,7 +8011,7 @@ export default function App() {
                   <div className="grid grid-cols-12 gap-4">
                     
                     {/* LADO ESQUERDO: TABELA & LISTA DE NAVIOS COM EDIÇÃO INLINE E BOTÃO ADICIONAR */}
-                    <div className="col-span-12 lg:col-span-6 flex flex-col gap-4">
+                    <div className="col-span-12 lg:col-span-7 flex flex-col gap-4">
                       <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200/80 shadow-sm'} flex flex-col justify-between`}>
                         
                         {/* Subheader da Tabela */}
@@ -8493,7 +8515,7 @@ export default function App() {
                     </div>
 
                     {/* LADO DIREITO: 2 ÁREAS DE NOTAS OPERACIONAIS */}
-                    <div className="col-span-12 lg:col-span-6 flex flex-col gap-4">
+                    <div className="col-span-12 lg:col-span-5 flex flex-col gap-4">
                       
                       {/* NOTA 1: JANELAS OPERACIONAIS DE ATRACAÇÃO */}
                       <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-[#1e293b] border-slate-700 text-white' : 'bg-white border-slate-200/80 shadow-sm'} flex flex-col justify-between min-h-[220px]`}>
