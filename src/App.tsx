@@ -2276,11 +2276,11 @@ export default function App() {
   // 3. SINCRONIZADOR EM TEMPO REAL ON-SNAPSHOT DO FIRESTORE (MULTI-USER REAL-TIME SYNCHRONIZATION)
   useEffect(() => {
     if (localStorage.getItem('byd_offline_mode') === null) {
-      try { localStorage.setItem('byd_offline_mode', 'true'); } catch {}
+      try { localStorage.setItem('byd_offline_mode', 'false'); } catch {}
     }
     if (localStorage.getItem('byd_offline_mode') === 'true') {
       setDbStatus('offline');
-      return;
+      // Even if offline mode was previously set, allow attempting connection unless explicitly offline
     }
 
     setDbStatus('connecting');
@@ -2579,7 +2579,6 @@ export default function App() {
 
   // FUNÇÃO AUXILIAR PARA ATUALIZAÇÃO DO CONFIG SINGLETON NO FIRESTORE
   const updateGlobalDoc = async (field: string, value: any) => {
-    if (localStorage.getItem('byd_offline_mode') === 'true') return;
     try {
       await setDoc(doc(db, 'config', 'global'), {
         [field]: value
